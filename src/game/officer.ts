@@ -1,6 +1,7 @@
 // 3단계: 장교의 성장(스탯·공훈·진급), 임무, 간이 훈련, 부관·장군, 라이벌, 해임.
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
+import { TEST_BOOSTS } from './boost';
 import { CITIES, cityById } from '../data/cities';
 import {
   AIDE_SPECIALTIES,
@@ -167,6 +168,8 @@ export interface OfficerState {
   diploReadyMs?: number;
   /** 승리 조건을 처음 채운 때(계속 지키는 중). 못 채우면 null */
   winSinceMs?: number | null;
+  /** 가속권 */
+  boosts?: number;
 }
 
 export function newOfficer(seed: number): OfficerState {
@@ -201,6 +204,7 @@ export function newOfficer(seed: number): OfficerState {
     chiefRival: null,
     training: null,
     grandReadyMs: 0,
+    boosts: TEST_BOOSTS,
     perfect: {},
   };
 }

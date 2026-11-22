@@ -482,3 +482,14 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 .bottom button.active .ico { transform: scale(1.15); }
 .bottom button.active small { color: #fde68a; }
 .bottom button.locked { opacity: 0.45; }
+.boost-bar { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.boost-bar button { flex: 1; padding: 6px 4px; font-size: 13px; }
+.boost-bar button small { opacity: 0.85; }
+.boost-bar.compact { margin-top: 0; flex: 0 0 auto; }
+.boost-bar.compact button { flex: 0 0 auto; padding: 3px 6px; font-size: 12px; }
+.boost-bar > small { white-space: nowrap; }
+/* 본부 아이콘 조금 작게 */
+.bld { width: 54px; }
+.bld-ico { width: 40px; height: 40px; border-radius: 12px; font-size: 21px; }
+.bld small { font-size: 10.5px; }
+.bld-badge { top: -5px; right: 0; min-width: 16px; height: 16px; font-size: 10px; }

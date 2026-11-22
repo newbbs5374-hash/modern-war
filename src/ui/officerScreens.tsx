@@ -1,4 +1,5 @@
 // 장교(진급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
 import { STAT_GROUPS, TRAININGS } from '../data/catalog';
 import { GRAND_COOLDOWN_HOURS, GRAND_RANK, MISSION_KINDS, OPERATION_RANK, STAT_IDS, aideSlots, generalSlots, statCap, type StatId } from '../data/officers';
@@ -132,7 +133,10 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
               </button>
             </div>
           ) : (
-            <p className="small muted center">⏳ 도착까지 {timeLeft(a.endMs - state.worldMs)} (꺼 두어도 진행돼요)</p>
+            <>
+              <p className="small muted center">⏳ 도착까지 {timeLeft(a.endMs - state.worldMs)} (꺼 두어도 진행돼요)</p>
+              <BoostBar state={state} apply={actions.apply} target={{ kind: 'mission' }} />
+            </>
           )}
         </div>
       ) : (
@@ -214,7 +218,10 @@ export function GrandCard({ state, actions }: ScreenProps) {
   return (
     <Card title="대전투 · 도시 점령" icon="🏙️" help={help} right={<small className="muted">{rank >= GRAND_RANK ? `${GRAND_COOLDOWN_HOURS}시간마다` : `${RANKS[GRAND_RANK].name}부터`}</small>}>
       {rank < GRAND_RANK || why ? (
-        <p className="empty">{why}</p>
+        <>
+          <p className="empty">{why}</p>
+          {rank >= GRAND_RANK && <BoostBar state={state} apply={actions.apply} target={{ kind: 'grand' }} />}
+        </>
       ) : (
         <div className="tiles c3">
           {targets.map((id) => {
@@ -487,6 +494,7 @@ function AideModal({
       ) : busy ? (
         <p className="small center">
           {ERRANDS[a.errand!.kind].icon} {a.errand!.kind} 중 · {timeLeft(a.errand!.endMs - state.worldMs)} 남음(그동안 전투에 못 나가요)
+          <BoostBar state={state} apply={actions.apply} target={{ kind: 'errand', id: a.id }} />
         </p>
       ) : (
         <>

@@ -17,6 +17,7 @@ import { Chip, Help, Modal, Tabs, Tile, useTab } from './kit';
 import { UNIT_ICON } from './icons';
 import { FLAG } from './flag';
 import { HomeLand } from './HomeLand';
+import { boostsOf } from '../game/boost';
 import { ECON_RANK } from '../data/economy';
 import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import { OPERATION_RANK } from '../data/officers';
@@ -78,17 +79,17 @@ export function HomeScreen(props: ScreenProps) {
 
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
   const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> = [
-    { icon: '🗺️', label: '작전본부', x: 86, y: 10, on: () => goTab('ops', 'ops', 'mission'), badge: !a || missionReady ? '!' : null, main: true },
-    { icon: '🎖️', label: '장교', x: 86, y: 23, on: () => goTab('officer', 'officer', 'stats'), badge: pc.ready ? '!' : null },
-    { icon: '🧑‍✈️', label: '부관', x: 86, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
-    { icon: '🎯', label: '훈련장', x: 86, y: 49, on: () => go('training'), badge: drills > 0 ? drills : null },
-    { icon: '🪖', label: '부대', x: 86, y: 62, on: () => go('forces') },
-    { icon: '🏛️', label: '정부', x: 86, y: 75, on: () => go('nation') },
-    { icon: '🏙️', label: '대전투', x: 11, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
+    { icon: '🗺️', label: '작전본부', x: 90, y: 10, on: () => goTab('ops', 'ops', 'mission'), badge: !a || missionReady ? '!' : null, main: true },
+    { icon: '🎖️', label: '장교', x: 90, y: 23, on: () => goTab('officer', 'officer', 'stats'), badge: pc.ready ? '!' : null },
+    { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
+    { icon: '🎯', label: '훈련장', x: 90, y: 49, on: () => go('training'), badge: drills > 0 ? drills : null },
+    { icon: '🪖', label: '부대', x: 90, y: 62, on: () => go('forces') },
+    { icon: '🏛️', label: '정부', x: 90, y: 75, on: () => go('nation') },
+    { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
     { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
-    { icon: '📖', label: '도감', x: 49, y: 87, on: () => go('codex') },
-    { icon: '🛒', label: '상점', x: 68, y: 87, on: () => go('shop'), locked: true },
-    { icon: '🧪', label: '시험', x: 86, y: 87, on: () => go('settings') },
+    { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
+    { icon: '🛒', label: '상점', x: 70, y: 87, on: () => go('shop'), locked: true },
+    { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
   ];
 
   return (
@@ -662,6 +663,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           >
             내정 시험(예산·자원·경험치 채우기)
           </button>
+          <button onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, boosts: boostsOf(s) + 100 } }))}>🎫 가속권 +100</button>
           <button onClick={() => actions.apply((s) => debugAddAide({ ...s, player: { ...s.player, salary: s.player.salary + 5000 } }))}>부관 데려오기 + 봉급 5000</button>
         </div>
         <small>계급 바로 바꾸기 (진급 심사 없이)</small>
