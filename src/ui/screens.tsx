@@ -340,7 +340,7 @@ function MapPanel({ state }: ScreenProps) {
             ))}
           </span>
         }
-        help={<p>나라를 누르면 자세한 정보가 떠요. 점선 = 전쟁(빨강)·휴전(주황), 동그라미 = 점령된 도시.</p>}
+        help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 🚢 항모 전단은 평소 앞바다를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. ✈️ 전투기는 평시엔 순찰, 전쟁 땐 적 수도로 출격해요.</p>}
       >
         <WorldMap world={w} playerCountryId={me} selectedId={sel ?? me} onSelect={setSel} mode={mode} />
         <div className="legend small">

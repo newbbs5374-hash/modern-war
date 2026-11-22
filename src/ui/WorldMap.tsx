@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES } from '../data/cities';
-import { BLOCS, CONTINENTS, COUNTRIES, HOLY_CITY, MAP_SIZE, type Relation } from '../data/world';
+import { BLOCS, CONTINENTS, COUNTRIES, HOLY_CITY, MAP_SIZE, countryById, type Relation } from '../data/world';
 import { isAlive, relationOf, type WorldState } from '../game/world';
+import { Carrier, Escort, Jet } from './units';
 
 export type MapMode = '관계' | '묶음';
 
@@ -23,7 +25,155 @@ interface Props {
   mini?: boolean;
 }
 
-/** 전략 지도(임시 도형). 대륙 = 둥근 네모, 나라 = 색 네모, 도시 = 점(지금 주인 색) */
+const Y0 = 40;
+const { w: MW, h: MH } = MAP_SIZE;
+
+function hash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+function rng(seed: number) {
+  let a = seed || 1;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** 네모 대륙을 들쭉날쭉한 섬 모양으로(둥근 네모 둘레 + 흔들림) */
+function islandPath(id: string, x: number, y: number, w: number, h: number): string {
+  const r = rng(hash(id));
+  const pad = 7;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const ax = w / 2 + pad;
+  const ay = h / 2 + pad;
+  const n = 48;
+  const pts: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * Math.PI * 2;
+    // 초타원(네모에 가까운 둥근 모양)
+    const c = Math.cos(t);
+    const s = Math.sin(t);
+    const k = 0.35;
+    const px = cx + ax * Math.sign(c) * Math.abs(c) ** k;
+    const py = cy + ay * Math.sign(s) * Math.abs(s) ** k;
+    const j = (r() - 0.5) * 9;
+    pts.push(`${(px + c * j).toFixed(1)},${(py + s * j).toFixed(1)}`);
+  }
+  return `M${pts.join(' L')}Z`;
+}
+
+const ISLANDS = CONTINENTS.flatMap((ct) => ct.shapes.map((r, i) => ({ key: `${ct.id}${i}`, d: islandPath(ct.id + i, r.x, r.y, r.w, r.h) })));
+
+const onLand = (x: number, y: number) => CONTINENTS.some((ct) => ct.shapes.some((r) => x > r.x - 4 && x < r.x + r.w + 4 && y > r.y - 4 && y < r.y + r.h + 4));
+
+/** 나라 수도 앞바다(대륙 네모의 가장 가까운 변 바깥) */
+function seaPoint(id: string): { x: number; y: number; vertical: boolean } {
+  const c = countryById(id);
+  const cap = CITIES.find((x) => x.home === id && x.capital)!;
+  const ct = CONTINENTS.find((x) => x.id === c.continent)!;
+  const r = ct.shapes.reduce((best, s) => {
+    const inS = cap.x >= s.x && cap.x <= s.x + s.w && cap.y >= s.y && cap.y <= s.y + s.h;
+    return inS ? s : best;
+  }, ct.shapes[0]);
+  const out = 24;
+  const sides = [
+    { d: cap.x - r.x, x: r.x - out, y: cap.y, vertical: true },
+    { d: r.x + r.w - cap.x, x: r.x + r.w + out, y: cap.y, vertical: true },
+    { d: cap.y - r.y, x: cap.x, y: r.y - out, vertical: false },
+    { d: r.y + r.h - cap.y, x: cap.x, y: r.y + r.h + out, vertical: false },
+  ].filter((s) => s.x > 8 && s.x < MW - 8 && s.y > Y0 + 8 && s.y < Y0 + MH - 8 && !onLand(s.x, s.y));
+  sides.sort((a, b) => a.d - b.d);
+  const s = sides[0] ?? { x: cap.x, y: cap.y + 30, vertical: false };
+  return { x: s.x, y: s.y, vertical: s.vertical };
+}
+const SEA = Object.fromEntries(COUNTRIES.map((c) => [c.id, seaPoint(c.id)]));
+
+/** 함대: 평시엔 앞바다 순찰, 전쟁이면 적 쪽으로 전진하고 전투기가 출격 */
+function Fleets({ world, colorOf }: { world: WorldState; colorOf: (id: string) => string }) {
+  return (
+    <g className="fleets" pointerEvents="none">
+      {COUNTRIES.filter((c) => isAlive(world, c.id)).map((c) => {
+        const p = SEA[c.id];
+        const carrier = c.military >= 45;
+        const enemy = COUNTRIES.find((e) => e.id !== c.id && isAlive(world, e.id) && relationOf(world, c.id, e.id) === '전쟁');
+        const color = colorOf(c.id);
+        // 전쟁: 적 앞바다 쪽으로 30% 나아간 곳(땅이면 제자리)
+        let fx = p.x;
+        let fy = p.y;
+        if (enemy) {
+          const q = SEA[enemy.id];
+          const nx = p.x + (q.x - p.x) * 0.3;
+          const ny = p.y + (q.y - p.y) * 0.3;
+          if (!onLand(nx, ny)) {
+            fx = nx;
+            fy = ny;
+          }
+        }
+        const rx = p.vertical ? 7 : 17;
+        const ry = p.vertical ? 17 : 7;
+        const loop = `M${fx - rx},${fy} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
+        const dur = 34 + (hash(c.id) % 14);
+        // 전투기: 평시 = 큰 원 순찰, 전쟁 = 적 수도까지 갔다가 돌아옴
+        let jetPath: string;
+        let target: { x: number; y: number } | null = null;
+        if (enemy) {
+          target = CITIES.find((x) => x.home === enemy.id && x.capital && world.owner[x.id] === enemy.id) ?? CITIES.find((x) => world.owner[x.id] === enemy.id) ?? null;
+        }
+        if (target) {
+          const dx = target.x - fx;
+          const dy = target.y - fy;
+          const c1 = `${(fx + dx / 2 - dy * 0.25).toFixed(1)},${(fy + dy / 2 + dx * 0.25).toFixed(1)}`;
+          const c2 = `${(fx + dx / 2 + dy * 0.25).toFixed(1)},${(fy + dy / 2 - dx * 0.25).toFixed(1)}`;
+          jetPath = `M${fx},${fy} Q${c1} ${target.x},${target.y} Q${c2} ${fx},${fy}`;
+        } else {
+          const R = 26;
+          jetPath = `M${fx - R},${fy} a${R},${R * 0.7} 0 1,1 ${R * 2},0 a${R},${R * 0.7} 0 1,1 ${-R * 2},0`;
+        }
+        const jdur = target ? 9 : 12;
+        const jets = c.military >= 25 ? 2 : 1;
+        return (
+          <g key={c.id}>
+            <path id={`fl-${c.id}`} d={loop} fill="none" />
+            <path id={`fj-${c.id}`} d={jetPath} fill="none" />
+            {target && <path d={jetPath} fill="none" stroke="#ef4444" strokeOpacity="0.25" strokeWidth="0.8" strokeDasharray="3 3" />}
+            {[0, 1, 2].map((j) => (
+              <g key={j}>
+                {j === 0 ? carrier ? <Carrier s={1.15} color={color} /> : <Escort s={1.3} color={color} /> : <Escort s={0.85} color={color} />}
+                <animateMotion dur={`${dur}s`} begin={`${-j * 2.2 - (hash(c.id) % 9)}s`} repeatCount="indefinite" rotate="auto">
+                  <mpath href={`#fl-${c.id}`} />
+                </animateMotion>
+              </g>
+            ))}
+            {Array.from({ length: jets }, (_, j) => (
+              <g key={`j${j}`}>
+                <Jet s={1} color={color} />
+                <animateMotion dur={`${jdur}s`} begin={`${-j * 0.35 - (hash(c.id) % 7)}s`} repeatCount="indefinite" rotate="auto">
+                  <mpath href={`#fj-${c.id}`} />
+                </animateMotion>
+              </g>
+            ))}
+            {target && (
+              <circle cx={target.x} cy={target.y} r="5" fill="#f97316">
+                <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.42;0.5;0.62;1" dur={`${jdur}s`} begin={`${-(hash(c.id) % 7)}s`} repeatCount="indefinite" />
+                <animate attributeName="r" values="2;2;8;11;2" keyTimes="0;0.42;0.5;0.62;1" dur={`${jdur}s`} begin={`${-(hash(c.id) % 7)}s`} repeatCount="indefinite" />
+              </circle>
+            )}
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+const MAX_K = 4;
+type View = { k: number; x: number; y: number };
+
+/** 전략 지도(임시 도형). 섬 = 들쭉날쭉한 땅, 나라 = 색 네모, 도시 = 점(지금 주인 색), 함대·전투기가 움직임 */
 export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = '관계', mini }: Props) {
   const colorOf = (id: string) =>
     mode === '묶음'
@@ -32,23 +182,135 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
         ? REL_COLORS['나']
         : REL_COLORS[relationOf(world, playerCountryId, id)];
 
-  return (
+  // ── 확대·이동(작은 지도는 없음) ──
+  const svgRef = useRef<SVGSVGElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // 화면 비율(가로/세로). 세로 화면이면 지도 높이에 맞추고 좌우로 끌어 봄
+  const [ar, setAr] = useState(MW / MH);
+  const kMin = Math.min(1, (MH * ar) / MW);
+  const capX = CITIES.find((c) => c.home === playerCountryId && c.capital)?.x ?? MW / 2;
+  const [view, setView] = useState<View>({ k: 1, x: capX - (MH * (MW / MH)) / 2, y: 0 });
+  const centered = useRef(false);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || mini) return;
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        const a = r.width / r.height;
+        setAr(a);
+        // 처음 한 번: 내 나라가 가운데 오게
+        if (!centered.current) {
+          centered.current = true;
+          setView((v) => ({ ...v, x: capX - (MH * a) / v.k / 2 }));
+        }
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mini]);
+  const vw = (k: number) => (MH * ar) / k;
+  const vh = (k: number) => MH / k;
+  const pts = useRef(new Map<number, { x: number; y: number }>());
+  const moved = useRef(0);
+  const clamp = (v: View): View => {
+    const k = Math.max(kMin, Math.min(MAX_K, v.k));
+    const w = vw(k);
+    const h = vh(k);
+    const fit = (o: number, size: number, full: number) => (size >= full ? (full - size) / 2 : Math.max(0, Math.min(full - size, o)));
+    return { k, x: fit(v.x, w, MW), y: fit(v.y, h, MH) };
+  };
+  const toSvg = (cx: number, cy: number) => {
+    const m = svgRef.current?.getScreenCTM();
+    if (!m) return { x: cx, y: cy };
+    const p = new DOMPoint(cx, cy).matrixTransform(m.inverse());
+    return { x: p.x, y: p.y - Y0 };
+  };
+  const zoomAt = (px: number, py: number, f: number, v: View) => {
+    const k = Math.max(kMin, Math.min(MAX_K, v.k * f));
+    const s = v.k / k;
+    return clamp({ k, x: px - (px - v.x) * s, y: py - (py - v.y) * s });
+  };
+  const onDown = (e: RPointerEvent) => {
+    if (mini) return;
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.current.size === 1) moved.current = 0;
+  };
+  const onMove = (e: RPointerEvent) => {
+    const prev = pts.current.get(e.pointerId);
+    if (!prev || mini) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    const a = toSvg(prev.x, prev.y);
+    const b = toSvg(cur.x, cur.y);
+    if (pts.current.size === 1) {
+      moved.current += Math.abs(cur.x - prev.x) + Math.abs(cur.y - prev.y);
+      if (moved.current > 8 && !(e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+      setView((v) => {
+        const c = clamp(v);
+        return clamp({ ...c, x: c.x - (b.x - a.x), y: c.y - (b.y - a.y) });
+      });
+    } else if (pts.current.size === 2) {
+      const [p1, p2] = [...pts.current.entries()];
+      const other = p1[0] === e.pointerId ? p2[1] : p1[1];
+      const d0 = Math.hypot(prev.x - other.x, prev.y - other.y);
+      const d1 = Math.hypot(cur.x - other.x, cur.y - other.y);
+      moved.current += 99;
+      const o = toSvg(other.x, other.y);
+      if (d0 > 4) setView((v) => zoomAt((b.x + o.x) / 2, (b.y + o.y) / 2, d1 / d0, clamp(v)));
+    }
+    pts.current.set(e.pointerId, cur);
+  };
+  const onUp = (e: RPointerEvent) => {
+    pts.current.delete(e.pointerId);
+  };
+  const onWheel = (e: RWheelEvent) => {
+    if (mini) return;
+    const p = toSvg(e.clientX, e.clientY);
+    setView((v) => zoomAt(p.x, p.y, e.deltaY < 0 ? 1.2 : 1 / 1.2, clamp(v)));
+  };
+  const pick = (id: string) => {
+    if (moved.current > 8) return;
+    onSelect(id);
+  };
+
+  const cv = clamp(view);
+  const vb = mini ? `0 ${Y0} ${MW} ${MH}` : `${cv.x.toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
+
+  const svg = (
     <svg
+      ref={svgRef}
       className={mini ? 'map mini' : 'map'}
-      viewBox={`0 40 ${MAP_SIZE.w} ${MAP_SIZE.h}`}
+      viewBox={vb}
       role="img"
       aria-label="세계 지도"
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+      onWheel={onWheel}
     >
-      <rect x="0" y="40" width={MAP_SIZE.w} height={MAP_SIZE.h} fill="#0c1a2b" />
+      <defs>
+        <radialGradient id="wm-sea" cx="50%" cy="50%" r="75%">
+          <stop offset="0%" stopColor="#0f3a5c" />
+          <stop offset="100%" stopColor="#071a2c" />
+        </radialGradient>
+        <pattern id="wm-wave" width="26" height="14" patternUnits="userSpaceOnUse">
+          <path d="M2,8 q4,-4 8,0 t8,0" fill="none" stroke="#5fa8d3" strokeOpacity="0.12" strokeWidth="0.8" />
+        </pattern>
+      </defs>
+      <rect x="0" y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
+      {!mini && <rect x="0" y={Y0} width={MW} height={MH} fill="url(#wm-wave)" className="wm-waves" />}
+      {/* 섬: 얕은 바다 → 모래 → 땅 */}
+      {ISLANDS.map((is) => (
+        <path key={`sh${is.key}`} d={is.d} fill="none" stroke="#1d5c80" strokeOpacity="0.55" strokeWidth="12" strokeLinejoin="round" />
+      ))}
+      {ISLANDS.map((is) => (
+        <path key={is.key} d={is.d} fill="#2a4733" stroke="#cdb77a" strokeWidth="2" strokeLinejoin="round" />
+      ))}
       {CONTINENTS.map((ct) => (
-        <g key={ct.id}>
-          {ct.shapes.map((r, i) => (
-            <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} rx="22" fill="#1e2b3c" stroke="#33475f" />
-          ))}
-          <text x={ct.label.x} y={ct.label.y} className="map-continent">
-            {ct.name}
-          </text>
-        </g>
+        <text key={ct.id} x={ct.label.x} y={ct.label.y} className="map-continent">
+          {ct.name}
+        </text>
       ))}
       {COUNTRIES.map((c) => {
         const color = colorOf(c.id);
@@ -56,7 +318,7 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
         const sel = c.id === selectedId;
         const alive = isAlive(world, c.id);
         return (
-          <g key={c.id} className="map-country" onClick={() => onSelect(c.id)}>
+          <g key={c.id} className="map-country" onClick={() => pick(c.id)}>
             {c.shapes.map((r, i) => (
               <rect
                 key={i}
@@ -64,21 +326,15 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
                 y={r.y}
                 width={r.w}
                 height={r.h}
-                rx="4"
+                rx="8"
                 fill={color}
-                fillOpacity={!alive ? 0.08 : sel ? 0.6 : 0.3}
+                fillOpacity={!alive ? 0.06 : sel ? 0.5 : 0.24}
                 stroke={sel ? '#fff' : color}
                 strokeWidth={mine || sel ? 2.5 : 1.25}
                 strokeDasharray={alive ? undefined : '3 3'}
               />
             ))}
-            <text
-              x={c.label.x}
-              y={c.label.y}
-              textAnchor="middle"
-              className="map-label"
-              fontSize={c.name.length > 4 ? 10.5 : 12}
-            >
+            <text x={c.label.x} y={c.label.y} textAnchor="middle" className="map-label" fontSize={c.name.length > 4 ? 10.5 : 12}>
               {mine ? '★ ' : ''}
               {c.name}
             </text>
@@ -98,7 +354,7 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
             fill={colorOf(owner)}
             stroke={occupied ? '#fff' : '#0c1a2b'}
             strokeWidth={occupied ? 1.6 : 1}
-            onClick={() => onSelect(city.home)}
+            onClick={() => pick(city.home)}
           >
             <title>
               {city.name}
@@ -109,11 +365,32 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
         );
       })}
       <g>
-        <circle cx={HOLY_CITY.x} cy={HOLY_CITY.y} r="5" fill="#f59e0b" />
+        <circle cx={HOLY_CITY.x} cy={HOLY_CITY.y} r="5" fill="#f59e0b">
+          {!mini && <animate attributeName="r" values="4;6;4" dur="3s" repeatCount="indefinite" />}
+        </circle>
         <text x={HOLY_CITY.x} y={HOLY_CITY.y + 57} textAnchor="middle" className="map-continent">
           {HOLY_CITY.name}
         </text>
       </g>
+      {!mini && <Fleets world={world} colorOf={colorOf} />}
     </svg>
+  );
+
+  if (mini) return svg;
+  return (
+    <div className="wm-wrap" ref={wrapRef}>
+      {svg}
+      <div className="map-zoom wm-zoom">
+        <button aria-label="확대" onClick={() => setView((v) => zoomAt(clamp(v).x + vw(v.k) / 2, clamp(v).y + vh(v.k) / 2, 1.5, clamp(v)))}>
+          ＋
+        </button>
+        <button aria-label="축소" onClick={() => setView((v) => zoomAt(clamp(v).x + vw(v.k) / 2, clamp(v).y + vh(v.k) / 2, 1 / 1.5, clamp(v)))}>
+          －
+        </button>
+        <button aria-label="전체 보기" onClick={() => setView({ k: kMin, x: 0, y: 0 })}>
+          ⤢
+        </button>
+      </div>
+    </div>
   );
 }

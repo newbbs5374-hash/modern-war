@@ -3,6 +3,7 @@
 // - 평소: 도로에 자동차·버스, 바다에 배, 하늘에 여객기, 구름 그림자, 흐르는 강, 실제 시각에 맞춘 낮·밤과 불빛
 // - 전쟁 때만: 공격받는 도시에 연기·불꽃, 군 차량 행렬, 전투기 / 빼앗긴 도시에는 상대 깃발
 // 나중에 제작 이미지로 바꿀 때는 "땅" 층(landPath·산·숲)만 그림으로 갈아 끼우면 위 층(차량·날씨·전쟁)은 그대로 씀.
+import { Carrier, Escort, Jet } from './units';
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES, type City } from '../data/cities';
 import { CITY_DEFENSE_MAX } from '../game/balance';
@@ -247,6 +248,7 @@ export function HomeLand(props: {
           <path id={`coast-${countryId}`} d="M30,90 C150,20 330,40 370,140 S380,520 300,610 S40,600 20,420 S-10,160 30,90Z" />
           <path id={`air-${countryId}`} d="M-40,120 L430,40" />
           <path id={`jet-${countryId}`} d="M430,560 C300,420 200,300 -40,200" />
+          <path id={`cap-${countryId}`} d="M-60,470 C60,560 250,640 450,560" />
         </defs>
         <g style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`, transformOrigin: '0 0', transition: smooth ? 'transform .5s ease' : 'none' }}>
           {/* 바다 */}
@@ -366,6 +368,16 @@ export function HomeLand(props: {
             </g>
           ))}
 
+          {/* 우리 함대: 항모 전단이 앞바다를 천천히 순찰 */}
+          {[0, 1, 2].map((j) => (
+            <g key={`cv${j}`}>
+              {j === 0 ? <Carrier s={2.1} color={mine} /> : <Escort s={1.6} color={mine} />}
+              <animateMotion dur="150s" begin={`${-40 - j * 5}s`} repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
+                <mpath href={`#coast-${countryId}`} />
+              </animateMotion>
+            </g>
+          ))}
+
           {/* 전쟁 때만: 군 차량 행렬 */}
           {hot &&
             roads.slice(0, 2).map((rd) =>
@@ -383,6 +395,18 @@ export function HomeLand(props: {
 
         {/* 하늘 층(확대와 상관없이 위를 지나감) */}
         <g className="sky" pointerEvents="none">
+          {/* 평시 초계 비행: 전투기 두 대가 남쪽 바다를 지나감 */}
+          {!hot &&
+            [0, 1].map((j) => (
+              <g key={`pj${j}`}>
+                <g transform={`translate(${-j * 10},${j * 9})`}>
+                  <Jet s={1.7} color="#cbd5e1" />
+                </g>
+                <animateMotion dur="22s" begin="-6s" repeatCount="indefinite" rotate="auto">
+                  <mpath href={`#cap-${countryId}`} />
+                </animateMotion>
+              </g>
+            ))}
           {[0, 1, 2].map((j) => (
             <g key={`cl${j}`} className="cloud" style={{ animationDuration: `${70 + j * 25}s`, animationDelay: `${-j * 30}s` }}>
               <ellipse cx={40} cy={120 + j * 170} rx="46" ry="16" fill="#00000022" transform="translate(14,26)" />
