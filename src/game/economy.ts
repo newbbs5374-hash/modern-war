@@ -206,7 +206,7 @@ export function upgradeFacility(s: GameState, f: Facility): GameState {
   return { ...s, economy: e, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - c.money } } };
 }
 
-// ── 병과 생산(준장부터) ──
+// ── 병과 모집·생산(병과마다 열리는 계급부터) ──
 
 export function costOf(s: GameState, unit: string, special: boolean): UnitCost {
   return special ? specialCost(countryById(s.player.countryId).specialUnit.base) : UNIT_COST[unit];
@@ -217,7 +217,6 @@ export function buildMs(s: GameState, unit: string, special: boolean): number {
 }
 export const QUEUE_MAX = 5;
 export function canProduce(s: GameState, unit: string, special = false): string | null {
-  if (s.player.rankIndex < ECON_RANK) return `${RANKS[ECON_RANK].name}부터 생산해요`;
   if (!UNIT_COST[unit]) return '없는 병과';
   if (s.player.rankIndex < unitRank(unit)) return `${RANKS[unitRank(unit)].name}부터`;
   if (s.economy.queue.length >= QUEUE_MAX) return `생산 줄은 ${QUEUE_MAX}개까지`;

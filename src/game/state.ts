@@ -6,6 +6,7 @@ import { PERSONALITIES } from '../data/leaders';
 import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
+import type { Report } from './report';
 import { accrueEconomy, economyTick, industryMult, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
   AI_TICK_MS,
@@ -54,6 +55,8 @@ export interface GameState {
   economy: EconomyState;
   /** 승리하면 채워짐(판 끝) */
   ending: Ending | null;
+  /** 부관 보고(아직 안 본 것) */
+  reports?: Report[];
 }
 
 export interface NewGameOptions {

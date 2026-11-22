@@ -1,6 +1,5 @@
 // 기능별 화면 묶음. 아래 메뉴 6칸 + 본부(홈) + 설정·전령·도감.
 import { useState } from 'react';
-import { UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { budgetPerDay, pendingCap, troopsPerDay, type GameState } from '../game/state';
@@ -12,9 +11,8 @@ import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from 
 import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
-import { FacilityCard, ProductionCard, ResourceCard, TradeCard, UnitModal } from './economyScreens';
-import { Chip, Help, Modal, Tabs, Tile, useTab } from './kit';
-import { UNIT_ICON } from './icons';
+import { FacilityCard, ProductionCard, ResourceCard, TradeCard } from './economyScreens';
+import { Chip, Modal, Tabs, Tile, useTab } from './kit';
 import { FLAG } from './flag';
 import { fillPromotion, grantTestResources } from '../game/testgrant';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
@@ -27,6 +25,7 @@ import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, d
 import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
+import { ForcesScreen } from './ForcesScreen';
 import { debugTalk } from '../game/talk';
 
 export interface GameActions {
@@ -371,53 +370,6 @@ function MapPanel({ state }: ScreenProps) {
           <CountryInfo id={sel} state={state} />
         </Modal>
       )}
-    </>
-  );
-}
-
-/* ───────── 부대: 병과 15개(누르면 정보·생산) · 장군 ───────── */
-export function ForcesScreen(props: ScreenProps) {
-  const { state } = props;
-  const me = countryById(state.player.countryId);
-  const [pick, setPick] = useState<string | null>(null);
-  const rank = state.player.rankIndex;
-  const e = state.economy;
-  return (
-    <>
-      <section className="card">
-        <div className="row">
-          <div className="ichips">
-            <Chip icon="🪖" value={fmt(state.nations[me.id].troops)} label="병력" />
-            <Chip icon="💪" value={e.power} label="전투력" />
-            <Chip icon="⭐" value={state.officer.generals.length} label="장군" />
-          </div>
-          <Help title="부대">
-            <p>병과 15개와 우리 나라 특별 병과예요. 눌러서 역할과 생산 비용을 봐요.</p>
-            <p>
-              준장부터 국방예산과 전략 자원으로 부대를 만들 수 있어요. 만든 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요.
-            </p>
-          </Help>
-        </div>
-        {e.queue.length > 0 && (
-          <div className="small" style={{ marginTop: 6 }}>
-            🔨 생산 중: {e.queue.map((q) => `${q.special ? me.specialUnit.name : q.unit}(${timeLeft(q.endMs - state.worldMs)})`).join(' · ')}
-          </div>
-        )}
-      </section>
-      <div className="tiles c5">
-        <Tile icon="🌟" label="특별" sub={me.specialUnit.name} tone="gold" onClick={() => setPick('★')} />
-        {UNITS.map((u) => (
-          <Tile
-            key={u.name}
-            icon={UNIT_ICON[u.name]}
-            label={u.name}
-            sub={rank < u.rank ? RANKS[u.rank].name : `보유 ${e.army[u.name] ?? 0}`}
-            locked={rank < u.rank}
-            onClick={() => setPick(u.name)}
-          />
-        ))}
-      </div>
-      {pick && <UnitModal {...props} unit={pick} onClose={() => setPick(null)} />}
     </>
   );
 }

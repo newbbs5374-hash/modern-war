@@ -7,6 +7,8 @@ import { SCREENS, type GameActions } from './ui/screens';
 import { Shell } from './ui/Shell';
 import { parseScreen, type Screen } from './ui/nav';
 import { StartScreen } from './ui/StartScreen';
+import { AideReport } from './ui/AideReport';
+import { addReports, dismissReport } from './game/report';
 
 const TICK_MS = 250;
 const AUTOSAVE_MS = 5000;
@@ -31,7 +33,7 @@ function writeSeen(t: number) {
 function resume(saved: G.GameState, now: number): { state: G.GameState; notice: string } {
   const away = now - saved.lastRealTime;
   const before = saved.player.pendingSalary;
-  const state = G.catchUp(saved, now);
+  const state = addReports(saved, G.catchUp(saved, now));
   if (away < 60 * 1000) return { state, notice: '' };
   const hours = away / (60 * 60 * 1000);
   const got = Math.floor(state.player.pendingSalary - before);
@@ -95,7 +97,7 @@ export function App() {
   // 실시간 시계
   useEffect(() => {
     const t = setInterval(() => {
-      setState((s) => (s ? G.catchUp(s, Date.now(), speedRef.current) : s));
+      setState((s) => (s ? addReports(s, G.catchUp(s, Date.now(), speedRef.current)) : s));
     }, TICK_MS);
     return () => clearInterval(t);
   }, []);
@@ -143,7 +145,7 @@ export function App() {
   // 버튼으로 바꾼 것은 바로 저장(창을 금방 닫아도 남도록)
   const update = (f: (s: G.GameState) => G.GameState) => {
     if (!stateRef.current) return;
-    const next = checkVictory(f(G.catchUp(stateRef.current, Date.now(), speedRef.current)));
+    const next = addReports(stateRef.current, checkVictory(f(G.catchUp(stateRef.current, Date.now(), speedRef.current))));
     stateRef.current = next;
     setState(next);
     saveGame(next);
@@ -196,7 +198,14 @@ export function App() {
 
   const View = SCREENS[screen];
   return (
-    <Shell state={state} screen={screen} speed={speed} go={go} back={back}>
+    <Shell
+      state={state}
+      screen={screen}
+      speed={speed}
+      go={go}
+      back={back}
+      overlay={screen !== 'battle' && <AideReport state={state} onNext={() => update(dismissReport)} />}
+    >
       <View
         state={state}
         speed={speed}
