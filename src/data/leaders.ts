@@ -22,19 +22,19 @@ export const PERSONALITIES: Record<Personality, PersonalityInfo> = {
 };
 
 export const LEADERS: Record<string, { name: string; title: string; personality: Personality }> = {
-  us: { name: '케일럽 스톤웰', title: '대통령', personality: '공격형' },
-  cn: { name: '룽톈하오', title: '주석', personality: '경제형' },
-  ru: { name: '드미트란 볼스키', title: '대통령', personality: '공격형' },
-  de: { name: '하겐 아이젠라트', title: '총리', personality: '방어형' },
-  jp: { name: '아마기 소우겐', title: '총리', personality: '방어형' },
-  uk: { name: '에드윈 그레이번', title: '총리', personality: '기회주의' },
-  in: { name: '비크람 라자단', title: '총리', personality: '경제형' },
+  us: { name: '오리온 스타크', title: '집정관', personality: '공격형' },
+  cn: { name: '룽샤오란', title: '국가원수', personality: '경제형' },
+  ru: { name: '볼코라 세베린', title: '대공', personality: '공격형' },
+  de: { name: '하겐 아이젠라트', title: '공작', personality: '방어형' },
+  jp: { name: '아마기 소우겐', title: '국왕', personality: '방어형' },
+  uk: { name: '에드윈 그레이번', title: '국왕', personality: '기회주의' },
+  in: { name: '비크람 라자단', title: '연방 의장', personality: '경제형' },
   kr: { name: '한도윤', title: '대통령', personality: '방어형' },
-  tr: { name: '볼칸 카라테페', title: '대통령', personality: '기회주의' },
-  il: { name: '아브넬 하리시', title: '총리', personality: '공격형' },
-  ir: { name: '대신관 다리우센', title: '최고 지도자', personality: '공격형' },
+  tr: { name: '볼칸 카라테페', title: '칸', personality: '기회주의' },
+  il: { name: '아브넬 하리시', title: '수호관', personality: '공격형' },
+  ir: { name: '다리우센', title: '최고 신관', personality: '공격형' },
   ua: { name: '야리나 졸로타', title: '대통령', personality: '방어형' },
-  kp: { name: '강철명', title: '위원장', personality: '공격형' },
+  kp: { name: '강철명', title: '요새 사령관', personality: '공격형' },
 };
 
 export const PERSONALITY_LIST = Object.keys(PERSONALITIES) as Personality[];

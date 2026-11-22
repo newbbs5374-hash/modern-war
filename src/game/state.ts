@@ -19,7 +19,7 @@ import {
   TROOP_ATTRITION_PER_DAY,
 } from './balance';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5; // 5: 새 세계관(여명 군도) — 예전 저장은 새 판으로
 
 export interface NationState {
   /** 나라 금고(국방예산) */

@@ -14,8 +14,9 @@ describe('세계 움직이기', () => {
     expect(CITIES.length).toBe(COUNTRIES.reduce((n, c) => n + c.cities.length, 0));
     for (const c of CITIES) expect(s.world.owner[c.id]).toBe(c.home);
     expect(s.world.personalities.kr).toBe(LEADERS.kr.personality);
-    expect(relationOf(s.world, 'kr', 'kp')).toBe('전쟁');
-    expect(relationOf(s.world, 'ir', 'il')).toBe('휴전');
+    expect(relationOf(s.world, 'kr', 'kp')).toBe('중립');
+    expect(Object.values(s.world.pairs).some((p) => p.rel === '전쟁')).toBe(false); // 평화로 시작
+    expect(s.world.pairs['kp|kr'].tension).toBeGreaterThanOrEqual(20); // 맞수는 긴장 20부터
   });
   it('지도자 성향 무작위', () => {
     const a = newGame('t', 'kr', 0, { seed: 7, randomLeaders: true });
@@ -62,7 +63,7 @@ describe('세계 움직이기', () => {
     void _w;
     const old = JSON.stringify({ ...rest, version: 1, worldMs: 5 * 3600e3 });
     const loaded = parseSave(old);
-    expect(loaded?.version).toBe(4);
+    expect(loaded?.version).toBe(5);
     expect(loaded?.world.nextTickMs).toBeGreaterThan(5 * 3600e3);
     expect(loaded?.player.name).toBe('대장');
   });
