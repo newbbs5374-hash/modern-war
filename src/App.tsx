@@ -180,6 +180,16 @@ export function App() {
       setSpeedState(x);
     },
     setRank: (i) => update((s) => G.setRank(s, i)),
+    apply: (f) => update(f),
+    applyWith: (f) => {
+      let out;
+      update((s) => {
+        const r = f(s);
+        out = r.out;
+        return r.state;
+      });
+      return out;
+    },
   };
 
   const View = SCREENS[screen];

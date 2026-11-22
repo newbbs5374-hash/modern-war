@@ -4,6 +4,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { PERSONALITIES } from '../data/leaders';
 import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
+import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import {
   AI_TICK_MS,
   BUDGET_PER_DAY_PER_POINT,
@@ -16,7 +17,7 @@ import {
   TROOP_ATTRITION_PER_DAY,
 } from './balance';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface NationState {
   /** 나라 금고(국방예산) */
@@ -45,6 +46,8 @@ export interface GameState {
   debugSkippedMs: number;
   /** 2단계: 외교·도시 주인·AI 지도자·소식 */
   world: WorldState;
+  /** 3단계: 장교 성장·임무·부관·장군·라이벌 */
+  officer: OfficerState;
 }
 
 export interface NewGameOptions {
@@ -71,6 +74,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     nations,
     debugSkippedMs: 0,
     world: newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS),
+    officer: newOfficer(((opt.seed ?? now) * 7 + 13) >>> 0),
   };
 }
 
@@ -130,9 +134,11 @@ export function advance(s: GameState, ms: number): GameState {
     if (!world) world = cloneWorld(cur.world);
     const nations: Record<string, NationState> = {};
     for (const [id, n] of Object.entries(cur.nations)) nations[id] = { ...n };
-    aiTick(world, nations, cur.worldMs, cur.player.countryId);
+    const ownerBefore = { ...world.owner };
+    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer));
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
+    officerTick(cur, ownerBefore, AI_TICK_MS);
   }
   return accrue(cur, left);
 }

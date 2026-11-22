@@ -1,0 +1,131 @@
+import { describe, expect, it } from 'vitest';
+import { PROMOTION, aideSlots, generalSlots, statCap } from '../data/officers';
+import { advance, newGame, setRank, type GameState } from './state';
+import {
+  DRILL_MAX,
+  boardNow,
+  claimMission,
+  drillsNow,
+  generalDefense,
+  missionChance,
+  officerTick,
+  promoteAide,
+  promotionCheck,
+  recruitGeneral,
+  rivalRank,
+  startExam,
+  startMission,
+  train,
+} from './officer';
+import { parseSave } from './save';
+
+const H = 3600e3;
+
+function finishMission(s: GameState): GameState {
+  const s2 = advance(s, s.officer.active!.endMs - s.worldMs);
+  return claimMission(s2).state;
+}
+
+describe('장교', () => {
+  it('간이 훈련: 일정 1개 쓰고 별·스탯이 오름, 일정은 4시간마다 1개 회복', () => {
+    let s = newGame('t', 'kr', 0, { seed: 1 });
+    const r = train(s, '사격');
+    expect(r.result.ok).toBe(true);
+    s = r.state;
+    expect(s.officer.stars).toBeGreaterThan(0);
+    expect(s.officer.stats['사격']).toBeGreaterThan(8);
+    expect(drillsNow(s.officer, s.worldMs).count).toBe(DRILL_MAX - 1);
+    for (let i = 0; i < 5; i++) s = train(s, '체력').state;
+    expect(drillsNow(s.officer, s.worldMs).count).toBe(0);
+    expect(train(s, '체력').result.ok).toBe(false);
+    expect(drillsNow(s.officer, s.worldMs + 4 * H).count).toBe(1);
+    expect(drillsNow(s.officer, s.worldMs + 30 * H).count).toBe(DRILL_MAX);
+  });
+  it('계급이 모자라면 훈련 잠김', () => {
+    const s = newGame('t', 'kr', 0, { seed: 1 });
+    expect(train(s, '포격').result.ok).toBe(false);
+    expect(train(setRank(s, 1), '포격').result.ok).toBe(true);
+  });
+  it('스탯은 계급 상한을 넘지 않음', () => {
+    let s = newGame('t', 'kr', 0, { seed: 2 });
+    for (let d = 0; d < 20; d++) {
+      for (let i = 0; i < 6; i++) s = train(s, '사격').state;
+      s = advance(s, 24 * H);
+    }
+    expect(s.officer.stats['사격']).toBeLessThanOrEqual(statCap(0));
+  });
+  it('임무: 게시판 3개 → 시작 → 시간이 지나야 결과, 공훈이 쌓임', () => {
+    let s = newGame('t', 'kr', 0, { seed: 3 });
+    const b = boardNow(s);
+    s = b.state;
+    expect(b.board.length).toBe(3);
+    const m = b.board[0];
+    expect(missionChance(s, m)).toBeGreaterThan(0.1);
+    s = startMission(s, m.id);
+    expect(s.officer.active?.id).toBe(m.id);
+    expect(claimMission(s).text).toBeNull(); // 아직 안 끝남
+    s = finishMission(s);
+    expect(s.officer.active).toBeNull();
+    expect(s.officer.merit).toBeGreaterThan(0);
+    expect(s.world.events.some((e) => e.kind === '장교')).toBe(true);
+  });
+  it('진급: 조건을 채우고 심사를 통과하면 중위, 첫 부관 합류', () => {
+    let s = newGame('t', 'kr', 0, { seed: 4 });
+    expect(promotionCheck(s).ready).toBe(false);
+    s = { ...s, officer: { ...s.officer, merit: PROMOTION[0].merit, stars: PROMOTION[0].stars } };
+    expect(promotionCheck(s).ready).toBe(true);
+    // 통과할 때까지(떨어지면 6시간 기다림)
+    for (let i = 0; i < 10 && s.player.rankIndex === 0; i++) {
+      if (!promotionCheck(s).ready) s = advance(s, 6 * H);
+      s = startExam(s);
+      s = finishMission(s);
+    }
+    expect(s.player.rankIndex).toBe(1);
+    expect(s.officer.aides.length).toBe(1);
+    expect(s.officer.stars).toBe(0);
+  });
+  it('부관 승격·장군 영입은 장군 칸이 있어야, 장군은 방어 보너스', () => {
+    let s = setRank(newGame('t', 'kr', 0, { seed: 5 }), 7); // 소장: 장군 2칸
+    expect(generalSlots(7)).toBe(2);
+    expect(aideSlots(7)).toBe(3);
+    s = { ...s, player: { ...s.player, salary: 10000 } };
+    s = recruitGeneral(s);
+    expect(s.officer.generals.length).toBe(1);
+    expect(s.player.salary).toBe(7000);
+    s = {
+      ...s,
+      officer: { ...s.officer, aides: [{ id: 99, name: '테스트', specialty: '저격', level: 3, exp: 0, bond: 50 }] },
+    };
+    s = promoteAide(s, 99);
+    expect(s.officer.generals.length).toBe(2);
+    expect(s.officer.aides.length).toBe(0);
+    expect(recruitGeneral(s).officer.generals.length).toBe(2); // 칸이 꽉 참
+    expect(generalDefense(s.officer)).toBeGreaterThan(1);
+  });
+  it('라이벌은 시간이 지나면 진급', () => {
+    const s = newGame('t', 'kr', 0, { seed: 6 });
+    const rv = s.officer.rivals[0];
+    expect(rivalRank(rv, 0)).toBe(0);
+    expect(rivalRank(rv, 30 * 24 * H)).toBeGreaterThan(2);
+    expect(rivalRank(rv, 365 * 24 * H)).toBe(PROMOTION.length - 1);
+  });
+  it('해임: 준장 이상에서 신뢰도가 낮으면 경고, 3일 안에 못 돌리면 한 계급 내려감', () => {
+    let s = setRank(newGame('t', 'kr', 0, { seed: 7 }), 6);
+    s = { ...s, officer: { ...s.officer, trust: 10 } };
+    officerTick(s, s.world.owner, 15 * 60e3);
+    expect(s.officer.dismissDeadlineMs).not.toBeNull();
+    const deadline = s.officer.dismissDeadlineMs!;
+    s = { ...s, worldMs: deadline + 1, officer: { ...s.officer, trust: 10 } };
+    officerTick(s, s.world.owner, 15 * 60e3);
+    expect(s.player.rankIndex).toBe(5);
+    expect(s.officer.dismissDeadlineMs).toBeNull();
+  });
+  it('2단계 저장을 불러오면 장교를 새로 만들어 이어감', () => {
+    const s = advance(newGame('대장', 'kr', 0, { seed: 8 }), 2 * H);
+    const { officer: _o, ...rest } = s;
+    void _o;
+    const loaded = parseSave(JSON.stringify({ ...rest, version: 2 }));
+    expect(loaded?.version).toBe(3);
+    expect(loaded?.officer.rivals.length).toBe(3);
+  });
+});

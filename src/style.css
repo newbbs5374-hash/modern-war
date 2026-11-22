@@ -187,3 +187,14 @@ tbody tr { cursor: pointer; }
 .map-city { cursor: pointer; }
 .check { display: flex; gap: 8px; align-items: center; margin-top: 14px; font-size: 14px; }
 .check input { width: 18px; height: 18px; }
+
+/* 3단계: 임무 · 진급 · 스탯 · 훈련 결과 */
+.mission { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-bottom: 1px solid #1c2840; }
+.mission:last-of-type { border-bottom: 0; }
+.mission.active { border: 0; }
+.result { background: #0b1220; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: #fde68a; }
+.prog { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.stat-row { display: grid; grid-template-columns: 1fr 28px 70px; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #1c2840; }
+.stat-row:last-child { border-bottom: 0; }
+.stat-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+button.primary:disabled { opacity: .55; }

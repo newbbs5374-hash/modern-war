@@ -1,6 +1,6 @@
 // 기능별 화면 묶음. 아래 메뉴 6칸 + 본부(홈) + 설정·전령·도감.
 import { useState } from 'react';
-import { STAT_GROUPS, TRAININGS, UNITS } from '../data/catalog';
+import { UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { PENDING_CAP_HOURS } from '../game/balance';
@@ -9,6 +9,9 @@ import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, HOUR, RelTag, Soon, TensionBar, fmt, leaderText, rankLock } from './common';
 import type { Screen } from './nav';
 import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
+import { MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
+import { DRILL_MAX, promotionCheck } from '../game/officer';
+import { PROMOTION } from '../data/officers';
 
 export interface GameActions {
   claim: () => void;
@@ -20,6 +23,10 @@ export interface GameActions {
   skip: (ms: number) => void;
   setSpeed: (x: number) => void;
   setRank: (i: number) => void;
+  /** 게임 상태를 바꾸는 함수를 바로 적용하고 저장 */
+  apply: (f: (s: GameState) => GameState) => void;
+  /** 결과 값이 있는 함수(예: 임무 결과 글) */
+  applyWith: <T>(f: (s: GameState) => { state: GameState; out: T }) => T | undefined;
 }
 
 export interface ScreenProps {
@@ -77,7 +84,16 @@ export function HomeScreen({ state, unread, actions, go }: ScreenProps) {
               </button>
             )}
             <small>보조 임무</small>
-            <span className="muted small">3단계에서 열림</span>
+            <button onClick={() => go('ops')}>
+              {state.officer.active
+                ? state.worldMs >= state.officer.active.endMs
+                  ? `✅ ${state.officer.active.title} · 결과 받기`
+                  : `⏳ ${state.officer.active.title} · ${timeLeft(state.officer.active.endMs - state.worldMs)} 남음`
+                : '📝 임무 고르기'}
+            </button>
+            {promotionCheck(state).ready && (
+              <button onClick={() => go('officer')}>⭐ 진급 심사 받을 수 있어요</button>
+            )}
           </div>
 
           <button className="chip claim" disabled={pending < 1} onClick={actions.claim}>
@@ -123,7 +139,8 @@ export function HomeScreen({ state, unread, actions, go }: ScreenProps) {
 }
 
 /* ───────── 작전: 세계 지도 · 전쟁 · 전황 ───────── */
-export function OpsScreen({ state }: ScreenProps) {
+export function OpsScreen(props: ScreenProps) {
+  const { state } = props;
   const me = state.player.countryId;
   const w = state.world;
   const [sel, setSel] = useState(me);
@@ -136,6 +153,7 @@ export function OpsScreen({ state }: ScreenProps) {
   const nm = (id: string) => countryById(id).name;
   return (
     <>
+      <MissionCard {...props} />
       <Card
         title="세계 지도"
         right={
@@ -199,54 +217,6 @@ export function OpsScreen({ state }: ScreenProps) {
   );
 }
 
-/* ───────── 장교: 계급·봉급·스탯·진급·부관 ───────── */
-export function OfficerScreen({ state }: ScreenProps) {
-  const r = state.player.rankIndex;
-  return (
-    <>
-      <Card title={`${RANKS[r].name} ${state.player.name}`} right={<span className="muted small">{RANKS[r].unit}</span>}>
-        <p className="small">봉급 시간당 {fmt(RANKS[r].salaryPerDay)} · 받은 봉급 {fmt(state.player.salary)}</p>
-        <div className="ranks">
-          {RANKS.map((x, i) => (
-            <span key={x.name} className={i === r ? 'now' : i < r ? 'done' : ''}>
-              {x.name}
-            </span>
-          ))}
-        </div>
-        <Soon stage="3단계">진급 = 공훈 + 훈련 성적 + 진급 심사 작전</Soon>
-      </Card>
-      <Card title="스탯 9개">
-        {STAT_GROUPS.map((g) => (
-          <div key={g.name} className="stat-group">
-            <small className="muted">
-              {g.name}
-              {g.note ? ` · ${g.note}` : ''}
-            </small>
-            {g.stats.map((s) => (
-              <div key={s.name} className="list-row">
-                <span>
-                  <b>{s.name}</b> <small className="muted">{s.does}</small>
-                </span>
-                <span>1</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </Card>
-      <Card title="부관 · 라이벌">
-        <div className="list-row">
-          <span>부관 (최대 3명)</span>
-          <span className="tag">{rankLock(state, 1) ?? '빈 자리'}</span>
-        </div>
-        <div className="list-row">
-          <span>경쟁 장교 3명</span>
-          <span className="tag">3단계</span>
-        </div>
-      </Card>
-    </>
-  );
-}
-
 /* ───────── 부대: 병과 15개 · 편성 · 장군 ───────── */
 export function ForcesScreen({ state }: ScreenProps) {
   const me = countryById(state.player.countryId);
@@ -267,35 +237,11 @@ export function ForcesScreen({ state }: ScreenProps) {
       </Card>
       <Card title="편성 · 장군">
         <Soon stage="4단계">전투 편성(병과 고르기·자리)</Soon>
-        <Soon stage="준장">장군 임명(최대 5명)</Soon>
+        <div className="list-row">
+          <span>장군 {state.officer.generals.length}명</span>
+          <span className="tag">{rankLock(state, 6) ?? '장교 화면에서 관리'}</span>
+        </div>
       </Card>
-    </>
-  );
-}
-
-/* ───────── 훈련: 12개 ───────── */
-export function TrainingScreen({ state }: ScreenProps) {
-  return (
-    <>
-      <Card title="훈련 일정" right={<span className="tag">5단계</span>}>
-        <p className="small muted">매일 채워지는 훈련 횟수. 한 판 2~5분, 결과는 별 1~3개.</p>
-      </Card>
-      <div className="grid2">
-        {TRAININGS.map((t) => {
-          const lock = rankLock(state, t.rank);
-          return (
-            <button key={t.name} className={`tile ${lock ? 'locked' : ''}`} disabled>
-              <b>
-                {lock ? '🔒 ' : ''}
-                {t.name}
-              </b>
-              <small>{t.frame}</small>
-              <small className="muted">↑ {t.raises}</small>
-              <small className="muted">{lock ?? '5단계에서 열림'}</small>
-            </button>
-          );
-        })}
-      </div>
     </>
   );
 }
@@ -501,7 +447,27 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             </button>
           ))}
         </div>
-        <small>계급 바꾸기 (진급은 3단계)</small>
+        <small>진급 시험용</small>
+        <div className="buttons">
+          <button
+            onClick={() =>
+              actions.apply((s) => {
+                const rule = PROMOTION[s.player.rankIndex];
+                if (!rule) return s;
+                const o = structuredClone(s.officer);
+                o.merit = Math.max(o.merit, rule.merit);
+                o.stars = Math.max(o.stars, rule.stars);
+                o.trust = Math.max(o.trust, rule.trust);
+                o.drills = DRILL_MAX;
+                o.drillAnchorMs = s.worldMs;
+                return { ...s, officer: o };
+              })
+            }
+          >
+            진급 조건 채우기
+          </button>
+        </div>
+        <small>계급 바로 바꾸기 (진급 심사 없이)</small>
         <select value={state.player.rankIndex} onChange={(e) => actions.setRank(Number(e.target.value))}>
           {RANKS.map((r, i) => (
             <option key={r.name} value={i}>
