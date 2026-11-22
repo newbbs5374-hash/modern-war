@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BLOCS, COUNTRIES } from '../data/world';
 
 interface Props {
-  onStart: (name: string, countryId: string) => void;
+  onStart: (name: string, countryId: string, randomLeaders: boolean) => void;
   onImport: (code: string) => string | null;
 }
 
@@ -12,6 +12,7 @@ export function StartScreen({ onStart, onImport }: Props) {
   const [pick, setPick] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [err, setErr] = useState('');
+  const [randomLeaders, setRandomLeaders] = useState(false);
 
   return (
     <div className="start">
@@ -46,10 +47,14 @@ export function StartScreen({ onStart, onImport }: Props) {
           </button>
         ))}
       </div>
+      <label className="check">
+        <input type="checkbox" checked={randomLeaders} onChange={(e) => setRandomLeaders(e.target.checked)} />
+        AI 지도자 성향을 무작위로 (판마다 다른 세계)
+      </label>
       <button
         className="primary big"
         disabled={!pick || !name.trim()}
-        onClick={() => pick && onStart(name.trim(), pick)}
+        onClick={() => pick && onStart(name.trim(), pick, randomLeaders)}
       >
         {pick && name.trim() ? '소위로 임관하기' : '이름을 쓰고 나라를 고르세요'}
       </button>

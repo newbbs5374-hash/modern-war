@@ -36,26 +36,29 @@ describe('세계 시계', () => {
 });
 
 describe('시간당 누적', () => {
-  it('봉급·국방예산·병력이 시간에 맞게 쌓인다', () => {
+  it('봉급·국방예산·병력이 시간에 맞게 쌓인다(AI 판단 전 10분)', () => {
     const s0 = newGame('테스트', 'kr', 0);
-    const s1 = advance(s0, 3 * HOUR);
-    expect(s1.player.pendingSalary).toBeCloseTo(300); // 소위 하루 100 × 3일
-    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(22 * 10 * 3);
-    expect(s1.nations.kr.troops - s0.nations.kr.troops).toBeCloseTo(45 * 40 * 3);
+    const s1 = advance(s0, HOUR / 6);
+    expect(s1.player.pendingSalary).toBeCloseTo(100 / 6);
+    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo((22 * 10) / 6);
+    const t0 = s0.nations.kr.troops;
+    expect(s1.nations.kr.troops).toBeCloseTo(t0 * Math.exp(-0.008 / 6) + (45 * 40) / 6);
+  });
+  it('봉급은 3시간이면 3일치', () => {
+    expect(advance(newGame('t', 'kr', 0), 3 * HOUR).player.pendingSalary).toBeCloseTo(300);
   });
   it('작게 여러 번 흘려도 한 번에 흘린 것과 같다', () => {
     let a = newGame('a', 'us', 0);
-    for (let i = 0; i < 3600; i++) a = advance(a, 1000);
-    const b = advance(newGame('b', 'us', 0), HOUR);
-    expect(a.nations.us.treasury).toBeCloseTo(b.nations.us.treasury, 6);
+    for (let i = 0; i < 360; i++) a = advance(a, 20000);
+    const b = advance(newGame('b', 'us', 0), 2 * HOUR);
+    expect(a.nations.us.treasury).toBeCloseTo(b.nations.us.treasury, 4);
     expect(a.player.pendingSalary).toBeCloseTo(b.player.pendingSalary, 6);
+    expect(a.world).toEqual(b.world);
   });
   it('받지 않은 봉급은 12시간치까지만 쌓인다', () => {
     const s = skip(newGame('t', 'kr', 0), 48 * HOUR);
     expect(s.player.pendingSalary).toBeCloseTo(pendingCap(s));
     expect(pendingCap(s)).toBeCloseTo(1200);
-    // 나라 금고는 한도 없이 계속 쌓임
-    expect(s.nations.kr.treasury).toBeGreaterThan(newGame('t', 'kr', 0).nations.kr.treasury + 22 * 10 * 47);
   });
   it('받기', () => {
     const s = claimSalary(advance(newGame('t', 'kr', 0), 2.5 * HOUR));

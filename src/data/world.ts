@@ -261,15 +261,6 @@ export function startingRelation(a: string, b: string): Relation {
   return '중립';
 }
 
-/** 지도에 그리는 전선(기획서 그림 그대로) */
-export const FRONTS: Array<{ x1: number; y1: number; x2: number; y2: number; kind: '전쟁' | '휴전'; name: string }> = [
-  { x1: 209, y1: 146, x2: 209, y2: 210, kind: '전쟁', name: '러시아–우크라이나 전선' },
-  { x1: 540, y1: 234, x2: 576, y2: 234, kind: '전쟁', name: '한반도 휴전선 전선' },
-  { x1: 608, y1: 196, x2: 608, y2: 330, kind: '전쟁', name: '동방 바다 전선' },
-  { x1: 204, y1: 322, x2: 204, y2: 392, kind: '휴전', name: '이란–이스라엘 휴전선' },
-  { x1: 340, y1: 328, x2: 420, y2: 328, kind: '휴전', name: '중국–인도 휴전선' },
-];
-
 const byId = new Map(COUNTRIES.map((c) => [c.id, c]));
 export function countryById(id: string): Country {
   const c = byId.get(id);
