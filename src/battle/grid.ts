@@ -45,7 +45,28 @@ export interface GUnit {
   hidden: boolean;
   /** 아직 구하지 못한 인질 */
   captive?: boolean;
+  /** 적 지휘관(쓰러뜨리면 별 +1) */
+  boss?: boolean;
 }
+
+/** 날씨·시간(같은 씨앗이면 같은 날씨) */
+export type Weather = '맑음' | '밤' | '비' | '안개' | '눈';
+export const WEATHER_ICON: Record<Weather, string> = { 맑음: '☀️', 밤: '🌙', 비: '🌧️', 안개: '🌫️', 눈: '❄️' };
+export const WEATHER_TEXT: Record<Weather, string> = {
+  맑음: '특별한 효과 없음',
+  밤: '모두 시야 −1 · 숨기 쉬움',
+  비: '명중 −10%',
+  안개: '모두 시야 −2',
+  눈: '모두 이동 −1',
+};
+/** 부관 특기가 분대 전체에 주는 효과 */
+export const AIDE_EFFECT: Record<string, string> = {
+  저격: '저격수로 참전(멀리서 큰 피해) · 명중 +10%',
+  의무: '의무병으로 참전(옆 부대 치료)',
+  통신: '분대 전체 시야 +1 · 사기 +10',
+  공병: '분대 전체 방어 +1(엄폐 강화)',
+  정찰: '본인 시야 +2 · 이동 +1',
+};
 
 export interface GridBattle {
   w: number;
@@ -72,6 +93,9 @@ export interface GridBattle {
   sonar: { x: number; y: number; r: number; turn: number } | null;
   /** 잠입: 한 번이라도 들켰나 */
   spotted: boolean;
+  weather: Weather;
+  /** 적 지휘관을 쓰러뜨렸나 */
+  bossDown: boolean;
 }
 
 export interface GridSetup {
@@ -79,9 +103,12 @@ export interface GridSetup {
   difficulty: number;
   rank: number;
   stats: Record<string, number>;
-  aides: Array<{ name: string; specialty: string; level: number }>;
+  aides: Array<{ name: string; specialty: string; level: number; bond?: number }>;
   seed: number;
   playerName?: string;
+  weather?: Weather;
+  /** 적 이름(예: 중국군) */
+  enemy?: string;
   /** 분대 크기(잠입 훈련: 소위·중위 혼자, 그 뒤 3명) */
   squadSize?: number;
 }
@@ -235,6 +262,8 @@ export function createGridBattle(o: GridSetup): GridBattle {
     foePower: 0.85 + (o.difficulty - 1) * 0.8 + o.rank * 0.2,
     sonar: null,
     spotted: false,
+    weather: o.weather ?? '맑음',
+    bossDown: false,
   };
   if (o.goal === 'naval') b.tiles = makeSea(rng, w, h);
   const bonus = combatBonus(o.stats);
@@ -267,7 +296,11 @@ export function createGridBattle(o: GridSetup): GridBattle {
     ['소총', '2분대원'],
     ['기관총', '기관총 사수'],
   ];
-  for (const a of o.aides.slice(0, 3)) squad.push([AIDE_KIND[a.specialty] ?? '소총', a.name]);
+  const aideOf = new Map<string, { specialty: string; level: number; bond: number }>();
+  for (const a of o.aides.slice(0, 3)) {
+    squad.push([AIDE_KIND[a.specialty] ?? '소총', a.name]);
+    aideOf.set(a.name, { specialty: a.specialty, level: a.level, bond: a.bond ?? 0 });
+  }
   if (o.goal === 'naval') {
     squad.length = 0;
     squad.push(['구축함', '기함(나)'], ['구축함', '2번함'], ['구축함', '3번함']);
@@ -281,12 +314,34 @@ export function createGridBattle(o: GridSetup): GridBattle {
     const u = mkUnit(b, 'me', kind, name, spot[0], spot[1]);
     meMod(u);
     if (name.endsWith('(나)') || name === '나') u.atk += 1;
+    // 부관: 레벨만큼 단단하고 세짐, 특기 효과, 인연 60 넘으면 공격 +1
+    const ad = aideOf.get(name);
+    if (ad) {
+      u.hp = Math.round(u.hp * (1 + 0.06 * (ad.level - 1)));
+      u.maxHp = u.hp;
+      u.atk = Math.round(u.atk * (1 + 0.05 * (ad.level - 1)) * 10) / 10 + (ad.bond >= 60 ? 1 : 0);
+      if (ad.specialty === '정찰') {
+        u.sight += 2;
+        u.move += 1;
+      }
+      if (ad.specialty === '저격') u.hit = Math.min(0.98, u.hit + 0.1);
+    }
     // 혼자 하는 잠입은 버틸 힘을 더 줌
     if (solo) {
       u.hp = Math.round(u.hp * 1.8);
       u.maxHp = u.hp;
     }
     b.units.push(u);
+  }
+  // 분대 전체에 주는 부관 효과
+  const specs = new Set([...aideOf.values()].map((a) => a.specialty));
+  for (const u of b.units) {
+    if (u.side !== 'me') continue;
+    if (specs.has('통신')) {
+      u.sight += 1;
+      u.morale = Math.min(100, u.morale + 10);
+    }
+    if (specs.has('공병')) u.def += 1;
   }
   // 인질
   if (o.goal === 'rescue') {
@@ -313,8 +368,31 @@ export function createGridBattle(o: GridSetup): GridBattle {
   if (o.goal === 'survive') b.waves = [{ turn: 3, count: 2 }, { turn: 5, count: 2 + (o.difficulty > 1.1 ? 1 : 0) }];
   // 적 시야는 은밀이 높으면 줄어듦. 잠입에서 경계 전 경비병은 시야 2(경보가 울리면 원래대로)
   for (const u of b.units) if (u.side === 'foe') u.sight = o.goal === 'infiltrate' ? 2 : Math.max(2, u.sight - bonus.stealth);
+  // 적 지휘관(전멸·방어·구출·정찰): 단단하고 세지만 쓰러뜨리면 별 +1
+  if (o.goal === 'eliminate' || o.goal === 'survive' || o.goal === 'rescue' || o.goal === 'reach') {
+    const before = b.units.length;
+    addFoe(b, rng, o.rank >= 5 ? '기관총' : '소총', [0]);
+    const boss = b.units[before];
+    if (boss) {
+      boss.boss = true;
+      boss.name = o.enemy ? `${o.enemy} 지휘관` : '적 지휘관';
+      boss.hp = Math.round(boss.hp * 1.8);
+      boss.maxHp = boss.hp;
+      boss.atk = Math.round(boss.atk * 1.2 * 10) / 10;
+      boss.def += 1;
+    }
+  }
+  if (o.enemy) for (const u of b.units) if (u.side === 'foe' && !u.boss) u.name = `${o.enemy} ${u.kind}`;
+  // 날씨
+  for (const u of b.units) {
+    if (b.weather === '밤') u.sight = Math.max(1, u.sight - 1);
+    if (b.weather === '안개') u.sight = Math.max(1, u.sight - 2);
+    if (b.weather === '비') u.hit = Math.max(0.3, u.hit - 0.1);
+    if (b.weather === '눈') u.move = Math.max(1, u.move - 1);
+  }
   b.seed = rng.seed;
   say(b, `작전 목표: ${GOAL_TEXT[o.goal]}`);
+  if (b.weather !== '맑음') say(b, `${WEATHER_ICON[b.weather]} ${b.weather}: ${WEATHER_TEXT[b.weather]}`);
   return b;
 }
 
@@ -503,6 +581,11 @@ function doAttack(b: GridBattle, a: GUnit, t: GUnit) {
     const dmg = rollDamage(rng, a.atk, t.def, pv.dmg / ((a.atk * 10) / (10 + t.def * 2)));
     t.hp = Math.max(0, t.hp - dmg);
     say(b, `${a.name} → ${t.name} ${dmg} 피해${ambush ? ' (기습!)' : ''}${t.hp === 0 ? ' · 쓰러짐' : ''}`);
+    if (t.hp === 0 && t.boss && !b.bossDown) {
+      b.bossDown = true;
+      say(b, '⭐ 적 지휘관을 쓰러뜨렸어요! 적 사기가 떨어져요.');
+      for (const f of b.units) if (f.side === 'foe' && f.hp > 0) f.morale = Math.max(10, f.morale - 20);
+    }
     if (t.hp === 0) {
       t.hidden = false;
       for (const v of b.units) {
@@ -577,6 +660,10 @@ function checkEnd(b: GridBattle) {
     if (win) {
       const fast = b.goal === 'survive' || b.turn <= Math.ceil(b.maxTurns * 0.6);
       stars = b.lostMine === 0 && fast ? 3 : b.lostMine <= 1 ? 2 : 1;
+      if (b.bossDown) {
+        stars = Math.min(3, stars + 1);
+        text += ' 적 지휘관도 쓰러뜨렸어요(별 +1).';
+      }
     }
     b.result = { win, stars, text };
     say(b, text);

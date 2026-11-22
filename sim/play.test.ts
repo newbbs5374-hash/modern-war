@@ -4,10 +4,12 @@ import { autoResult } from '../src/battle/auto';
 import { planForMission, planOutcome, nextDifficulty, trainingPlan } from '../src/battle/spec';
 import { TRAININGS } from '../src/data/catalog';
 import { advance, claimSalary, newGame, type GameState } from '../src/game/state';
+import { COMMAND_TOP, canDiplo, diploChance, diploReady, doDiplo } from '../src/game/command';
 import { boardNow, canGrand, canTrain, claimMission, finishTraining, grandTargets, missionChance, perkBonus, promotionCheck, startExam, startGrand, startMission, startTraining } from '../src/game/officer';
 import { canChore, claimChore, startChore, produce, canProduce } from '../src/game/economy';
 import { UNITS } from '../src/data/catalog';
 import { CITIES } from '../src/data/cities';
+import { COUNTRIES } from '../src/data/world';
 import { relationOf } from '../src/game/world';
 
 const H = 3600e3;
@@ -52,6 +54,17 @@ function session(s: GameState, log: string[]): GameState {
   if (s.economy.chore && s.worldMs >= s.economy.chore.endMs) s = claimChore(s);
   if (!canChore(s)) s = startChore(s, '산업');
   for (const u of [...UNITS].reverse()) if (!canProduce(s, u.name)) { s = produce(s, u.name); break; }
+  // 총사령관 외교: 가장 될 것 같은 연합 제안
+  if (s.player.rankIndex >= COMMAND_TOP && s.worldMs >= diploReady(s)) {
+    const opts = COUNTRIES.filter((c) => c.id !== s.player.countryId && !canDiplo(s, c.id, '연합 제안'))
+      .map((c) => ({ id: c.id, p: diploChance(s, c.id, '연합 제안') }))
+      .sort((x, y) => y.p - x.p);
+    if (opts[0]) {
+      const r = doDiplo(s, opts[0].id, '연합 제안');
+      s = r.state;
+      log.push(`d${Math.floor(s.worldMs / 86400e3)} ${r.text}`);
+    }
+  }
   // 진급 심사 > 대전투 > 임무
   if (!s.officer.active) {
     if (promotionCheck(s).ready) s = startExam(s);
@@ -73,7 +86,7 @@ test('한 판 시뮬', () => {
     const rankDay: number[] = [0];
     let won = '';
     const times = [8, 13, 21]; // 아침·점심·밤 접속
-    for (let day = 0; day < 150; day++) {
+    for (let day = 0; day < 160; day++) {
       for (const h of times) {
         const target = (day * 24 + h) * H;
         // 임무가 짧으면 한 번 접속에서 끝날 때까지 기다리지 않음

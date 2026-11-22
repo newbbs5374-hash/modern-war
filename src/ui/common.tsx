@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Help } from './kit';
 import { CITIES } from '../data/cities';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { BLOCS, FAITHS, countryById } from '../data/world';
@@ -25,12 +26,16 @@ export function Soon({ stage, children }: { stage: string; children: ReactNode }
   );
 }
 
-export function Card({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
+export function Card({ title, children, right, icon, help }: { title: string; children: ReactNode; right?: ReactNode; icon?: string; help?: ReactNode }) {
   return (
     <section className="card">
       <div className="card-head">
-        <h3>{title}</h3>
-        {right}
+        <h3>
+          {icon && <span className="card-ico">{icon}</span>}
+          {title}
+          {help && <Help title={title}>{help}</Help>}
+        </h3>
+        <span className="right">{right}</span>
       </div>
       {children}
     </section>

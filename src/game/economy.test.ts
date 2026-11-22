@@ -113,7 +113,7 @@ describe('5단계 훈련·대전투', () => {
 });
 
 describe('승리', () => {
-  it('총사령관 + 연합 70% 또는 혼자 42%면 판이 끝남', async () => {
+  it('총사령관 + 연합·정복 조건을 일정 기간 지키면 판이 끝남', async () => {
     const { checkVictory, victoryProgress } = await import('./victory');
     const { CITIES } = await import('../data/cities');
     let s = newGame('t', 'kr', 0, { seed: 9 });
@@ -122,7 +122,10 @@ describe('승리', () => {
     s = { ...s, world: { ...s.world, owner } };
     expect(victoryProgress(s).mine).toBeGreaterThanOrEqual(20);
     expect(checkVictory(s).ending).toBeNull(); // 아직 총사령관 아님
-    const w = checkVictory(setRank(s, 10));
+    const { HOLD_DAYS } = await import('./victory');
+    let w = checkVictory(setRank(s, 10));
+    expect(w.ending).toBeNull(); // 막 채움: 지키는 중
+    w = checkVictory({ ...w, worldMs: w.worldMs + HOLD_DAYS * 24 * 3600e3 });
     expect(w.ending?.kind).toBe('정복 승리');
     expect(w.ending?.captured.length).toBeGreaterThan(10);
   });

@@ -12,7 +12,7 @@ export interface AutoInput {
   spec: BattleSpec;
   stats: Record<string, number>;
   rank: number;
-  aides: Array<{ name: string; specialty: string; level: number }>;
+  aides: Array<{ name: string; specialty: string; level: number; bond?: number }>;
 }
 
 export const rangeAim = (stats: Record<string, number>, rank: number) => 0.5 + 0.4 * Math.min(1, (stats['사격'] ?? 8) / (20 + rank * 10));
@@ -22,11 +22,11 @@ export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: bool
   const seed = spec.seed;
   switch (spec.frame) {
     case 'grid':
-      return finishGrid(createGridBattle({ goal: spec.variant as Goal, difficulty: d, rank, stats, aides, seed, squadSize: spec.squadSize })).result!;
+      return finishGrid(createGridBattle({ goal: spec.variant as Goal, difficulty: d, rank, stats, aides, seed, squadSize: spec.squadSize, weather: spec.weather, enemy: spec.enemy })).result!;
     case 'side':
       return finishSide(createSideBattle({ goal: spec.variant as SideGoal, difficulty: d, rank, stats, seed })).result!;
     case 'arty':
-      return finishArty(createArty({ difficulty: d, rank, stats, seed })).result!;
+      return finishArty(createArty({ difficulty: d, rank, stats, seed, weather: spec.weather })).result!;
     case 'shooter':
       return finishShooter(createShooter({ difficulty: d, rank, stats, seed })).result!;
     case 'puzzle':

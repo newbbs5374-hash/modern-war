@@ -58,7 +58,32 @@ export interface Aide {
   exp: number;
   /** 신뢰(인연) 0~100 */
   bond: number;
+  /** 들려준 인연 이야기 수(인연 30·60·90) */
+  stories?: number;
+  /** 마지막으로 선물·특별 훈련한 게임 날짜 */
+  giftDay?: number;
+  trainDay?: number;
+  /** 따로 보낸 부관 임무(이 동안은 전투·임무에 못 나감) */
+  errand?: { kind: ErrandKind; endMs: number } | null;
 }
+
+export type ErrandKind = '정보 수집' | '보급 조달' | '전공 쌓기';
+export const ERRANDS: Record<ErrandKind, { hours: number; icon: string; text: string }> = {
+  '정보 수집': { hours: 2, icon: '🕵️', text: '정보 점수 + · 정찰·통신 특기면 2배' },
+  '보급 조달': { hours: 3, icon: '📦', text: '봉급 + · 공병·의무 특기면 2배' },
+  '전공 쌓기': { hours: 4, icon: '🎖️', text: '공훈 + · 저격 특기면 2배' },
+};
+const ERRAND_FIT: Record<ErrandKind, string[]> = { '정보 수집': ['정찰', '통신'], '보급 조달': ['공병', '의무'], '전공 쌓기': ['저격'] };
+
+/** 인연 이야기(특기마다 3편) */
+export const AIDE_STORIES: Record<string, string[]> = {
+  저격: ['총을 처음 잡은 날, 아버지의 사냥총 이야기를 들려줬어요.', '"당신 등 뒤는 제가 지킵니다." 조준경 너머로 웃었어요.', '전쟁이 끝나면 산에서 별을 보겠다고 했어요. 그날까지 함께하겠대요.'],
+  의무: ['야전병원에서 밤새 버틴 이야기를 들려줬어요.', '당신이 다친 병사를 업고 온 날을 기억한대요.', '"한 명도 잃지 않는 게 제 전쟁이에요." 당신 곁에 끝까지 남겠대요.'],
+  통신: ['무전기 너머 고향 라디오를 몰래 들었던 이야기를 해 줬어요.', '적 암호를 처음 풀던 밤, 당신이 커피를 건넸던 걸 기억한대요.', '"당신 목소리는 어떤 잡음 속에서도 들려요." 끝까지 연결해 두겠대요.'],
+  공병: ['다리를 놓던 첫 작전 이야기를 들려줬어요.', '무너진 진지에서 당신을 꺼낸 날을 웃으며 꺼냈어요.', '전쟁이 끝나면 부서진 도시를 다시 짓고 싶대요. 그 첫 벽돌을 같이 놓재요.'],
+  정찰: ['혼자 사흘을 숲에서 버틴 이야기를 해 줬어요.', '당신이 자기 보고를 믿어 준 첫 장교라고 했어요.', '"어디든 먼저 가서 길을 보여 드릴게요." 당신의 눈이 되겠대요.'],
+};
+export const STORY_AT = [30, 60, 90];
 
 export interface General {
   id: number;
@@ -135,6 +160,13 @@ export interface OfficerState {
   grandReadyMs: number;
   /** 훈련별 별 3개 받은 횟수(특기) */
   perfect: Record<string, number>;
+  /** 훈련별 한 횟수(숙련) · 최고 별 */
+  mastery?: Record<string, number>;
+  best?: Record<string, number>;
+  /** 총사령관 외교를 다시 할 수 있는 시각 */
+  diploReadyMs?: number;
+  /** 승리 조건을 처음 채운 때(계속 지키는 중). 못 채우면 null */
+  winSinceMs?: number | null;
 }
 
 export function newOfficer(seed: number): OfficerState {
@@ -244,7 +276,24 @@ export const TRAINING_STATS: Record<string, StatId[]> = {
   해상: ['전술', '통솔'],
 };
 
-export type TrainResult = { ok: false; why: string } | { ok: true; stars: number; gains: Partial<Record<StatId, number>>; perk?: string };
+export type TrainResult =
+  | { ok: false; why: string }
+  | { ok: true; stars: number; gains: Partial<Record<StatId, number>>; perk?: string; featured?: boolean; masteryUp?: number; record?: boolean };
+
+/** 숙련 단계: 같은 훈련을 이만큼 하면 1~5단계(단계마다 오르는 스탯 +10%) */
+export const MASTERY_AT = [0, 5, 15, 30, 60];
+export const MASTERY_NAME = ['초보', '익숙', '능숙', '숙련', '달인'];
+export function masteryLevel(runs: number): number {
+  let k = 0;
+  while (k < MASTERY_AT.length - 1 && runs >= MASTERY_AT[k + 1]) k++;
+  return k + 1;
+}
+/** 오늘의 훈련(게임 날짜마다 바뀜): 오르는 스탯 2배 */
+export function featuredTraining(worldMs: number, rank: number): string {
+  const list = TRAININGS.filter((t) => t.rank <= rank);
+  const day = Math.floor(worldMs / REAL_MS_PER_GAME_DAY);
+  return list[(day * 7 + 3) % list.length].name;
+}
 
 /** 훈련 별 3개를 이만큼 받으면 특기 */
 export const PERK_AT = 10;
@@ -296,10 +345,19 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
     const ids = TRAINING_STATS[name];
     const cap = statCap(ns.player.rankIndex);
     const tired = o.trainCounts[name] >= 3 ? 0.5 : 1;
+    const mastery = (o.mastery ??= {});
+    const best = (o.best ??= {});
+    const lvBefore = masteryLevel(mastery[name] ?? 0);
+    mastery[name] = (mastery[name] ?? 0) + 1;
+    const lvAfter = masteryLevel(mastery[name]);
+    const featured = featuredTraining(ns.worldMs, ns.player.rankIndex) === name;
+    const record = stars > (best[name] ?? 0);
+    if (record) best[name] = stars;
+    const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1);
     const gains: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
       const before = o.stats[id];
-      o.stats[id] = Math.min(cap, before + (stars ? stars * 1.5 : 0.5) * tired);
+      o.stats[id] = Math.min(cap, before + (stars ? stars * 1.5 : 0.5) * mult);
       gains[id] = Math.round((o.stats[id] - before) * 10) / 10;
     }
     o.stars += stars;
@@ -322,7 +380,8 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
       const me = ns.player.countryId;
       ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops + 500 * stars } };
     }
-    result = { ok: true, stars, gains, perk };
+    if (lvAfter > lvBefore) note(ns, `${name} 훈련 숙련 ${MASTERY_NAME[lvAfter - 1]}(${lvAfter}단계)! 오르는 스탯 +${(lvAfter - 1) * 10}%`);
+    result = { ok: true, stars, gains, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record };
   });
   return { state, result };
 }
@@ -349,7 +408,119 @@ function pickName(o: OfficerState, rng: Rng): string {
 }
 
 function makeAide(o: OfficerState, rng: Rng): Aide {
-  return { id: o.nextId++, name: pickName(o, rng), specialty: rng.pick([...AIDE_SPECIALTIES]), level: 1, exp: 0, bond: 10 };
+  return { id: o.nextId++, name: pickName(o, rng), specialty: rng.pick([...AIDE_SPECIALTIES]), level: 1, exp: 0, bond: 10, stories: 0, errand: null };
+}
+
+/** 시험 버튼: 부관 한 명 데려오기(칸이 남으면) */
+export function debugAddAide(s: GameState): GameState {
+  if (s.officer.aides.length >= Math.max(1, aideSlots(s.player.rankIndex))) return s;
+  return withOfficer(s, (o, rng, ns) => {
+    const a = makeAide(o, rng);
+    o.aides.push(a);
+    note(ns, `(시험) ${ga(a.name)} 부관으로 합류했어요(${a.specialty}).`);
+  });
+}
+
+/** 지금 전투·임무에 나갈 수 있는 부관(따로 임무 중이면 빠짐) */
+export function readyAides(o: OfficerState, worldMs: number): Aide[] {
+  return o.aides.filter((a) => !a.errand || worldMs >= a.errand.endMs);
+}
+
+function aideGain(ns: GameState, a: Aide, exp: number, bond: number) {
+  a.exp += exp;
+  a.bond = Math.min(100, a.bond + bond);
+  while (a.exp >= a.level * 100 && a.level < 10) {
+    a.exp -= a.level * 100;
+    a.level += 1;
+    note(ns, `부관 ${a.name} Lv.${a.level}이 되었어요.`);
+  }
+  const told = a.stories ?? 0;
+  if (told < STORY_AT.length && a.bond >= STORY_AT[told]) {
+    a.stories = told + 1;
+    note(ns, `💬 ${a.name}: ${AIDE_STORIES[a.specialty][told]}${told === 1 ? ' (인연 60: 전투 공격 +1)' : told === 2 ? ' (인연 90: 임무 성공 확률 +5%)' : ''}`);
+  }
+}
+
+const gameDay = (ms: number) => Math.floor(ms / REAL_MS_PER_GAME_DAY);
+export const giftCost = (rank: number) => 300 + rank * 100;
+export const aideTrainCost = (rank: number) => 400 + rank * 150;
+
+export function canGift(s: GameState, id: number): string | null {
+  const a = s.officer.aides.find((x) => x.id === id);
+  if (!a) return '없는 부관';
+  if (a.giftDay === gameDay(s.worldMs)) return '오늘은 이미 선물했어요';
+  if (s.player.salary < giftCost(s.player.rankIndex)) return `봉급 ${giftCost(s.player.rankIndex)} 필요`;
+  return null;
+}
+/** 선물: 봉급을 써서 인연 +8(하루 한 번) */
+export function giftAide(s: GameState, id: number): GameState {
+  if (canGift(s, id)) return s;
+  const cost = giftCost(s.player.rankIndex);
+  const ns = withOfficer(s, (o, _rng, ns) => {
+    const a = o.aides.find((x) => x.id === id)!;
+    a.giftDay = gameDay(ns.worldMs);
+    aideGain(ns, a, 0, 8);
+  });
+  return { ...ns, player: { ...ns.player, salary: ns.player.salary - cost } };
+}
+export function canTrainAide(s: GameState, id: number): string | null {
+  const a = s.officer.aides.find((x) => x.id === id);
+  if (!a) return '없는 부관';
+  if (a.level >= 10) return '최고 레벨';
+  if (a.trainDay === gameDay(s.worldMs)) return '오늘은 이미 훈련했어요';
+  if (s.player.salary < aideTrainCost(s.player.rankIndex)) return `봉급 ${aideTrainCost(s.player.rankIndex)} 필요`;
+  return null;
+}
+/** 특별 훈련: 봉급을 써서 경험 +60, 인연 +2(하루 한 번) */
+export function trainAide(s: GameState, id: number): GameState {
+  if (canTrainAide(s, id)) return s;
+  const cost = aideTrainCost(s.player.rankIndex);
+  const ns = withOfficer(s, (o, _rng, ns) => {
+    const a = o.aides.find((x) => x.id === id)!;
+    a.trainDay = gameDay(ns.worldMs);
+    aideGain(ns, a, 60, 2);
+  });
+  return { ...ns, player: { ...ns.player, salary: ns.player.salary - cost } };
+}
+export function canErrand(s: GameState, id: number): string | null {
+  const a = s.officer.aides.find((x) => x.id === id);
+  if (!a) return '없는 부관';
+  if (a.errand) return '이미 임무 중';
+  return null;
+}
+/** 부관 임무: 몇 시간 따로 나가 보상을 가져옴(그동안 전투에 못 나감) */
+export function sendAide(s: GameState, id: number, kind: ErrandKind): GameState {
+  if (canErrand(s, id)) return s;
+  return withOfficer(s, (o, _rng, ns) => {
+    const a = o.aides.find((x) => x.id === id)!;
+    a.errand = { kind, endMs: ns.worldMs + ERRANDS[kind].hours * HOUR };
+  });
+}
+export function errandReward(s: GameState, a: Aide): { intel: number; salary: number; merit: number } {
+  if (!a.errand) return { intel: 0, salary: 0, merit: 0 };
+  const fit = ERRAND_FIT[a.errand.kind].includes(a.specialty) ? 2 : 1;
+  const r = s.player.rankIndex;
+  const lv = 1 + 0.15 * (a.level - 1);
+  if (a.errand.kind === '정보 수집') return { intel: Math.round(8 * fit * lv), salary: 0, merit: 0 };
+  if (a.errand.kind === '보급 조달') return { intel: 0, salary: Math.round((150 + r * 60) * fit * lv), merit: 0 };
+  return { intel: 0, salary: 0, merit: Math.round((20 + r * 12) * fit * lv) };
+}
+export function claimErrand(s: GameState, id: number): { state: GameState; text: string } {
+  const a0 = s.officer.aides.find((x) => x.id === id);
+  if (!a0?.errand || s.worldMs < a0.errand.endMs) return { state: s, text: '' };
+  const rw = errandReward(s, a0);
+  let text = '';
+  const ns = withOfficer(s, (o, _rng, ns) => {
+    const a = o.aides.find((x) => x.id === id)!;
+    o.intel += rw.intel;
+    o.merit += rw.merit;
+    o.totalMerit += rw.merit;
+    text = `${a.name} ${a.errand!.kind} 끝: ${[rw.intel && `정보 +${rw.intel}`, rw.salary && `봉급 +${rw.salary}`, rw.merit && `공훈 +${rw.merit}`].filter(Boolean).join(' · ')} · 경험 +30`;
+    a.errand = null;
+    aideGain(ns, a, 30, 2);
+    note(ns, text);
+  });
+  return { state: { ...ns, player: { ...ns.player, salary: ns.player.salary + rw.salary } }, text };
 }
 
 /** 부관을 장군으로 승격(장군 칸이 있고 부관 레벨 3 이상) */
@@ -485,7 +656,7 @@ export function missionChance(s: GameState, m: Mission): number {
   const info = MISSION_KINDS[m.kind];
   const cap = statCap(s.player.rankIndex);
   const level = info.stats.reduce((a, id) => a + o.stats[id], 0) / info.stats.length / cap;
-  const aide = o.aides.reduce((a, x) => a + (x.specialty === info.aideFit ? 0.06 : 0.02) + x.level * 0.005, 0);
+  const aide = readyAides(o, s.worldMs).reduce((a, x) => a + (x.specialty === info.aideFit ? 0.06 : 0.02) + x.level * 0.005 + (x.bond >= 90 ? 0.05 : 0), 0);
   return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4, 0.1, 0.95);
 }
 
@@ -588,14 +759,7 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
     const r = ns.player.rankIndex;
     const info = MISSION_KINDS[a.kind];
     const cap = statCap(r);
-    for (const x of o.aides) {
-      x.exp += win ? 25 : 10;
-      x.bond = Math.min(100, x.bond + (win ? 3 : 1));
-      while (x.exp >= x.level * 100 && x.level < 10) {
-        x.exp -= x.level * 100;
-        x.level += 1;
-      }
-    }
+    for (const x of readyAides(o, ns.worldMs)) aideGain(ns, x, win ? 25 : 10, win ? 3 : 1);
     if (a.exam) {
       if (win) {
         o.trust = Math.min(100, o.trust + 5);
@@ -713,7 +877,8 @@ export function startGrand(s: GameState, city: string): GameState {
     const army = Math.min(0.3, armyPower(ns) / 300);
     m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
-    o.grandReadyMs = ns.worldMs + GRAND_COOLDOWN_HOURS * HOUR;
+    // 총사령관은 6시간마다
+    o.grandReadyMs = ns.worldMs + (ns.player.rankIndex >= RANKS.length - 1 ? GRAND_COOLDOWN_HOURS / 2 : GRAND_COOLDOWN_HOURS) * HOUR;
     o.board = [];
   });
 }
