@@ -7,6 +7,12 @@ import { parseSave } from './save';
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } });
 
+/** 새 세계관은 평화로 시작하므로 시험에서 전쟁을 직접 걸어 둠 */
+function war(s: GameState, a: string, b: string): GameState {
+  const k = [a, b].sort().join('|');
+  return { ...s, world: { ...s.world, pairs: { ...s.world.pairs, [k]: { ...s.world.pairs[k], rel: '전쟁' } } } };
+}
+
 describe('내정', () => {
   it('내 도시에서 자원이 쌓이고, 점령 도시는 절반', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
@@ -64,10 +70,10 @@ describe('내정', () => {
     expect(s.economy.army['자주포 포병대']).toBe(1);
   });
   it('무역: 전쟁 중이 아닌 나라와 사고팔기, 성향에 따라 값이 다름', () => {
-    let s = rich(setRank(newGame('t', 'kr', 0, { seed: 4 }), 6));
+    let s = rich(setRank(war(newGame('t', 'kr', 0, { seed: 4 }), 'kr', 'kp'), 6));
     const ps = tradePartners(s);
     expect(ps.length).toBeGreaterThan(0);
-    expect(ps).not.toContain('kp'); // 북한과는 전쟁 중
+    expect(ps).not.toContain('kp'); // 흑철과는 전쟁 중
     const seller = ps.find((id) => canTrade(s, id, '강철', 5, true) === null)!;
     expect(seller).toBeTruthy();
     const t0 = s.nations.kr.treasury;
@@ -82,7 +88,7 @@ describe('내정', () => {
     const { economy: _e, ...rest } = s;
     void _e;
     const loaded = parseSave(JSON.stringify({ ...rest, version: 3 }));
-    expect(loaded?.version).toBe(4);
+    expect(loaded?.version).toBe(5);
     expect(loaded?.economy.facilities.산업.level).toBe(1);
     expect(loaded?.officer.training).toBeNull();
   });
@@ -99,7 +105,7 @@ describe('5단계 훈련·대전투', () => {
     expect(l.result.ok && l.result.gains.체력).toBe(0.5);
   });
   it('대전투: 준장부터, 전쟁 중인 나라 도시, 이기면 점령', () => {
-    let s = setRank(newGame('t', 'kr', 0, { seed: 7 }), 6);
+    let s = setRank(war(newGame('t', 'kr', 0, { seed: 7 }), 'kr', 'kp'), 6);
     const ts = grandTargets(s);
     expect(ts.length).toBeGreaterThan(0);
     s = startGrand(s, ts[0]);

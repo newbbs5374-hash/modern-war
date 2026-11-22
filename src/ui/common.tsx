@@ -123,8 +123,7 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
         {fmt(troopsPerDay(state, id))})
       </p>
       <p className="small muted">
-        시작 수치: 경제 {c.economy} · 국방예산 {c.budget} · 군사력 {c.military}
-        {c.estimated ? ' (일부 추정)' : ''} · 군사력 {c.gfpRank2026}위
+        {c.intro} · 시작 수치: 경제 {c.economy} · 국방예산 {c.budget} · 군사력 {c.military}
       </p>
     </div>
   );

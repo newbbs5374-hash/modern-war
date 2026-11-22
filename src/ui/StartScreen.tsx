@@ -21,8 +21,8 @@ export function StartScreen({ onStart, onImport }: Props) {
     <div className="start">
       <h1>현대전 사령관 · 시험판</h1>
       <p className="muted">
-        이미 전쟁 중인 세계. 나라를 골라 소위로 시작합니다. 세계 시계는 실제 1시간 = 게임 하루로 흐르고, 게임을 꺼
-        두어도 흐릅니다.
+        대융기로 바다에서 떠오른 새 군도, 여명 군도. 막 세워진 나라들은 평화롭게 출발하지만 자원과 항로를 두고 긴장이
+        쌓입니다. 나라를 골라 소위로 시작하세요. 세계 시계는 실제 1시간 = 게임 하루로 흐르고, 게임을 꺼 두어도 흐릅니다.
       </p>
       <label className="field">
         장교 이름

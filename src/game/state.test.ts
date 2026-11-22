@@ -16,12 +16,12 @@ describe('세계 데이터', () => {
     expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(5);
   });
   it('시작 구도', () => {
-    expect(startingRelation('us', 'cn')).toBe('전쟁');
-    expect(startingRelation('kr', 'kp')).toBe('전쟁');
-    expect(startingRelation('ua', 'ru')).toBe('전쟁');
-    expect(startingRelation('ir', 'il')).toBe('휴전');
-    expect(startingRelation('in', 'cn')).toBe('휴전');
+    // 새 세계관: 모두 평화로 시작(같은 협약은 연합)
+    expect(startingRelation('us', 'cn')).toBe('중립');
+    expect(startingRelation('kr', 'kp')).toBe('중립');
+    expect(startingRelation('ua', 'ru')).toBe('중립');
     expect(startingRelation('us', 'jp')).toBe('연합');
+    expect(startingRelation('cn', 'kp')).toBe('연합');
     expect(startingRelation('de', 'ru')).toBe('중립');
     expect(startingRelation('tr', 'in')).toBe('중립');
   });
