@@ -462,7 +462,7 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 .bld:active .bld-ico { transform: scale(0.94); }
 .bld.locked { opacity: 0.55; }
 .bld-badge { position: absolute; top: -4px; right: 2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #ef4444; color: #fff; font-size: 11px; font-style: normal; font-weight: 800; display: grid; place-items: center; border: 2px solid #0b1220; }
-.home-news { position: absolute; left: 6px; right: 6px; bottom: 6px; z-index: 2; font-size: 12px; text-align: left; color: #fde68a; background: #0b1220d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 5px 8px; }
+.home-news { position: absolute; left: 6px; right: 6px; bottom: 4px; z-index: 2; font-size: 12px; text-align: left; color: #fde68a; background: #0b1220d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 5px 8px; }
 .home-alert { position: absolute; left: 6px; width: 47%; bottom: 120px; z-index: 2; font-size: 12px; background: #7f1d1dee; border-radius: 8px; padding: 6px; }
 .flag { display: inline-block; vertical-align: middle; border-radius: 2px; }
 .tab-ico .flag, .itile-ico .flag { width: 34px; height: 23px; }
