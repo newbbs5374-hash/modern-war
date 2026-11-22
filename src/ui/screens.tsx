@@ -79,16 +79,10 @@ export function HomeScreen(props: ScreenProps) {
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
   const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
     [
-      { icon: '🗺️', label: '작전본부', x: 90, y: 10, on: () => goTab('ops', 'ops', 'mission'), badge: !a || missionReady ? '!' : null, main: true },
-      { icon: '🎖️', label: '장교', x: 90, y: 23, on: () => goTab('officer', 'officer', 'stats'), badge: pc.ready ? '!' : null },
       { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
-      { icon: '🎯', label: '훈련장', x: 90, y: 49, on: () => go('training'), badge: drills > 0 ? drills : null },
-      { icon: '🪖', label: '부대', x: 90, y: 62, on: () => go('forces') },
-      { icon: '🏛️', label: '정부', x: 90, y: 75, on: () => go('nation') },
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
       { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
       { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
-      { icon: '🛒', label: '상점', x: 70, y: 87, on: () => go('shop'), locked: true },
       { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
     ];
 

@@ -30,7 +30,15 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
   const clock = gameClock(state.worldMs);
 
   const amount = (id: string) =>
-    id === 'salary' ? state.player.salary : id === 'merit' ? state.officer.merit : id === 'boost' ? (state.officer.boosts ?? 0) : id === 'drill' ? drillsNow(state.officer, state.worldMs).count : 0;
+    id === 'salary'
+      ? state.player.salary
+      : id === 'merit'
+        ? state.officer.merit
+        : id === 'boost'
+          ? (state.officer.boosts ?? 0)
+          : id === 'drill'
+            ? drillsNow(state.officer, state.worldMs).count
+            : 0;
   const wallet = (
     <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="보유 재화 보기">
       <span>💵 {fmt(state.player.salary)}</span>
@@ -97,22 +105,19 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
         {children}
       </main>
 
-      {/* 본부는 지도 위 건물 아이콘이 메뉴라서 아래 메뉴 줄을 숨김 */}
-      {screen !== 'home' && (
-        <nav className="bottom">
-          {NAV.map((n) => (
-            <button
-              key={n.screen}
-              className={[screen === n.screen ? 'active' : '', n.main ? 'main' : '', n.locked ? 'locked' : ''].join(' ').trim()}
-              onClick={() => go(n.screen)}
-              aria-label={n.locked ? `${n.label} · ${n.locked}` : n.label}
-            >
-              <span className="ico">{n.icon}</span>
-              <small>{n.label}</small>
-            </button>
-          ))}
-        </nav>
-      )}
+      <nav className="bottom">
+        {NAV.map((n) => (
+          <button
+            key={n.screen}
+            className={[screen === n.screen ? 'active' : '', n.main ? 'main' : '', n.locked ? 'locked' : ''].join(' ').trim()}
+            onClick={() => go(n.screen)}
+            aria-label={n.locked ? `${n.label} · ${n.locked}` : n.label}
+          >
+            <span className="ico">{n.icon}</span>
+            <small>{n.label}</small>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
