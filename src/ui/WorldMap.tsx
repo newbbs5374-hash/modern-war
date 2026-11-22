@@ -4,12 +4,14 @@ interface Props {
   playerCountryId: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** 본부 화면의 작은 지도 */
+  mini?: boolean;
 }
 
 /** 전략 지도(임시 도형). 대륙 = 둥근 네모, 나라 = 연합 색 네모 */
-export function WorldMap({ playerCountryId, selectedId, onSelect }: Props) {
+export function WorldMap({ playerCountryId, selectedId, onSelect, mini }: Props) {
   return (
-    <svg className="map" viewBox={`0 40 ${MAP_SIZE.w} ${MAP_SIZE.h}`} role="img" aria-label="세계 지도">
+    <svg className={mini ? 'map mini' : 'map'} viewBox={`0 40 ${MAP_SIZE.w} ${MAP_SIZE.h}`} role="img" aria-label="세계 지도">
       <rect x="0" y="40" width={MAP_SIZE.w} height={MAP_SIZE.h} fill="#0c1a2b" />
       {CONTINENTS.map((ct) => (
         <g key={ct.id}>
