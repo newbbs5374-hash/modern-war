@@ -110,7 +110,7 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
             onClick={() => go(n.screen)}
             aria-label={n.locked ? `${n.label} · ${n.locked}` : n.label}
           >
-            <span className="ico">{n.locked ? '🔒' : n.icon}</span>
+            <span className="ico">{n.icon}</span>
             <small>{n.label}</small>
           </button>
         ))}
