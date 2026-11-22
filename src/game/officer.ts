@@ -771,7 +771,8 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
   for (const c of CITIES) {
     if (ownerBefore[c.id] === me && ns.world.owner[c.id] !== me) {
       const big = r >= COMMAND_RANK;
-      const loss = (c.capital ? 20 : 8) * (big ? 1 : 0.4);
+      // 점령했던 남의 도시를 잃는 것은 덜 아픔
+      const loss = (c.home !== me ? 2 : c.capital ? 20 : 8) * (big ? 1 : 0.4);
       o.trust = Math.max(0, o.trust - loss);
       if (big) note(ns, `${eul(c.name)} 잃어 지도자 신뢰도가 ${Math.round(loss)} 떨어졌어요.`);
     }

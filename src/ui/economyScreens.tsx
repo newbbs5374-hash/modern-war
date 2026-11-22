@@ -116,8 +116,7 @@ export function FacilityCard({ state, actions }: ScreenProps) {
           </div>
         )}
         <small className="muted">
-          {choreWhy && !chore ? `${choreWhy}. ` : ''}시설 경험치는 가만히 있어도 조금씩 쌓이고, 내정 일을 하면 {CHORE_EXP}씩 더 쌓여요. {RANKS[ECON_RANK].name}은 3단계까지,{' '}
-          {RANKS[TOP_RANK].name}은 5단계까지 올려요.
+          {choreWhy && !chore ? `${choreWhy}. ` : ''}시설 경험치는 가만히 있어도 조금씩 쌓이고, 내정 일을 하면 {CHORE_EXP}씩 더 쌓여요. {RANKS[TOP_RANK].name}이 되면 모아 둔 경험치로 5단계까지 올려요.
         </small>
       </div>
     </Card>

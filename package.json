@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sim": "vitest run --dir sim --config sim/vitest.config.ts --silent=false"
   },
   "dependencies": {
     "react": "^19.3.1",

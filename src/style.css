@@ -288,3 +288,8 @@ ol.stages li.lost { color: #f87171; }
 .facility:last-child { border-bottom: 0; }
 ul.log { margin: 6px 0 0; padding-left: 18px; }
 .list-row button { white-space: nowrap; flex-shrink: 0; }
+/* 승리 */
+.ending { border: 2px solid #fbbf24; border-radius: 12px; padding: 12px 14px; margin: 8px 0; background: #fbbf2414; }
+.ending h2 { margin: 0 0 6px; color: #fbbf24; }
+.hall { margin: 8px 0 12px; }
+.hall h2 { font-size: 1rem; }

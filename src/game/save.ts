@@ -75,6 +75,7 @@ export function parseSave(text: string): GameState | null {
     if (typeof o.grandReadyMs !== 'number') o.grandReadyMs = 0;
     if (!o.perfect) o.perfect = {};
     if (o.training === undefined) o.training = null;
+    if (s.ending === undefined) s.ending = null;
     return s;
   } catch {
     return null;

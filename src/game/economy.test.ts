@@ -17,7 +17,7 @@ describe('내정', () => {
     const w = { ...s.world, owner: { ...s.world.owner, 'jp-0': 'kr' } };
     expect(resPerDay({ ...s, world: w }).반도체).toBe(4); // 도쿄 2 × 0.5
   });
-  it('준장 전에는 잠김, 준장부터 내정 일 → 경험치 → 시설 올리기(3단계까지)', () => {
+  it('준장 전에는 잠김, 준장부터 내정 일 → 경험치, 총사령관이 되면 시설 올리기', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 2 }));
     expect(canUpgrade(s, '산업')).not.toBeNull();
     expect(startChore(s, '산업')).toBe(s);
@@ -27,15 +27,16 @@ describe('내정', () => {
     s = claimChore(advance(s, H));
     expect(s.economy.facilities.산업.exp).toBeGreaterThanOrEqual(30);
     s = advance(s, 40 * H); // 가만히 있어도 경험치
+    expect(canUpgrade(s, '산업')).toMatch(/총사령관/);
+    s = setRank(s, 10);
     const before = budgetPerDay(s, 'kr');
     s = upgradeFacility(s, '산업');
     expect(s.economy.facilities.산업.buildEndMs).toBeGreaterThan(0);
     s = advance(s, 2 * H);
     expect(s.economy.facilities.산업.level).toBe(2);
     expect(budgetPerDay(s, 'kr')).toBeGreaterThan(before);
-    s = { ...s, economy: { ...s.economy, facilities: { ...s.economy.facilities, 산업: { level: 3, exp: 9999, buildEndMs: 0 } } } };
-    expect(canUpgrade(s, '산업')).toMatch(/총사령관/);
-    expect(canUpgrade(setRank(s, 10), '산업')).toBeNull();
+    s = { ...s, economy: { ...s.economy, facilities: { ...s.economy.facilities, 산업: { level: 5, exp: 9999, buildEndMs: 0 } } } };
+    expect(canUpgrade(s, '산업')).toBe('최고 단계');
   });
   it('복지는 모병을 늘림', () => {
     const s = newGame('t', 'kr', 0, { seed: 2 });
@@ -108,5 +109,21 @@ describe('5단계 훈련·대전투', () => {
     s = claimMission(s, { win: true, stars: 3 }).state;
     expect(s.world.owner[city]).toBe('kr');
     expect(s.world.events.some((e) => e.kind === '점령' && e.mine)).toBe(true);
+  });
+});
+
+describe('승리', () => {
+  it('총사령관 + 연합 70% 또는 혼자 42%면 판이 끝남', async () => {
+    const { checkVictory, victoryProgress } = await import('./victory');
+    const { CITIES } = await import('../data/cities');
+    let s = newGame('t', 'kr', 0, { seed: 9 });
+    const owner = { ...s.world.owner };
+    for (const c of CITIES.slice(0, 20)) owner[c.id] = 'kr';
+    s = { ...s, world: { ...s.world, owner } };
+    expect(victoryProgress(s).mine).toBeGreaterThanOrEqual(20);
+    expect(checkVictory(s).ending).toBeNull(); // 아직 총사령관 아님
+    const w = checkVictory(setRank(s, 10));
+    expect(w.ending?.kind).toBe('정복 승리');
+    expect(w.ending?.captured.length).toBeGreaterThan(10);
   });
 });
