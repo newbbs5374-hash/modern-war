@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as G from './game/state';
 import { deleteSave, exportCode, importCode, loadGame, saveGame } from './game/save';
-import { GameScreen, type GameActions } from './ui/GameScreen';
+import { SCREENS, type GameActions } from './ui/screens';
+import { Shell } from './ui/Shell';
+import { parseScreen, type Screen } from './ui/nav';
 import { StartScreen } from './ui/StartScreen';
 
 const TICK_MS = 250;
@@ -31,7 +33,30 @@ export function App() {
     return saved ? resume(saved, Date.now()) : { state: null, notice: '' };
   });
   const [state, setState] = useState<G.GameState | null>(init.state);
-  const [notice, setNotice] = useState(init.notice);
+  const [notices, setNotices] = useState<string[]>(init.notice ? [init.notice] : []);
+  const setNotice = (t: string) => {
+    if (t) setNotices((l) => [t, ...l].slice(0, 20));
+  };
+  const [screen, setScreen] = useState<Screen>(() => parseScreen(location.hash));
+  const history = useRef<Screen[]>([]);
+
+  // 주소의 #화면 이름 = 지금 화면(새로고침해도 같은 화면)
+  useEffect(() => {
+    const onHash = () => setScreen(parseScreen(location.hash));
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const go = (s: Screen) => {
+    if (s === screen) return;
+    history.current.push(screen);
+    location.hash = s === 'home' ? '' : s;
+    setScreen(s);
+  };
+  const back = () => {
+    const prev = history.current.pop() ?? 'home';
+    location.hash = prev === 'home' ? '' : prev;
+    setScreen(prev);
+  };
   const [speed, setSpeedState] = useState(1);
   const speedRef = useRef(1);
   const stateRef = useRef(state);
@@ -78,7 +103,7 @@ export function App() {
           const s = G.newGame(name, countryId, Date.now());
           saveGame(s);
           setState(s);
-          setNotice('');
+          setNotices([]);
         }}
         onImport={doImport}
       />
@@ -104,7 +129,10 @@ export function App() {
     reset: () => {
       deleteSave();
       setState(null);
-      setNotice('');
+      setNotices([]);
+      history.current = [];
+      location.hash = '';
+      setScreen('home');
       speedRef.current = 1;
       setSpeedState(1);
     },
@@ -117,5 +145,10 @@ export function App() {
     setRank: (i) => update((s) => G.setRank(s, i)),
   };
 
-  return <GameScreen state={state} speed={speed} notice={notice} actions={actions} />;
+  const View = SCREENS[screen];
+  return (
+    <Shell state={state} screen={screen} speed={speed} go={go} back={back}>
+      <View state={state} speed={speed} notices={notices} actions={actions} go={go} />
+    </Shell>
+  );
 }
