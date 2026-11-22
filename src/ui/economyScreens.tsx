@@ -85,7 +85,7 @@ export function FacilityCard({ state, actions }: ScreenProps) {
         <>
           <p>🏭 산업 = 예산·자원 · 🛤️ 인프라 = 생산 속도 · 🏥 복지 = 모병, 점령지 반란 줄이기.</p>
           <p>시설 경험치는 가만히 있어도 조금씩 쌓이고, {RANKS[ECON_RANK].name}부터 내정 일(1시간)을 하면 {CHORE_EXP}씩 더 쌓여요.</p>
-          <p>{RANKS[TOP_RANK].name}이 되면 모아 둔 경험치와 예산으로 5단계까지 올려요.</p>
+          <p>{RANKS[TOP_RANK].name}가 되면 모아 둔 경험치와 예산으로 5단계까지 올려요.</p>
         </>
       }
     >
@@ -164,7 +164,7 @@ export function FacilityCard({ state, actions }: ScreenProps) {
               </>
             )}
           </div>
-          {rank < TOP_RANK && <p className="small muted">{RANKS[TOP_RANK].name}이 되면 올릴 수 있어요. 지금은 경험치를 모아 두세요.</p>}
+          {rank < TOP_RANK && <p className="small muted">{RANKS[TOP_RANK].name}가 되면 올릴 수 있어요. 지금은 경험치를 모아 두세요.</p>}
         </Modal>
       )}
     </Card>
@@ -193,10 +193,10 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
             disabled={!!why}
             onClick={() => {
               actions.apply((s) => produce(s, name, special));
-              setMsg('생산 줄에 넣었어요.');
+              setMsg('모집을 시작했어요.');
             }}
           >
-            {why ?? `🛠️ 만들기 (${timeLeft(buildMs(state, name, special))})`}
+            {why ?? `🪖 모집 (${timeLeft(buildMs(state, name, special))})`}
           </button>
         </>
       }
@@ -212,7 +212,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
         <span>보유</span>
         <b>{state.economy.army[special ? me.specialUnit.name : name] ?? 0}부대</b>
         <span>열리는 등급</span>
-        <b>{RANKS[Math.max(info.rank, ECON_RANK)].name}</b>
+        <b>{RANKS[info.rank].name}</b>
       </div>
       <p className="small muted" style={{ marginTop: 6 }}>
         비용
@@ -229,7 +229,7 @@ export function ProductionCard(props: ScreenProps) {
   const me = countryById(state.player.countryId);
   const rank = state.player.rankIndex;
   const [pick, setPick] = useState<string | null>(null);
-  if (rank < ECON_RANK) return <p className="empty">🔒 {RANKS[ECON_RANK].name}이 되면 부대를 만들어요.</p>;
+  if (rank < ECON_RANK) return <p className="empty">🔒 {RANKS[ECON_RANK].name}가 되면 부대를 만들어요.</p>;
   return (
     <Card title="병과 생산" icon="🛠️" right={<Chip icon="🔨" value={`${e.queue.length}/${QUEUE_MAX}`} />} help={<p>국방예산과 자원으로 부대를 만들어요. 인프라 시설이 높으면 빨라져요. 만든 부대 전투력은 대전투 난이도를 낮추고 점령지를 지켜요.</p>}>
       {e.queue.map((q, i) => (

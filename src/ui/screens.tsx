@@ -1,6 +1,5 @@
 // 기능별 화면 묶음. 아래 메뉴 6칸 + 본부(홈) + 설정·전령·도감.
 import { useState } from 'react';
-import { UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { budgetPerDay, pendingCap, troopsPerDay, type GameState } from '../game/state';
@@ -12,9 +11,8 @@ import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from 
 import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
-import { FacilityCard, ProductionCard, ResourceCard, TradeCard, UnitModal } from './economyScreens';
-import { Chip, Help, Modal, Tabs, Tile, useTab } from './kit';
-import { UNIT_ICON } from './icons';
+import { FacilityCard, ProductionCard, ResourceCard, TradeCard } from './economyScreens';
+import { Chip, Modal, Tabs, Tile, useTab } from './kit';
 import { FLAG } from './flag';
 import { fillPromotion, grantTestResources } from '../game/testgrant';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
@@ -23,10 +21,11 @@ import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { boostsOf } from '../game/boost';
 import { ECON_RANK } from '../data/economy';
-import { DIPLO_RANK, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
+import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
+import { ForcesScreen } from './ForcesScreen';
 import { debugTalk } from '../game/talk';
 
 export interface GameActions {
@@ -375,53 +374,6 @@ function MapPanel({ state }: ScreenProps) {
   );
 }
 
-/* ───────── 부대: 병과 15개(누르면 정보·생산) · 장군 ───────── */
-export function ForcesScreen(props: ScreenProps) {
-  const { state } = props;
-  const me = countryById(state.player.countryId);
-  const [pick, setPick] = useState<string | null>(null);
-  const rank = state.player.rankIndex;
-  const e = state.economy;
-  return (
-    <>
-      <section className="card">
-        <div className="row">
-          <div className="ichips">
-            <Chip icon="🪖" value={fmt(state.nations[me.id].troops)} label="병력" />
-            <Chip icon="💪" value={e.power} label="전투력" />
-            <Chip icon="⭐" value={state.officer.generals.length} label="장군" />
-          </div>
-          <Help title="부대">
-            <p>병과 15개와 우리 나라 특별 병과예요. 눌러서 역할과 생산 비용을 봐요.</p>
-            <p>
-              존경받는 지도자부터 국방예산과 전략 자원으로 부대를 만들 수 있어요. 만든 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요.
-            </p>
-          </Help>
-        </div>
-        {e.queue.length > 0 && (
-          <div className="small" style={{ marginTop: 6 }}>
-            🔨 생산 중: {e.queue.map((q) => `${q.special ? me.specialUnit.name : q.unit}(${timeLeft(q.endMs - state.worldMs)})`).join(' · ')}
-          </div>
-        )}
-      </section>
-      <div className="tiles c5">
-        <Tile icon="🌟" label="특별" sub={me.specialUnit.name} tone="gold" onClick={() => setPick('★')} />
-        {UNITS.map((u) => (
-          <Tile
-            key={u.name}
-            icon={UNIT_ICON[u.name]}
-            label={u.name}
-            sub={rank < u.rank ? RANKS[u.rank].name : `보유 ${e.army[u.name] ?? 0}`}
-            locked={rank < u.rank}
-            onClick={() => setPick(u.name)}
-          />
-        ))}
-      </div>
-      {pick && <UnitModal {...props} unit={pick} onClose={() => setPick(null)} />}
-    </>
-  );
-}
-
 /* ───────── 나라: 금고 · 자원 · 시설 · 생산 · 무역 · 외교 (탭) ───────── */
 type NationTab = 'home' | 'res' | 'fac' | 'make' | 'trade' | 'dip';
 export function NationScreen(props: ScreenProps) {
@@ -517,7 +469,7 @@ function DiplomacyCard({ state, actions }: ScreenProps) {
   const me = state.player.countryId;
   const [sel, setSel] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
-  const top = state.player.rankIndex >= DIPLO_RANK;
+  const top = state.player.rankIndex >= COMMAND_TOP;
   const wait = diploReady(state) - state.worldMs;
   return (
     <Card
@@ -527,7 +479,7 @@ function DiplomacyCard({ state, actions }: ScreenProps) {
       help={
         <>
           <p>휴전·중립인 나라와는 긴장도가 쌓여요. 100이 되면 휴전이 깨지거나 전쟁이 나요.</p>
-          <p>존경받는 지도자가 되면 나라를 눌러 직접 선전포고·휴전 제안·연합 제안을 해요({DIPLO_COOLDOWN_HOURS}시간마다 한 번). 연합국은 승리 조건에 함께 세어져요.</p>
+          <p>지도자이 되면 나라를 눌러 직접 선전포고·휴전 제안·연합 제안을 해요({DIPLO_COOLDOWN_HOURS}시간마다 한 번). 연합국은 승리 조건에 함께 세어져요.</p>
         </>
       }
     >

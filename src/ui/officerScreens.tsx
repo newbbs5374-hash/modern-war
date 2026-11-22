@@ -2,7 +2,7 @@
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
 import { STAT_GROUPS, TRAININGS } from '../data/catalog';
-import { GRAND_COOLDOWN_HOURS, GRAND_RANK, MISSION_KINDS, OPERATION_RANK, STAT_IDS, aideSlots, generalSlots, statCap, type StatId } from '../data/officers';
+import { GRAND_COOLDOWN_HOURS, GRAND_RANK, MISSION_KINDS, OPERATION_RANK, STAT_IDS, TRAIN_EXP_LOSE, TRAIN_EXP_PER_STAR, aideSlots, generalSlots, statCap, statExpNeed, type StatId } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { cityById } from '../data/cities';
 import { countryById } from '../data/world';
@@ -17,6 +17,7 @@ import {
   PERK_AT,
   RECRUIT_COST,
   TRAINING_STATS,
+  statExpOf,
   aideTrainCost,
   boardNow,
   canErrand,
@@ -317,7 +318,7 @@ export function OfficerScreen(props: ScreenProps) {
               <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
               <Help title="승급">
                 <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(섬 수호자부터)를 채우면 승급 심사 작전(2시간)을 볼 수 있어요.</p>
-                <p>심사에 붙으면 승급하고, 공훈과 별은 0부터 다시 모아요. 대장 → 지도자는 라이벌보다 평판이 높아야 해요.</p>
+                <p>심사에 붙으면 승급하고, 공훈과 별은 0부터 다시 모아요. 대장 → 지도자은 라이벌보다 평판이 높아야 해요.</p>
               </Help>
             </div>
             {pc.lines.map((l) => (
@@ -366,25 +367,53 @@ function StatsPanel({ state }: ScreenProps) {
   const o = state.officer;
   const cap = statCap(state.player.rankIndex);
   const [pick, setPick] = useState<StatId | null>(null);
+  const total = STAT_IDS.reduce((a, id) => a + Math.floor(o.stats[id]), 0);
   return (
     <>
-      <div className="tiles c3">
-        {STAT_IDS.map((id) => (
-          <Tile key={id} icon={STAT_ICON[id]} label={id} sub={`${Math.floor(o.stats[id])} / ${cap}`} onClick={() => setPick(id)}>
-            <Meter value={o.stats[id]} max={cap} />
-          </Tile>
-        ))}
+      <div className="stat-sum">
+        <span>
+          종합 <b>{total}</b>
+        </span>
+        <span className="muted small">스탯 상한 {cap} · 등급이 오르면 +10</span>
+        <Help title="스탯과 경험치">
+          <p>훈련을 하면 그 훈련이 키우는 스탯에 경험치가 쌓여요. 초록 막대가 다 차면 스탯이 1 올라요.</p>
+          <p>별을 많이 받을수록 경험치가 많아요(별 1개당 {TRAIN_EXP_PER_STAR}, 지면 {TRAIN_EXP_LOSE}). 오늘의 훈련은 2배, 숙련 단계가 오르면 +10%씩 더 받아요.</p>
+          <p>임무에 성공해도 그 임무가 쓰는 스탯에 경험치가 들어와요. 스탯이 높을수록 다음 1점에 드는 경험치가 조금씩 늘어요.</p>
+        </Help>
       </div>
-      <p className="small muted center" style={{ marginTop: 6 }}>
-        개인(체력·사격·은밀) · 지휘(통솔·전술·포격) · 운영(군수·정치·정보) · 등급이 오르면 상한 +10
-      </p>
+      {STAT_GROUPS.map((g) => (
+        <div key={g.name} className="stat-group">
+          <small className="stat-group-name">{g.name}</small>
+          <div className="tiles c3">
+            {g.stats.map(({ name }) => {
+              const id = name as StatId;
+              const v = Math.floor(o.stats[id]);
+              const max = v >= cap;
+              return (
+                <button key={id} className={`stat-card ${max ? 'max' : ''}`} onClick={() => setPick(id)}>
+                  <span className="stat-top">
+                    <span>{STAT_ICON[id]}</span>
+                    <small>{id}</small>
+                    <b className="stat-num">{v}</b>
+                  </span>
+                  <Meter value={max ? 1 : statExpOf(o, id)} max={max ? 1 : statExpNeed(v)} tone="green" />
+                  <small className="muted">{max ? 'MAX' : `${Math.floor(statExpOf(o, id))}/${statExpNeed(v)}`}</small>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
       {pick && (
         <Modal title={pick} icon={STAT_ICON[pick]} onClose={() => setPick(null)}>
           <div className="big-ico">{Math.floor(o.stats[pick])}</div>
-          <Meter value={o.stats[pick]} max={cap} />
+          <p className="small center muted">
+            상한 {cap} · 다음 1점까지 경험치 {Math.floor(statExpOf(o, pick))} / {statExpNeed(Math.floor(o.stats[pick]))}
+          </p>
+          <Meter value={statExpOf(o, pick)} max={statExpNeed(Math.floor(o.stats[pick]))} tone="green" />
           <p>{STAT_DOES[pick]}</p>
           <p className="small">올리는 훈련: {TRAIN_FOR[pick].map((t) => `${TRAINING_ICON[t]} ${t}`).join(' · ') || '임무'}</p>
-          <p className="small muted">임무에 성공해도 그 임무가 쓰는 스탯이 조금 올라요.</p>
+          <p className="small muted">임무에 성공해도 그 임무가 쓰는 스탯에 경험치가 들어와요.</p>
         </Modal>
       )}
     </>
@@ -578,7 +607,7 @@ function RivalsPanel({ state }: ScreenProps) {
   const mine = myRenown(o);
   const top = Math.max(mine, ...rivals.map((x) => x.renown));
   return (
-    <Card title="지도자 경쟁" icon="🏁" help={<p>대장에서 지도자가 되려면 라이벌 세 명보다 평판(공훈 + 명성 + 신뢰도)이 높아야 해요. 라이벌도 시간이 지나면 승급해요.</p>}>
+    <Card title="지도자 경쟁" icon="🏁" help={<p>대장에서 지도자이 되려면 라이벌 세 명보다 평판(공훈 + 명성 + 신뢰도)이 높아야 해요. 라이벌도 시간이 지나면 승급해요.</p>}>
       <div className="line-item">
         <span className="li-ico">{RANK_ICON[r]}</span>
         <span className="li-main">
@@ -638,10 +667,10 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
           <Help title="훈련">
             <p>훈련 일정은 실제 4시간마다 1개씩 차요(최대 {DRILL_MAX}개). 훈련은 직접 하는 미니게임이에요.</p>
             <ul>
-              <li>별이 많을수록 스탯이 더 올라요. 져도 조금은 올라요.</li>
+              <li>훈련하면 스탯 경험치를 받아요. 별이 많을수록 많이 받고, 져도 조금 받아요. 경험치가 차면 스탯 +1.</li>
               <li>🤖 자동·⏩ 즉시완료를 쓰면 별은 최대 2개.</li>
-              <li>🔥 오늘의 훈련은 오르는 스탯 2배.</li>
-              <li>같은 훈련을 많이 하면 숙련 단계(초보→달인)가 올라 스탯이 더 올라요.</li>
+              <li>🔥 오늘의 훈련은 경험치 2배.</li>
+              <li>같은 훈련을 많이 하면 숙련 단계(초보→달인)가 올라 경험치를 더 받아요.</li>
               <li>같은 훈련 하루 3번째부터는 효과 절반.</li>
               <li>별 3개를 {PERK_AT}번 받으면 특기(전투 스탯 +)가 생겨요.</li>
             </ul>
@@ -661,24 +690,26 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
         )}
         {msg && <p className="small result">{msg}</p>}
       </section>
-      <div className="tiles c4">
+      <div className="tlist">
         {TRAININGS.map((tr) => {
           const lock = rank < tr.rank;
           const runs = o.mastery?.[tr.name] ?? 0;
           const lv = masteryLevel(runs);
+          const hot = tr.name === featured;
+          const perk = (o.perfect[tr.name] ?? 0) >= PERK_AT;
           return (
-            <Tile
-              key={tr.name}
-              icon={TRAINING_ICON[tr.name]}
-              label={tr.name}
-              sub={lock ? `${RANKS[tr.rank].name}부터` : MASTERY_NAME[lv - 1]}
-              locked={lock}
-              tone={tr.name === featured ? 'gold' : (o.perfect[tr.name] ?? 0) >= PERK_AT ? 'green' : undefined}
-              badge={tr.name === featured ? '🔥' : today[tr.name] ? today[tr.name] : null}
-              onClick={() => setPick(tr.name)}
-            >
-              {!lock && <small className="stars">{stars(o.best?.[tr.name] ?? 0)}</small>}
-            </Tile>
+            <button key={tr.name} className={`trow ${lock ? 'locked' : ''} ${hot ? 't-gold' : perk ? 't-green' : ''}`} onClick={() => setPick(tr.name)}>
+              <span className="trow-ico">{lock ? '🔒' : TRAINING_ICON[tr.name]}</span>
+              <span className="trow-main">
+                <b>
+                  {tr.name}
+                  {hot && <i className="trow-hot">🔥2배</i>}
+                </b>
+                <small>{TRAINING_STATS[tr.name].map((x) => `${STAT_ICON[x]}${x}`).join(' ')}</small>
+                <small className="muted">{lock ? `${RANKS[tr.rank].name}부터` : `${MASTERY_NAME[lv - 1]} · 오늘 ${today[tr.name] ?? 0}번`}</small>
+              </span>
+              {!lock && <small className="stars trow-stars">{stars(o.best?.[tr.name] ?? 0)}</small>}
+            </button>
           );
         })}
       </div>
@@ -750,7 +781,12 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       </p>
       <div className="kv2">
         <span>오르는 스탯</span>
-        <b>{TRAINING_STATS[name].map((x) => `${STAT_ICON[x]}${x}`).join(' ')}</b>
+        <b>{TRAINING_STATS[name].map((x) => `${STAT_ICON[x]}${x} ${Math.floor(o.stats[x])}`).join(' · ')}</b>
+        <span>받는 경험치</span>
+        <b>
+          ★1개당 {Math.round(TRAIN_EXP_PER_STAR * (1 + 0.1 * (lv - 1)) * (featured ? 2 : 1))}
+          {(o.trainCounts[name] ?? 0) >= 2 ? ' (오늘 3번째부터 절반)' : ''}
+        </b>
         <span>최고 기록</span>
         <b className="stars">{stars(o.best?.[name] ?? 0)}</b>
         <span>숙련</span>

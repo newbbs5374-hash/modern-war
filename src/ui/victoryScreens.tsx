@@ -17,7 +17,7 @@ export function VictoryCard({ state }: ScreenProps) {
   const p = victoryProgress(state);
   const ready = state.player.rankIndex >= VICTORY_RANK;
   return (
-    <Card title="승리 조건" right={<small className="muted">{ready ? '지도자 · 하나만 이루면 승리' : `${RANKS[VICTORY_RANK].name}이 되면 열림`}</small>}>
+    <Card title="승리 조건" right={<small className="muted">{ready ? '지도자 · 하나만 이루면 승리' : `${RANKS[VICTORY_RANK].name}가 되면 열림`}</small>}>
       <div className="small">
         ① 연합 승리: 우리 + 연합국 도시 {p.allied} / {p.needAllied}
         <Meter have={p.allied} need={p.needAllied} />

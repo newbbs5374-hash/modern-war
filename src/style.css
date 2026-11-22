@@ -579,3 +579,62 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 .map-island.holy { fill: #fde68a; }
 .map-cityname { fill: #f8fafc; font-size: 5.2px; paint-order: stroke; stroke: #0c1a2b; stroke-width: 1.4px; pointer-events: none; }
 .map-label { paint-order: stroke; stroke: #0c1a2b; stroke-width: 2.4px; font-weight: 700; }
+
+/* ── 스탯 숫자 카드 ── */
+.stat-sum { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.stat-sum b { font-size: 18px; color: var(--accent); }
+.stat-sum .help { margin-left: auto; }
+.stat-group { margin-bottom: 6px; }
+.stat-group-name { display: block; font-size: 11px; color: var(--muted); margin: 0 0 3px 2px; }
+.stat-card { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 6px 8px; background: linear-gradient(180deg, #22345a, #172540); border: 1px solid #33476e; border-radius: 12px; text-align: left; }
+.stat-card.max { border-color: var(--gold); }
+.stat-top { display: flex; align-items: center; gap: 4px; font-size: 16px; }
+.stat-top small { font-size: 12px; color: #cbd5e1; }
+.stat-num { margin-left: auto; font-size: 24px; line-height: 1; font-weight: 800; color: #fff; text-shadow: 0 2px 4px #0008; }
+.stat-card > small { font-size: 10px; text-align: right; }
+
+/* ── 훈련 2열 ── */
+.tlist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.trow { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 8px; min-height: 0; text-align: left; background: linear-gradient(180deg, #22345a, #172540); border: 1px solid #33476e; border-radius: 12px; }
+.trow.locked { opacity: .45; }
+.trow.t-gold { border-color: var(--gold); box-shadow: 0 0 0 1px #fbbf2455, 0 0 12px #fbbf2433; }
+.trow.t-green { border-color: #22c55e; }
+.trow-ico { font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 2px #0008); }
+.trow-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.trow-main b { font-size: 13px; display: flex; align-items: center; gap: 4px; }
+.trow-main small { font-size: 10.5px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow-hot { font-style: normal; font-size: 9.5px; background: #b45309; color: #fff; border-radius: 6px; padding: 0 4px; }
+.trow-stars { position: absolute; right: 6px; top: 4px; font-size: 10px; }
+
+/* ── 부대: 육·해·공 → 세부 병과 ── */
+.branch-tabs { display: flex; width: 100%; gap: 4px; margin: 6px 0; }
+.branch-tabs button { flex: 1; min-height: 34px; font-size: 13px; font-weight: 700; }
+.branch-tabs button small { font-weight: 400; color: var(--muted); }
+.branch-tabs button.on small { color: #e2e8f0; }
+.fgroup { margin-bottom: 6px; }
+.frow { display: flex; align-items: stretch; gap: 4px; margin-bottom: 4px; background: linear-gradient(180deg, #22345a, #172540); border: 1px solid #33476e; border-radius: 12px; padding: 4px; }
+.frow.locked { opacity: .45; }
+.frow.t-gold { border-color: #fbbf24; box-shadow: 0 0 10px #fbbf2433; }
+.frow-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 2px 4px; text-align: left; min-height: 0; }
+.frow-ico { font-size: 24px; line-height: 1; filter: drop-shadow(0 2px 2px #0008); }
+.frow-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.frow-text b { font-size: 13px; }
+.frow-text small { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frow-prog { display: flex; align-items: center; gap: 4px; }
+.frow-prog .meter { flex: 1; }
+.frow-have { display: flex; flex-direction: column; align-items: center; min-width: 34px; }
+.frow-have b { font-size: 17px; color: var(--accent); line-height: 1.1; }
+.frow-have small { font-size: 9.5px; color: var(--muted); }
+.frow-btns { display: flex; gap: 3px; align-items: center; }
+.frow-btns button { min-height: 32px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+.frow-btns button small { font-size: 9.5px; margin-left: 1px; }
+
+/* ── 부관 보고 ── */
+.aide-report { position: absolute; left: 8px; right: 8px; bottom: calc(var(--nav-h) + 8px); z-index: 60; display: flex; align-items: flex-end; gap: 8px; animation: report-in .25s ease-out; pointer-events: auto; }
+.aide-face { flex: 0 0 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; background: radial-gradient(circle at 40% 35%, #3b5b94, #1a2a4a); border: 2px solid var(--accent); box-shadow: 0 4px 12px #000a; position: relative; }
+.aide-face i { position: absolute; right: -4px; bottom: -2px; font-style: normal; font-size: 16px; }
+.aide-bubble { flex: 1; position: relative; background: #f8fafc; color: #0f172a; border-radius: 14px 14px 14px 4px; padding: 8px 10px 6px; box-shadow: 0 6px 18px #000a; text-align: left; border: 0; min-height: 0; }
+.aide-bubble b { display: block; font-size: 11px; color: #1d4ed8; margin-bottom: 2px; }
+.aide-bubble p { margin: 0; font-size: 13px; line-height: 1.35; }
+.aide-bubble small { display: block; text-align: right; font-size: 10px; color: #64748b; margin-top: 2px; }
+@keyframes report-in { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }

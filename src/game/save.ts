@@ -11,6 +11,7 @@ import { SAVE_VERSION, type GameState } from './state';
 import { newEconomy } from './economy';
 import { newWorld } from './world';
 import { newOfficer } from './officer';
+import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
 
 export const SAVE_KEY = 'modern-war-save';
 
@@ -78,6 +79,15 @@ export function parseSave(text: string): GameState | null {
     if (!o.perfect) o.perfect = {};
     if (o.training === undefined) o.training = null;
     if (s.ending === undefined) s.ending = null;
+    // 스탯 경험치 방식(옛 저장): 소수점은 경험치로 바꿈
+    if (!o.statExp) {
+      o.statExp = {};
+      for (const id of STAT_IDS) {
+        const v = Number(o.stats[id]) || START_STAT;
+        o.stats[id] = Math.floor(v);
+        o.statExp[id] = Math.round((v - Math.floor(v)) * statExpNeed(Math.floor(v)));
+      }
+    }
     if (typeof o.boosts !== 'number') o.boosts = TEST_BOOSTS; // 시험판: 옛 저장에도 가속권 지급
     return firstTestGrant(s); // 시험판: 옛 저장에도 자원 넉넉히(한 번만)
   } catch {

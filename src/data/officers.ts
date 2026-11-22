@@ -5,6 +5,14 @@ export const STAT_IDS: StatId[] = ['체력', '사격', '은밀', '통솔', '전�
 
 /** 스탯 상한: 계급마다 오름 */
 export const statCap = (rank: number) => 20 + rank * 10;
+/** 스탯 1 올리는 데 드는 경험치(스탯이 높을수록 조금씩 더 듦) */
+export const statExpNeed = (value: number) => 20 + Math.floor(value);
+/** 훈련 경험치: 별 1개당 · 져도 받는 것 */
+export const TRAIN_EXP_PER_STAR = 30;
+export const TRAIN_EXP_LOSE = 10;
+/** 임무 경험치: 성공 · 실패 */
+export const MISSION_EXP_WIN = 20;
+export const MISSION_EXP_LOSE = 6;
 export const START_STAT = 8;
 
 /** 승급 조건(지금 계급 → 다음 계급). 마지막(지도자)은 없음 */

@@ -15,6 +15,8 @@ interface Props {
   go: (s: Screen) => void;
   back: () => void;
   children: ReactNode;
+  /** 화면 위에 뜨는 것(부관 보고) */
+  overlay?: ReactNode;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -23,7 +25,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
  * 화면 틀(용흔 참고): 휴대폰 세로 비율 고정 · 위 띠 고정 · 가운데만 스크롤 · 아래 메뉴 6칸 고정.
  * 본부(홈) 위 띠 = 장교 요약 + 재화 + 설정. 다른 화면 = ← · 화면 이름 · 재화 · 설정 · 본부.
  */
-export function Shell({ state, screen, speed, go, back, children }: Props) {
+export function Shell({ state, screen, speed, go, back, children, overlay }: Props) {
   const [walletOpen, setWalletOpen] = useState(false);
   const me = countryById(state.player.countryId);
   const rank = RANKS[state.player.rankIndex];
@@ -104,6 +106,8 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
       <main className="view" data-screen={screen}>
         {children}
       </main>
+
+      {overlay}
 
       <nav className="bottom">
         {NAV.map((n) => (
