@@ -563,3 +563,15 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 .talk-result.ok { background: #064e3b; border: 1px solid #10b981; }
 .talk-result.bad { background: #4c1d1d; border: 1px solid #ef4444; }
 .talk-result small { color: #d1d5db; }
+
+/* 세계 지도: 확대·이동 + 함대 */
+.wm-wrap { position: relative; }
+.wm-wrap .map { touch-action: none; cursor: grab; }
+.wm-zoom { left: 6px; bottom: 6px; }
+.wm-zoom button { width: 30px; height: 30px; font-size: 14px; }
+.wm-waves { animation: wm-drift 14s linear infinite; }
+@keyframes wm-drift { from { transform: translateX(0); } to { transform: translateX(26px); } }
+.afterburner { animation: ab-flick 0.25s steps(2) infinite; }
+@keyframes ab-flick { 50% { opacity: 0.35; } }
+.wm-wrap { height: min(62vh, 560px); border-radius: 8px; overflow: hidden; }
+.wm-wrap .map { width: 100%; height: 100%; }
