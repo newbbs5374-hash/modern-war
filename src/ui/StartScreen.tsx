@@ -1,0 +1,65 @@
+import { useState } from 'react';
+import { BLOCS, COUNTRIES } from '../data/world';
+
+interface Props {
+  onStart: (name: string, countryId: string) => void;
+  onImport: (code: string) => string | null;
+}
+
+/** 새 게임: 이름과 나라 고르기 */
+export function StartScreen({ onStart, onImport }: Props) {
+  const [name, setName] = useState('');
+  const [pick, setPick] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [err, setErr] = useState('');
+
+  return (
+    <div className="start">
+      <h1>현대전 사령관 · 시험판</h1>
+      <p className="muted">
+        이미 전쟁 중인 세계. 나라를 골라 소위로 시작합니다. 세계 시계는 실제 1시간 = 게임 하루로 흐르고, 게임을 꺼
+        두어도 흐릅니다.
+      </p>
+      <label className="field">
+        장교 이름
+        <input value={name} maxLength={12} placeholder="예: 김철수" onChange={(e) => setName(e.target.value)} />
+      </label>
+      <h2>나라 고르기</h2>
+      <div className="country-grid">
+        {COUNTRIES.map((c) => (
+          <button
+            key={c.id}
+            className={`country-card ${pick === c.id ? 'picked' : ''}`}
+            style={{ borderColor: BLOCS[c.bloc].color }}
+            onClick={() => setPick(c.id)}
+          >
+            <div className="row">
+              <b>{c.name}</b>
+              <span className={`diff diff-${c.difficulty.replace(' ', '')}`}>{c.difficulty}</span>
+            </div>
+            <div className="muted small">{BLOCS[c.bloc].name}</div>
+            <div className="small">
+              경제 {c.economy} · 예산 {c.budget} · 군사 {c.military}
+              {c.estimated ? ' (추정)' : ''}
+            </div>
+            <div className="small">특별 병과: {c.specialUnit.name}</div>
+          </button>
+        ))}
+      </div>
+      <button
+        className="primary big"
+        disabled={!pick || !name.trim()}
+        onClick={() => pick && onStart(name.trim(), pick)}
+      >
+        {pick && name.trim() ? '소위로 임관하기' : '이름을 쓰고 나라를 고르세요'}
+      </button>
+
+      <details className="import">
+        <summary>저장 코드로 이어하기</summary>
+        <textarea value={code} onChange={(e) => setCode(e.target.value)} placeholder="저장 코드를 붙여 넣으세요" />
+        <button onClick={() => setErr(onImport(code) ?? '')}>불러오기</button>
+        {err && <div className="error">{err}</div>}
+      </details>
+    </div>
+  );
+}
