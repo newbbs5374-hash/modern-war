@@ -28,6 +28,7 @@ import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
 import { CAPTURED_DEFENSE, REAL_MS_PER_GAME_DAY } from './balance';
 import { Rng } from './rng';
+import { talkTick, type Promise_, type Talk } from './talk';
 import type { GameState } from './state';
 import { armyPower } from './economy';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
@@ -170,6 +171,10 @@ export interface OfficerState {
   winSinceMs?: number | null;
   /** 가속권 */
   boosts?: number;
+  /** 대화: 답을 기다리는 대화 · 다음 대화 시각 · 불가침 약속 */
+  talks?: Talk[];
+  talkNextMs?: number;
+  promises?: Promise_[];
   /** 시험판 자원 지급을 받았는지 */
   testGrant?: number;
   /** 진급 심사에 떨어지면 6시간 기다리기(시험판 기본은 꺼짐) */
@@ -974,6 +979,7 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
   } else {
     o.dismissDeadlineMs = null;
   }
+  talkTick(ns, o);
   ns.officer = o;
 }
 
