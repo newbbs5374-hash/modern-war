@@ -5,7 +5,8 @@ import { RANKS } from '../data/ranks';
 import { PERSONALITIES } from '../data/leaders';
 import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
-import { accrueEconomy, economyTick, industryMult, newEconomy, welfareMult, type EconomyState } from './economy';
+import { checkVictory, type Ending } from './victory';
+import { accrueEconomy, economyTick, industryMult, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
   AI_TICK_MS,
   BUDGET_PER_DAY_PER_POINT,
@@ -51,6 +52,8 @@ export interface GameState {
   officer: OfficerState;
   /** 6단계: 내 나라 내정(시설·자원·생산·무역) */
   economy: EconomyState;
+  /** 승리하면 채워짐(판 끝) */
+  ending: Ending | null;
 }
 
 export interface NewGameOptions {
@@ -79,6 +82,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     world: newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS),
     officer: newOfficer(((opt.seed ?? now) * 7 + 13) >>> 0),
     economy: newEconomy(),
+    ending: null,
   };
 }
 
@@ -142,12 +146,12 @@ export function advance(s: GameState, ms: number): GameState {
     const nations: Record<string, NationState> = {};
     for (const [id, n] of Object.entries(cur.nations)) nations[id] = { ...n };
     const ownerBefore = { ...world.owner };
-    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer));
+    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer), occupyHold(cur));
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
   }
-  return accrue(cur, left);
+  return checkVictory(accrue(cur, left));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BLOCS, COUNTRIES } from '../data/world';
+import { HallList } from './victoryScreens';
 
 interface Props {
   onStart: (name: string, countryId: string, randomLeaders: boolean) => void;
@@ -25,6 +26,7 @@ export function StartScreen({ onStart, onImport }: Props) {
         장교 이름
         <input value={name} maxLength={12} placeholder="예: 김철수" onChange={(e) => setName(e.target.value)} />
       </label>
+      <HallList />
       <h2>나라 고르기</h2>
       <div className="country-grid">
         {COUNTRIES.map((c) => (

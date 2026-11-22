@@ -174,10 +174,10 @@ export function claimChore(s: GameState): GameState {
   return { ...s, economy: e };
 }
 
-// ── 시설 올리기(준장: 3단계까지, 총사령관: 5단계까지) ──
+// ── 시설 올리기(기획서: 총사령관이 되기 전엔 경험치만 쌓고, 된 뒤 5단계까지) ──
 
 export function maxLevel(rank: number): number {
-  return rank >= TOP_RANK ? 5 : rank >= ECON_RANK ? 3 : 1;
+  return rank >= TOP_RANK ? 5 : 1;
 }
 export function upgradeCost(e: EconomyState, f: Facility) {
   const lv = e.facilities[f].level;
@@ -185,7 +185,7 @@ export function upgradeCost(e: EconomyState, f: Facility) {
 }
 export function canUpgrade(s: GameState, f: Facility): string | null {
   const st = s.economy.facilities[f];
-  if (s.player.rankIndex < ECON_RANK) return `${RANKS[ECON_RANK].name}부터`;
+  if (s.player.rankIndex < TOP_RANK) return `${RANKS[TOP_RANK].name}이 되면 올려요`;
   if (st.level >= 5) return '최고 단계';
   if (st.level >= maxLevel(s.player.rankIndex)) return `${RANKS[TOP_RANK].name}이 되면 더 올려요`;
   if (st.buildEndMs) return '공사 중';
@@ -240,6 +240,15 @@ export function produce(s: GameState, unit: string, special = false): GameState 
 /** 만든 부대 전투력 합(대전투가 쉬워짐) */
 export function armyPower(s: GameState): number {
   return s.economy.power;
+}
+
+/**
+ * 점령지 지키기: 플레이어가 점령한 도시는 군정이 있어 반란이 훨씬 적고(복지가 높으면 더 적음),
+ * 만든 부대 전투력만큼 침공을 더 잘 막음(최대 2배).
+ */
+export const PLAYER_REBEL_MULT = 0.25;
+export function occupyHold(s: GameState): { rebel: number; defense: number } {
+  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * facilityEff(s.economy, '복지')), defense: 1 + Math.min(1, s.economy.power / 1500) };
 }
 
 // ── 무역(준장부터, 전쟁 중이 아닌 나라와) ──

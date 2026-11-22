@@ -1,3 +1,4 @@
+import { checkVictory } from './game/victory';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as G from './game/state';
 import { deleteSave, exportCode, importCode, loadGame, saveGame } from './game/save';
@@ -141,7 +142,7 @@ export function App() {
   // 버튼으로 바꾼 것은 바로 저장(창을 금방 닫아도 남도록)
   const update = (f: (s: G.GameState) => G.GameState) => {
     if (!stateRef.current) return;
-    const next = f(G.catchUp(stateRef.current, Date.now(), speedRef.current));
+    const next = checkVictory(f(G.catchUp(stateRef.current, Date.now(), speedRef.current)));
     stateRef.current = next;
     setState(next);
     saveGame(next);

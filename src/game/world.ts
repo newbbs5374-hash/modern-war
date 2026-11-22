@@ -173,6 +173,8 @@ interface Ctx {
   t: number;
   player: string;
   playerDefense: number;
+  /** 내가 점령한 도시 지키기: 반란 확률 배율 · 방어 배율 */
+  playerHold: { rebel: number; defense: number };
 }
 
 function log(ctx: Ctx, kind: EventKind, text: string, ...who: string[]) {
@@ -340,6 +342,8 @@ function invasions(ctx: Ctx) {
       if (city.home === def) dp *= HOMELAND_DEFENSE;
       if (targets.length === 1) dp *= LAST_STAND_DEFENSE;
       if (def === ctx.player && city.home === def) dp *= PLAYER_HOME_DEFENSE * ctx.playerDefense;
+      // 내가 만든 부대가 지켜 줌(내 땅 · 점령지 모두)
+      if (def === ctx.player) dp *= ctx.playerHold.defense;
       const ratio = ap / Math.max(1, dp);
       na.troops = Math.max(0, na.troops - commit * 0.2 * Math.min(2, 1 / ratio));
       nd.troops = Math.max(0, nd.troops - garrison * 0.12 * Math.min(2, ratio));
@@ -378,7 +382,8 @@ function rebellions(ctx: Ctx) {
     const occ = w.owner[c.id];
     if (occ === c.home) continue;
     const faithDiff = countryById(occ).faith !== countryById(c.home).faith;
-    if (!rng.chance(REBEL_CHANCE * (faithDiff ? REBEL_FAITH_MULT : 1))) continue;
+    const hold = occ === ctx.player ? ctx.playerHold.rebel : 1;
+    if (!rng.chance(REBEL_CHANCE * (faithDiff ? REBEL_FAITH_MULT : 1) * hold)) continue;
     const revived = !isAlive(w, c.home);
     w.owner[c.id] = c.home;
     w.defense[c.id] = CAPTURED_DEFENSE;
@@ -408,8 +413,9 @@ export function aiTick(
   player: string,
   /** 내 나라 도시 방어 추가 배율(장군) */
   playerDefense = 1,
+  playerHold: { rebel: number; defense: number } = { rebel: 1, defense: 1 },
 ): void {
-  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense };
+  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense, playerHold };
   diplomacy(ctx);
   invasions(ctx);
   rebellions(ctx);

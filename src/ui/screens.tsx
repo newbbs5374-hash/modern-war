@@ -12,6 +12,7 @@ import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
 import { DRILL_MAX, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
+import { EndingCard, VictoryCard } from './victoryScreens';
 import { FacilityCard, ProductionCard, ResourceCard, TradeCard } from './economyScreens';
 import { PROMOTION } from '../data/officers';
 
@@ -44,7 +45,8 @@ export interface ScreenProps {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /* ───────── 본부(홈): 왼쪽 = 지도·임무·받기, 오른쪽 = 작은 버튼 줄 ───────── */
-export function HomeScreen({ state, unread, actions, go }: ScreenProps) {
+export function HomeScreen(props: ScreenProps) {
+  const { state, unread, actions, go } = props;
   const me = countryById(state.player.countryId);
   const clock = gameClock(state.worldMs);
   const pending = state.player.pendingSalary;
@@ -63,6 +65,7 @@ export function HomeScreen({ state, unread, actions, go }: ScreenProps) {
         <small className="muted">전쟁 {clock.dayNumber}일째 · 실제 1시간 = 게임 하루</small>
       </div>
 
+      <EndingCard {...props} />
       {fallen && (
         <div className="alert">
           {me.name}의 도시를 모두 잃었어요. 망명 정부로 버티는 중이고, 점령지에서 반란이 일어나면 되찾아요.
@@ -157,6 +160,7 @@ export function OpsScreen(props: ScreenProps) {
     <>
       <MissionCard {...props} />
       <GrandCard {...props} />
+      {props.state.player.rankIndex >= 8 && <VictoryCard {...props} />}
       <Card
         title="세계 지도"
         right={
