@@ -1,0 +1,85 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --panel: #131c2e;
+  --line: #26344d;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --accent: #fde047;
+  --primary: #2563eb;
+  --danger: #b91c1c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-size: 15px;
+}
+#root { max-width: 980px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 24px; margin: 8px 0; }
+h2 { font-size: 18px; margin: 20px 0 8px; }
+h3 { font-size: 16px; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; margin: 2px 0; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+button, select, input, textarea {
+  font: inherit;
+  color: var(--text);
+  background: #1f2a40;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+button { cursor: pointer; }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--primary); border-color: var(--primary); }
+button.danger { background: var(--danger); border-color: var(--danger); }
+button.on { outline: 2px solid var(--accent); }
+button.big { width: 100%; padding: 12px; margin-top: 16px; font-size: 17px; }
+textarea { width: 100%; min-height: 60px; margin-top: 8px; font-size: 12px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; max-width: 280px; }
+.country-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.country-card { text-align: left; border-width: 2px; background: var(--panel); }
+.country-card.picked { outline: 3px solid var(--accent); }
+.diff { font-size: 12px; padding: 1px 6px; border-radius: 4px; background: #334155; }
+.diff-쉬움 { background: #166534; }
+.diff-보통 { background: #1e40af; }
+.diff-어려움 { background: #9a3412; }
+.diff-매우어려움 { background: #7f1d1d; }
+.import { margin-top: 20px; }
+.error { color: #fca5a5; }
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;
+}
+.clock { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.who { text-align: right; }
+.notice { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: #3f3a12; border: 1px solid #a16207; }
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-top: 10px; }
+.panel.test { border-style: dashed; border-color: #a16207; }
+.big-num { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.bar { height: 8px; background: #0b1220; border-radius: 4px; overflow: hidden; margin: 8px 0 4px; }
+.bar-fill { height: 100%; background: var(--accent); }
+
+.map { width: 100%; height: auto; display: block; border-radius: 6px; }
+.map-continent { fill: var(--muted); font-size: 11.5px; font-weight: 600; }
+.map-label { fill: var(--text); pointer-events: none; }
+.map-country { cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+.legend i.line { height: 0; width: 22px; border-top: 2.5px dashed; border-radius: 0; vertical-align: 3px; }
+.legend i.war { border-color: #f43f5e; }
+.legend i.truce { border-color: #f59e0b; }
+.country-info { border-top: 1px solid var(--line); padding-top: 8px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+tr.sel td { background: #1e293b; }
+tbody tr { cursor: pointer; }
