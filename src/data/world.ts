@@ -84,7 +84,7 @@ const C = (o: Omit<Country, 'label'> & { label?: { x: number; y: number } }): Co
 export const COUNTRIES: Country[] = [
   C({
     id: 'us', name: '아스트라 연방', continent: 'amern', intro: '동해 군도의 큰 섬. 가장 먼저 항구를 연 부유한 해양 연방',
-    cities: ['스타포트', '노바헤이븐', '실버베이', '코랄섬'],
+    cities: ['스타포트', '노바헤이븐', '실버베이', '코랄섬', '이글록', '썬더캐년', '프론티어시', '레드메사'],
     economy: 100, budget: 100, military: 100, difficulty: '쉬움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '중',
     specialUnit: { name: '항모 타격단', base: '항공모함', effect: '함재기 출격 2배 · 호위함 보호막' },
@@ -93,7 +93,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'cn', name: '용린 공화국', continent: 'asien', intro: '중앙 대도의 넓은 땅. 사람이 많고 공장이 쉬지 않는 나라',
-    cities: ['용린성', '비취항', '홍등시', '운해진'],
+    cities: ['용린성', '비취항', '홍등시', '운해진', '금룡시', '청하진', '옥문관', '남풍포'],
     economy: 80, budget: 59, military: 80, difficulty: '쉬움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '대규모 동원 사단', base: '보병', effect: '병력 1.5배 · 쓰러져도 빨리 채워짐' },
@@ -102,7 +102,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'ru', name: '북빙 연합', continent: 'norga', intro: '얼음과 오로라의 북빙 군도. 춥지만 미사일 기술이 앞선 나라',
-    cities: ['빙관성', '백야항', '서리봉'],
+    cities: ['빙관성', '백야항', '서리봉', '오로라시', '설원진', '툰드라항', '얼음송곳', '북극성채', '백곰만', '눈보라령'],
     economy: 29, budget: 45, military: 94, difficulty: '쉬움',
     bloc: 'continental', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '전략 미사일 여단', base: '미사일', effect: '사거리 +50% · 방공 뚫기 +20%' },
@@ -111,7 +111,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'de', name: '철각 공국', continent: 'eurona', intro: '철광 섬 위의 공국. 용광로와 기갑 공장이 자랑',
-    cities: ['철각성', '용광시', '망치항'],
+    cities: ['철각성', '용광시'],
     economy: 41, budget: 35, military: 30, difficulty: '보통',
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '기갑 군단', base: '전차', effect: '장갑 +20% · 돌파 후 추격' },
@@ -120,7 +120,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'jp', name: '벚섬 왕국', continent: 'amern', intro: '동해 군도의 꽃이 지지 않는 긴 섬. 정밀 기술과 방패 함대의 왕국',
-    cities: ['벚꽃궁', '달빛항', '꽃잎만', '등불섬'],
+    cities: ['벚꽃궁', '달빛항'],
     economy: 38, budget: 26, military: 39, difficulty: '보통',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '방패 함대', base: '구축함', effect: '미사일 요격 +40%' },
@@ -129,7 +129,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'uk', name: '안개항 왕국', continent: 'eurona', intro: '늘 안개 낀 항구 섬. 정보원과 잠수함이 강한 오래된 왕가',
-    cities: ['안개항', '회색탑', '고래만'],
+    cities: ['안개항', '회색탑'],
     economy: 36, budget: 31, military: 39, difficulty: '보통',
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '그림자 공정대', base: '특수부대', effect: '잠입 성공 +30% · 기습 피해 2배' },
@@ -138,7 +138,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'in', name: '금빛평원 연방', continent: 'asien', intro: '중앙 대도 남쪽의 넓은 들. 사람이 많고 산악 부대가 강함',
-    cities: ['금빛성', '태양평야', '연꽃항'],
+    cities: ['금빛성', '태양평야', '연꽃항', '코끼리강', '향신료시'],
     economy: 36, budget: 31, military: 55, difficulty: '보통',
     bloc: 'independent', faith: 'pantheon', faithStrength: '중',
     specialUnit: { name: '산악 보병 사단', base: '보병', effect: '산·고지 전투 +30%' },
@@ -147,7 +147,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'kr', name: '가람 공화국', continent: 'asien', intro: '강이 흐르는 작은 섬. 정밀한 포병과 무기 수출로 살아가는 나라',
-    cities: ['한빛', '해오름', '누리포', '별가람'],
+    cities: ['한빛', '별가람'],
     economy: 25, budget: 22, military: 45, difficulty: '어려움',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '자주포 포병대', base: '포병', effect: '쏘고 바로 이동 · 정확도 +30%' },
@@ -165,7 +165,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'il', name: '별방패 도시국', continent: 'sahar', intro: '성소 곁의 작은 도시 섬. 하늘을 지키는 방공망이 촘촘함',
-    cities: ['별방패성', '수정항', '감시탑'],
+    cities: ['별방패성', '수정항'],
     economy: 14, budget: 22, military: 27, difficulty: '어려움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '강',
     specialUnit: { name: '다층 방공망', base: '방공부대', effect: '미사일·로켓·드론 요격 +50%' },
@@ -183,7 +183,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'ua', name: '푸른들 자유국', continent: 'eurona', intro: '밀밭과 해바라기의 섬. 작지만 땅을 지키려는 마음이 가장 단단함',
-    cities: ['푸른들성', '밀밭시', '해바라기항', '버들강'],
+    cities: ['푸른들성', '밀밭시', '해바라기항'],
     economy: 10, budget: 30, military: 20, difficulty: '매우 어려움',
     bloc: 'europe', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '해상 드론 부대', base: '무인드론', effect: '바다 위 드론으로 함선 공격 · 해군 없이도 바다 막기' },
@@ -192,7 +192,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'kp', name: '흑철 요새국', continent: 'norga', intro: '북빙 군도 끝 검은 바위 섬의 요새국. 땅굴과 특수부대로 버티는 폐쇄된 나라',
-    cities: ['흑철성', '동굴항', '무쇠령', '철벽진'],
+    cities: ['흑철성', '동굴항'],
     economy: 3, budget: 10, military: 12, difficulty: '매우 어려움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '특수작전군', base: '특수부대', effect: '땅굴 침투 · 적 후방 도시 기습' },

@@ -62,6 +62,37 @@ const SPOTS: Array<[number, number]> = [
 
 export type DayMode = '자동' | '낮' | '밤';
 /** 실제 시각(이 기기)으로 낮·밤: 0 = 한낮, 1 = 한밤 */
+/** 세계 지도의 도시 자리 → 본부 섬(가운데 235,380 · 가로 반지름 160 · 세로 250) 안 자리 */
+function homeSpots(cs: City[]): Array<[number, number]> {
+  if (cs.length === 0) return [];
+  const mx = cs.reduce((a, c) => a + c.x, 0) / cs.length;
+  const my = cs.reduce((a, c) => a + c.y, 0) / cs.length;
+  const ex = Math.max(1, ...cs.map((c) => Math.abs(c.x - mx)));
+  const ey = Math.max(1, ...cs.map((c) => Math.abs(c.y - my)));
+  // 가로·세로를 따로 늘려 섬을 고루 씀(나라 모양이 가로로 길어도 세로 섬에 퍼짐)
+  const kx = Math.min((160 * 0.5) / ex, 6);
+  const ky = Math.min((250 * 0.66) / ey, 6);
+  const raw = cs.map((c) => [250 + (c.x - mx) * kx, 400 + (c.y - my) * ky] as [number, number]);
+  // 너무 붙은 도시는 살짝 벌림
+  for (let it = 0; it < 30; it++)
+    for (let i = 0; i < raw.length; i++)
+      for (let j = i + 1; j < raw.length; j++) {
+        const dx = raw[j][0] - raw[i][0];
+        const dy = raw[j][1] - raw[i][1];
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 62) {
+          const push = (62 - d) / 2;
+          raw[i] = [raw[i][0] - (dx / d) * push, raw[i][1] - (dy / d) * push];
+          raw[j] = [raw[j][0] + (dx / d) * push, raw[j][1] + (dy / d) * push];
+        }
+      }
+  // 왼쪽 위는 세계 지도·주요 임무 창에 가리므로 피함
+  return raw.map(([x, y]) => {
+    const yy = Math.max(190, Math.min(600, y));
+    return [Math.max(yy < 430 ? 215 : 120, Math.min(355, x)), yy];
+  });
+}
+
 export function nightLevel(mode: DayMode, d = new Date()): number {
   if (mode === '낮') return 0;
   if (mode === '밤') return 1;
@@ -106,7 +137,9 @@ export function HomeLand(props: {
   const flag = FLAG_DEF[countryId];
   const mine = flag?.bands[flag.bands.length > 2 ? 1 : 0] ?? '#3b82f6';
   const homeCities = CITIES.filter((c) => c.home === countryId);
-  const pos = (i: number) => SPOTS[i % SPOTS.length];
+  // 도시 자리: 세계 지도(육각 타일)의 실제 배치를 섬 안으로 줄여 옮김(2~10개)
+  const spots = homeSpots(homeCities);
+  const pos = (i: number) => spots[i] ?? SPOTS[i % SPOTS.length];
   const mountains = Array.from({ length: 6 }, () => [140 + r() * 200, 200 + r() * 330, 14 + r() * 12] as const);
   const forests = Array.from({ length: 10 }, () => [130 + r() * 220, 220 + r() * 320] as const);
   const riverY = 260 + r() * 120;
