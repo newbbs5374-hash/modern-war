@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { firstTestGrant } from './testgrant';
 import { COUNTRIES, startingRelation } from '../data/world';
 import { advance, catchUp, claimSalary, gameClock, newGame, pendingCap, setRank, skip } from './state';
 import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } from './save';
@@ -85,13 +86,20 @@ describe('저장/불러오기', () => {
       setItem: (k, v) => void mem.set(k, v),
       removeItem: (k) => void mem.delete(k),
     };
-    const s = advance(newGame('대장', 'de', 0), 7 * HOUR);
+    const s = firstTestGrant(advance(newGame('대장', 'de', 0), 7 * HOUR)); // 시험판 지급은 이미 받은 저장
     expect(saveGame(s, st)).toBe(true);
     expect(loadGame(st)).toEqual(s);
   });
   it('저장 코드 내보내기/들여오기(한글 이름 포함)', () => {
-    const s = advance(newGame('대장', 'ua', 0), HOUR);
+    const s = firstTestGrant(advance(newGame('대장', 'ua', 0), HOUR));
     expect(importCode(exportCode(s))).toEqual(s);
+  });
+  it('시험판: 옛 저장은 불러올 때 한 번만 자원을 받음', () => {
+    const s = advance(newGame('대장', 'kr', 0), HOUR);
+    const once = importCode(exportCode(s))!;
+    expect(once.player.salary).toBeGreaterThan(s.player.salary + 100_000);
+    expect(once.officer.testGrant).toBe(1);
+    expect(importCode(exportCode(once))).toEqual(once);
   });
   it('망가진 저장은 거부', () => {
     expect(parseSave('{}')).toBeNull();
