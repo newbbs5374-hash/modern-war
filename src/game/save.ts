@@ -11,6 +11,7 @@ import { SAVE_VERSION, type GameState } from './state';
 import { newBuildings, newEconomy } from './economy';
 import { newWorld } from './world';
 import { newOfficer } from './officer';
+import { newCiv } from './civ';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
 
 export const SAVE_KEY = 'modern-war-save';
@@ -90,6 +91,9 @@ export function parseSave(text: string): GameState | null {
         o.statExp[id] = Math.round((v - Math.floor(v)) * statExpNeed(Math.floor(v)));
       }
     }
+    // 문명식 운영(연구·체제·외교·도시)이 없는 옛 저장: 새로 채움
+    if (!s.civ || !Array.isArray(s.civ.done) || !s.civ.council) s.civ = newCiv(s);
+    if (s.civ.lastSwapMs === null) s.civ.lastSwapMs = -Infinity;
     if (typeof o.boosts !== 'number') o.boosts = TEST_BOOSTS; // 시험판: 옛 저장에도 가속권 지급
     return firstTestGrant(s); // 시험판: 옛 저장에도 자원 넉넉히(한 번만)
   } catch {

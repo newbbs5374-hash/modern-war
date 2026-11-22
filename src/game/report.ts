@@ -5,6 +5,7 @@ import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
 import { BUILDING_IDS } from '../data/economy';
 import type { GameState } from './state';
+import { ERAS, agendaById, districtById, techById } from '../data/civ';
 
 export interface Report {
   id: string;
@@ -80,6 +81,21 @@ export function addReports(b: GameState | null, a: GameState): GameState {
   // 스탯 상승
   const ups = STAT_IDS.filter((id) => Math.floor(a.officer.stats[id]) > Math.floor(b.officer.stats[id]));
   if (ups.length) out.push({ icon: '📈', text: `${ups.map((id) => `${id} ${Math.floor(a.officer.stats[id])}`).join(', ')}! 능력이 올랐습니다.` });
+  // 문명식 운영: 연구 완료 · 번뜩임 · 구역 완공 · 시대 · 군도 회의
+  const cb = b.civ;
+  const ca = a.civ;
+  if (cb && ca) {
+    for (const id of ca.done) if (!cb.done.includes(id)) out.push({ icon: techById(id)?.icon ?? '🔬', text: `${josa(techById(id)?.name ?? id, '이', '가')} 연구를 마쳤습니다. 다음 연구를 골라 주십시오.` });
+    for (const id of ca.eureka) if (!cb.eureka.includes(id) && !ca.done.includes(id)) out.push({ icon: '💡', text: `번뜩임! ${techById(id)?.eureka?.text ?? ''} 덕분에 ${techById(id)?.name} 연구가 절반으로 줄었습니다.` });
+    if (ca.era > cb.era) out.push({ icon: ERAS[ca.era].icon, text: `${ERAS[ca.era].name}에 들어섰습니다. ${ERAS[ca.era].text}입니다.` });
+    for (const [city, cc] of Object.entries(ca.cities)) {
+      const old = cb.cities[city];
+      for (const d of cc.districts) if (d.told && !old?.districts.find((x) => x.tile === d.tile)?.told) out.push({ icon: districtById(d.id).icon, text: `${josa(districtById(d.id).name, '이', '가')} 완공되었습니다.` });
+    }
+    const op = ca.council.open;
+    if (op && op.id !== cb.council.open?.id) out.push({ icon: '🏛️', text: `군도 회의가 열렸습니다. 안건은 "${agendaById(op.agenda).name}"입니다. 외교 화면에서 투표해 주십시오.` });
+    if (ca.council.last && ca.council.last !== cb.council.last) out.push({ icon: '🗳️', text: `군도 회의 결과: ${ca.council.last}` });
+  }
 
   let s = a;
   for (const r of out) s = pushReport(s, r);

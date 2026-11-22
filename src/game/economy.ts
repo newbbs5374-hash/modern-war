@@ -40,6 +40,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { isAlive, relationOf } from './world';
+import { civBuildSpeed, civPowerMult, civResMult, extraContracts, tradeEdge, unitTechLock } from './civ';
 
 const HOUR = 3600e3;
 
@@ -154,11 +155,12 @@ export const infraMult = (s: GameState, unit: string) => 1 + buildingEff(s, unit
 export function resPerDay(s: GameState): Stock {
   const me = s.player.countryId;
   const out = emptyStock();
+  const civ = civResMult(s);
   for (const c of CITIES) {
     if (s.world.owner[c.id] !== me) continue;
     const r = CITY_RES[c.name] ?? {};
     const k = c.home === me ? 1 : OCCUPIED_RES;
-    for (const [res, v] of Object.entries(r)) out[res as Res] += v! * k * resMult(s, res as Res);
+    for (const [res, v] of Object.entries(r)) out[res as Res] += v! * k * resMult(s, res as Res) * civ;
   }
   return out;
 }
@@ -195,7 +197,7 @@ export function economyTick(s: GameState): GameState {
     const c = costOf(s, q.unit, q.special);
     const name = q.special ? countryById(me).specialUnit.name : q.unit;
     e.army[name] = (e.army[name] ?? 0) + 1;
-    e.power += c.power;
+    e.power += Math.round(c.power * civPowerMult(s, q.unit));
     troops += c.troops;
     log(e, `${name} 1부대 완성(전투력 +${c.power}).`);
     return false;
@@ -271,12 +273,14 @@ export function costOf(s: GameState, unit: string, special: boolean): UnitCost {
 }
 /** 인프라만큼 빨라진 실제 생산 시간(ms) */
 export function buildMs(s: GameState, unit: string, special: boolean): number {
-  return (costOf(s, unit, special).hours * HOUR) / infraMult(s, unit);
+  return (costOf(s, unit, special).hours * HOUR) / infraMult(s, unit) / civBuildSpeed(s, unit);
 }
 export const QUEUE_MAX = 5;
 export function canProduce(s: GameState, unit: string, special = false): string | null {
   if (!UNIT_COST[unit]) return '없는 병과';
   if (s.player.rankIndex < unitRank(unit)) return `${RANKS[unitRank(unit)].name}부터`;
+  const tech = unitTechLock(s, unit, special);
+  if (tech) return tech;
   if (s.economy.queue.length >= QUEUE_MAX) return `생산 줄은 ${QUEUE_MAX}개까지`;
   const c = costOf(s, unit, special);
   if (s.nations[s.player.countryId].treasury < c.money) return '국방예산이 모자라요';
@@ -324,8 +328,14 @@ export function tradePartners(s: GameState): string[] {
 export function tradePrice(s: GameState, id: string, r: Res): number {
   const me = s.player.countryId;
   const mult = (TRADE_MULT[s.world.personalities[id]] ?? 1) * (relationOf(s.world, me, id) === '연합' ? ALLY_DISCOUNT : 1);
-  return Math.round(RES_PRICE[r] * mult);
+  return Math.round(RES_PRICE[r] * mult * (1 - tradeEdge(s, id)));
 }
+/** 팔 때 값 비율(항로 개방·체제 이득이면 더 비싸게 팖) */
+export function sellRate(s: GameState, id: string): number {
+  const e = tradeEdge(s, id);
+  return (SELL_RATE * (1 + e)) / (1 - e);
+}
+export const contractMax = (s: GameState) => CONTRACT_MAX + extraContracts(s);
 export function canTrade(s: GameState, id: string, r: Res, qty: number, buy: boolean): string | null {
   if (s.player.rankIndex < ECON_RANK) return `${RANKS[ECON_RANK].name}부터 무역해요`;
   if (!tradePartners(s).includes(id)) return '전쟁 중인 나라와는 거래할 수 없어요';
@@ -340,7 +350,7 @@ export function trade(s: GameState, id: string, r: Res, qty: number, buy: boolea
   if (canTrade(s, id, r, qty, buy)) return s;
   const me = s.player.countryId;
   const e = cloneEco(s.economy);
-  const money = buy ? tradePrice(s, id, r) * qty : Math.round(tradePrice(s, id, r) * SELL_RATE * qty);
+  const money = buy ? tradePrice(s, id, r) * qty : Math.round(tradePrice(s, id, r) * sellRate(s, id) * qty);
   e.stock[r] += buy ? qty : -qty;
   log(e, `${countryById(id).name}에 ${r} ${qty}개 ${buy ? '사기' : '팔기'} (${buy ? '-' : '+'}${money.toLocaleString()})`);
   const nations = { ...s.nations };
@@ -361,7 +371,7 @@ export function contractPaused(s: GameState, c: Contract): string | null {
 /** 계약 1개의 시간당 돈(수입은 −, 수출은 +) */
 export function contractMoney(s: GameState, c: Contract): number {
   const p = tradePrice(s, c.country, c.res) * c.qty;
-  return c.buy ? -p : Math.round(p * SELL_RATE);
+  return c.buy ? -p : Math.round(p * sellRate(s, c.country));
 }
 /** 돌아가는 계약들의 시간당 돈 합 */
 export function contractMoneyPerHour(s: GameState): number {
@@ -372,7 +382,7 @@ export function contractResPerHour(s: GameState, r: Res): number {
   return (s.economy.contracts ?? []).reduce((a, c) => a + (c.res === r && !contractPaused(s, c) ? (c.buy ? c.qty : -c.qty) : 0), 0);
 }
 export function canContract(s: GameState, country: string, r: Res, qty: number, buy: boolean): string | null {
-  if ((s.economy.contracts ?? []).length >= CONTRACT_MAX) return `계약은 ${CONTRACT_MAX}개까지`;
+  if ((s.economy.contracts ?? []).length >= contractMax(s)) return `계약은 ${contractMax(s)}개까지`;
   if (!tradePartners(s).includes(country)) return '전쟁 중인 나라와는 계약할 수 없어요';
   if (buy && !producesOf(s, country).includes(r)) return `${countryById(country).name}에는 ${r}이(가) 없어요`;
   if (!(qty > 0)) return '수량';
@@ -410,8 +420,8 @@ export function applyContracts(s: GameState, ms: number): GameState {
     } else {
       q = Math.min(q, Math.max(0, stock[c.res]));
       stock[c.res] -= q;
-      nations[me] = { ...nations[me], treasury: nations[me].treasury + q * price * SELL_RATE };
-      nations[c.country] = { ...nations[c.country], treasury: nations[c.country].treasury - q * price * SELL_RATE };
+      nations[me] = { ...nations[me], treasury: nations[me].treasury + q * price * sellRate(s, c.country) };
+      nations[c.country] = { ...nations[c.country], treasury: nations[c.country].treasury - q * price * sellRate(s, c.country) };
     }
   }
   return { ...s, nations, economy: { ...s.economy, stock } };
