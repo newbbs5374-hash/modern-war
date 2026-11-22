@@ -20,7 +20,8 @@ import {
 
 export type Side = 'me' | 'foe';
 /** survive = 깃발 지키기 · eliminate = 적 전멸 · rescue = 인질 데리고 아래 줄로 · reach = 목표 칸 닿기 */
-export type Goal = 'survive' | 'eliminate' | 'rescue' | 'reach';
+/** infiltrate = 들키지 않고 목표 칸(잠입 훈련) · naval = 바다에서 숨은 잠수함 찾아 없애기(해상 훈련) */
+export type Goal = 'survive' | 'eliminate' | 'rescue' | 'reach' | 'infiltrate' | 'naval';
 
 export interface GUnit {
   id: number;
@@ -67,6 +68,10 @@ export interface GridBattle {
   log: string[];
   /** 적 강함(난이도·계급) */
   foePower: number;
+  /** 해상: 소나로 드러난 곳(이 턴 동안) */
+  sonar: { x: number; y: number; r: number; turn: number } | null;
+  /** 잠입: 한 번이라도 들켰나 */
+  spotted: boolean;
 }
 
 export interface GridSetup {
@@ -77,16 +82,20 @@ export interface GridSetup {
   aides: Array<{ name: string; specialty: string; level: number }>;
   seed: number;
   playerName?: string;
+  /** 분대 크기(잠입 훈련: 소위·중위 혼자, 그 뒤 3명) */
+  squadSize?: number;
 }
 
 export const GRID_W = 7;
 export const GRID_H = 9;
-const MAX_TURNS: Record<Goal, number> = { survive: 8, eliminate: 10, rescue: 14, reach: 8 };
+const MAX_TURNS: Record<Goal, number> = { survive: 8, eliminate: 10, rescue: 14, reach: 8, infiltrate: 12, naval: 12 };
 const GOAL_TEXT: Record<Goal, string> = {
   survive: '깃발을 8턴 동안 지키기(적이 깃발에 서면 패배)',
   eliminate: '적을 모두 없애기(들키기 전 공격은 기습 피해 ×1.5)',
   rescue: '인질 옆으로 가서 구한 뒤, 맨 아래 줄까지 데려오기',
   reach: '⭐ 목표 칸에 닿기',
+  infiltrate: '들키지 않고 ⭐ 목표(문서)까지. 들키면 경보가 울려 탈출 모드(별 최대 1개)',
+  naval: '바다에 숨은 적 잠수함을 소나로 찾아 모두 없애기',
 };
 export const goalText = (g: Goal) => GOAL_TEXT[g];
 
@@ -146,6 +155,26 @@ function makeTiles(rng: Rng, w: number, h: number): Terrain[] {
   return Array(w * h).fill('평지');
 }
 
+/** 바다 지도: 대부분 물, 작은 섬(언덕) 몇 개 */
+function makeSea(rng: Rng, w: number, h: number): Terrain[] {
+  const t: Terrain[] = Array(w * h).fill('물');
+  const n = 3 + Math.floor(rng.next() * 3);
+  for (let i = 0; i < n; i++) {
+    const x = 1 + Math.floor(rng.next() * (w - 2));
+    const y = 2 + Math.floor(rng.next() * (h - 4));
+    t[y * w + x] = '언덕';
+    if (rng.chance(0.5) && x + 1 < w - 1) t[y * w + x + 1] = '언덕';
+  }
+  return t;
+}
+
+const SHIP = new Set<UnitKind>(['구축함', '잠수함']);
+/** 이동 비용: 배는 물만, 나머지는 지형대로 */
+export function moveCost(kind: UnitKind, t: Terrain): number {
+  if (SHIP.has(kind)) return t === '물' ? 1 : 0;
+  return TERRAIN[t].cost;
+}
+
 function mkUnit(b: GridBattle, side: Side, kind: UnitKind, name: string, x: number, y: number, mod?: Partial<GUnit>): GUnit {
   const base = UNIT_BASE[kind];
   const u: GUnit = {
@@ -173,9 +202,10 @@ function mkUnit(b: GridBattle, side: Side, kind: UnitKind, name: string, x: numb
   return u;
 }
 
-function freeSpot(b: GridBattle, rng: Rng, rows: number[], avoid: (x: number, y: number) => boolean = () => false) {
+function freeSpot(b: GridBattle, rng: Rng, rows: number[], avoid: (x: number, y: number) => boolean = () => false, kind: UnitKind = '소총') {
   const spots: Array<[number, number]> = [];
-  for (const y of rows) for (let x = 0; x < b.w; x++) if (b.tiles[idx(b, x, y)] !== '물' && !unitAt(b, x, y) && !avoid(x, y)) spots.push([x, y]);
+  for (const y of rows)
+    for (let x = 0; x < b.w; x++) if (moveCost(kind, b.tiles[idx(b, x, y)]) > 0 && !unitAt(b, x, y) && !avoid(x, y)) spots.push([x, y]);
   return spots.length ? rng.pick(spots) : null;
 }
 
@@ -195,7 +225,7 @@ export function createGridBattle(o: GridSetup): GridBattle {
     side: 'me',
     goal: o.goal,
     mark: null,
-    alarm: o.goal === 'survive',
+    alarm: o.goal === 'survive' || o.goal === 'naval',
     waves: [],
     seed: 0,
     nextId: 1,
@@ -203,7 +233,10 @@ export function createGridBattle(o: GridSetup): GridBattle {
     result: null,
     log: [],
     foePower: 0.85 + (o.difficulty - 1) * 0.8 + o.rank * 0.2,
+    sonar: null,
+    spotted: false,
   };
+  if (o.goal === 'naval') b.tiles = makeSea(rng, w, h);
   const bonus = combatBonus(o.stats);
   const meMod = (u: GUnit) => {
     u.atk = Math.round(u.atk * bonus.atkMult * 10) / 10;
@@ -222,7 +255,7 @@ export function createGridBattle(o: GridSetup): GridBattle {
     const x = 3;
     b.tiles[idx(b, x, h - 1)] = '건물';
     b.mark = { x, y: h - 1 };
-  } else if (o.goal === 'reach') {
+  } else if (o.goal === 'reach' || o.goal === 'infiltrate') {
     const x = rng.pick([0, 1, 2, 3, 4, 5, 6]);
     b.tiles[idx(b, x, 0)] = '평지';
     b.mark = { x, y: 0 };
@@ -235,12 +268,24 @@ export function createGridBattle(o: GridSetup): GridBattle {
     ['기관총', '기관총 사수'],
   ];
   for (const a of o.aides.slice(0, 3)) squad.push([AIDE_KIND[a.specialty] ?? '소총', a.name]);
+  if (o.goal === 'naval') {
+    squad.length = 0;
+    squad.push(['구축함', '기함(나)'], ['구축함', '2번함'], ['구축함', '3번함']);
+    if (o.rank >= 7) squad.push(['구축함', '4번함']);
+  }
+  if (o.squadSize) squad.length = Math.min(squad.length, o.squadSize);
+  const solo = squad.length === 1;
   for (const [kind, name] of squad) {
-    const spot = freeSpot(b, rng, [h - 1, h - 2], (x, y) => !!b.mark && b.mark.x === x && b.mark.y === y);
+    const spot = freeSpot(b, rng, [h - 1, h - 2], (x, y) => !!b.mark && b.mark.x === x && b.mark.y === y, kind);
     if (!spot) break;
     const u = mkUnit(b, 'me', kind, name, spot[0], spot[1]);
     meMod(u);
     if (name.endsWith('(나)') || name === '나') u.atk += 1;
+    // 혼자 하는 잠입은 버틸 힘을 더 줌
+    if (solo) {
+      u.hp = Math.round(u.hp * 1.8);
+      u.maxHp = u.hp;
+    }
     b.units.push(u);
   }
   // 인질
@@ -252,19 +297,29 @@ export function createGridBattle(o: GridSetup): GridBattle {
     }
   }
   // 적
-  const count = { survive: 2, eliminate: 3, rescue: 2, reach: 3 }[o.goal] + Math.max(0, Math.round((o.difficulty - 1) * 4)) + Math.floor(o.rank / 2);
+  const count =
+    { survive: 2, eliminate: 3, rescue: 2, reach: 3, infiltrate: 3, naval: 2 }[o.goal] +
+    Math.max(0, Math.round((o.difficulty - 1) * 4)) +
+    Math.floor(o.rank / (o.goal === 'naval' || o.goal === 'infiltrate' ? 3 : 2));
   const tank = o.difficulty >= 1.15 || o.rank >= 4;
-  for (let i = 0; i < count; i++) addFoe(b, rng, tank && i === 0 ? '전차' : i % 3 === 2 ? '기관총' : i % 4 === 3 ? '저격' : '소총', [0, 1, 2]);
+  if (o.goal === 'naval') {
+    for (let i = 0; i < count; i++) addFoe(b, rng, i % 3 === 2 ? '구축함' : '잠수함', [0, 1, 2, 3]);
+  } else if (o.goal === 'infiltrate') {
+    // 경비병은 지도 곳곳(목표 근처 많이)
+    for (let i = 0; i < count; i++) addFoe(b, rng, i % 3 === 2 ? '기관총' : '소총', i < 2 ? [0, 1] : [2, 3, 4, 5]);
+    // 경비병은 전투 부대보다 약함
+    for (const f of b.units) if (f.side === 'foe') f.atk = Math.round(f.atk * 0.7 * 10) / 10;
+  } else for (let i = 0; i < count; i++) addFoe(b, rng, tank && i === 0 ? '전차' : i % 3 === 2 ? '기관총' : i % 4 === 3 ? '저격' : '소총', [0, 1, 2]);
   if (o.goal === 'survive') b.waves = [{ turn: 3, count: 2 }, { turn: 5, count: 2 + (o.difficulty > 1.1 ? 1 : 0) }];
-  // 적 시야는 은밀이 높으면 줄어듦
-  for (const u of b.units) if (u.side === 'foe') u.sight = Math.max(2, u.sight - bonus.stealth);
+  // 적 시야는 은밀이 높으면 줄어듦. 잠입에서 경계 전 경비병은 시야 2(경보가 울리면 원래대로)
+  for (const u of b.units) if (u.side === 'foe') u.sight = o.goal === 'infiltrate' ? 2 : Math.max(2, u.sight - bonus.stealth);
   b.seed = rng.seed;
   say(b, `작전 목표: ${GOAL_TEXT[o.goal]}`);
   return b;
 }
 
 function addFoe(b: GridBattle, rng: Rng, kind: UnitKind, rows: number[]) {
-  const spot = freeSpot(b, rng, rows, (x, y) => !!b.mark && b.mark.x === x && b.mark.y === y);
+  const spot = freeSpot(b, rng, rows, (x, y) => !!b.mark && b.mark.x === x && b.mark.y === y, kind);
   if (!spot) return;
   const p = b.foePower;
   const u = mkUnit(b, 'foe', kind, `적 ${kind}`, spot[0], spot[1]);
@@ -278,6 +333,10 @@ function addFoe(b: GridBattle, rng: Rng, kind: UnitKind, rows: number[]) {
 
 /** side가 (x,y)의 유닛 u를 볼 수 있나 */
 export function canSee(b: GridBattle, side: Side, u: GUnit): boolean {
+  if (u.kind === '잠수함') {
+    if (b.sonar && side !== u.side && b.sonar.turn === b.turn && dist(b.sonar, u) <= b.sonar.r) return true;
+    return b.units.some((v) => v.hp > 0 && v.side === side && dist(v, u) <= 1);
+  }
   const t = b.tiles[idx(b, u.x, u.y)];
   const need = u.hidden ? 1 : t === '숲' ? 2 : 99;
   return b.units.some((v) => v.hp > 0 && v.side === side && !v.captive && v.kind !== '인질' && dist(v, u) <= Math.min(need, v.sight + (b.tiles[idx(b, v.x, v.y)] === '언덕' ? 1 : 0)));
@@ -307,7 +366,7 @@ export function reachable(b: GridBattle, u: GUnit): Map<number, number> {
       const nx = x + dx;
       const ny = y + dy;
       if (!inside(b, nx, ny)) continue;
-      const cost = TERRAIN[b.tiles[idx(b, nx, ny)]].cost;
+      const cost = moveCost(u.kind, b.tiles[idx(b, nx, ny)]);
       if (!cost) continue;
       const other = unitAt(b, nx, ny);
       if (other && other.side !== u.side && !other.captive) continue; // 적은 못 지나감
@@ -373,6 +432,35 @@ export function moveUnit(b0: GridBattle, id: number, x: number, y: number): Grid
   return b;
 }
 
+function raiseAlarm(b: GridBattle, text: string) {
+  if (b.alarm) return;
+  b.alarm = true;
+  b.spotted = true;
+  say(b, text);
+  // 잠입: 경보가 울리면 경비 증원(탈출 모드)
+  if (b.goal === 'infiltrate') {
+    for (const f of b.units) if (f.side === 'foe') f.sight = UNIT_BASE[f.kind].sight;
+    const rng = new Rng(b.seed);
+    addFoe(b, rng, '소총', [0]);
+    addFoe(b, rng, '소총', [0, 1]);
+    b.seed = rng.seed;
+    say(b, '경비병 2명이 더 나타났어요. 탈출 모드!');
+  }
+}
+
+/** 해상: 소나(이 턴 동안 반경 3칸의 잠수함이 보임) */
+export function sonarPing(b0: GridBattle, id: number): GridBattle {
+  const b = clone(b0);
+  const u = b.units.find((v) => v.id === id);
+  if (!u || u.kind !== '구축함' || u.acted || b.result) return b0;
+  b.sonar = { x: u.x, y: u.y, r: 3, turn: b.turn };
+  u.acted = true;
+  u.moved = true;
+  const found = b.units.filter((v) => v.hp > 0 && v.kind === '잠수함' && v.side !== u.side && dist(v, u) <= 3).length;
+  say(b, `${u.name}: 소나! 잠수함 ${found}척 발견`);
+  return b;
+}
+
 function afterMove(b: GridBattle, u: GUnit) {
   // 인질 구하기: 옆에 가면 합류
   if (u.side === 'me') {
@@ -382,20 +470,14 @@ function afterMove(b: GridBattle, u: GUnit) {
         h.moved = true;
         h.acted = true;
         say(b, `${u.name}: 인질을 구했어요! 아래 줄까지 데려가요.`);
-        if (!b.alarm) {
-          b.alarm = true;
-          say(b, '🚨 경보! 적이 알아챘어요.');
-        }
+        raiseAlarm(b, '🚨 경보! 적이 알아챘어요.');
       }
     }
   }
   // 적에게 들키면 경보
   if (!b.alarm) {
     const spotted = alive(b, 'me').some((m) => canSee(b, 'foe', m));
-    if (spotted) {
-      b.alarm = true;
-      say(b, '🚨 들켰어요! 적이 경계해요.');
-    }
+    if (spotted) raiseAlarm(b, '🚨 들켰어요! 적이 경계해요.');
   }
   checkEnd(b);
 }
@@ -434,10 +516,7 @@ function doAttack(b: GridBattle, a: GUnit, t: GUnit) {
     say(b, `${a.name} → ${t.name} 빗나감`);
   }
   b.seed = rng.seed;
-  if (!b.alarm) {
-    b.alarm = true;
-    say(b, '🚨 총성에 적이 경계해요.');
-  }
+  raiseAlarm(b, '🚨 총성에 적이 경계해요.');
   checkEnd(b);
 }
 
@@ -507,7 +586,16 @@ function checkEnd(b: GridBattle) {
     if (b.mark && foes.some((f) => f.x === b.mark!.x && f.y === b.mark!.y)) return finish(false, '적이 깃발을 빼앗았어요. 작전 실패.');
     if (!foes.length && !b.waves.length) return finish(true, '적을 모두 막았어요! 방어 성공.');
   }
-  if (b.goal === 'eliminate' && !foes.length) return finish(true, '적을 모두 없앴어요! 작전 성공.');
+  if ((b.goal === 'eliminate' || b.goal === 'naval') && !foes.length) return finish(true, b.goal === 'naval' ? '적 함대를 모두 가라앉혔어요! 해전 승리.' : '적을 모두 없앴어요! 작전 성공.');
+  if (b.goal === 'infiltrate' && b.mark && mine.some((m) => m.x === b.mark!.x && m.y === b.mark!.y)) {
+    b.result = {
+      win: true,
+      stars: b.spotted ? 1 : b.lostMine === 0 ? 3 : 2,
+      text: b.spotted ? '들켰지만 문서를 빼냈어요. 잠입 성공(별 최대 1개).' : '들키지 않고 문서를 빼냈어요! 완벽한 잠입.',
+    };
+    say(b, b.result.text);
+    return;
+  }
   if (b.goal === 'rescue') {
     if (hostage && hostage.hp <= 0) return finish(false, '인질을 잃었어요. 작전 실패.');
     if (hostage && !hostage.captive && hostage.y === b.h - 1) return finish(true, '인질을 데리고 빠져나왔어요! 구출 성공.');
@@ -560,6 +648,19 @@ function aiAct(b: GridBattle, u: GUnit) {
   // 목표 칸
   const enemies = b.units.filter((t) => t.hp > 0 && t.side === foeSide && !t.captive);
   const known = enemies.filter((t) => canSee(b, side, t));
+  // 해상: 보이는 적이 없으면 소나부터(한 턴에 한 번)
+  if (side === 'me' && b.goal === 'naval' && !known.length && u.kind === '구축함' && !(b.sonar && b.sonar.turn === b.turn) && !u.acted) {
+    // 먼저 앞으로 조금 나간 뒤 소나
+    const opts = [...reachable(b, u).keys()].sort((a, c) => Math.floor(a / b.w) - Math.floor(c / b.w));
+    if (opts.length) {
+      u.x = opts[0] % b.w;
+      u.y = Math.floor(opts[0] / b.w);
+    }
+    u.moved = false;
+    const nb = sonarPing(b, u.id);
+    Object.assign(b, nb);
+    return;
+  }
   let goal: { x: number; y: number } | null = null;
   let rush = false;
   if (side === 'me') {
@@ -572,9 +673,11 @@ function aiAct(b: GridBattle, u: GUnit) {
       rush = true;
     } else if (b.goal === 'rescue' && hostage) {
       goal = known.length ? nearest(u, known) : { x: hostage.x, y: Math.min(b.h - 1, hostage.y + 1) };
-    } else if (b.goal === 'reach' && b.mark) {
+    } else if ((b.goal === 'reach' || b.goal === 'infiltrate') && b.mark) {
       goal = b.mark;
       rush = true;
+    } else if (b.goal === 'naval') {
+      goal = known.length ? nearest(u, known) : { x: Math.floor(b.w / 2), y: 1 };
     } else if (b.goal === 'survive' && b.mark) {
       goal = known.length ? nearest(u, known) : b.mark;
     } else {
@@ -604,7 +707,13 @@ function aiAct(b: GridBattle, u: GUnit) {
     // 적에게 너무 붙지 않기(사거리 긴 병과)
     if (u.range >= 3 && enemies.some((e) => dist(e, { x, y }) <= 1)) score -= 2;
     if (side === 'foe' && b.goal === 'survive' && b.mark && x === b.mark.x && y === b.mark.y) score += 50;
-    if (side === 'me' && b.goal === 'reach' && b.mark && x === b.mark.x && y === b.mark.y) score += 50;
+    if (side === 'me' && (b.goal === 'reach' || b.goal === 'infiltrate') && b.mark && x === b.mark.x && y === b.mark.y) score += 50;
+    // 잠입: 경계 전 경비병 시야 피하기
+    if (side === 'me' && b.goal === 'infiltrate' && !b.alarm) {
+      const t = b.tiles[j];
+      const need = t === '숲' ? 2 : 99;
+      if (enemies.some((e) => dist(e, { x, y }) <= Math.min(need, e.sight))) score -= 5;
+    }
     if (side === 'me' && u.kind === '인질' && y === b.h - 1) score += 50;
     if (score > bestScore) {
       bestScore = score;

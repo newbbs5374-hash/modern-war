@@ -12,6 +12,7 @@ import {
   goalText,
   heal,
   hide,
+  sonarPing,
   moveUnit,
   reachable,
   targetsFrom,
@@ -25,7 +26,7 @@ import { BattleBar, type FrameProps } from './BattleScreen';
 
 export function GridView({ spec, stats, rank, aides, playerName, onEnd }: FrameProps) {
   const [b, setB] = useState<GridBattle>(() =>
-    createGridBattle({ goal: spec.variant as Goal, difficulty: spec.difficulty, rank, stats, aides, seed: spec.seed, playerName }),
+    createGridBattle({ goal: spec.variant as Goal, difficulty: spec.difficulty, rank, stats, aides, seed: spec.seed, playerName, squadSize: spec.squadSize }),
   );
   const [sel, setSel] = useState<number | null>(null);
   const [auto, setAuto] = useState(false);
@@ -170,6 +171,7 @@ export function GridView({ spec, stats, rank, aides, playerName, onEnd }: FrameP
               {!selU.acted && ['숲', '건물'].includes(b.tiles[tileIdx(b, selU.x, selU.y)]) && (
                 <button onClick={() => (setB(hide(b, selU.id)), setSel(null))}>🌿 숨기</button>
               )}
+              {selU.kind === '구축함' && !selU.acted && <button onClick={() => (setB(sonarPing(b, selU.id)), setSel(null))}>📡 소나(주변 3칸 잠수함 찾기)</button>}
               {canHeal(b, selU) && <button onClick={() => (setB(heal(b, selU.id)), setSel(null))}>⛑️ 치료</button>}
               <button onClick={() => (setB(wait(b, selU.id)), setSel(null))}>대기</button>
             </div>

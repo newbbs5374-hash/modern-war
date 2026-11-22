@@ -275,3 +275,16 @@ canvas.shooter { width: 100%; max-width: 360px; margin: 0 auto; display: block; 
 .grid-board.hack .cell.wall { background: #3b2a2a; }
 .grid-board.hack .cell.trail { background: #12324a; }
 .grid-board.hack .cell small { font-size: 10px; color: var(--muted); }
+/* 여러 판(작전·대전투) 진행 표시 */
+ol.stages { margin: 4px 0 8px; padding-left: 20px; }
+ol.stages li { color: var(--muted, #888); }
+ol.stages li.now { color: inherit; font-weight: 600; }
+ol.stages li.won { color: #4ade80; }
+ol.stages li.lost { color: #f87171; }
+/* 6단계 내정 */
+.res-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.res-grid .res { display: flex; flex-direction: column; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
+.facility { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.facility:last-child { border-bottom: 0; }
+ul.log { margin: 6px 0 0; padding-left: 18px; }
+.list-row button { white-space: nowrap; flex-shrink: 0; }

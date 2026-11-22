@@ -5,7 +5,8 @@ import { createArty, finishArty, fire } from './arty';
 import { createShooter, finishShooter, stepShooter } from './shooter';
 import { createPuzzle, finishPuzzle, guessCode, score, type CodePuzzle } from './puzzle';
 import { hitChance, typeMult } from './calc';
-import { battleOf } from './spec';
+import { GRAND_STAGES, OPERATIONS, nextDifficulty, picksOf, planForMission, planOutcome, trainingPlan, TRAINING_BATTLE } from './spec';
+import { autoResult } from './auto';
 
 const stats = { 체력: 12, 사격: 12, 은밀: 12, 통솔: 12, 전술: 12, 포격: 12, 군수: 12, 정치: 12, 정보: 12 };
 
@@ -109,7 +110,31 @@ describe('⑤ 퍼즐·카드', () => {
 
 test('임무 종류마다 전투 틀이 정해짐', () => {
   const base = { id: 1, title: 't', city: 'kr-0', difficulty: 1, hours: 1, startMs: 0, endMs: 0 };
-  expect(battleOf({ ...base, kind: '방어' }, 0).frame).toBe('grid');
-  expect(battleOf({ ...base, kind: '호송' }, 0).frame).toBe('side');
-  expect(battleOf({ ...base, kind: '기습', exam: true }, 4).frame).toBe('arty');
+  expect(picksOf({ ...base, kind: '방어' }, 0).picks[0].frame).toBe('grid');
+  expect(picksOf({ ...base, kind: '호송' }, 0).picks[0].frame).toBe('side');
+  expect(picksOf({ ...base, kind: '기습', exam: true }, 4).picks[0].frame).toBe('arty');
+  expect(picksOf({ ...base, kind: '작전', op: 1 }, 3).picks.length).toBe(OPERATIONS[1].stages.length);
+  expect(planForMission({ ...base, kind: '대전투' }, 6, 9).stages.length).toBe(GRAND_STAGES.length);
+});
+
+test('여러 판: 꼭 이길 판 + 절반 넘게 이겨야 성공, 이기면 다음 판 쉬워짐', () => {
+  const plan = planForMission({ id: 1, title: 't', city: 'kr-0', difficulty: 1, hours: 1, startMs: 0, endMs: 0, kind: '대전투' }, 6, 1);
+  const W = { win: true, stars: 3 };
+  const L = { win: false, stars: 0 };
+  expect(planOutcome(plan, [W, W, L, W, L]).win).toBe(true);
+  expect(planOutcome(plan, [W, W, W, L, W]).win).toBe(false); // 시가지(4번째) 패배
+  expect(planOutcome(plan, [L, L, W, W, L]).win).toBe(false); // 2판만 이김
+  expect(nextDifficulty(1, [W, W])).toBeLessThan(1);
+  expect(nextDifficulty(1, [L])).toBeGreaterThan(1);
+});
+
+test('훈련 12개 모두 전투가 있고 자동으로 끝남', () => {
+  const stats: Record<string, number> = { 사격: 10, 체력: 10, 전술: 10, 통솔: 10, 은밀: 10, 군수: 10, 정보: 10, 공학: 10, 매력: 10 };
+  for (const name of Object.keys(TRAINING_BATTLE)) {
+    for (const rank of [0, 5, 9]) {
+      const plan = trainingPlan(name, rank, 77);
+      const r = autoResult({ spec: plan.stages[0], stats, rank, aides: [] });
+      expect(typeof r.win).toBe('boolean');
+    }
+  }
 });

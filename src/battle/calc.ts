@@ -2,7 +2,7 @@
 // 같은 씨앗이면 같은 결과(자동전투 = 즉시완료 결과가 같도록).
 import { Rng } from '../game/rng';
 
-export type UnitKind = '소총' | '저격' | '기관총' | '의무' | '전차' | '인질';
+export type UnitKind = '소총' | '저격' | '기관총' | '의무' | '전차' | '인질' | '구축함' | '잠수함';
 export type Terrain = '평지' | '숲' | '건물' | '물' | '언덕';
 
 /** 병과 기본 수치(전투 틀 공통) */
@@ -12,6 +12,8 @@ export const UNIT_BASE: Record<UnitKind, { hp: number; atk: number; def: number;
   기관총: { hp: 11, atk: 5, def: 1, move: 2, range: 3, sight: 4, icon: '🔫' },
   의무: { hp: 8, atk: 2, def: 0, move: 3, range: 1, sight: 4, icon: '⛑️' },
   전차: { hp: 22, atk: 7, def: 4, move: 3, range: 3, sight: 3, icon: '🛡️' },
+  구축함: { hp: 16, atk: 5, def: 2, move: 3, range: 3, sight: 4, icon: '🚢' },
+  잠수함: { hp: 12, atk: 7, def: 1, move: 2, range: 2, sight: 3, icon: '⚓' },
   인질: { hp: 10, atk: 0, def: 0, move: 3, range: 0, sight: 2, icon: '🙋' },
 };
 
@@ -21,6 +23,8 @@ export const TYPE_MULT: Partial<Record<UnitKind, Partial<Record<UnitKind, number
   기관총: { 소총: 1.2, 의무: 1.2, 전차: 0.5 },
   저격: { 기관총: 1.25, 저격: 1.2, 전차: 0.4 },
   소총: { 전차: 0.6 },
+  구축함: { 잠수함: 1.3 },
+  잠수함: { 구축함: 1.4 },
   의무: { 전차: 0.3 },
 };
 export const typeMult = (a: UnitKind, d: UnitKind) => TYPE_MULT[a]?.[d] ?? 1;

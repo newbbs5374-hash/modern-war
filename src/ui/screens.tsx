@@ -9,9 +9,10 @@ import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, HOUR, RelTag, Soon, TensionBar, fmt, leaderText, rankLock } from './common';
 import type { Screen } from './nav';
 import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
-import { MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
+import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
 import { DRILL_MAX, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
+import { FacilityCard, ProductionCard, ResourceCard, TradeCard } from './economyScreens';
 import { PROMOTION } from '../data/officers';
 
 export interface GameActions {
@@ -155,6 +156,7 @@ export function OpsScreen(props: ScreenProps) {
   return (
     <>
       <MissionCard {...props} />
+      <GrandCard {...props} />
       <Card
         title="세계 지도"
         right={
@@ -231,7 +233,7 @@ export function ForcesScreen({ state }: ScreenProps) {
               <span>
                 <span className="tag">{u.domain}</span> <b>{u.name}</b> <small className="muted">{u.role}</small>
               </span>
-              <span className="small">{lock ? `🔒 ${lock}` : '열림'}</span>
+              <span className="small">{lock ? `🔒 ${lock}` : `보유 ${state.economy.army[u.name] ?? 0}`}</span>
             </div>
           );
         })}
@@ -248,7 +250,8 @@ export function ForcesScreen({ state }: ScreenProps) {
 }
 
 /* ───────── 나라: 금고 · 내정 · 자원 · 외교 · 모든 나라 ───────── */
-export function NationScreen({ state, go }: ScreenProps) {
+export function NationScreen(props: ScreenProps) {
+  const { state, go } = props;
   const me = countryById(state.player.countryId);
   const n = state.nations[me.id];
   return (
@@ -265,10 +268,13 @@ export function NationScreen({ state, go }: ScreenProps) {
           </b>
         </div>
         <p className="small">지도자: {leaderText(state, me.id)}</p>
-        <p className="small muted">준장이 되면 도시 내정을, 총사령관이 되면 예산 나누기를 맡아요.</p>
+        <p className="small muted">준장이 되면 내정·생산·무역을 맡고, 총사령관이 되면 시설을 끝까지 올려요.</p>
       </Card>
-      <Card title="내정 · 자원 · 외교">
-        <Soon stage="6단계">내정 시설(산업·인프라·복지) · 전략 자원 7종 · 생산·교역</Soon>
+      <ResourceCard {...props} />
+      <FacilityCard {...props} />
+      <ProductionCard {...props} />
+      <TradeCard {...props} />
+      <Card title="외교 결정">
         <Soon stage="총사령관">선전포고 요청·휴전 제안(지금은 AI 지도자가 정함)</Soon>
       </Card>
       <Card title="외교 (우리와)">
@@ -466,6 +472,22 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             }
           >
             진급 조건 채우기
+          </button>
+          <button
+            onClick={() =>
+              actions.apply((s) => {
+                const me = s.player.countryId;
+                const stock = { ...s.economy.stock };
+                for (const k of Object.keys(stock) as Array<keyof typeof stock>) stock[k] += 50;
+                return {
+                  ...s,
+                  nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 50000 } },
+                  economy: { ...s.economy, stock, facilities: Object.fromEntries(Object.entries(s.economy.facilities).map(([k, f]) => [k, { ...f, exp: f.exp + 500 }])) as typeof s.economy.facilities },
+                };
+              })
+            }
+          >
+            내정 시험(예산·자원·경험치 채우기)
           </button>
         </div>
         <small>계급 바로 바꾸기 (진급 심사 없이)</small>

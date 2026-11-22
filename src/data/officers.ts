@@ -30,7 +30,7 @@ export const PROMOTION: PromotionRule[] = [
 ];
 
 /** 임무 종류: 쓰는 스탯, 걸리는 실제 시간(시간), 세계에 주는 영향 */
-export type MissionKind = '방어' | '기습' | '정찰' | '호송' | '구출';
+export type MissionKind = '방어' | '기습' | '정찰' | '호송' | '구출' | '작전' | '대전투';
 export const MISSION_KINDS: Record<
   MissionKind,
   { stats: StatId[]; hours: number; desc: string; aideFit: string }
@@ -40,7 +40,13 @@ export const MISSION_KINDS: Record<
   정찰: { stats: ['정보', '은밀'], hours: 1, desc: '적 전력을 살핌. 성공하면 정보 점수', aideFit: '정찰' },
   호송: { stats: ['군수', '체력'], hours: 2, desc: '전선 보급을 지킴. 성공하면 우리 나라 병력 보충', aideFit: '통신' },
   구출: { stats: ['체력', '사격'], hours: 1.5, desc: '고립된 아군을 구함. 명성이 크게 오름', aideFit: '의무' },
+  작전: { stats: ['전술', '통솔'], hours: 3, desc: '전선 도시 하나를 두고 2~3판을 이어 싸움. 이기면 도시 방어도가 크게 바뀌고, 적 도시는 무너지면 점령', aideFit: '통신' },
+  대전투: { stats: ['통솔', '군수'], hours: 4, desc: '적 도시를 차지하는 다섯 판 대전투', aideFit: '공병' },
 };
+/** 작전은 대위부터, 대전투는 준장부터 */
+export const OPERATION_RANK = 2;
+export const GRAND_RANK = 6;
+export const GRAND_COOLDOWN_HOURS = 12;
 
 export const AIDE_SPECIALTIES = ['저격', '의무', '통신', '공병', '정찰'] as const;
 export type AideSpecialty = (typeof AIDE_SPECIALTIES)[number];
