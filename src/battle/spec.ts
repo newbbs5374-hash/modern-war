@@ -4,7 +4,7 @@ import type { MissionKind } from '../data/officers';
 import { Rng } from '../game/rng';
 import type { Weather } from './grid';
 
-export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range';
+export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field';
 export type Source = 'mission' | 'practice' | 'training';
 
 export interface BattleSpec {
@@ -20,6 +20,9 @@ export interface BattleSpec {
   weather?: Weather;
   /** 적 이름(예: 중국군) */
   enemy?: string;
+  /** 지도 위 전투: 대상 도시 id · 도시 방어도 */
+  city?: string;
+  defense?: number;
 }
 
 /** 한 번에 치르는 전투 묶음(훈련·임무는 1판, 작전 2~3판, 대전투 5판) */
@@ -42,6 +45,7 @@ export const FRAME_NAMES: Record<Frame, string> = {
   arty: '③ 포물선 대결',
   shooter: '④ 위에서 본 슈팅',
   puzzle: '⑤ 퍼즐·카드',
+  field: '⑥ 지도 위 전투',
 };
 
 type Pick = { frame: Frame; variant: string; label?: string };
@@ -118,6 +122,8 @@ export const GRAND_STAGES: Pick[] = [
   { frame: 'grid', variant: 'infiltrate', label: '적 사령관 생포' },
 ];
 export const GRAND_MAIN = 3;
+/** 지도 위 전투로 하는 대전투(한 판, 안에서 큰 싸움은 직접 지휘로 기존 틀) */
+export const FIELD_PICK: Pick = { frame: 'field', variant: 'capture', label: '지도 위 전투' };
 
 /** 승급 심사 작전(계급 순서대로) */
 const EXAM_BATTLE: Pick[] = [
@@ -139,7 +145,7 @@ export function picksOf(a: ActiveMission, rank: number): { picks: Pick[]; mainId
     const op = OPERATIONS[(a.op ?? 0) % OPERATIONS.length];
     return { picks: op.stages, mainIdx: op.stages.length - 1 };
   }
-  if (a.kind === '대전투') return { picks: GRAND_STAGES, mainIdx: GRAND_MAIN };
+  if (a.kind === '대전투') return a.field ? { picks: [FIELD_PICK], mainIdx: 0 } : { picks: GRAND_STAGES, mainIdx: GRAND_MAIN };
   return { picks: [KIND_BATTLE[a.kind]!], mainIdx: 0 };
 }
 
@@ -156,7 +162,7 @@ export function weatherOf(seed: number): Weather {
   return r < 0.5 ? '맑음' : r < 0.65 ? '밤' : r < 0.77 ? '비' : r < 0.89 ? '안개' : '눈';
 }
 
-export function planForMission(a: ActiveMission, rank: number, officerSeed: number, enemy?: string): BattlePlan {
+export function planForMission(a: ActiveMission, rank: number, officerSeed: number, enemy?: string, defense?: number): BattlePlan {
   const { picks, mainIdx } = picksOf(a, rank);
   const seed = (a.id * 7919 + officerSeed) >>> 0;
   const weather = weatherOf(seed);
@@ -164,8 +170,8 @@ export function planForMission(a: ActiveMission, rank: number, officerSeed: numb
     title: a.title,
     source: 'mission',
     mainIdx,
-    intro: a.kind === '대전투' ? '단계마다 이기면 다음 단계가 쉬워져요. 시가지 돌입은 꼭 이겨야 하고, 다섯 판 중 세 판 이상 이기면 도시를 차지해요. 어떤 단계든 부관에게 맡길 수 있어요(별 최대 2개).' : undefined,
-    stages: picks.map((p, i) => ({ ...p, title: p.label ? `${i + 1}. ${p.label}` : a.title, difficulty: a.difficulty, seed: seed + i * 131, weather, enemy })),
+    intro: a.kind === '대전투' && a.field ? '도시 주변 육각 지도에서 부대를 움직여요. 적 사령부를 무너뜨리고 보병·전차로 도심을 차지하면 점령이에요. 부관에게 맡길 수도 있어요(별 최대 2개).' : a.kind === '대전투' ? '단계마다 이기면 다음 단계가 쉬워져요. 시가지 돌입은 꼭 이겨야 하고, 다섯 판 중 세 판 이상 이기면 도시를 차지해요. 어떤 단계든 부관에게 맡길 수 있어요(별 최대 2개).' : undefined,
+    stages: picks.map((p, i) => ({ ...p, title: p.label ? `${i + 1}. ${p.label}` : a.title, difficulty: a.difficulty, seed: seed + i * 131, weather, enemy, city: a.city, defense })),
   };
 }
 
@@ -185,6 +191,7 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 
 /** 연습장 목록(보상 없음) */
 export const PRACTICE: Array<{ label: string } & Pick> = [
+  { label: '지도 위 전투', frame: 'field', variant: 'capture' },
   { label: '방어(깃발)', frame: 'grid', variant: 'survive' },
   { label: '구출(인질)', frame: 'grid', variant: 'rescue' },
   { label: '정찰(목표)', frame: 'grid', variant: 'reach' },

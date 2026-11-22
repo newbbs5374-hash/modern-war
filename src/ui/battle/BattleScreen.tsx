@@ -17,6 +17,7 @@ import { ShooterView } from './ShooterView';
 import { PuzzleView } from './PuzzleView';
 import { CourseView } from './CourseView';
 import { RangeView } from './RangeView';
+import { FieldView } from './FieldView';
 
 export interface Outcome {
   win: boolean;
@@ -82,7 +83,7 @@ export function BattleBar(props: {
   );
 }
 
-const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView };
+const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView };
 const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 export function BattleScreen({ state, actions, go }: ScreenProps) {
@@ -98,7 +99,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     const me = state.player.countryId;
     const owner = state.world.owner[a.city];
     const foeId = owner !== me ? owner : COUNTRIES.find((c) => c.id !== me && relationOf(state.world, me, c.id) === '전쟁')?.id;
-    return planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined);
+    return planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined, state.world.defense[a.city]);
   });
   const [results, setResults] = useState<Array<Outcome & { auto: boolean }>>([]);
   const [current, setCurrent] = useState<(Outcome & { auto: boolean }) | null>(null);
