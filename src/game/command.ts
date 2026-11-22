@@ -5,6 +5,7 @@ import { countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { Rng } from './rng';
 import type { GameState } from './state';
+import { onPlayerWar } from './civ';
 import { ga, isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
 export const COMMAND_TOP = RANKS.length - 1;
@@ -86,13 +87,10 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
   }
   pairs[k] = p;
   const ev: WorldEvent = { t: s.worldMs, kind: '외교', text: `🎖️ ${text}`, mine: true };
-  return {
-    ok: ok || act === '선전포고',
-    text,
-    state: {
+  const next: GameState = {
       ...s,
       world: { ...s.world, pairs, events: [ev, ...s.world.events] },
       officer: { ...s.officer, fame: Math.max(0, s.officer.fame + fame), promises: act === '선전포고' ? (s.officer.promises ?? []).filter((x) => x.who !== id) : s.officer.promises, diploReadyMs: s.worldMs + DIPLO_COOLDOWN_HOURS * H, trust: Math.max(0, Math.min(100, s.officer.trust + trust)) },
-    },
   };
+  return { ok: ok || act === '선전포고', text, state: act === '선전포고' ? onPlayerWar(s, next, id) : next };
 }

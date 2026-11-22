@@ -52,6 +52,12 @@ import { FACILITY_ICON, UNIT_ICON } from './icons';
 import { Fold, Meter, Modal, Tabs, useTab } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
+import { canResearch, civOf } from '../game/civ';
+import { TECHS } from '../data/civ';
+
+/** 고를 수 있는 연구가 있는데 비어 있는 줄이 있으면 */
+const needPick = (s: ScreenProps['state']) => (['mil', 'soc'] as const).some((l) => !civOf(s).cur[l] && TECHS.some((t) => t.line === l && !canResearch(s, t.id)));
+import { CityPanel, GovPanel, ResearchPanel } from './CivScreens';
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const sign = (v: number) => (v >= 0 ? `+${fmt(v)}` : `−${fmt(-v)}`);
@@ -85,23 +91,30 @@ export function Tip({ label, title, rows, total }: { label: ReactNode; title: st
   );
 }
 
-type Tab = 'home' | 'res' | 'fac';
+type Tab = 'home' | 'res' | 'fac' | 'city' | 'tech' | 'gov';
 export function InteriorScreen(props: ScreenProps) {
   const { state } = props;
   const [tab, setTab] = useTab<Tab>('nation', 'home');
   const choreDone = state.economy.chore && state.worldMs >= state.economy.chore.endMs;
+  const civ = civOf(state);
   return (
     <>
       <Tabs
-        value={tab === ('make' as Tab) || tab === ('trade' as Tab) || tab === ('dip' as Tab) ? 'home' : tab}
+        value={(['home', 'res', 'fac', 'city', 'tech', 'gov'] as string[]).includes(tab) ? tab : 'home'}
         onChange={setTab}
         tabs={[
           { id: 'home', label: '금고', icon: '💰' },
           { id: 'res', label: '자원', icon: '⛏️' },
           { id: 'fac', label: '시설', icon: '🏭', badge: choreDone ? '!' : null },
+          { id: 'city', label: '도시', icon: '🏘️' },
+          { id: 'tech', label: '연구', icon: '🔬', badge: needPick(state) ? '!' : null },
+          { id: 'gov', label: '체제', icon: '🃏', badge: !civ.gov ? '!' : null },
         ]}
       />
-      {(tab === 'home' || !['res', 'fac'].includes(tab)) && <TreasuryPanel {...props} />}
+      {(tab === 'home' || !['res', 'fac', 'city', 'tech', 'gov'].includes(tab)) && <TreasuryPanel {...props} />}
+      {tab === 'city' && <CityPanel {...props} />}
+      {tab === 'tech' && <ResearchPanel {...props} />}
+      {tab === 'gov' && <GovPanel {...props} />}
       {tab === 'res' && <ResourcePanel {...props} />}
       {tab === 'fac' && <FacilityPanel {...props} />}
     </>

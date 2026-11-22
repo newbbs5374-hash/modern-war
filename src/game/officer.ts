@@ -36,6 +36,7 @@ import { Rng } from './rng';
 import { talkTick, type Promise_, type Talk } from './talk';
 import type { GameState } from './state';
 import { armyPower } from './economy';
+import { civMission, eureka } from './civ';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
 
 const HOUR = 60 * 60 * 1000;
@@ -443,7 +444,8 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
     if (lvAfter > lvBefore) note(ns, `${name} 훈련 숙련 ${MASTERY_NAME[lvAfter - 1]}(${lvAfter}단계)! 오르는 스탯 +${(lvAfter - 1) * 10}%`);
     result = { ok: true, stars, gains, exp, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record };
   });
-  return { state, result };
+  const got = (result as TrainResult).ok ? ((result as { stars?: number }).stars ?? 0) : 0;
+  return { state: got ? eureka(state, { kind: 'train', name, stars: got }) : state, result };
 }
 
 /** 특기 효과(전투 보정) */
@@ -717,7 +719,7 @@ export function missionChance(s: GameState, m: Mission): number {
   const cap = statCap(s.player.rankIndex);
   const level = info.stats.reduce((a, id) => a + o.stats[id], 0) / info.stats.length / cap;
   const aide = readyAides(o, s.worldMs).reduce((a, x) => a + (x.specialty === info.aideFit ? 0.06 : 0.02) + x.level * 0.005 + (x.bond >= 90 ? 0.05 : 0), 0);
-  return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4, 0.1, 0.95);
+  return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4 + civMission(s), 0.1, 0.95);
 }
 
 export function startMission(s: GameState, missionId: number): GameState {
@@ -785,6 +787,7 @@ function promote(ns: GameState, o: OfficerState, rng: Rng) {
   o.merit = Math.max(0, o.merit - rule.merit);
   o.stars = 0;
   ns.player = { ...ns.player, rankIndex: r + 1 };
+  ns.civ = eureka(ns, { kind: 'rank', at: r + 1 }).civ;
   note(ns, `🎖️ ${ro(rankName(r + 1))} 승급했어요! 지휘: ${RANKS[r + 1].unit}`);
   // 중위가 되면 첫 부관이 이야기로 합류
   if (r + 1 === 1 && o.aides.length === 0) {
@@ -820,11 +823,13 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
   const a = s.officer.active;
   if (!a || s.worldMs < a.endMs) return { state: s, text: null };
   let text = '';
+  let won = false;
   const state = withOfficer(s, (o, rng, ns) => {
     o.active = null;
     const chance = missionChance(ns, a);
     const rolled = rng.chance(chance);
     const win = outcome ? outcome.win : rolled;
+    won = win;
     // 직접 싸워 별을 많이 받으면 공훈이 더 큼(1★ ×1.0 · 2★ ×1.2 · 3★ ×1.4)
     const starMult = outcome && outcome.win ? 0.8 + 0.2 * Math.max(1, outcome.stars) : 1;
     const r = ns.player.rankIndex;
@@ -911,7 +916,7 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
       note(ns, `작전 중 만난 ${ga(aide.name)} 부관으로 합류했어요(${aide.specialty}).`);
     }
   });
-  return { state, text };
+  return { state: won ? eureka(state, { kind: 'mission', name: a.kind }) : state, text };
 }
 
 /** 도시를 우리 나라가 차지 */

@@ -28,6 +28,7 @@ import { DiplomacyScreen } from './DiplomacyScreen';
 import { debugTalk } from '../game/talk';
 import { PortraitList } from './Portrait';
 import { FieldArtList } from './FieldArtList';
+import { civOf, debugAllResearch, debugCouncil, debugFinishDistricts, debugFinishResearch, setCouncilOn } from '../game/civ';
 
 export interface GameActions {
   claim: () => void;
@@ -475,7 +476,25 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         </button>
       </Card>
 
+      <Card title="🏛️ 군도 회의">
+        <div className="row">
+          <small className="muted">떠오른 성소에서 실제 하루마다 열리는 투표(외교 → 군도 회의)</small>
+          <button className={civOf(state).council.on ? 'on' : ''} onClick={() => actions.apply((s) => setCouncilOn(s, !civOf(s).council.on))}>
+            {civOf(state).council.on ? '켜짐' : '꺼짐'}
+          </button>
+        </div>
+      </Card>
+
       <Card title="시험용 버튼" right={<small className="muted">정식판에서는 빠짐</small>}>
+        <small>문명식 운영 시험</small>
+        <div className="buttons">
+          <button className="gold" onClick={() => (actions.apply(debugFinishResearch), setMsg('하던 연구(없으면 고를 수 있는 첫 연구)를 바로 끝냈어요.'))}>🔬 연구 바로 끝내기</button>
+          <button onClick={() => (actions.apply(debugAllResearch), setMsg('연구 35개를 모두 끝냈어요.'))}>🔬 모든 연구 끝</button>
+          <button onClick={() => (actions.apply(debugFinishDistricts), setMsg('짓던 구역을 모두 완공했어요.'))}>🏗️ 구역 바로 완공</button>
+          <button onClick={() => (actions.apply(debugCouncil), setMsg(civOf(state).council.open ? '회의를 바로 마감했어요. 외교 → 군도 회의에서 결과를 보세요.' : '회의를 바로 열었어요. 외교 → 군도 회의에서 투표하세요.'))}>
+            🏛️ 회의 {civOf(state).council.open ? '바로 마감' : '바로 열기'}
+          </button>
+        </div>
         <small>시간 건너뛰기</small>
         <div className="buttons">
           <button className="gold" onClick={() => (actions.apply(grantTestResources), setMsg('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))}>🎁 시험 자원 넉넉히</button>
