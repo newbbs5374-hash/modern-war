@@ -55,7 +55,7 @@ export interface PairState {
   weariness: number;
 }
 
-export type EventKind = '외교' | '전투' | '점령' | '신앙' | '멸망';
+export type EventKind = '외교' | '전투' | '점령' | '신앙' | '멸망' | '장교';
 
 export interface WorldEvent {
   /** 일어난 세계 시간(ms) */
@@ -172,6 +172,7 @@ interface Ctx {
   rng: Rng;
   t: number;
   player: string;
+  playerDefense: number;
 }
 
 function log(ctx: Ctx, kind: EventKind, text: string, ...who: string[]) {
@@ -338,7 +339,7 @@ function invasions(ctx: Ctx) {
       if (city.capital) dp *= CAPITAL_DEFENSE;
       if (city.home === def) dp *= HOMELAND_DEFENSE;
       if (targets.length === 1) dp *= LAST_STAND_DEFENSE;
-      if (def === ctx.player && city.home === def) dp *= PLAYER_HOME_DEFENSE;
+      if (def === ctx.player && city.home === def) dp *= PLAYER_HOME_DEFENSE * ctx.playerDefense;
       const ratio = ap / Math.max(1, dp);
       na.troops = Math.max(0, na.troops - commit * 0.2 * Math.min(2, 1 / ratio));
       nd.troops = Math.max(0, nd.troops - garrison * 0.12 * Math.min(2, ratio));
@@ -405,8 +406,10 @@ export function aiTick(
   nations: Record<string, NationState>,
   t: number,
   player: string,
+  /** 내 나라 도시 방어 추가 배율(장군) */
+  playerDefense = 1,
 ): void {
-  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player };
+  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense };
   diplomacy(ctx);
   invasions(ctx);
   rebellions(ctx);

@@ -7,6 +7,7 @@ import { CITIES } from '../data/cities';
 import { AI_TICK_MS } from './balance';
 import { SAVE_VERSION, type GameState } from './state';
 import { newWorld } from './world';
+import { newOfficer } from './officer';
 
 export const SAVE_KEY = 'modern-war-save';
 
@@ -32,9 +33,17 @@ export function parseSave(text: string): GameState | null {
     // 1단계 저장(세계 정보 없음) → 시작 구도로 세계를 새로 만들어 이어감
     if (s.version === 1 && typeof s.worldMs === 'number') {
       s.world = newWorld((s.lastRealTime ^ 0x5eed) >>> 0, false, s.worldMs + AI_TICK_MS);
+      s.version = 2;
+    }
+    // 2단계 저장(장교 정보 없음) → 소위 장교를 새로 만들고 계급은 그대로
+    if (s.version === 2) {
+      s.officer = newOfficer((s.lastRealTime * 7 + 13) >>> 0);
       s.version = SAVE_VERSION;
     }
     if (s.version !== SAVE_VERSION) return null;
+    const o = s.officer;
+    if (!o || typeof o.seed !== 'number' || !o.stats || !Array.isArray(o.aides) || !Array.isArray(o.rivals)) return null;
+    if (o.boardMs === null) o.boardMs = -Infinity; // JSON에서 -Infinity는 null이 됨
     const w = s.world;
     if (!w || typeof w.seed !== 'number' || typeof w.nextTickMs !== 'number' || !Array.isArray(w.events)) return null;
     if (!w.pairs || !w.personalities || !w.owner || !w.defense) return null;

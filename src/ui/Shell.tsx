@@ -1,3 +1,4 @@
+import { drillsNow } from '../game/officer';
 import { useState, type ReactNode } from 'react';
 import { CURRENCIES } from '../data/catalog';
 import { RANKS } from '../data/ranks';
@@ -27,7 +28,14 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
   const rank = RANKS[state.player.rankIndex];
   const clock = gameClock(state.worldMs);
 
-  const amount = (id: string) => (id === 'salary' ? state.player.salary : 0);
+  const amount = (id: string) =>
+    id === 'salary'
+      ? state.player.salary
+      : id === 'merit'
+        ? state.officer.merit
+        : id === 'drill'
+          ? drillsNow(state.officer, state.worldMs).count
+          : 0;
   const wallet = (
     <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="보유 재화 보기">
       <span>💵 {fmt(state.player.salary)}</span>

@@ -69,7 +69,7 @@ export const TRAININGS: Array<{ name: string; frame: string; raises: string; ran
 /** 재화(기획서 "재화" 표). 지금 실제로 쌓이는 것은 봉급뿐 */
 export const CURRENCIES = [
   { id: 'salary', name: '봉급', icon: '💵', where: '계급마다 시간당 · 홈에서 받기' },
-  { id: 'merit', name: '공훈', icon: '🎖️', where: '전투 승리 · 어려운 작전 (다음 단계)' },
-  { id: 'drill', name: '훈련 일정', icon: '📅', where: '매일 채워짐 (다음 단계)' },
+  { id: 'merit', name: '공훈', icon: '🎖️', where: '임무 성공 · 진급하면 0부터 다시' },
+  { id: 'drill', name: '훈련 일정', icon: '📅', where: '실제 4시간마다 1개 · 최대 6개' },
   { id: 'ruby', name: '루비', icon: '💎', where: '시간 줄이기 (나중에 정함)' },
 ] as const;
