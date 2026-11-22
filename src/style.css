@@ -509,3 +509,30 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 }
 /* 아래 메뉴 줄이 돌아와서 오른쪽은 나머지 아이콘만(위에서부터) */
 .bld-col { justify-content: flex-start; gap: 10px; bottom: auto; }
+
+/* ───────── 살아 있는 본부 지도 ───────── */
+.homeland-wrap { position: absolute; inset: 0; }
+.homeland-wrap .homeland { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; }
+.homeland-wrap .homeland:active { cursor: grabbing; }
+.homeland .city { cursor: pointer; }
+.map-zoom { position: absolute; left: 8px; bottom: 10px; z-index: 3; display: flex; flex-direction: column; gap: 4px; }
+.map-zoom button { width: 34px; height: 34px; padding: 0; border-radius: 10px; font-size: 16px; background: #0b1220cc; border: 1px solid #ffffff33; }
+@keyframes mw-wave { 0%, 100% { transform: translateX(0); opacity: 0.5; } 50% { transform: translateX(10px); opacity: 1; } }
+.homeland .wave { animation: mw-wave 6s ease-in-out infinite; }
+@keyframes mw-flow { to { stroke-dashoffset: -48; } }
+.homeland .river-flow { animation: mw-flow 3s linear infinite; }
+@keyframes mw-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+.homeland .tree { animation: mw-sway 4s ease-in-out infinite; transform-box: view-box; }
+@keyframes mw-win { 0%, 92%, 100% { opacity: 1; } 95% { opacity: 0.4; } }
+.homeland .win { animation: mw-win 7s steps(1) infinite; }
+@keyframes mw-smoke { 0% { transform: translateY(0) scale(0.6); opacity: 0.9; } 100% { transform: translateY(-40px) scale(2.2); opacity: 0; } }
+.homeland .smoke { animation: mw-smoke 3.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mw-fire { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.7; } }
+.homeland .fire { animation: mw-fire 0.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mw-flag { 0%, 100% { transform: skewY(0deg); } 50% { transform: skewY(-6deg); } }
+.homeland .flag-wave { animation: mw-flag 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: left center; }
+@keyframes mw-cloud { from { transform: translateX(-160px); } to { transform: translateX(480px); } }
+.homeland .cloud { animation-name: mw-cloud; animation-timing-function: linear; animation-iteration-count: infinite; }
+@keyframes mw-blink { 0%, 60%, 100% { opacity: 0; } 70%, 90% { opacity: 1; } }
+.homeland .blink { animation: mw-blink 1.4s infinite; }
+@media (prefers-reduced-motion: reduce) { .homeland * { animation: none !important; } }
