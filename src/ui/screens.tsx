@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
-import { PENDING_CAP_HOURS } from '../game/balance';
-import { budgetPerDay, gameClock, pendingCap, salaryPerDay, troopsPerDay, type GameState } from '../game/state';
+import { budgetPerDay, pendingCap, troopsPerDay, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, HOUR, RelTag, Soon, TensionBar, fmt, leaderText } from './common';
 import type { Screen } from './nav';
@@ -15,7 +14,9 @@ import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
 import { FacilityCard, ProductionCard, ResourceCard, TradeCard, UnitModal } from './economyScreens';
 import { Chip, Help, Modal, Tabs, Tile, useTab } from './kit';
-import { FLAG, UNIT_ICON } from './icons';
+import { UNIT_ICON } from './icons';
+import { FLAG } from './flag';
+import { HomeLand } from './HomeLand';
 import { ECON_RANK } from '../data/economy';
 import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import { OPERATION_RANK } from '../data/officers';
@@ -47,13 +48,11 @@ export interface ScreenProps {
   go: (s: Screen) => void;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
 
 /* ───────── 본부(홈): 왼쪽 = 지도·임무·받기, 오른쪽 = 작은 버튼 줄 ───────── */
 export function HomeScreen(props: ScreenProps) {
   const { state, unread, actions, go } = props;
   const me = countryById(state.player.countryId);
-  const clock = gameClock(state.worldMs);
   const pending = state.player.pendingSalary;
   const cap = pendingCap(state);
   const n = state.nations[me.id];
@@ -61,99 +60,127 @@ export function HomeScreen(props: ScreenProps) {
   const latest = state.world.events.find((e) => e.mine);
   const fallen = !isAlive(state.world, me.id);
   const a = state.officer.active;
+  const rank = state.player.rankIndex;
   const drills = drillsNow(state.officer, state.worldMs).count;
   const pc = promotionCheck(state);
   const promoPct = pc.lines.length ? Math.round((pc.lines.reduce((x, l) => x + Math.min(1, l.have / Math.max(1, l.need)), 0) / pc.lines.length) * 100) : 100;
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
+  const [endingOpen, setEndingOpen] = useState(true);
+  const goTab = (screen: Screen, key: string, tab: string) => {
+    try {
+      sessionStorage.setItem(`tab:${key}`, tab);
+    } catch {
+      /* 무시 */
+    }
+    go(screen);
+  };
+  const missionReady = !!a && state.worldMs >= a.endMs;
+
+  // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
+  const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> = [
+    { icon: '🗺️', label: '작전본부', x: 86, y: 10, on: () => goTab('ops', 'ops', 'mission'), badge: !a || missionReady ? '!' : null, main: true },
+    { icon: '🎖️', label: '장교', x: 86, y: 22, on: () => goTab('officer', 'officer', 'stats'), badge: pc.ready ? '!' : null },
+    { icon: '🧑‍✈️', label: '부관', x: 86, y: 34, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
+    { icon: '🎯', label: '훈련장', x: 86, y: 46, on: () => go('training'), badge: drills > 0 ? drills : null },
+    { icon: '🪖', label: '부대', x: 86, y: 58, on: () => go('forces') },
+    { icon: '🏛️', label: '정부', x: 86, y: 70, on: () => go('nation') },
+    { icon: '🏙️', label: '대전투', x: 11, y: 84, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
+    { icon: '📯', label: '전령', x: 30, y: 84, on: () => go('herald'), badge: unread > 0 ? unread : null },
+    { icon: '📖', label: '도감', x: 49, y: 84, on: () => go('codex') },
+    { icon: '🛒', label: '상점', x: 68, y: 84, on: () => go('shop'), locked: true },
+    { icon: '🧪', label: '시험', x: 86, y: 84, on: () => go('settings') },
+  ];
 
   return (
-    <div className="home">
-      <div className="home-clock">
-        <div className="clock">
-          {clock.year}년 {clock.month}월 {clock.day}일 {pad(clock.hour)}:{pad(clock.minute)}
-        </div>
-        <small className="muted">전쟁 {clock.dayNumber}일째 · 실제 1시간 = 게임 하루</small>
+    <div className="home-stage">
+      <HomeLand countryId={me.id} world={state.world} />
+
+      <div className="home-res">
+        <Chip icon="💵" value={fmt(state.player.salary)} label="봉급" />
+        <Chip icon="🏅" value={fmt(state.officer.merit)} label="공훈" />
+        <Chip icon="💰" value={fmt(n.treasury)} label="국방예산" />
+        <Chip icon="🪖" value={fmt(n.troops)} label="병력" />
+        <Chip icon="🏙️" value={citiesOf(state.world, me.id).length} label="도시" />
       </div>
 
-      <EndingCard {...props} />
-      {fallen && (
-        <div className="alert">
-          {me.name}의 도시를 모두 잃었어요. 망명 정부로 버티는 중이고, 점령지에서 반란이 일어나면 되찾아요.
-        </div>
-      )}
-      <div className="home-body">
-        <div className="home-left">
-          <button className="minimap" onClick={() => go('ops')}>
-            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => go('ops')} mini />
-            <small>세계 지도</small>
-          </button>
+      <div className="home-side">
+        <button className="home-mini" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 지도">
+          <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
+          <small>🌍 세계 지도</small>
+        </button>
 
-          <div className="missions">
-            <div className="ichips">
+        <div className="home-quests">
+          <b className="hq-title">📌 주요 임무</b>
+          <button className={`hq ${!a || missionReady ? 'hot' : ''}`} onClick={() => goTab('ops', 'ops', 'mission')}>
+            <span>{a ? (missionReady ? '✅' : '⏳') : '🎯'}</span>
+            <span className="hq-main">
+              <b>{a ? a.title : '임무 고르기'}</b>
+              <small>{a ? (missionReady ? '도착! 전투하기' : `${timeLeft(a.endMs - state.worldMs)} 남음`) : '게시판에 새 임무'}</small>
+            </span>
+          </button>
+          <button className={`hq ${pc.ready ? 'hot' : ''}`} onClick={() => goTab('officer', 'officer', 'stats')}>
+            <span>🎓</span>
+            <span className="hq-main">
+              <b>{pc.ready ? '진급 심사 가능!' : `진급 준비 ${promoPct}%`}</b>
+              <span className="bar">
+                <span className="bar-fill" style={{ width: `${promoPct}%` }} />
+              </span>
+            </span>
+          </button>
+          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => go('training')}>
+            <span>📅</span>
+            <span className="hq-main">
+              <b>훈련 일정 {drills}/{DRILL_MAX}</b>
+              <small>{drills > 0 ? '훈련할 수 있어요' : '일정이 차는 중'}</small>
+            </span>
+          </button>
+          <button className={`hq ${pending >= cap * 0.5 ? 'hot' : ''}`} disabled={pending < 1} onClick={actions.claim}>
+            <span>💵</span>
+            <span className="hq-main">
+              <b>봉급 받기 +{fmt(pending)}</b>
+              <span className="bar">
+                <span className="bar-fill" style={{ width: `${Math.min(100, (pending / cap) * 100)}%` }} />
+              </span>
+            </span>
+          </button>
+          {wars.length > 0 && (
+            <div className="hq-wars">
+              <small>전쟁 중</small>
               {wars.slice(0, 5).map((c) => (
-                <span key={c.id} className="ichip">
-                  {FLAG[c.id]}⚔️
+                <span key={c.id} title={c.name}>
+                  {FLAG[c.id]}
                 </span>
               ))}
-              {!wars.length && <small>지금은 전쟁 없음</small>}
             </div>
-            {latest && (
-              <button className="latest" onClick={() => go('herald')}>
-                <small>📯</small> {latest.text}
-              </button>
-            )}
-          </div>
-          <div className="tiles c4">
-            <Tile
-              icon={a ? (state.worldMs >= a.endMs ? '✅' : '⏳') : '🎯'}
-              label="임무"
-              sub={a ? (state.worldMs >= a.endMs ? '결과 받기' : timeLeft(a.endMs - state.worldMs)) : '고르기'}
-              badge={a && state.worldMs >= a.endMs ? '!' : !a ? '!' : null}
-              onClick={() => go('ops')}
-            />
-            <Tile icon="📅" label="훈련" sub={`일정 ${drills}/${DRILL_MAX}`} badge={drills > 0 ? drills : null} onClick={() => go('training')} />
-            <Tile icon="🎓" label="진급" sub={pc.ready ? '심사 가능!' : `${promoPct}%`} tone={pc.ready ? 'gold' : undefined} badge={pc.ready ? '!' : null} onClick={() => go('officer')} />
-            <Tile icon="🧑‍✈️" label="부관" sub={`${state.officer.aides.length}명`} badge={errandsDone || null} onClick={() => go('officer')} />
-          </div>
-
-          <button className="chip claim" disabled={pending < 1} onClick={actions.claim}>
-            <span>
-              💵 봉급 받기 <b>+{fmt(pending)}</b>
-            </span>
-            <span className="bar">
-              <span className="bar-fill" style={{ width: `${Math.min(100, (pending / cap) * 100)}%` }} />
-            </span>
-            <small>
-              시간당 {fmt(salaryPerDay(state))} · 한도 {PENDING_CAP_HOURS}시간치
-            </small>
-          </button>
-
-          <button className="chip" onClick={() => go('nation')}>
-            <small>
-              {me.name} 국방예산 · 병력 · 도시 {citiesOf(state.world, me.id).length}
-            </small>
-            <b>
-              {fmt(n.treasury)} · {fmt(n.troops)}명
-            </b>
-          </button>
-        </div>
-
-        <div className="utilities">
-          <button onClick={() => go('herald')}>
-            📯<small>전령</small>
-            {unread > 0 && <i className="dot" aria-label="새 소식" />}
-          </button>
-          <button className="locked" disabled>
-            📋<small>의뢰</small>
-          </button>
-          <button onClick={() => go('codex')}>
-            📖<small>도감</small>
-          </button>
-          <button onClick={() => go('settings')}>
-            🧪<small>시험</small>
-          </button>
+          )}
         </div>
       </div>
+
+      {spots.map((sp) => (
+        <button
+          key={sp.label}
+          className={`bld ${sp.main ? 'main' : ''} ${sp.locked ? 'locked' : ''}`}
+          style={{ left: `${sp.x}%`, top: `${sp.y}%` }}
+          onClick={sp.locked ? undefined : sp.on}
+          aria-label={sp.label}
+        >
+          <span className="bld-ico">{sp.locked ? '🔒' : sp.icon}</span>
+          <small>{sp.label}</small>
+          {sp.badge != null && sp.badge !== 0 && !sp.locked && <i className="bld-badge">{sp.badge}</i>}
+        </button>
+      ))}
+
+      {latest && (
+        <button className="home-news" onClick={() => go('herald')}>
+          📯 {latest.text}
+        </button>
+      )}
+      {fallen && <div className="home-alert">{me.name}의 도시를 모두 잃었어요. 망명 정부로 버티는 중이에요.</div>}
+      {state.ending && endingOpen && (
+        <Modal title="전쟁 끝" icon="🏆" onClose={() => setEndingOpen(false)}>
+          <EndingCard {...props} />
+        </Modal>
+      )}
     </div>
   );
 }

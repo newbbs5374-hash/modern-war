@@ -11,7 +11,4 @@ export const STAT_ICON: Record<string, string> = { 체력: '💪', 사격: '🎯
 export const FACILITY_ICON: Record<string, string> = { 산업: '🏭', 인프라: '🛤️', 복지: '🏥' };
 export const AIDE_ICON: Record<string, string> = { 저격: '🎯', 의무: '⛑️', 통신: '📻', 공병: '🛠️', 정찰: '🔭' };
 export const FRAME_ICON: Record<string, string> = { grid: '♟️', side: '⚔️', course: '🏃', range: '🎯', arty: '💥', shooter: '✈️', puzzle: '🧩' };
-export const FLAG: Record<string, string> = {
-  us: '🇺🇸', cn: '🇨🇳', ru: '🇷🇺', de: '🇩🇪', jp: '🇯🇵', uk: '🇬🇧', in: '🇮🇳', kr: '🇰🇷', tr: '🇹🇷', il: '🇮🇱', ir: '🇮🇷', ua: '🇺🇦', kp: '🇰🇵',
-};
 export const RANK_ICON = ['▫️', '◽', '🔹', '🔷', '🔶', '🟧', '⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '🎖️'];

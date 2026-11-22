@@ -1,7 +1,7 @@
 // 화면 부품: 팝업 · 도움말(?) · 접기 · 탭 · 아이콘 타일 · 막대
 import { useEffect, useState, type ReactNode } from 'react';
 
-export function Modal({ title, icon, onClose, children, footer }: { title: string; icon?: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ title, icon, onClose, children, footer }: { title: string; icon?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', k);
@@ -53,7 +53,7 @@ export function Fold({ title, children, open }: { title: ReactNode; children: Re
 export interface TabDef<T extends string> {
   id: T;
   label: string;
-  icon: string;
+  icon: ReactNode;
   badge?: number | string | null;
   locked?: boolean;
 }
@@ -104,7 +104,7 @@ export function Tile({
   onClick,
   children,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: ReactNode;
   sub?: ReactNode;
   badge?: ReactNode;
@@ -133,7 +133,7 @@ export function Meter({ value, max, tone }: { value: number; max: number; tone?:
 }
 
 /** 작은 숫자 칩(아이콘 + 값) */
-export function Chip({ icon, value, label }: { icon: string; value: ReactNode; label?: string }) {
+export function Chip({ icon, value, label }: { icon: ReactNode; value: ReactNode; label?: string }) {
   return (
     <span className="ichip" title={label}>
       <span>{icon}</span>
