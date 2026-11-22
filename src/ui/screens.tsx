@@ -11,6 +11,7 @@ import type { Screen } from './nav';
 import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
 import { DRILL_MAX, promotionCheck } from '../game/officer';
+import { BattleScreen } from './battle/BattleScreen';
 import { PROMOTION } from '../data/officers';
 
 export interface GameActions {
@@ -492,4 +493,5 @@ export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   settings: SettingsScreen,
   herald: HeraldScreen,
   codex: CodexScreen,
+  battle: BattleScreen,
 };

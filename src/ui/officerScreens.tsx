@@ -24,6 +24,7 @@ import {
   startMission,
 } from '../game/officer';
 import { train } from '../game/officer';
+import { FRAME_NAMES, PRACTICE, battleOf, practiceSpec, setPractice } from '../battle/spec';
 import { Card, fmt, rankLock } from './common';
 import type { ScreenProps } from './screens';
 
@@ -44,7 +45,7 @@ function Bar({ have, need }: { have: number; need: number }) {
 }
 
 /* ───────── 임무 카드(작전 화면 맨 위, 본부에서도 씀) ───────── */
-export function MissionCard({ state, actions }: ScreenProps) {
+export function MissionCard({ state, actions, go }: ScreenProps) {
   const o = state.officer;
   const [msg, setMsg] = useState('');
   // 게시판이 비었거나 오래되면 새로 만듦
@@ -62,23 +63,40 @@ export function MissionCard({ state, actions }: ScreenProps) {
             {a.exam ? '진급 심사' : MISSION_KINDS[a.kind].desc} · 성공 확률 {Math.round(missionChance(state, a) * 100)}%
           </small>
           <Bar have={state.worldMs - a.startMs} need={a.endMs - a.startMs} />
+          <small className="muted">
+            전투: {FRAME_NAMES[battleOf(a, state.player.rankIndex).frame]}
+          </small>
           {state.worldMs >= a.endMs ? (
-            <button
-              className="primary"
-              onClick={() => setMsg(actions.applyWith((s) => {
-                const r = claimMission(s);
-                return { state: r.state, out: r.text ?? '' };
-              }) ?? '')}
-            >
-              결과 받기
-            </button>
+            <div className="buttons">
+              <button
+                className="primary"
+                onClick={() => {
+                  setPractice(null);
+                  go('battle');
+                }}
+              >
+                ⚔️ 직접 싸우기
+              </button>
+              <button
+                onClick={() =>
+                  setMsg(
+                    actions.applyWith((s) => {
+                      const r = claimMission(s);
+                      return { state: r.state, out: r.text ?? '' };
+                    }) ?? '',
+                  )
+                }
+              >
+                자동 계산(스탯)
+              </button>
+            </div>
           ) : (
             <small>남은 시간 {timeLeft(a.endMs - state.worldMs)} (꺼 두어도 진행돼요)</small>
           )}
         </div>
       ) : (
         <>
-          <p className="small muted">하나를 고르면 실제 시간으로 진행돼요. 결과는 스탯·부관으로 정해져요(4단계에서 직접 싸우기로 바뀜).</p>
+          <p className="small muted">하나를 고르면 실제 시간으로 이동해요(꺼 두어도 됨). 도착하면 직접 싸우거나, 스탯으로 자동 계산해요. 직접 싸워 별을 많이 받으면 공훈이 더 커요.</p>
           {o.board.map((m) => (
             <div key={m.id} className="mission">
               <div className="row">
@@ -251,7 +269,7 @@ export function OfficerScreen(props: ScreenProps) {
 }
 
 /* ───────── 훈련(간이) ───────── */
-export function TrainingScreen({ state, actions }: ScreenProps) {
+export function TrainingScreen({ state, actions, go }: ScreenProps) {
   const o = state.officer;
   const d = drillsNow(o, state.worldMs);
   const [msg, setMsg] = useState('');
@@ -264,6 +282,22 @@ export function TrainingScreen({ state, actions }: ScreenProps) {
           3번째부터 효과 절반. 지금은 별이 스탯으로 정해지는 간이 훈련이고, 5단계에서 미니게임으로 바뀌어요.
         </p>
         {msg && <p className="small result">{msg}</p>}
+      </Card>
+      <Card title="전투 연습장" right={<small className="muted">보상 없음</small>}>
+        <p className="small muted">전투 틀 5개를 마음대로 해 볼 수 있어요. 5단계에서 훈련 12개가 이 틀 위에서 돌아가요.</p>
+        <div className="buttons practice">
+          {PRACTICE.map((x, i) => (
+            <button
+              key={x.label}
+              onClick={() => {
+                setPractice(practiceSpec(i, (Date.now() & 0xffff) + i));
+                go('battle');
+              }}
+            >
+              <small className="muted">{FRAME_NAMES[x.frame].slice(0, 1)}</small> {x.label}
+            </button>
+          ))}
+        </div>
       </Card>
       <div className="grid2">
         {TRAININGS.map((t) => {
