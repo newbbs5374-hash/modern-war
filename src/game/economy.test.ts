@@ -3,6 +3,7 @@ import { advance, budgetPerDay, newGame, setRank, troopsPerDay, type GameState }
 import { addContract, buildMs, canProduce, canTrade, canUpgrade, cancelContract, claimChore, produce, producesOf, resPerDay, startChore, trade, tradePartners, upgradeFacility } from './economy';
 import { claimMission, finishTraining, grandTargets, startGrand, startTraining } from './officer';
 import { parseSave } from './save';
+import { debugAllResearch } from './civ';
 
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } });
@@ -73,6 +74,8 @@ describe('내정', () => {
   it('생산: 예산·자원을 쓰고 시간이 지나면 부대·병력이 늘어남, 인프라가 빠르게', () => {
     let s = rich(setRank(newGame('t', 'kr', 0, { seed: 3 }), 6));
     expect(canProduce(s, '보병')).toMatch(/강철/);
+    expect(canProduce({ ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20 } } }, '전차')).toMatch(/연구/); // 등급 + 연구 둘 다
+    s = debugAllResearch(s);
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20 } } };
     expect(canProduce(s, '항공모함')).toMatch(/대장|지도자|부터/);
     const base = advance(s, 4 * H);
@@ -83,7 +86,7 @@ describe('내정', () => {
     s = advance(s, 4 * H);
     expect(s.economy.queue.length).toBe(0);
     expect(s.economy.army.전차).toBe(1);
-    expect(s.economy.power).toBe(11);
+    expect(s.economy.power).toBe(14); // 9 + 2, 연구(청광석 +10% · 통합 전장망 육군 +15%)로 ×1.25
     expect(s.nations.kr.troops).toBeGreaterThan(base.nations.kr.troops + 2000);
     // 특별 병과(한국: 자주포 포병대)
     s = produce(s, '포병', true);

@@ -7,6 +7,7 @@ import { REAL_MS_PER_GAME_DAY } from './balance';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import type { OfficerState } from './officer';
+import { addFavorNote, eureka, onPlayerWar } from './civ';
 import { gwa, isAlive, isRival, pairKey, relationOf, type WorldEvent, type WorldState } from './world';
 
 const H = REAL_MS_PER_GAME_DAY; // 실제 1시간
@@ -410,6 +411,9 @@ function applyEffect(ns: GameState, o: OfficerState, who: string, e: TalkEffect,
   if (w.events.length > 150) w.events.length = 150;
 }
 
+/** 대화 태도 → 호감 [성공, 실패] */
+const TALK_FAVOR: Record<Attitude, [number, number]> = { 화해: [10, 2], 거래: [6, -2], 위협: [-8, -12], 속임: [0, -15], 원칙: [5, 0] };
+
 export function answerTalk(s: GameState, talkId: number, idx: number): { state: GameState; out: { ok: boolean; text: string; hint: string } | null } {
   const t = (s.officer.talks ?? []).find((x) => x.id === talkId);
   const c = t?.choices[idx];
@@ -420,9 +424,19 @@ export function answerTalk(s: GameState, talkId: number, idx: number): { state: 
   const ok = rng.chance(choiceChance(s, c));
   const e = ok ? c.ok : (c.fail ?? c.ok);
   o.talks = (o.talks ?? []).filter((x) => x.id !== talkId);
+  const wasWar = (id: string) => relationOf(s.world, s.player.countryId, id) === '전쟁';
+  const target = e.with ?? t.who;
   applyEffect(ns, o, t.who, e, `💬 ${ATTITUDE_ICON[c.att]} ${t.speaker}에게 "${c.label}" → ${e.text}`);
   ns.officer = o;
-  return { state: ns, out: { ok, text: e.text, hint: effectHint(e) } };
+  let out: GameState = ns;
+  // 호감 이유로 남김(대화 결과가 호감도에 쌓임)
+  if (t.who && t.who !== s.player.countryId) {
+    const v = TALK_FAVOR[c.att][ok ? 0 : 1];
+    if (v) out = addFavorNote(out, t.who, `대화: ${c.att}${ok ? '' : '(실패)'}`, v);
+  }
+  if (target && e.rel === '전쟁' && !wasWar(target) && target !== s.player.countryId) out = onPlayerWar(s, out, target);
+  if (ok) out = eureka(out, { kind: 'talk', att: c.att });
+  return { state: out, out: { ok, text: e.text, hint: effectHint(e) } };
 }
 
 /** 지금 이 나라와 불가침 약속 중인지(선전포고 화면용) */

@@ -24,12 +24,15 @@ import { FLAG, Flag } from './flag';
 import { Chip, Help, Modal, Tabs, useTab } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
+import { civOf } from '../game/civ';
+import { AgreePanel, CouncilPanel, FavorBox, IslandPanel } from './CivScreens';
 import { REL_COLORS } from './WorldMap';
 
-type Tab = 'trade' | 'nations' | 'rel';
+type Tab = 'trade' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
   const [tab, setTab] = useTab<Tab>('diplo', 'trade');
   const [sel, setSel] = useState<string | null>(null);
+  const civ = civOf(props.state);
   return (
     <>
       <Tabs
@@ -39,8 +42,14 @@ export function DiplomacyScreen(props: ScreenProps) {
           { id: 'trade', label: '무역', icon: '🚢' },
           { id: 'nations', label: '국가정보', icon: '🗂️' },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
+          { id: 'agree', label: '호감·협정', icon: '🤝' },
+          { id: 'isle', label: '개척 섬', icon: '🏝️' },
+          { id: 'council', label: '군도 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
         ]}
       />
+      {tab === 'agree' && <AgreePanel {...props} />}
+      {tab === 'isle' && <IslandPanel {...props} />}
+      {tab === 'council' && <CouncilPanel {...props} />}
       {tab === 'trade' && <TradePanel {...props} />}
       {tab === 'nations' && <NationsPanel {...props} onPick={setSel} />}
       {tab === 'rel' && <RelationsPanel {...props} onPick={setSel} />}
@@ -341,6 +350,7 @@ function CountryModal({ state, actions, id, onClose }: ScreenProps & { id: strin
         </div>
       )}
       {msg && <p className="small result">{msg}</p>}
+      <FavorBox state={state} id={id} />
       <CountryInfo id={id} state={state} />
     </Modal>
   );

@@ -4,6 +4,7 @@ import { FORCE_BRANCHES, UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
 import { canProduce, produce, buildMs, QUEUE_MAX } from '../game/economy';
+import { unitTechLock } from '../game/civ';
 import { boostsOf, boostsToFinish, useBoost } from '../game/boost';
 import { fmt } from './common';
 import { UNIT_ICON } from './icons';
@@ -32,6 +33,7 @@ export function ForcesScreen(props: ScreenProps) {
     const info = UNITS.find((u) => u.name === unit)!;
     const label = special ? me.specialUnit.name : unit;
     const lock = rank < info.rank;
+    const techLock = !lock ? unitTechLock(state, unit, special) : null;
     const have = e.army[label] ?? 0;
     const mine = e.queue.filter((q) => q.unit === unit && q.special === special);
     const first = mine[0];
@@ -46,6 +48,8 @@ export function ForcesScreen(props: ScreenProps) {
             <b>{label}</b>
             {lock ? (
               <small className="muted">{RANKS[info.rank].name}부터</small>
+            ) : techLock && !first ? (
+              <small className="muted">🔬 {techLock}</small>
             ) : first ? (
               <span className="frow-prog">
                 <Meter value={running ? state.worldMs - first.startMs : 0} max={first.endMs - first.startMs} tone="blue" />

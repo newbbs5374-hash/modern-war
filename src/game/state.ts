@@ -8,6 +8,7 @@ import { applyContracts, contractMoneyPerHour } from './economy';
 import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
+import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
   AI_TICK_MS,
@@ -58,6 +59,8 @@ export interface GameState {
   ending: Ending | null;
   /** 부관 보고(아직 안 본 것) */
   reports?: Report[];
+  /** 문명식 운영(연구·체제·호감·협정·개척 섬·군도 회의·도시 구역/민심/인구). 옛 저장은 불러올 때 채움 */
+  civ?: CivState;
 }
 
 export interface NewGameOptions {
@@ -76,6 +79,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
       troops: c.military * START_TROOPS_PER_POINT,
     };
   }
+  const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
   return {
     version: SAVE_VERSION,
     worldMs: 0,
@@ -83,10 +87,11 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     player: { name, countryId, rankIndex: 0, salary: 0, pendingSalary: 0 },
     nations,
     debugSkippedMs: 0,
-    world: newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS),
+    world,
     officer: newOfficer(((opt.seed ?? now) * 7 + 13) >>> 0),
     economy: newEconomy(),
     ending: null,
+    civ: newCiv({ world, worldMs: 0 }),
   };
 }
 
@@ -102,7 +107,7 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) : 1;
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) : sanctionMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -127,6 +132,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
     [`지도자 성향(${p})`, x(PERSONALITIES[p].budget)],
     ['가진 도시(점령지는 절반)', x(share)],
     ['🏭 군수공장', x(budgetMult(s))],
+    ['🏛️ 체제·카드·도시 민심·인구', x(civBudgetMult(s))],
     ['무역 계약(시간당)', `${Math.round(contractMoneyPerHour(s)).toLocaleString('ko-KR')}`],
   ];
 }
@@ -161,7 +167,7 @@ function accrue(s: GameState, ms: number): GameState {
   }
   const pendingSalary = Math.min(pendingCap(s), s.player.pendingSalary + salaryPerDay(s) * days);
   const economy = accrueEconomy(s, ms);
-  return economyTick(applyContracts({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy }, ms));
+  return civAccrue(economyTick(applyContracts({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy }, ms)), ms);
 }
 
 /**
@@ -182,10 +188,13 @@ export function advance(s: GameState, ms: number): GameState {
     const nations: Record<string, NationState> = {};
     for (const [id, n] of Object.entries(cur.nations)) nations[id] = { ...n };
     const ownerBefore = { ...world.owner };
-    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer), occupyHold(cur));
+    const pairsBefore = Object.fromEntries(Object.entries(world.pairs).map(([k, p]) => [k, { tension: p.tension }]));
+    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer) * defenseMult(cur), occupyHold(cur));
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
+    cur = civTick(cur, pairsBefore);
+    world = cur.world;
   }
   return checkVictory(accrue(cur, left));
 }
