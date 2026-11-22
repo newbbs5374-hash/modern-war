@@ -1,12 +1,12 @@
-import { drillsNow } from '../game/officer';
-import { useState, type ReactNode } from 'react';
-import { CURRENCIES } from '../data/catalog';
-import { RANKS } from '../data/ranks';
-import { countryById } from '../data/world';
-import { gameClock, type GameState } from '../game/state';
-import { fmt } from './common';
-import { Flag } from './flag';
-import { NAV, SCREEN_TITLES, type Screen } from './nav';
+import { drillsNow } from "../game/officer";
+import { useState, type ReactNode } from "react";
+import { CURRENCIES } from "../data/catalog";
+import { RANKS } from "../data/ranks";
+import { countryById } from "../data/world";
+import { gameClock, type GameState } from "../game/state";
+import { fmt } from "./common";
+import { Flag } from "./flag";
+import { NAV, SCREEN_TITLES, type Screen } from "./nav";
 
 interface Props {
   state: GameState;
@@ -17,7 +17,7 @@ interface Props {
   children: ReactNode;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
+const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
  * 화면 틀(용흔 참고): 휴대폰 세로 비율 고정 · 위 띠 고정 · 가운데만 스크롤 · 아래 메뉴 6칸 고정.
@@ -30,21 +30,29 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
   const clock = gameClock(state.worldMs);
 
   const amount = (id: string) =>
-    id === 'salary'
+    id === "salary"
       ? state.player.salary
-      : id === 'merit'
+      : id === "merit"
         ? state.officer.merit
-        : id === 'drill'
+        : id === "drill"
           ? drillsNow(state.officer, state.worldMs).count
           : 0;
   const wallet = (
-    <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="보유 재화 보기">
+    <button
+      className="wallet"
+      onClick={() => setWalletOpen((v) => !v)}
+      aria-label="보유 재화 보기"
+    >
       <span>💵 {fmt(state.player.salary)}</span>
       <span>💎 0</span>
     </button>
   );
   const gear = (
-    <button className="icon-btn" onClick={() => go('settings')} aria-label="설정">
+    <button
+      className="icon-btn"
+      onClick={() => go("settings")}
+      aria-label="설정"
+    >
       ⚙️
     </button>
   );
@@ -52,16 +60,19 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
   return (
     <div className="frame">
       <header className="top">
-        {screen === 'home' ? (
-          <button className="who" onClick={() => go('officer')}>
-            <span className="portrait"><Flag id={me.id} /></span>
+        {screen === "home" ? (
+          <button className="who" onClick={() => go("officer")}>
+            <span className="portrait">
+              <Flag id={me.id} />
+            </span>
             <span>
               <b>
                 {rank.name} {state.player.name}
               </b>
               <small>
-                {me.name} · {clock.month}/{clock.day} {pad(clock.hour)}:{pad(clock.minute)}
-                {speed !== 1 ? ` ×${speed}` : ''}
+                {me.name} · {clock.month}/{clock.day} {pad(clock.hour)}:
+                {pad(clock.minute)}
+                {speed !== 1 ? ` ×${speed}` : ""}
               </small>
             </span>
           </button>
@@ -75,13 +86,22 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
         )}
         {wallet}
         {gear}
-        {screen !== 'home' && (
-          <button className="icon-btn" onClick={() => go('home')} aria-label="본부">
+        {screen !== "home" && (
+          <button
+            className="icon-btn"
+            onClick={() => go("home")}
+            aria-label="본부"
+          >
             🏠
           </button>
         )}
         {walletOpen && (
-          <div className="bubble" role="dialog" aria-label="보유 재화" onClick={() => setWalletOpen(false)}>
+          <div
+            className="bubble"
+            role="dialog"
+            aria-label="보유 재화"
+            onClick={() => setWalletOpen(false)}
+          >
             {CURRENCIES.map((c) => (
               <div key={c.id} className="bubble-row">
                 <span className="bubble-ico">{c.icon}</span>
@@ -100,21 +120,28 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
         {children}
       </main>
 
-      <nav className="bottom">
-        {NAV.map((n) => (
-          <button
-            key={n.screen}
-            className={[screen === n.screen ? 'active' : '', n.main ? 'main' : '', n.locked ? 'locked' : '']
-              .join(' ')
-              .trim()}
-            onClick={() => go(n.screen)}
-            aria-label={n.locked ? `${n.label} · ${n.locked}` : n.label}
-          >
-            <span className="ico">{n.icon}</span>
-            <small>{n.label}</small>
-          </button>
-        ))}
-      </nav>
+      {/* 본부는 지도 위 건물 아이콘이 메뉴라서 아래 메뉴 줄을 숨김 */}
+      {screen !== "home" && (
+        <nav className="bottom">
+          {NAV.map((n) => (
+            <button
+              key={n.screen}
+              className={[
+                screen === n.screen ? "active" : "",
+                n.main ? "main" : "",
+                n.locked ? "locked" : "",
+              ]
+                .join(" ")
+                .trim()}
+              onClick={() => go(n.screen)}
+              aria-label={n.locked ? `${n.label} · ${n.locked}` : n.label}
+            >
+              <span className="ico">{n.icon}</span>
+              <small>{n.label}</small>
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
