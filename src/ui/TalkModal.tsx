@@ -7,6 +7,16 @@ import { Modal } from './kit';
 import { FLAG } from './flag';
 import type { GameActions } from './screens';
 import { timeLeft } from './officerScreens';
+import { Face, aideKeys } from './Portrait';
+
+/** 대화 상대 사진: 부관이면 이름 → 분야 → 기본 부관 */
+function talkFaceKeys(state: GameState, t: Talk): (string | undefined)[] {
+  if (t.face?.startsWith('aide')) {
+    const a = state.officer.aides.find((x) => `aide-${x.name}` === t.face);
+    return a ? aideKeys(a) : [t.face, 'aide'];
+  }
+  return [t.face];
+}
 
 /** 세계 흐름 막대(평화 개척 → 냉전 → 국지전 → 대전쟁) */
 export function MoodBar({ state }: { state: GameState }) {
@@ -65,7 +75,9 @@ export function TalkModal({ state, actions, onClose }: { state: GameState; actio
       {t && (
         <div className="talk">
           <div className="talk-who">
-            <span className="talk-face">{t.icon}</span>
+            <span className="talk-face">
+              <Face keys={talkFaceKeys(state, t)} fallback={t.icon} />
+            </span>
             <span>
               <b>{t.speaker}</b>
               <small className="muted">

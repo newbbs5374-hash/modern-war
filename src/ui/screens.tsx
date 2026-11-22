@@ -27,6 +27,7 @@ import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
 import { ForcesScreen } from './ForcesScreen';
 import { debugTalk } from '../game/talk';
+import { PortraitList } from './Portrait';
 
 export interface GameActions {
   claim: () => void;
@@ -725,6 +726,9 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           ))}
         </select>
         <p className="small muted">지금까지 건너뛴 시간: {fmt(state.debugSkippedMs / HOUR)}시간</p>
+      </Card>
+      <Card title="🖼️ 인물 사진 칸">
+        <PortraitList />
       </Card>
     </>
   );
