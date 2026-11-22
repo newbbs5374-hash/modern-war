@@ -27,7 +27,7 @@ export function boostLeft(s: GameState, t: BoostTarget): number {
         : t.kind === 'chore'
           ? s.economy.chore?.endMs
           : t.kind === 'build'
-            ? (s.economy.facilities as Record<string, { buildEndMs: number }>)[t.fac]?.buildEndMs || undefined
+            ? (s.economy.buildings as Record<string, { buildEndMs: number }>)[t.fac]?.buildEndMs || undefined
             : t.kind === 'queue'
               ? s.economy.queue.find((q) => q.id === t.id)?.endMs
               : s.officer.grandReadyMs;
@@ -50,8 +50,8 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
   if (t.kind === 'grand') o.grandReadyMs -= cut;
   if (t.kind === 'chore' && e.chore) e = { ...e, chore: { ...e.chore, endMs: e.chore.endMs - cut } };
   if (t.kind === 'build') {
-    const f = (e.facilities as Record<string, { buildEndMs: number }>)[t.fac];
-    e = { ...e, facilities: { ...e.facilities, [t.fac]: { ...f, buildEndMs: f.buildEndMs - cut } } };
+    const f = (e.buildings as Record<string, { buildEndMs: number }>)[t.fac];
+    e = { ...e, buildings: { ...e.buildings, [t.fac]: { ...f, buildEndMs: f.buildEndMs - cut } } };
   }
   if (t.kind === 'queue') {
     // 줄에서 뒤에 선 것들도 같이 당겨짐

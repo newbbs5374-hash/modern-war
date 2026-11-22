@@ -3,7 +3,7 @@
 import { STAT_IDS, GRAND_RANK } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
-import { FACILITIES } from '../data/economy';
+import { BUILDING_IDS } from '../data/economy';
 import type { GameState } from './state';
 
 export interface Report {
@@ -52,13 +52,13 @@ export function addReports(b: GameState | null, a: GameState): GameState {
     if (d > 0) out.push({ icon: name === me.specialUnit.name ? '🌟' : '🪖', text: `${name} ${d > 1 ? `${d}부대 ` : ''}모집이 완료되었습니다.` });
   }
   // 시설 공사 완료
-  for (const f of FACILITIES) {
-    const lv = a.economy.facilities[f].level;
-    if (lv > b.economy.facilities[f].level) out.push({ icon: '🏗️', text: `${f} 시설 공사가 끝나 ${lv}단계가 되었습니다.` });
+  for (const id of BUILDING_IDS) {
+    const lv = a.economy.buildings?.[id]?.level ?? 1;
+    if (lv > (b.economy.buildings?.[id]?.level ?? 1)) out.push({ icon: '🏗️', text: `${josa(id, '이', '가')} ${lv}단계로 완공되었습니다.` });
   }
   // 내정 일 완료
   const ch = b.economy.chore;
-  if (ch && a.economy.chore && a.economy.chore.endMs === ch.endMs && crossed(ch.endMs)) out.push({ icon: '📋', text: `내정 일 ${josa(ch.title, '이', '가')} 끝났습니다. 나라 화면에서 보상을 받아 주세요.` });
+  if (ch && a.economy.chore && a.economy.chore.endMs === ch.endMs && crossed(ch.endMs)) out.push({ icon: '📋', text: `내정 업무 "${ch.title}" 끝났습니다. 내정 화면에서 보상을 받아 주세요.` });
   // 임무 현장 도착
   const m = b.officer.active;
   if (m && a.officer.active?.id === m.id && crossed(m.endMs)) out.push({ icon: m.exam ? '🎓' : '🎯', text: `${m.title} — 현장에 도착했습니다. 지시를 내려 주십시오.` });

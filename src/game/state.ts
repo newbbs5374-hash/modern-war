@@ -4,10 +4,11 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { PERSONALITIES } from '../data/leaders';
 import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
+import { applyContracts, contractMoneyPerHour } from './economy';
 import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
-import { accrueEconomy, economyTick, industryMult, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
+import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
   AI_TICK_MS,
   BUDGET_PER_DAY_PER_POINT,
@@ -90,7 +91,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
-const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4 };
+export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4 };
 
 export function salaryPerDay(s: GameState): number {
   return RANKS[s.player.rankIndex].salaryPerDay;
@@ -101,7 +102,7 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? industryMult(s.economy) : 1;
+  const ind = countryId === s.player.countryId ? budgetMult(s) : 1;
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -111,8 +112,40 @@ export function troopsPerDay(s: GameState, countryId: string): number {
     TROOPS_PER_DAY_PER_POINT *
     (TROOP_BONUS[countryId] ?? 1) *
     incomeShare(s.world, countryId) *
-    (countryId === s.player.countryId ? welfareMult(s.economy) : 1)
+    (countryId === s.player.countryId ? welfareMult(s) : 1)
   );
+}
+
+/** 금고 화면 말풍선: 시간당 숫자가 어떻게 나오는지 [이름, 값] */
+export function budgetBreakdown(s: GameState): Array<[string, string]> {
+  const me = s.player.countryId;
+  const p = s.world.personalities[me];
+  const share = incomeShare(s.world, me);
+  const x = (v: number) => `×${(Math.round(v * 100) / 100).toFixed(2)}`;
+  return [
+    ['기본(나라 국방예산 점수)', `${Math.round(countryById(me).budget * BUDGET_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
+    [`지도자 성향(${p})`, x(PERSONALITIES[p].budget)],
+    ['가진 도시(점령지는 절반)', x(share)],
+    ['🏭 군수공장', x(budgetMult(s))],
+    ['무역 계약(시간당)', `${Math.round(contractMoneyPerHour(s)).toLocaleString('ko-KR')}`],
+  ];
+}
+/** 내 나라 병력 자연 감소(시간당) */
+export function troopLossPerDay(s: GameState): number {
+  return s.nations[s.player.countryId].troops * (1 - Math.exp(-TROOP_ATTRITION_PER_DAY * attritionMult(s)));
+}
+export function troopsBreakdown(s: GameState): Array<[string, string]> {
+  const me = s.player.countryId;
+  const x = (v: number) => `×${(Math.round(v * 100) / 100).toFixed(2)}`;
+  const loss = troopLossPerDay(s);
+  return [
+    ['기본(나라 군사력 점수)', `${Math.round(countryById(me).military * TROOPS_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
+    ['나라 특수 능력', x(TROOP_BONUS[me] ?? 1)],
+    ['가진 도시(점령지는 절반)', x(incomeShare(s.world, me))],
+    ['📝 징병소', x(welfareMult(s))],
+    ['자연 감소(전역·부상)', `-${Math.round(loss).toLocaleString('ko-KR')}`],
+    ['🏥 군병원(감소 줄임)', x(attritionMult(s))],
+  ];
 }
 
 /** 쌓이는 것만 ms만큼(판단 없이) */
@@ -123,12 +156,12 @@ function accrue(s: GameState, ms: number): GameState {
   for (const [id, n] of Object.entries(s.nations)) {
     nations[id] = {
       treasury: n.treasury + budgetPerDay(s, id) * days,
-      troops: n.troops * Math.exp(-TROOP_ATTRITION_PER_DAY * days) + troopsPerDay(s, id) * days,
+      troops: n.troops * Math.exp(-TROOP_ATTRITION_PER_DAY * (id === s.player.countryId ? attritionMult(s) : 1) * days) + troopsPerDay(s, id) * days,
     };
   }
   const pendingSalary = Math.min(pendingCap(s), s.player.pendingSalary + salaryPerDay(s) * days);
   const economy = accrueEconomy(s, ms);
-  return economyTick({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy });
+  return economyTick(applyContracts({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy }, ms));
 }
 
 /**

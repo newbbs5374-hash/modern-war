@@ -1,17 +1,16 @@
-// 기능별 화면 묶음. 아래 메뉴 6칸 + 본부(홈) + 설정·전령·도감.
+// 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
 import { useState } from 'react';
 import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
-import { budgetPerDay, pendingCap, troopsPerDay, type GameState } from '../game/state';
+import { pendingCap, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
-import { Card, CountryInfo, EventList, HOUR, RelTag, Soon, TensionBar, fmt, leaderText } from './common';
+import { Card, CountryInfo, EventList, HOUR, Soon, fmt } from './common';
 import type { Screen } from './nav';
 import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
 import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
-import { FacilityCard, ProductionCard, ResourceCard, TradeCard } from './economyScreens';
 import { Chip, Modal, Tabs, Tile, useTab } from './kit';
 import { FLAG } from './flag';
 import { fillPromotion, grantTestResources } from '../game/testgrant';
@@ -20,12 +19,12 @@ import { cityById } from '../data/cities';
 import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { boostsOf } from '../game/boost';
-import { ECON_RANK } from '../data/economy';
-import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
 import { ForcesScreen } from './ForcesScreen';
+import { InteriorScreen } from './InteriorScreen';
+import { DiplomacyScreen } from './DiplomacyScreen';
 import { debugTalk } from '../game/talk';
 import { PortraitList } from './Portrait';
 
@@ -375,165 +374,6 @@ function MapPanel({ state }: ScreenProps) {
   );
 }
 
-/* ───────── 나라: 금고 · 자원 · 시설 · 생산 · 무역 · 외교 (탭) ───────── */
-type NationTab = 'home' | 'res' | 'fac' | 'make' | 'trade' | 'dip';
-export function NationScreen(props: ScreenProps) {
-  const { state } = props;
-  const me = countryById(state.player.countryId);
-  const n = state.nations[me.id];
-  const [tab, setTab] = useTab<NationTab>('nation', 'home');
-  const locked = state.player.rankIndex < ECON_RANK;
-  const choreDone = state.economy.chore && state.worldMs >= state.economy.chore.endMs;
-  return (
-    <>
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'home', label: '금고', icon: '💰' },
-          { id: 'res', label: '자원', icon: '⛏️' },
-          { id: 'fac', label: '시설', icon: '🏭', badge: choreDone ? '!' : null },
-          { id: 'make', label: '생산', icon: '🛠️', locked },
-          { id: 'trade', label: '무역', icon: '🤝', locked },
-          { id: 'dip', label: '외교', icon: '🌐' },
-        ]}
-      />
-      {tab === 'home' && (
-        <>
-          <section className="card">
-            <div className="hero">
-              <span className="avatar">{FLAG[me.id]}</span>
-              <div className="hero-main">
-                <b>{me.name}</b>
-                <div className="small muted">{leaderText(state, me.id)}</div>
-              </div>
-            </div>
-            <div className="kv2" style={{ marginTop: 8 }}>
-              <span>💰 국방예산</span>
-              <b>{fmt(n.treasury)}</b>
-              <span>　시간당</span>
-              <b>+{fmt(budgetPerDay(state, me.id))}</b>
-              <span>🪖 병력</span>
-              <b>{fmt(n.troops)}명</b>
-              <span>　시간당</span>
-              <b>+{fmt(troopsPerDay(state, me.id))}</b>
-              <span>🏙️ 도시</span>
-              <b>{citiesOf(state.world, me.id).length}</b>
-              <span>💪 전투력</span>
-              <b>{state.economy.power}</b>
-            </div>
-          </section>
-          <Card title="모든 나라" icon="📊" help={<p>나라를 누르면 자세한 정보가 떠요. 숫자는 실시간으로 바뀌어요.</p>}>
-            <AllNations {...props} />
-          </Card>
-        </>
-      )}
-      {tab === 'res' && <ResourceCard {...props} />}
-      {tab === 'fac' && <FacilityCard {...props} />}
-      {tab === 'make' && <ProductionCard {...props} />}
-      {tab === 'trade' && <TradeCard {...props} />}
-      {tab === 'dip' && <DiplomacyCard {...props} />}
-    </>
-  );
-}
-
-function AllNations({ state }: ScreenProps) {
-  const [sel, setSel] = useState<string | null>(null);
-  const me = state.player.countryId;
-  return (
-    <>
-      <div className="tiles c4">
-        {COUNTRIES.map((c) => (
-          <Tile
-            key={c.id}
-            icon={FLAG[c.id]}
-            label={c.name}
-            sub={`🏙️${citiesOf(state.world, c.id).length} · ${fmt(state.nations[c.id].troops / 1000)}k`}
-            locked={!isAlive(state.world, c.id)}
-            tone={
-              c.id === me ? 'gold' : relationOf(state.world, me, c.id) === '전쟁' ? 'red' : relationOf(state.world, me, c.id) === '연합' ? 'blue' : undefined
-            }
-            onClick={() => setSel(c.id)}
-          />
-        ))}
-      </div>
-      {sel && (
-        <Modal title={countryById(sel).name} icon={FLAG[sel]} onClose={() => setSel(null)}>
-          <CountryInfo id={sel} state={state} />
-        </Modal>
-      )}
-    </>
-  );
-}
-
-function DiplomacyCard({ state, actions }: ScreenProps) {
-  const me = state.player.countryId;
-  const [sel, setSel] = useState<string | null>(null);
-  const [msg, setMsg] = useState('');
-  const top = state.player.rankIndex >= COMMAND_TOP;
-  const wait = diploReady(state) - state.worldMs;
-  return (
-    <Card
-      title="외교 (우리와)"
-      icon="🌐"
-      right={top ? <Chip icon="📜" value={wait > 0 ? timeLeft(wait) : '가능'} /> : undefined}
-      help={
-        <>
-          <p>휴전·중립인 나라와는 긴장도가 쌓여요. 100이 되면 휴전이 깨지거나 전쟁이 나요.</p>
-          <p>지도자이 되면 나라를 눌러 직접 선전포고·휴전 제안·연합 제안을 해요({DIPLO_COOLDOWN_HOURS}시간마다 한 번). 연합국은 승리 조건에 함께 세어져요.</p>
-        </>
-      }
-    >
-      {COUNTRIES.filter((c) => c.id !== me).map((c) => (
-        <button key={c.id} className="line-item wide-btn" onClick={() => setSel(c.id)}>
-          <span className="li-ico">{FLAG[c.id]}</span>
-          <span className="li-main">
-            <b>
-              {c.name} <RelTag state={state} id={c.id} />
-            </b>
-            <small>{state.world.personalities[c.id]}</small>
-          </span>
-          <TensionBar state={state} a={me} b={c.id} />
-        </button>
-      ))}
-      {sel && (
-        <Modal title={countryById(sel).name} icon={FLAG[sel]} onClose={() => (setSel(null), setMsg(''))}>
-          {top && (
-            <div className="buttons">
-              {(['선전포고', '휴전 제안', '연합 제안'] as DiploAct[]).map((act) => {
-                const why = canDiplo(state, sel, act);
-                return (
-                  <button
-                    key={act}
-                    style={{ flex: 1, marginTop: 0 }}
-                    className={act === '선전포고' ? 'danger' : 'primary'}
-                    disabled={!!why}
-                    title={why ?? ''}
-                    onClick={() => {
-                      if (act === '선전포고' && !window.confirm(`${countryById(sel).name}에 선전포고할까요?`)) return;
-                      setMsg(
-                        actions.applyWith((s) => {
-                          const r = doDiplo(s, sel, act);
-                          return { state: r.state, out: r.text };
-                        }) ?? '',
-                      );
-                    }}
-                  >
-                    {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : '🤝'} {act}
-                    <small>{why ?? (act === '선전포고' ? '' : `성공 ${Math.round(diploChance(state, sel, act) * 100)}%`)}</small>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {msg && <p className="small result">{msg}</p>}
-          <CountryInfo id={sel} state={state} />
-        </Modal>
-      )}
-    </Card>
-  );
-}
-
 /* ───────── 상점 ───────── */
 export function ShopScreen(_: ScreenProps) {
   return (
@@ -740,7 +580,8 @@ export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   officer: OfficerScreen,
   forces: ForcesScreen,
   training: TrainingScreen,
-  nation: NationScreen,
+  nation: InteriorScreen,
+  diplo: DiplomacyScreen,
   shop: ShopScreen,
   settings: SettingsScreen,
   herald: HeraldScreen,

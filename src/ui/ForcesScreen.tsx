@@ -9,6 +9,7 @@ import { fmt } from './common';
 import { UNIT_ICON } from './icons';
 import { Chip, Help, Meter, useTab } from './kit';
 import { UnitModal } from './economyScreens';
+import { BoostBar } from './BoostBar';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 
@@ -106,9 +107,27 @@ export function ForcesScreen(props: ScreenProps) {
             <p>
               <b>⚡ 가속</b>: 가속권으로 모집 중인 부대를 바로 끝내요(1장 = 30분).
             </p>
+            <p>위 <b>모집 줄</b>에서 차례와 남은 시간을 보고 하나씩 가속할 수 있어요. 인프라 시설(🚆철도망·⚓군항·🛫공군기지)을 올리면 모집이 빨라져요.</p>
             <p>모은 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요. 병과를 누르면 비용과 자세한 정보를 봐요.</p>
           </Help>
         </div>
+        {e.queue.length > 0 && (
+          <div className="queue-strip">
+            {e.queue.map((q, i) => {
+              const name = q.special ? me.specialUnit.name : q.unit;
+              const run = state.worldMs >= q.startMs;
+              return (
+                <div key={q.id} className="queue-item">
+                  <span>{q.special ? '🌟' : UNIT_ICON[q.unit]}</span>
+                  <small>{name}</small>
+                  <Meter value={run ? state.worldMs - q.startMs : 0} max={q.endMs - q.startMs} tone="blue" />
+                  <small className="muted">{run ? timeLeft(q.endMs - state.worldMs) : `대기 ${i}`}</small>
+                  <BoostBar state={state} apply={actions.apply} target={{ kind: 'queue', id: q.id }} compact />
+                </div>
+              );
+            })}
+          </div>
+        )}
         {msg && <p className="small result">{msg}</p>}
       </section>
       <div className="seg branch-tabs">

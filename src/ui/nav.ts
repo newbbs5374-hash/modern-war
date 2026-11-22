@@ -7,6 +7,7 @@ export type Screen =
   | 'forces'
   | 'training'
   | 'nation'
+  | 'diplo'
   | 'shop'
   | 'settings'
   | 'herald'
@@ -19,7 +20,8 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   officer: '장교',
   forces: '부대',
   training: '훈련',
-  nation: '나라',
+  nation: '내정',
+  diplo: '외교',
   shop: '상점',
   settings: '설정',
   herald: '전령',
@@ -33,7 +35,8 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
   { screen: 'officer', icon: '🎖️', label: '장교' },
   { screen: 'forces', icon: '🪖', label: '부대' },
   { screen: 'training', icon: '🎯', label: '훈련' },
-  { screen: 'nation', icon: '🏛️', label: '나라' },
+  { screen: 'nation', icon: '🏛️', label: '내정' },
+  { screen: 'diplo', icon: '🌐', label: '외교' },
   { screen: 'shop', icon: '🛒', label: '상점', locked: '준비 중' },
 ];
 
