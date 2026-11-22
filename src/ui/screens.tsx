@@ -9,7 +9,7 @@ import { Card, CountryInfo, EventList, HOUR, RelTag, Soon, TensionBar, fmt, lead
 import type { Screen } from './nav';
 import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
-import { DRILL_MAX, debugAddAide, drillsNow, promotionCheck } from '../game/officer';
+import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
 import { FacilityCard, ProductionCard, ResourceCard, TradeCard, UnitModal } from './economyScreens';
@@ -692,6 +692,13 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             진급 심사 탈락 대기: {state.officer.examPenalty ? '켜짐(6시간)' : '꺼짐(바로 재도전)'}
           </button>
           <button className="gold" onClick={() => (actions.apply(debugTalk), setMsg('대화가 하나 왔어요. 본부의 💬 대화를 눌러 보세요.'))}>💬 대화 바로 받기</button>
+          <button
+            className="gold"
+            disabled={state.player.rankIndex >= PROMOTION.length}
+            onClick={() => (actions.apply(debugPromote), setMsg('진급 심사 없이 바로 다음 계급으로 올렸어요.'))}
+          >
+            ⏫ 바로 진급(심사 생략)
+          </button>
           <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 계급의 진급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 진급 심사를 보세요.'))}>
             🎖️ 진급 조건 채우기
           </button>

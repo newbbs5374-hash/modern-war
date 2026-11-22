@@ -118,3 +118,16 @@ describe('시험판: 진급 심사 탈락 대기', () => {
     expect(promotionCheck(lose2).why).toContain('기다려야');
   });
 });
+
+describe('시험용 바로 진급', () => {
+  test('심사 없이 한 계급 오르고, 맨 위에서는 그대로', async () => {
+    const { newGame, setRank } = await import('./state');
+    const { debugPromote } = await import('./officer');
+    const { PROMOTION } = await import('../data/officers');
+    const s = debugPromote(newGame('t', 'kr', 0, { seed: 1 }));
+    expect(s.player.rankIndex).toBe(1);
+    expect(s.officer.aides.length).toBe(1);
+    const top = setRank(newGame('t', 'kr', 0, { seed: 1 }), PROMOTION.length);
+    expect(debugPromote(top).player.rankIndex).toBe(PROMOTION.length);
+  });
+});

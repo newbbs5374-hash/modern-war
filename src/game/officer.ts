@@ -751,6 +751,17 @@ function promote(ns: GameState, o: OfficerState, rng: Rng) {
   }
 }
 
+/** 시험용: 진급 심사 없이 바로 다음 계급으로(이번 계급 공훈·별 조건은 무시) */
+export function debugPromote(s: GameState): GameState {
+  if (s.player.rankIndex >= PROMOTION.length) return s;
+  return withOfficer(s, (o, rng, ns) => {
+    if (o.active?.exam) o.active = null;
+    o.merit = Math.max(o.merit, PROMOTION[ns.player.rankIndex].merit);
+    promote(ns, o, rng);
+    o.examReadyMs = 0;
+  });
+}
+
 /** 끝난 임무 결과 받기 */
 /** 전투 결과(직접 싸운 경우). 없으면 스탯으로 자동 계산 */
 export interface BattleOutcome {
