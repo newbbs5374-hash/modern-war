@@ -101,3 +101,20 @@ describe('승리 유지', () => {
     expect(s.ending?.kind).toBe('정복 승리');
   });
 });
+
+describe('시험판: 진급 심사 탈락 대기', () => {
+  test('기본은 바로 재도전, 켜면 6시간', async () => {
+    const { fillPromotion } = await import('./testgrant');
+    const { startExam, claimMission, promotionCheck } = await import('./officer');
+    let s = fillPromotion(newGame('t', 'kr', 0, { seed: 3 }));
+    s = startExam(s);
+    s = advance(s, 6 * H);
+    const lose = claimMission(s, { win: false, stars: 0 }).state;
+    expect(lose.player.rankIndex).toBe(0);
+    expect(promotionCheck(lose).ready).toBe(true);
+    let p = startExam({ ...fillPromotion(newGame('t', 'kr', 0, { seed: 3 })), officer: { ...fillPromotion(newGame('t', 'kr', 0, { seed: 3 })).officer, examPenalty: true } });
+    p = advance(p, 6 * H);
+    const lose2 = claimMission(p, { win: false, stars: 0 }).state;
+    expect(promotionCheck(lose2).why).toContain('기다려야');
+  });
+});

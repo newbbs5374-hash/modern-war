@@ -172,6 +172,8 @@ export interface OfficerState {
   boosts?: number;
   /** 시험판 자원 지급을 받았는지 */
   testGrant?: number;
+  /** 진급 심사에 떨어지면 6시간 기다리기(시험판 기본은 꺼짐) */
+  examPenalty?: boolean;
 }
 
 export function newOfficer(seed: number): OfficerState {
@@ -772,9 +774,10 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
         text = `${a.title} 통과!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''}`;
         promote(ns, o, rng);
       } else {
-        o.examReadyMs = ns.worldMs + EXAM_COOLDOWN_MS;
+        // 시험판: 기본은 대기 시간 없음(설정에서 켤 수 있음)
+        o.examReadyMs = o.examPenalty ? ns.worldMs + EXAM_COOLDOWN_MS : 0;
         o.trust = Math.max(0, o.trust - 3);
-        text = `${a.title}에서 떨어졌어요. 6시간 뒤 다시 도전할 수 있어요.`;
+        text = o.examPenalty ? `${a.title}에서 떨어졌어요. 6시간 뒤 다시 도전할 수 있어요.` : `${a.title}에서 떨어졌어요. 바로 다시 도전할 수 있어요.`;
         note(ns, text);
       }
       return;
