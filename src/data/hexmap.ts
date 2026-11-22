@@ -1,6 +1,6 @@
 // 육각 타일 세계지도(여명 군도). 나중에 이미지 작업을 할 때 이 좌표를 그대로 쓴다.
 // - 타일: 뾰족한 위(pointy-top) 육각형, 축 좌표(q, r). 픽셀 중심 x = S·√3·(q + r/2), y = S·1.5·r (S = HEX_SIZE, 꼭짓점까지 거리)
-// - 도시 = 육각 묶음: 소도시 반지름 2(19칸) · 중도시 반지름 3(37칸) · 대도시 반지름 4(61칸)
+// - 도시 = 육각 칸 묶음: 소도시 19칸 · 중도시 37칸 · 대도시 61칸. 정육각형이 아니라 자연스러운 모양으로 키워 이웃 도시·나라와 이어짐
 // - 나라 땅 = 그 나라 도시 묶음의 합. 도시 수는 모티브 나라 면적에 맞춰 정함(world.ts의 cities)
 // - 개척 섬 12개(19칸, 주인 없음) + 떠오른 성소(7칸). 나머지는 모두 바다 타일
 // 배치는 정해진 규칙(목표 자리에 가장 가까운 빈 곳)으로 계산하므로 언제나 같은 결과가 나온다.
@@ -132,13 +132,28 @@ function targets(c: Country, n: number): Array<[number, number]> {
   return out;
 }
 
+/** 칸마다 정해진 흔들림(0~1). 이웃 칸끼리 조금씩 닮게 섞어 해안선이 자연스러움 */
+function rawNoise(q: number, r: number): number {
+  let h = Math.imul(q * 374761393 + r * 668265263, 1274126177) ^ 0x5bd1e995;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function noise(q: number, r: number): number {
+  let s = rawNoise(q, r) * 2;
+  for (const d of HEX_DIRS) s += rawNoise(q + d.q, r + d.r);
+  for (const d of HEX_DIRS) s += 0.5 * rawNoise(q + 2 * d.q, r + 2 * d.r);
+  return s / 11;
+}
+
 function build() {
   const owner = new Map<string, { home: string; place: string; kind: TileKind; center: boolean; continent: string }>();
   /** 대륙마다 못 쓰는 칸(다른 대륙 땅에서 2칸 안) */
   const forbid = new Map<string, Set<string>>();
-  const continents = [...new Set(COUNTRIES.map((c) => c.continent))];
+  // 땅 덩어리 묶음: 같은 군도끼리는 이어질 수 있음. 벚섬은 따로 떨어진 긴 섬
+  const landGroup = (c: Country) => (c.id === 'jp' ? 'jp' : c.continent);
+  const continents = [...new Set(COUNTRIES.map(landGroup))];
   for (const ct of continents) forbid.set(ct, new Set());
-  const GAP = 3;
+  const GAP = 2;
   const put = (h: Hex, v: { home: string; place: string; kind: TileKind; center: boolean; continent: string }) => {
     owner.set(hexKey(h.q, h.r), v);
     for (const n of disk(h, GAP)) for (const ct of continents) if (ct !== v.continent) forbid.get(ct)!.add(hexKey(n.q, n.r));
@@ -155,47 +170,99 @@ function build() {
   // 수도 먼저(큰 나라부터), 다음은 둘째 도시들…
   jobs.sort((a, b) => a.idx - b.idx || b.country.cities.length - a.country.cities.length || COUNTRIES.indexOf(a.country) - COUNTRIES.indexOf(b.country));
   const centers: Record<string, Hex & { size: CitySize }> = {};
+  const nbrs = (h: Hex) => HEX_DIRS.map((d) => ({ q: h.q + d.q, r: h.r + d.r }));
+  /**
+   * 정해진 칸 수(19·37·61)만큼 땅을 자연스럽게 키움: 이미 키운 칸·같은 나라·같은 군도 땅에 붙을수록,
+   * 가운데에 가까울수록, 칸마다 정해진 흔들림이 클수록 먼저 붙임 → 들쭉날쭉한 해안선, 이웃과 이어지는 땅
+   */
+  const grow = (center: Hex, n: number, ok: (h: Hex) => boolean, home: string, continent: string): Hex[] | null => {
+    if (!ok(center)) return null;
+    const blob: Hex[] = [center];
+    const inBlob = new Set([hexKey(center.q, center.r)]);
+    while (blob.length < n) {
+      let best: Hex | null = null;
+      let bestScore = -Infinity;
+      const seen = new Set<string>();
+      for (const b of blob)
+        for (const c of nbrs(b)) {
+          const k = hexKey(c.q, c.r);
+          if (inBlob.has(k) || seen.has(k)) continue;
+          seen.add(k);
+          if (!ok(c)) continue;
+          let nb = 0;
+          let own = 0;
+          let cont = 0;
+          for (const x of nbrs(c)) {
+            const kk = hexKey(x.q, x.r);
+            if (inBlob.has(kk)) nb++;
+            else {
+              const o = owner.get(kk);
+              if (o && home && o.home === home) own++;
+              else if (o && continent && o.continent === continent) cont++;
+            }
+          }
+          const score = nb * 1.0 + own * 0.7 + cont * 0.45 + noise(c.q, c.r) * 2.2 - hexDist(c, center) * 0.4;
+          if (score > bestScore) {
+            bestScore = score;
+            best = c;
+          }
+        }
+      if (!best) return null;
+      blob.push(best);
+      inBlob.add(hexKey(best.q, best.r));
+    }
+    return blob;
+  };
   for (const j of jobs) {
     const id = `${j.country.id}-${j.idx}`;
-    let best: Hex | null = null;
-    let bestScore = Infinity;
-    for (let rad = 0; rad <= 30 && (best === null || rad <= bestScore + 1); rad++) {
-      for (const cand of rad === 0 ? [j.target] : ring(j.target, rad)) {
-        const tiles = disk(cand, j.size);
-        if (!free(tiles, j.country.continent)) continue;
-        // 자기 나라 땅에 붙으면 좋음(첫 도시는 상관없음)
-        let touch = j.idx === 0;
-        if (!touch)
-          for (const t of disk(cand, j.size + 1))
+    const n = SIZE_TILES[j.size];
+    const ok = (h: Hex) => free([h], landGroup(j.country));
+    let done: { c: Hex; tiles: Hex[] } | null = null;
+    // 목표 자리에서 가까운 순서로, 자기 나라 땅 가까이(둘째 도시부터) 자리를 찾아 키워 봄
+    const cands: Array<{ c: Hex; score: number }> = [];
+    for (let rad = 0; rad <= 30; rad++)
+      for (const c of rad === 0 ? [j.target] : ring(j.target, rad)) {
+        if (!ok(c)) continue;
+        let near = j.idx === 0;
+        if (!near)
+          for (const t of disk(c, j.size + 1))
             if (owner.get(hexKey(t.q, t.r))?.home === j.country.id) {
-              touch = true;
+              near = true;
               break;
             }
-        const score = rad + (touch ? 0 : 6);
-        if (score < bestScore) {
-          bestScore = score;
-          best = cand;
-        }
+        cands.push({ c, score: rad + (near ? 0 : 6) });
+      }
+    cands.sort((a, b) => a.score - b.score);
+    for (const { c } of cands.slice(0, 60)) {
+      const tiles = grow(c, n, ok, j.country.id, landGroup(j.country));
+      if (tiles) {
+        done = { c, tiles };
+        break;
       }
     }
-    if (!best) throw new Error(`도시 자리를 못 찾음: ${id}`);
+    if (!done) throw new Error(`도시 자리를 못 찾음: ${id}`);
+    const best = done.c;
     centers[id] = { ...best, size: j.size };
-    for (const t of disk(best, j.size)) put(t, { home: j.country.id, place: id, kind: 'city', center: t.q === best.q && t.r === best.r, continent: j.country.continent });
+    for (const t of done.tiles) put(t, { home: j.country.id, place: id, kind: 'city', center: t.q === best.q && t.r === best.r, continent: landGroup(j.country) });
   }
-  // 섬: 모든 땅에서 2칸 떨어진 곳
-  const allFree = (tiles: Hex[]) =>
-    tiles.every((t) => disk(t, 2).every((n) => !owner.has(hexKey(n.q, n.r))));
-  const placeIsland = (at: [number, number], R: number): Hex => {
+  // 섬: 다른 땅에서 2칸 떨어진 곳에서 자연스럽게 키움
+  const seaOk = (h: Hex) => disk(h, 2).every((x) => !owner.has(hexKey(x.q, x.r)));
+  const placeIsland = (at: [number, number], n: number): { c: Hex; tiles: Hex[] } => {
     const tg = pixelToHex(at[0], at[1]);
-    for (let rad = 0; rad <= 40; rad++) for (const cand of rad === 0 ? [tg] : ring(tg, rad)) if (allFree(disk(cand, R))) return cand;
+    for (let rad = 0; rad <= 40; rad++)
+      for (const cand of rad === 0 ? [tg] : ring(tg, rad)) {
+        const tiles = grow(cand, n, seaOk, '', '');
+        if (tiles) return { c: cand, tiles };
+      }
     throw new Error('섬 자리를 못 찾음');
   };
-  const holyC = placeIsland(HOLY_AT, 1);
-  for (const t of disk(holyC, 1)) put(t, { home: '', place: 'holy', kind: 'holy', center: t.q === holyC.q && t.r === holyC.r, continent: '' });
+  const holy = placeIsland(HOLY_AT, 7);
+  const holyC = holy.c;
+  for (const t of holy.tiles) put(t, { home: '', place: 'holy', kind: 'holy', center: t.q === holyC.q && t.r === holyC.r, continent: '' });
   const pioneers: PioneerIsland[] = [];
   for (const p of PIONEER_DEF) {
-    const c = placeIsland(p.at, 2);
-    for (const t of disk(c, 2)) put(t, { home: '', place: p.id, kind: 'island', center: t.q === c.q && t.r === c.r, continent: '' });
+    const { c, tiles } = placeIsland(p.at, 19);
+    for (const t of tiles) put(t, { home: '', place: p.id, kind: 'island', center: t.q === c.q && t.r === c.r, continent: '' });
     pioneers.push({ id: p.id, name: p.name, res: p.res, q: c.q, r: c.r, ...hexToPixel(c.q, c.r) });
   }
   const tiles: Tile[] = [...owner.entries()].map(([k, v]) => {
