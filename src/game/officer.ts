@@ -368,7 +368,10 @@ function buildBoard(s: GameState, o: OfficerState, rng: Rng): Mission[] {
   if (enemies.length && mine.length) {
     out.push(makeMission(o, rng, '방어', weakest ?? rng.pick(mine), r));
     out.push(makeMission(o, rng, '기습', rng.pick(near.length ? near : enemyCities), r));
-    out.push(makeMission(o, rng, rng.pick(['정찰', '구출'] as MissionKind[]), rng.pick(enemyCities), r));
+    {
+      const k = rng.pick(['정찰', '구출', '호송'] as MissionKind[]);
+      out.push(makeMission(o, rng, k, k === '호송' ? rng.pick(mine) : rng.pick(enemyCities), r));
+    }
   } else if (mine.length) {
     const any = CITIES.filter((c) => w.owner[c.id] !== me).map((c) => c.id);
     out.push(makeMission(o, rng, '호송', rng.pick(mine), r));
@@ -477,14 +480,23 @@ function promote(ns: GameState, o: OfficerState, rng: Rng) {
 }
 
 /** 끝난 임무 결과 받기 */
-export function claimMission(s: GameState): { state: GameState; text: string | null } {
+/** 전투 결과(직접 싸운 경우). 없으면 스탯으로 자동 계산 */
+export interface BattleOutcome {
+  win: boolean;
+  stars: number;
+}
+
+export function claimMission(s: GameState, outcome?: BattleOutcome): { state: GameState; text: string | null } {
   const a = s.officer.active;
   if (!a || s.worldMs < a.endMs) return { state: s, text: null };
   let text = '';
   const state = withOfficer(s, (o, rng, ns) => {
     o.active = null;
     const chance = missionChance(ns, a);
-    const win = rng.chance(chance);
+    const rolled = rng.chance(chance);
+    const win = outcome ? outcome.win : rolled;
+    // 직접 싸워 별을 많이 받으면 공훈이 더 큼(1★ ×1.0 · 2★ ×1.2 · 3★ ×1.4)
+    const starMult = outcome && outcome.win ? 0.8 + 0.2 * Math.max(1, outcome.stars) : 1;
     const r = ns.player.rankIndex;
     const info = MISSION_KINDS[a.kind];
     const cap = statCap(r);
@@ -499,7 +511,7 @@ export function claimMission(s: GameState): { state: GameState; text: string | n
     if (a.exam) {
       if (win) {
         o.trust = Math.min(100, o.trust + 5);
-        text = `${a.title} 통과!`;
+        text = `${a.title} 통과!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''}`;
         promote(ns, o, rng);
       } else {
         o.examReadyMs = ns.worldMs + EXAM_COOLDOWN_MS;
@@ -509,7 +521,7 @@ export function claimMission(s: GameState): { state: GameState; text: string | n
       }
       return;
     }
-    const merit = MISSION_MERIT * a.difficulty * (1 + 0.3 * r) * (win ? 1 : 0.25);
+    const merit = MISSION_MERIT * a.difficulty * (1 + 0.3 * r) * (win ? starMult : 0.25);
     o.merit += merit;
     o.totalMerit += merit;
     for (const id of info.stats) o.stats[id] = Math.min(cap, o.stats[id] + (win ? 1 : 0.3));
@@ -532,7 +544,7 @@ export function claimMission(s: GameState): { state: GameState; text: string | n
         호송: '병력 +2%',
         구출: '명성 +6',
       };
-      text = `${a.title} 성공! 공훈 +${Math.round(merit)} · ${effect[a.kind]}`;
+      text = `${a.title} 성공!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''} 공훈 +${Math.round(merit)} · ${effect[a.kind]}`;
     } else {
       o.trust = Math.max(0, o.trust - 2);
       text = `${a.title} 실패… 공훈 +${Math.round(merit)}`;

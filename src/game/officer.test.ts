@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { PROMOTION, aideSlots, generalSlots, statCap } from '../data/officers';
 import { advance, newGame, setRank, type GameState } from './state';
 import {
@@ -128,4 +128,18 @@ describe('장교', () => {
     expect(loaded?.version).toBe(3);
     expect(loaded?.officer.rivals.length).toBe(3);
   });
+});
+
+test('직접 싸운 결과로 임무를 받으면 이기고 지는 것이 그대로, 별이 많으면 공훈이 큼', async () => {
+  const { newGame } = await import('./state');
+  const { boardNow, startMission, claimMission } = await import('./officer');
+  const one = (stars: number, win: boolean) => {
+    let s = newGame('t', 'kr', 0, { seed: 3 });
+    s = boardNow(s).state;
+    s = startMission(s, s.officer.board[0].id);
+    s = { ...s, worldMs: s.officer.active!.endMs };
+    return claimMission(s, { win, stars }).state.officer;
+  };
+  expect(one(3, true).merit).toBeGreaterThan(one(1, true).merit);
+  expect(one(1, false).merit).toBeLessThan(one(1, true).merit);
 });

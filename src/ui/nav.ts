@@ -10,7 +10,8 @@ export type Screen =
   | 'shop'
   | 'settings'
   | 'herald'
-  | 'codex';
+  | 'codex'
+  | 'battle';
 
 export const SCREEN_TITLES: Record<Screen, string> = {
   home: '본부',
@@ -23,6 +24,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   settings: '설정',
   herald: '전령',
   codex: '도감',
+  battle: '전투',
 };
 
 /** 아래 메뉴 6칸. 작전이 주 메뉴(강조색). locked = 아직 못 쓰는 까닭 */
