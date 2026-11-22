@@ -1,4 +1,4 @@
-// 7단계: 부관 돌보기 · 훈련 숙련도 · 날씨/적 지휘관 · 총사령관 외교 · 승리 유지
+// 7단계: 부관 돌보기 · 훈련 숙련도 · 날씨/적 지휘관 · 지도자 외교 · 승리 유지
 import { describe, expect, test } from 'vitest';
 import { advance, newGame, type GameState } from './state';
 import { canGift, claimErrand, debugAddAide, giftAide, masteryLevel, readyAides, sendAide, trainAide, featuredTraining } from './officer';
@@ -70,9 +70,9 @@ describe('전투 다양화', () => {
   });
 });
 
-describe('총사령관 외교', () => {
+describe('지도자 외교', () => {
   const top = (s: GameState): GameState => ({ ...s, player: { ...s.player, rankIndex: COMMAND_TOP } });
-  test('총사령관 전에는 못 함', () => {
+  test('지도자 전에는 못 함', () => {
     const s = newGame('t', 'kr', 0, { seed: 3 });
     expect(canDiplo(s, 'us', '연합 제안')).toBeTruthy();
   });
@@ -102,7 +102,7 @@ describe('승리 유지', () => {
   });
 });
 
-describe('시험판: 진급 심사 탈락 대기', () => {
+describe('시험판: 승급 심사 탈락 대기', () => {
   test('기본은 바로 재도전, 켜면 6시간', async () => {
     const { fillPromotion } = await import('./testgrant');
     const { startExam, claimMission, promotionCheck } = await import('./officer');
@@ -119,7 +119,7 @@ describe('시험판: 진급 심사 탈락 대기', () => {
   });
 });
 
-describe('시험용 바로 진급', () => {
+describe('시험용 바로 승급', () => {
   test('심사 없이 한 계급 오르고, 맨 위에서는 그대로', async () => {
     const { newGame, setRank } = await import('./state');
     const { debugPromote } = await import('./officer');

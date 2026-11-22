@@ -75,7 +75,7 @@ describe('장교', () => {
     expect(s.officer.merit).toBeGreaterThan(0);
     expect(s.world.events.some((e) => e.kind === '장교')).toBe(true);
   });
-  it('진급: 조건을 채우고 심사를 통과하면 중위, 첫 부관 합류', () => {
+  it('승급: 조건을 채우고 심사를 통과하면 중위, 첫 부관 합류', () => {
     let s = newGame('t', 'kr', 0, { seed: 4 });
     expect(promotionCheck(s).ready).toBe(false);
     s = { ...s, officer: { ...s.officer, merit: PROMOTION[0].merit, stars: PROMOTION[0].stars } };
@@ -108,14 +108,14 @@ describe('장교', () => {
     expect(recruitGeneral(s).officer.generals.length).toBe(2); // 칸이 꽉 참
     expect(generalDefense(s.officer)).toBeGreaterThan(1);
   });
-  it('라이벌은 시간이 지나면 진급', () => {
+  it('라이벌은 시간이 지나면 승급', () => {
     const s = newGame('t', 'kr', 0, { seed: 6 });
     const rv = s.officer.rivals[0];
     expect(rivalRank(rv, 0)).toBe(0);
     expect(rivalRank(rv, 30 * 24 * H)).toBeGreaterThan(2);
     expect(rivalRank(rv, 365 * 24 * H)).toBe(PROMOTION.length - 1);
   });
-  it('해임: 준장 이상에서 신뢰도가 낮으면 경고, 3일 안에 못 돌리면 한 계급 내려감', () => {
+  it('불신임: 준장 이상에서 신뢰도가 낮으면 경고, 3일 안에 못 돌리면 한 계급 내려감', () => {
     let s = setRank(newGame('t', 'kr', 0, { seed: 7 }), 6);
     s = { ...s, officer: { ...s.officer, trust: 10 } };
     officerTick(s, s.world.owner, 15 * 60e3);

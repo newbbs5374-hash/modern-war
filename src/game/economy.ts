@@ -174,7 +174,7 @@ export function claimChore(s: GameState): GameState {
   return { ...s, economy: e };
 }
 
-// ── 시설 올리기(기획서: 총사령관이 되기 전엔 경험치만 쌓고, 된 뒤 5단계까지) ──
+// ── 시설 올리기(기획서: 지도자가 되기 전엔 경험치만 쌓고, 된 뒤 5단계까지) ──
 
 export function maxLevel(rank: number): number {
   return rank >= TOP_RANK ? 5 : 1;

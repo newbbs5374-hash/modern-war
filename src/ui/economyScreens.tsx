@@ -211,7 +211,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
         <b>🪖 +{fmt(c.troops)}</b>
         <span>보유</span>
         <b>{state.economy.army[special ? me.specialUnit.name : name] ?? 0}부대</b>
-        <span>열리는 계급</span>
+        <span>열리는 등급</span>
         <b>{RANKS[Math.max(info.rank, ECON_RANK)].name}</b>
       </div>
       <p className="small muted" style={{ marginTop: 6 }}>

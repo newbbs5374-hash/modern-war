@@ -1,4 +1,4 @@
-// 3단계: 장교의 성장(스탯·공훈·진급), 임무, 간이 훈련, 부관·장군, 라이벌, 해임.
+// 3단계: 장교의 성장(스탯·공훈·승급), 임무, 간이 훈련, 부관·장군, 라이벌, 불신임.
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
 import { TEST_BOOSTS } from './boost';
@@ -46,7 +46,7 @@ export const TRUST_START = 50;
 export const TRUST_WARN = 25;
 export const TRUST_SAFE = 40;
 export const DISMISS_DEADLINE_MS = 72 * HOUR;
-/** 해임 경고가 생기는 계급(준장부터 = 사령관 시대) */
+/** 불신임 경고가 생기는 계급(준장부터 = 사령관 시대) */
 export const COMMAND_RANK = 6;
 export const RECRUIT_COST = 3000;
 /** 장군 능력 1점당 내 나라 도시 방어 보너스 */
@@ -133,7 +133,7 @@ export interface OfficerState {
   /** 이번 계급에서 모은 공훈 / 전체 공훈 */
   merit: number;
   totalMerit: number;
-  /** 명성(국민 인기) · 지도자 신뢰도(0~100) · 정보 점수 */
+  /** 명성(국민 인기) · 의회 신뢰도(0~100) · 정보 점수 */
   fame: number;
   trust: number;
   intel: number;
@@ -152,9 +152,9 @@ export interface OfficerState {
   aides: Aide[];
   generals: General[];
   rivals: Rival[];
-  /** 해임 경고(이 시각까지 신뢰도를 회복하지 못하면 해임) */
+  /** 불신임 경고(이 시각까지 신뢰도를 회복하지 못하면 불신임) */
   dismissDeadlineMs: number | null;
-  /** 총사령관 자리를 가진 라이벌 이름(없으면 null) */
+  /** 지도자 자리를 가진 라이벌 이름(없으면 null) */
   chiefRival: string | null;
   /** 5단계: 지금 하고 있는 훈련(훈련 일정을 이미 씀) */
   training: { name: string; seed: number } | null;
@@ -165,7 +165,7 @@ export interface OfficerState {
   /** 훈련별 한 횟수(숙련) · 최고 별 */
   mastery?: Record<string, number>;
   best?: Record<string, number>;
-  /** 총사령관 외교를 다시 할 수 있는 시각 */
+  /** 지도자 외교를 다시 할 수 있는 시각 */
   diploReadyMs?: number;
   /** 승리 조건을 처음 채운 때(계속 지키는 중). 못 채우면 null */
   winSinceMs?: number | null;
@@ -177,7 +177,7 @@ export interface OfficerState {
   promises?: Promise_[];
   /** 시험판 자원 지급을 받았는지 */
   testGrant?: number;
-  /** 진급 심사에 떨어지면 6시간 기다리기(시험판 기본은 꺼짐) */
+  /** 승급 심사에 떨어지면 6시간 기다리기(시험판 기본은 꺼짐) */
   examPenalty?: boolean;
 }
 
@@ -683,7 +683,7 @@ export function startMission(s: GameState, missionId: number): GameState {
   });
 }
 
-// ── 진급 ──
+// ── 승급 ──
 
 export interface PromotionCheck {
   ready: boolean;
@@ -694,13 +694,13 @@ export interface PromotionCheck {
 export function promotionCheck(s: GameState): PromotionCheck {
   const r = s.player.rankIndex;
   const o = s.officer;
-  if (r >= PROMOTION.length) return { ready: false, lines: [], why: '가장 높은 계급이에요' };
+  if (r >= PROMOTION.length) return { ready: false, lines: [], why: '가장 높은 등급이에요' };
   const rule = PROMOTION[r];
   const lines = [
     { label: '공훈', have: Math.floor(o.merit), need: rule.merit, ok: o.merit >= rule.merit },
     { label: '훈련 별', have: o.stars, need: rule.stars, ok: o.stars >= rule.stars },
   ];
-  if (rule.trust) lines.push({ label: '지도자 신뢰도', have: Math.floor(o.trust), need: rule.trust, ok: o.trust >= rule.trust });
+  if (rule.trust) lines.push({ label: '의회 신뢰도', have: Math.floor(o.trust), need: rule.trust, ok: o.trust >= rule.trust });
   let why: string | null = null;
   if (lines.some((l) => !l.ok)) why = '조건을 채워야 해요';
   else if (o.active) why = '다른 임무를 하는 중이에요';
@@ -721,7 +721,7 @@ export function startExam(s: GameState): GameState {
     o.active = {
       id: o.nextId++,
       kind,
-      title: `진급 심사: ${PROMOTION[r].exam}`,
+      title: `승급 심사: ${PROMOTION[r].exam}`,
       city,
       difficulty: 1.1 + r * 0.02,
       hours: EXAM_HOURS,
@@ -738,7 +738,7 @@ function promote(ns: GameState, o: OfficerState, rng: Rng) {
   o.merit = Math.max(0, o.merit - rule.merit);
   o.stars = 0;
   ns.player = { ...ns.player, rankIndex: r + 1 };
-  note(ns, `🎖️ ${ro(rankName(r + 1))} 진급했어요! 지휘: ${RANKS[r + 1].unit}`);
+  note(ns, `🎖️ ${ro(rankName(r + 1))} 승급했어요! 지휘: ${RANKS[r + 1].unit}`);
   // 중위가 되면 첫 부관이 이야기로 합류
   if (r + 1 === 1 && o.aides.length === 0) {
     const a = makeAide(o, rng);
@@ -747,11 +747,11 @@ function promote(ns: GameState, o: OfficerState, rng: Rng) {
   }
   if (r + 1 === PROMOTION.length) {
     o.chiefRival = null;
-    note(ns, '총사령관이 되었어요. 이제 나라 군대 전체를 맡아요.');
+    note(ns, '지도자가 되었어요. 이제 나라 군대 전체를 맡아요.');
   }
 }
 
-/** 시험용: 진급 심사 없이 바로 다음 계급으로(이번 계급 공훈·별 조건은 무시) */
+/** 시험용: 승급 심사 없이 바로 다음 계급으로(이번 계급 공훈·별 조건은 무시) */
 export function debugPromote(s: GameState): GameState {
   if (s.player.rankIndex >= PROMOTION.length) return s;
   return withOfficer(s, (o, rng, ns) => {
@@ -902,7 +902,7 @@ export function startGrand(s: GameState, city: string): GameState {
     const army = Math.min(0.3, armyPower(ns) / 300);
     m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
-    // 총사령관은 6시간마다
+    // 지도자는 6시간마다
     o.grandReadyMs = ns.worldMs + (ns.player.rankIndex >= RANKS.length - 1 ? GRAND_COOLDOWN_HOURS / 2 : GRAND_COOLDOWN_HOURS) * HOUR;
     o.board = [];
   });
@@ -923,7 +923,7 @@ export function rivalRank(r: Rival, worldMs: number): number {
   }
   return k;
 }
-/** 평판 점수(총사령관 경쟁) */
+/** 평판 점수(지도자 경쟁) */
 export function myRenown(o: OfficerState): number {
   return Math.round(o.totalMerit + o.fame * 10 + o.trust * 20);
 }
@@ -938,23 +938,23 @@ function rivalAhead(s: GameState): Rival | null {
 // ── 판단마다(실제 15분) ──
 
 /**
- * AI 판단 직후에 부름. 라이벌 진급 소식, 내 나라 도시를 잃었을 때 신뢰도, 해임 경고와 해임.
+ * AI 판단 직후에 부름. 라이벌 승급 소식, 내 나라 도시를 잃었을 때 신뢰도, 불신임 경고와 불신임.
  * ns를 직접 바꾼다(advance 안에서 이미 복사한 상태).
  */
 export function officerTick(ns: GameState, ownerBefore: Record<string, string>, tickMs: number): void {
   const o: OfficerState = structuredClone(ns.officer);
   const me = ns.player.countryId;
   const r = ns.player.rankIndex;
-  // 라이벌 진급
+  // 라이벌 승급
   for (const rv of o.rivals) {
     const rk = rivalRank(rv, ns.worldMs);
     if (rk > rv.shownRank) {
       rv.shownRank = rk;
-      if (rk >= r) note(ns, `라이벌 ${ga(rv.name)} ${ro(rankName(rk))} 진급했어요.${rk > r ? ' 나보다 앞서요!' : ''}`);
+      if (rk >= r) note(ns, `라이벌 ${ga(rv.name)} ${ro(rankName(rk))} 승급했어요.${rk > r ? ' 나보다 앞서요!' : ''}`);
     }
     if (rk === PROMOTION.length - 1 && r < PROMOTION.length && !o.chiefRival && rivalRenown(rv, ns.worldMs) > myRenown(o)) {
       o.chiefRival = rv.name;
-      note(ns, `라이벌 ${ga(rv.name)} 총사령관 후보 1순위가 되었어요.`);
+      note(ns, `라이벌 ${ga(rv.name)} 지도자 후보 1순위가 되었어요.`);
     }
   }
   // 내 나라 도시를 잃으면 신뢰도 하락(사령관이면 크게)
@@ -964,19 +964,19 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
       // 점령했던 남의 도시를 잃는 것은 덜 아픔
       const loss = (c.home !== me ? 2 : c.capital ? 20 : 8) * (big ? 1 : 0.4);
       o.trust = Math.max(0, o.trust - loss);
-      if (big) note(ns, `${eul(c.name)} 잃어 지도자 신뢰도가 ${Math.round(loss)} 떨어졌어요.`);
+      if (big) note(ns, `${eul(c.name)} 잃어 의회 신뢰도가 ${Math.round(loss)} 떨어졌어요.`);
     }
   }
   // 신뢰도는 50까지 천천히 회복(하루 +1)
   if (o.trust < TRUST_START) o.trust = Math.min(TRUST_START, o.trust + tickMs / REAL_MS_PER_GAME_DAY / 24);
-  // 해임 경고와 해임(준장부터)
+  // 불신임 경고와 불신임(준장부터)
   if (r >= COMMAND_RANK) {
     if (o.dismissDeadlineMs === null && o.trust < TRUST_WARN) {
       o.dismissDeadlineMs = ns.worldMs + DISMISS_DEADLINE_MS;
-      note(ns, `⚠️ 해임 경고! 실제 3일 안에 지도자 신뢰도를 ${TRUST_SAFE} 넘게 되돌리지 못하면 한 계급 내려가요.`);
+      note(ns, `⚠️ 불신임 경고! 실제 3일 안에 의회 신뢰도를 ${TRUST_SAFE} 넘게 되돌리지 못하면 한 등급 내려가요.`);
     } else if (o.dismissDeadlineMs !== null && o.trust >= TRUST_SAFE) {
       o.dismissDeadlineMs = null;
-      note(ns, '해임 경고가 풀렸어요.');
+      note(ns, '불신임 경고가 풀렸어요.');
     } else if (o.dismissDeadlineMs !== null && ns.worldMs >= o.dismissDeadlineMs) {
       o.dismissDeadlineMs = null;
       o.merit = 0;
@@ -985,7 +985,7 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
       ns.player = { ...ns.player, rankIndex: r - 1 };
       // 장군 칸이 줄면 마지막 장군부터 떠남
       while (o.generals.length > generalSlots(r - 1)) o.generals.pop();
-      note(ns, `해임되었어요. ${ro(rankName(r - 1))} 내려가 다시 도전해요.`);
+      note(ns, `불신임되었어요. ${ro(rankName(r - 1))} 내려가 다시 신뢰를 쌓아요.`);
     }
   } else {
     o.dismissDeadlineMs = null;

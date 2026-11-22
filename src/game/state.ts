@@ -177,7 +177,7 @@ export function claimSalary(s: GameState): GameState {
   };
 }
 
-/** 시험 버튼: 계급 바꾸기(진급 시스템은 다음 단계) */
+/** 시험 버튼: 계급 바꾸기(승급 시스템은 다음 단계) */
 export function setRank(s: GameState, rankIndex: number): GameState {
   const r = Math.max(0, Math.min(RANKS.length - 1, rankIndex));
   return { ...s, player: { ...s.player, rankIndex: r } };

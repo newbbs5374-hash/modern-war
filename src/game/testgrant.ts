@@ -1,4 +1,4 @@
-// 시험판 전용: 자원을 넉넉히 주고, 진급 조건을 바로 채워 진급 뒤 상황을 볼 수 있게 함.
+// 시험판 전용: 자원을 넉넉히 주고, 승급 조건을 바로 채워 승급 뒤 상황을 볼 수 있게 함.
 import { PROMOTION } from '../data/officers';
 import { RESOURCES } from '../data/economy';
 import { DRILL_MAX } from './officer';
@@ -26,7 +26,7 @@ export function grantTestResources(s: GameState): GameState {
   };
 }
 
-/** 지금 계급의 진급 조건(공훈·훈련 별·신뢰도)을 채움. 진급하면 0부터라 계급마다 누르면 됨 */
+/** 지금 계급의 승급 조건(공훈·훈련 별·신뢰도)을 채움. 승급하면 0부터라 계급마다 누르면 됨 */
 export function fillPromotion(s: GameState): GameState {
   const rule = PROMOTION[s.player.rankIndex];
   if (!rule) return s;
@@ -38,7 +38,7 @@ export function fillPromotion(s: GameState): GameState {
   };
 }
 
-/** 새 판·옛 저장에 한 번만: 자원 넉넉히 + 첫 진급 조건 */
+/** 새 판·옛 저장에 한 번만: 자원 넉넉히 + 첫 승급 조건 */
 export function firstTestGrant(s: GameState): GameState {
   if (s.officer.testGrant) return s;
   return fillPromotion(grantTestResources(s));

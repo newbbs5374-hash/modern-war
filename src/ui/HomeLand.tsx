@@ -62,37 +62,6 @@ const SPOTS: Array<[number, number]> = [
 
 export type DayMode = '자동' | '낮' | '밤';
 /** 실제 시각(이 기기)으로 낮·밤: 0 = 한낮, 1 = 한밤 */
-/** 세계 지도의 도시 자리 → 본부 섬(가운데 235,380 · 가로 반지름 160 · 세로 250) 안 자리 */
-function homeSpots(cs: City[]): Array<[number, number]> {
-  if (cs.length === 0) return [];
-  const mx = cs.reduce((a, c) => a + c.x, 0) / cs.length;
-  const my = cs.reduce((a, c) => a + c.y, 0) / cs.length;
-  const ex = Math.max(1, ...cs.map((c) => Math.abs(c.x - mx)));
-  const ey = Math.max(1, ...cs.map((c) => Math.abs(c.y - my)));
-  // 가로·세로를 따로 늘려 섬을 고루 씀(나라 모양이 가로로 길어도 세로 섬에 퍼짐)
-  const kx = Math.min((160 * 0.5) / ex, 6);
-  const ky = Math.min((250 * 0.66) / ey, 6);
-  const raw = cs.map((c) => [250 + (c.x - mx) * kx, 400 + (c.y - my) * ky] as [number, number]);
-  // 너무 붙은 도시는 살짝 벌림
-  for (let it = 0; it < 30; it++)
-    for (let i = 0; i < raw.length; i++)
-      for (let j = i + 1; j < raw.length; j++) {
-        const dx = raw[j][0] - raw[i][0];
-        const dy = raw[j][1] - raw[i][1];
-        const d = Math.hypot(dx, dy) || 1;
-        if (d < 62) {
-          const push = (62 - d) / 2;
-          raw[i] = [raw[i][0] - (dx / d) * push, raw[i][1] - (dy / d) * push];
-          raw[j] = [raw[j][0] + (dx / d) * push, raw[j][1] + (dy / d) * push];
-        }
-      }
-  // 왼쪽 위는 세계 지도·주요 임무 창에 가리므로 피함
-  return raw.map(([x, y]) => {
-    const yy = Math.max(190, Math.min(600, y));
-    return [Math.max(yy < 430 ? 215 : 120, Math.min(355, x)), yy];
-  });
-}
-
 export function nightLevel(mode: DayMode, d = new Date()): number {
   if (mode === '낮') return 0;
   if (mode === '밤') return 1;
@@ -136,23 +105,24 @@ export function HomeLand(props: {
   const land = landPath(r, 235, 380, 160, 250);
   const flag = FLAG_DEF[countryId];
   const mine = flag?.bands[flag.bands.length > 2 ? 1 : 0] ?? '#3b82f6';
-  const homeCities = CITIES.filter((c) => c.home === countryId);
-  // 도시 자리: 세계 지도(육각 타일)의 실제 배치를 섬 안으로 줄여 옮김(2~10개)
-  const spots = homeSpots(homeCities);
-  const pos = (i: number) => spots[i] ?? SPOTS[i % SPOTS.length];
+  // 본부 지도 = 수도 하나를 크게(11/22 대장 지시). 다른 도시는 세계 지도에서 봄
+  const homeCities = CITIES.filter((c) => c.home === countryId && c.capital);
+  const CAP: [number, number] = [262, 420];
+  const pos = (i: number): [number, number] => (i === 0 ? CAP : SPOTS[i % SPOTS.length]);
   const mountains = Array.from({ length: 6 }, () => [140 + r() * 200, 200 + r() * 330, 14 + r() * 12] as const);
   const forests = Array.from({ length: 10 }, () => [130 + r() * 220, 220 + r() * 320] as const);
   const riverY = 260 + r() * 120;
   // 도시마다 건물 무리(가운데가 높음)
-  const blocks = homeCities.map((c, i) => {
+  const blocks = homeCities.map((_c, i) => {
     const [cx, cy] = pos(i);
-    const n = c.capital ? 11 : 7;
+    // 수도: 가운데 고층 빌딩 숲 → 바깥으로 낮은 주택가
+    const n = 64;
     return Array.from({ length: n }, (_, j) => {
-      const a = (j / n) * Math.PI * 2 + r();
-      const d = 6 + r() * (c.capital ? 20 : 14);
-      const w = 4 + r() * 4;
-      const h = (c.capital ? 10 : 6) + r() * (c.capital ? 16 : 9) - d * 0.25;
-      return { x: cx + Math.cos(a) * d - w / 2, y: cy + Math.sin(a) * d * 0.6 - h, w, h: Math.max(4, h) };
+      const a = (j / n) * Math.PI * 2 * 3 + r();
+      const d = 6 + Math.sqrt(j / n) * 80 + r() * 8;
+      const w = 6 + r() * 6;
+      const h = Math.max(5, 34 + r() * 26 - d * 0.42);
+      return { x: cx + Math.cos(a) * d - w / 2, y: cy + Math.sin(a) * d * 0.62 - h, w, h };
     });
   });
   // 도로: 수도 ↔ 다른 도시, 그리고 이웃 도시끼리
@@ -164,8 +134,24 @@ export function HomeLand(props: {
     const my = (y1 + y2) / 2 - (x2 - x1) * 0.18;
     roads.push({ id: `road-${countryId}-${a}-${b}`, d: `M${x1},${y1} Q${mx.toFixed(1)},${my.toFixed(1)} ${x2},${y2}`, a, b });
   };
-  for (let i = 1; i < homeCities.length; i++) road(0, i);
-  for (let i = 1; i + 1 < homeCities.length; i++) road(i, i + 1);
+  // 수도 길: 순환 도로 두 겹 + 바깥으로 뻗는 큰길 4개
+  const [ccx, ccy] = CAP;
+  const ring = (rx: number, ry: number) => `M${ccx - rx},${ccy} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
+  roads.push({ id: `road-${countryId}-ring1`, d: ring(52, 32), a: 0, b: 0 });
+  roads.push({ id: `road-${countryId}-ring2`, d: ring(104, 64), a: 0, b: 0 });
+  (
+    [
+      [130, 200],
+      [372, 250],
+      [140, 590],
+      [350, 600],
+    ] as Array<[number, number]>
+  ).forEach(([x, y], k) => {
+    const mx = (ccx + x) / 2 + (k % 2 ? 18 : -18);
+    const my = (ccy + y) / 2;
+    roads.push({ id: `road-${countryId}-out${k}`, d: `M${ccx},${ccy} Q${mx},${my} ${x},${y}`, a: 0, b: 0 });
+  });
+  void road;
 
   const status = homeCities.map((c) => cityStatus(c, world, countryId, atWar));
   const hot = status.some((s) => s === '공격받음' || s === '점령당함');
@@ -342,7 +328,7 @@ export function HomeLand(props: {
             const st = status[i];
             return (
               <g key={c.id} className="city" onClick={() => tapCity(c.id, x, y)}>
-                <ellipse cx={x} cy={y + 4} rx={c.capital ? 30 : 22} ry={c.capital ? 14 : 10} fill="#cbd5e1" opacity="0.35" />
+                <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="#cbd5e1" opacity="0.28" />
                 {blocks[i].map((b, j) => (
                   <g key={j}>
                     <rect x={b.x} y={b.y} width={b.w} height={b.h} fill={j % 3 === 0 ? '#cbd5e1' : j % 3 === 1 ? '#94a3b8' : '#e2e8f0'} stroke="#334155" strokeWidth="0.4" />
@@ -352,7 +338,7 @@ export function HomeLand(props: {
                     )}
                   </g>
                 ))}
-                {nightOn && <circle cx={x} cy={y - 4} r={c.capital ? 34 : 24} fill="url(#glow)" opacity={night * 0.75} />}
+                {nightOn && <circle cx={x} cy={y - 4} r={c.capital ? 110 : 24} fill="url(#glow)" opacity={night * 0.75} />}
                 {st === '점령당함' ? (
                   <g transform={`translate(${x + 8},${y - 34})`}>
                     <line x1="0" y1="0" x2="0" y2="26" stroke="#e5e7eb" strokeWidth="1.2" />

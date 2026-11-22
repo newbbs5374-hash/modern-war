@@ -23,7 +23,7 @@ import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { boostsOf } from '../game/boost';
 import { ECON_RANK } from '../data/economy';
-import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
+import { DIPLO_RANK, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
@@ -155,7 +155,7 @@ export function HomeScreen(props: ScreenProps) {
           <button className={`hq ${pc.ready ? 'hot' : ''}`} onClick={() => goTab('officer', 'officer', 'stats')}>
             <span>🎓</span>
             <span className="hq-main">
-              <b>{pc.ready ? '진급 심사 가능!' : `진급 준비 ${promoPct}%`}</b>
+              <b>{pc.ready ? '승급 심사 가능!' : `승급 준비 ${promoPct}%`}</b>
               <span className="bar">
                 <span className="bar-fill" style={{ width: `${promoPct}%` }} />
               </span>
@@ -280,7 +280,7 @@ export function OpsScreen(props: ScreenProps) {
       )}
       {tab === 'grand' &&
         (rank < OPERATION_RANK ? (
-          <p className="empty">🔒 대위부터 작전, 준장부터 대전투(도시 점령)가 열려요.</p>
+          <p className="empty">🔒 개척 지도자부터 작전, 존경받는 지도자부터 대전투(도시 점령)가 열려요.</p>
         ) : (
           <>
             <GrandCard {...props} />
@@ -394,7 +394,7 @@ export function ForcesScreen(props: ScreenProps) {
           <Help title="부대">
             <p>병과 15개와 우리 나라 특별 병과예요. 눌러서 역할과 생산 비용을 봐요.</p>
             <p>
-              준장부터 국방예산과 전략 자원으로 부대를 만들 수 있어요. 만든 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요.
+              존경받는 지도자부터 국방예산과 전략 자원으로 부대를 만들 수 있어요. 만든 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요.
             </p>
           </Help>
         </div>
@@ -517,7 +517,7 @@ function DiplomacyCard({ state, actions }: ScreenProps) {
   const me = state.player.countryId;
   const [sel, setSel] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
-  const top = state.player.rankIndex >= COMMAND_TOP;
+  const top = state.player.rankIndex >= DIPLO_RANK;
   const wait = diploReady(state) - state.worldMs;
   return (
     <Card
@@ -527,7 +527,7 @@ function DiplomacyCard({ state, actions }: ScreenProps) {
       help={
         <>
           <p>휴전·중립인 나라와는 긴장도가 쌓여요. 100이 되면 휴전이 깨지거나 전쟁이 나요.</p>
-          <p>총사령관이 되면 나라를 눌러 직접 선전포고·휴전 제안·연합 제안을 해요({DIPLO_COOLDOWN_HOURS}시간마다 한 번). 연합국은 승리 조건에 함께 세어져요.</p>
+          <p>존경받는 지도자가 되면 나라를 눌러 직접 선전포고·휴전 제안·연합 제안을 해요({DIPLO_COOLDOWN_HOURS}시간마다 한 번). 연합국은 승리 조건에 함께 세어져요.</p>
         </>
       }
     >
@@ -585,7 +585,7 @@ function DiplomacyCard({ state, actions }: ScreenProps) {
 export function ShopScreen(_: ScreenProps) {
   return (
     <Card title="상점">
-      <p className="small muted">루비로 기다리는 시간(훈련 일정·진급 심사·생산·이동)을 줄이는 곳이에요.</p>
+      <p className="small muted">루비로 기다리는 시간(훈련 일정·승급 심사·생산·이동)을 줄이는 곳이에요.</p>
       <Soon stage="나중에">루비 얻는 곳과 결제는 아직 정하지 않았어요</Soon>
     </Card>
   );
@@ -689,18 +689,18 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             className={state.officer.examPenalty ? '' : 'on'}
             onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, examPenalty: !s.officer.examPenalty, examReadyMs: 0 } }))}
           >
-            진급 심사 탈락 대기: {state.officer.examPenalty ? '켜짐(6시간)' : '꺼짐(바로 재도전)'}
+            승급 심사 탈락 대기: {state.officer.examPenalty ? '켜짐(6시간)' : '꺼짐(바로 재도전)'}
           </button>
           <button className="gold" onClick={() => (actions.apply(debugTalk), setMsg('대화가 하나 왔어요. 본부의 💬 대화를 눌러 보세요.'))}>💬 대화 바로 받기</button>
           <button
             className="gold"
             disabled={state.player.rankIndex >= PROMOTION.length}
-            onClick={() => (actions.apply(debugPromote), setMsg('진급 심사 없이 바로 다음 계급으로 올렸어요.'))}
+            onClick={() => (actions.apply(debugPromote), setMsg('승급 심사 없이 바로 다음 등급으로 올렸어요.'))}
           >
-            ⏫ 바로 진급(심사 생략)
+            ⏫ 바로 승급(심사 생략)
           </button>
-          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 계급의 진급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 진급 심사를 보세요.'))}>
-            🎖️ 진급 조건 채우기
+          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 등급의 승급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 승급 심사를 보세요.'))}>
+            🎖️ 승급 조건 채우기
           </button>
         </div>
         <div className="buttons">
@@ -718,7 +718,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             </button>
           ))}
         </div>
-        <small>진급 시험용</small>
+        <small>승급 시험용</small>
         <div className="buttons">
           <button
             onClick={() =>
@@ -735,7 +735,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
               })
             }
           >
-            진급 조건 채우기
+            승급 조건 채우기
           </button>
           <button
             onClick={() =>
@@ -764,7 +764,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             부관 데려오기 + 봉급 5000
           </button>
         </div>
-        <small>계급 바로 바꾸기 (진급 심사 없이)</small>
+        <small>등급 바로 바꾸기 (승급 심사 없이)</small>
         <select value={state.player.rankIndex} onChange={(e) => actions.setRank(Number(e.target.value))}>
           {RANKS.map((r, i) => (
             <option key={r.name} value={i}>

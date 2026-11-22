@@ -1,4 +1,4 @@
-// 어떤 전투를 열지 정하는 곳: 훈련 12개 · 임무 · 작전(여러 판) · 대전투(도시 점령) · 진급 심사 · 연습장.
+// 어떤 전투를 열지 정하는 곳: 훈련 12개 · 임무 · 작전(여러 판) · 대전투(도시 점령) · 승급 심사 · 연습장.
 import type { ActiveMission } from '../game/officer';
 import type { MissionKind } from '../data/officers';
 import { Rng } from '../game/rng';
@@ -119,7 +119,7 @@ export const GRAND_STAGES: Pick[] = [
 ];
 export const GRAND_MAIN = 3;
 
-/** 진급 심사 작전(계급 순서대로) */
+/** 승급 심사 작전(계급 순서대로) */
 const EXAM_BATTLE: Pick[] = [
   { frame: 'grid', variant: 'eliminate' }, // 분대 침투
   { frame: 'grid', variant: 'survive' }, // 고지 방어
@@ -130,7 +130,7 @@ const EXAM_BATTLE: Pick[] = [
   { frame: 'shooter', variant: 'air' }, // 여단 반격(제공권)
   { frame: 'grid', variant: 'eliminate' }, // 사단 포위
   { frame: 'grid', variant: 'naval' }, // 군단 상륙(바다 장악)
-  { frame: 'puzzle', variant: '정보' }, // 총사령관 심의
+  { frame: 'puzzle', variant: '정보' }, // 지도자 심의
 ];
 
 export function picksOf(a: ActiveMission, rank: number): { picks: Pick[]; mainIdx: number } {

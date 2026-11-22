@@ -1,13 +1,15 @@
-// 총사령관 권한: 선전포고 · 휴전 제안 · 연합 제안(12시간마다 한 번). 그전엔 AI 지도자가 정함.
+// 지도자 권한: 선전포고 · 휴전 제안 · 연합 제안(12시간마다 한 번). 그전엔 AI 지도자가 정함.
 import { PERSONALITIES } from '../data/leaders';
 import { CITIES } from '../data/cities';
 import { countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { Rng } from './rng';
 import type { GameState } from './state';
-import { isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
+import { ga, isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
 export const COMMAND_TOP = RANKS.length - 1;
+/** 지도자가 직접 외교(선전포고·휴전·연합)를 하는 등급: 존경받는 지도자부터 */
+export const DIPLO_RANK = 6;
 export const DIPLO_COOLDOWN_HOURS = 12;
 const H = 3600e3;
 
@@ -35,7 +37,7 @@ export function diploChance(s: GameState, id: string, act: DiploAct): number {
 
 export function canDiplo(s: GameState, id: string, act: DiploAct): string | null {
   const me = s.player.countryId;
-  if (s.player.rankIndex < COMMAND_TOP) return `${RANKS[COMMAND_TOP].name}이 되면 직접 정해요`;
+  if (s.player.rankIndex < DIPLO_RANK) return `${ga(RANKS[DIPLO_RANK].name)} 되면 직접 정해요`;
   if (id === me || !isAlive(s.world, id)) return '할 수 없는 나라';
   if (s.worldMs < diploReady(s)) return '외교 준비 중';
   const rel = relationOf(s.world, me, id);

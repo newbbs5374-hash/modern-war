@@ -1,4 +1,4 @@
-// 전투 화면: 훈련·임무·작전(여러 판)·대전투·진급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
+// 전투 화면: 훈련·임무·작전(여러 판)·대전투·승급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { autoResult } from '../../battle/auto';
