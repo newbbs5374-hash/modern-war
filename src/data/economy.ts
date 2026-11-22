@@ -69,7 +69,7 @@ export function specialCost(base: string): UnitCost {
   return { money: Math.round(b.money * 1.5), res, hours: Math.ceil(b.hours * 1.3), power: Math.round(b.power * 1.7), troops: Math.round(b.troops * 1.2) };
 }
 
-/** 생산은 준장부터, 내정 일은 준장부터, 시설 올리기는 총사령관부터(그전엔 경험치만) */
+/** 생산은 준장부터, 내정 일은 준장부터, 시설 올리기는 지도자부터(그전엔 경험치만) */
 export const ECON_RANK = 6;
 export const TOP_RANK = 10;
 

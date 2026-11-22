@@ -1,4 +1,4 @@
-// 장교(진급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+// 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
 import { STAT_GROUPS, TRAININGS } from '../data/catalog';
@@ -91,7 +91,7 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
         <>
           <p>임무를 고르면 실제 시간으로 이동해요(게임을 꺼 두어도 돼요).</p>
           <p>도착하면 ⚔️ 직접 싸우거나 🤖 스탯으로 자동 계산해요. 직접 싸워 별을 많이 받으면 공훈이 더 커요(★★★ ×1.4).</p>
-          <p>대위부터는 세 번째 칸에 2~3판을 이어 싸우는 🗺️ 작전이 나와요.</p>
+          <p>개척 지도자부터는 세 번째 칸에 2~3판을 이어 싸우는 🗺️ 작전이 나와요.</p>
         </>
       }
     >
@@ -201,7 +201,7 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
   );
 }
 
-/* ───────── 대전투(준장부터): 도시 하나를 다섯 판으로 차지 ───────── */
+/* ───────── 대전투(존경받는 지도자부터): 도시 하나를 다섯 판으로 차지 ───────── */
 export function GrandCard({ state, actions }: ScreenProps) {
   const rank = state.player.rankIndex;
   const [pick, setPick] = useState<string | null>(null);
@@ -287,7 +287,7 @@ export function OfficerScreen(props: ScreenProps) {
     <>
       {o.dismissDeadlineMs !== null && (
         <div className="alert">
-          ⚠️ 해임 경고: {timeLeft(o.dismissDeadlineMs - state.worldMs)} 안에 지도자 신뢰도를 40 넘게 올려야 해요. 임무에 성공하면 올라요.
+          ⚠️ 불신임 경고: {timeLeft(o.dismissDeadlineMs - state.worldMs)} 안에 의회 신뢰도를 40 넘게 올려야 해요. 임무에 성공하면 올라요.
         </div>
       )}
       <section className="card">
@@ -316,9 +316,9 @@ export function OfficerScreen(props: ScreenProps) {
           <div className="promo">
             <div className="row">
               <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
-              <Help title="진급">
-                <p>공훈(임무)·훈련 별(훈련)·지도자 신뢰도(소령부터)를 채우면 진급 심사 작전(2시간)을 볼 수 있어요.</p>
-                <p>심사에 붙으면 진급하고, 공훈과 별은 0부터 다시 모아요. 대장 → 총사령관은 라이벌보다 평판이 높아야 해요.</p>
+              <Help title="승급">
+                <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(섬 수호자부터)를 채우면 승급 심사 작전(2시간)을 볼 수 있어요.</p>
+                <p>심사에 붙으면 승급하고, 공훈과 별은 0부터 다시 모아요. 대장 → 지도자은 라이벌보다 평판이 높아야 해요.</p>
               </Help>
             </div>
             {pc.lines.map((l) => (
@@ -333,10 +333,10 @@ export function OfficerScreen(props: ScreenProps) {
               </div>
             ))}
             {examRunning ? (
-              <p className="small center">🎓 진급 심사 중 · 작전 화면에서 결과를 받아요</p>
+              <p className="small center">🎓 승급 심사 중 · 작전 화면에서 결과를 받아요</p>
             ) : (
               <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => actions.apply(startExam)}>
-                {pc.ready ? '🎓 진급 심사 시작 (2시간)' : pc.why}
+                {pc.ready ? '🎓 승급 심사 시작 (2시간)' : pc.why}
               </button>
             )}
           </div>
@@ -374,7 +374,7 @@ function StatsPanel({ state }: ScreenProps) {
         <span>
           종합 <b>{total}</b>
         </span>
-        <span className="muted small">스탯 상한 {cap} · 계급이 오르면 +10</span>
+        <span className="muted small">스탯 상한 {cap} · 등급이 오르면 +10</span>
         <Help title="스탯과 경험치">
           <p>훈련을 하면 그 훈련이 키우는 스탯에 경험치가 쌓여요. 초록 막대가 다 차면 스탯이 1 올라요.</p>
           <p>별을 많이 받을수록 경험치가 많아요(별 1개당 {TRAIN_EXP_PER_STAR}, 지면 {TRAIN_EXP_LOSE}). 오늘의 훈련은 2배, 숙련 단계가 오르면 +10%씩 더 받아요.</p>
@@ -455,7 +455,7 @@ function AidesPanel({ state, actions }: ScreenProps) {
         {Array.from({ length: empty }).map((_, i) => (
           <Tile key={`e${i}`} icon="➕" label="빈자리" sub="임무 성공·모병 훈련에서 합류" />
         ))}
-        {slots === 0 && <p className="empty">중위가 되면 첫 부관이 합류해요.</p>}
+        {slots === 0 && <p className="empty">신임 지도자가 되면 첫 부관이 합류해요.</p>}
       </div>
       {slots > 0 && (
         <p className="small muted center" style={{ marginTop: 6 }}>
@@ -575,7 +575,7 @@ function GeneralsPanel({ state, actions }: ScreenProps) {
   const o = state.officer;
   const r = state.player.rankIndex;
   const slots = generalSlots(r);
-  if (slots === 0) return <p className="empty">⭐ 준장이 되면 장군을 둘 수 있어요(부관 Lv.3 승격 또는 영입).</p>;
+  if (slots === 0) return <p className="empty">⭐ 존경받는 지도자가 되면 장군을 둘 수 있어요(부관 Lv.3 승격 또는 영입).</p>;
   const FIELD_ICON: Record<string, string> = { 육군: '🪖', 해군: '⚓', 공군: '✈️', 정보: '🔐', 군수: '📦' };
   return (
     <Card title={`장군 ${o.generals.length} / ${slots}`} icon="⭐" right={<Chip icon="🛡️" value={`+${Math.round((generalDefense(o) - 1) * 100)}%`} label="방어" />} help={<p>장군은 내 나라 도시를 자동으로 지켜요(능력이 높을수록 방어 +). 부관 Lv.3을 승격하거나 봉급으로 영입해요.</p>}>
@@ -607,7 +607,7 @@ function RivalsPanel({ state }: ScreenProps) {
   const mine = myRenown(o);
   const top = Math.max(mine, ...rivals.map((x) => x.renown));
   return (
-    <Card title="총사령관 경쟁" icon="🏁" help={<p>대장에서 총사령관이 되려면 라이벌 세 명보다 평판(공훈 + 명성 + 신뢰도)이 높아야 해요. 라이벌도 시간이 지나면 진급해요.</p>}>
+    <Card title="지도자 경쟁" icon="🏁" help={<p>대장에서 지도자이 되려면 라이벌 세 명보다 평판(공훈 + 명성 + 신뢰도)이 높아야 해요. 라이벌도 시간이 지나면 승급해요.</p>}>
       <div className="line-item">
         <span className="li-ico">{RANK_ICON[r]}</span>
         <span className="li-main">
@@ -628,7 +628,7 @@ function RivalsPanel({ state }: ScreenProps) {
           <small>{fmt(x.renown)}</small>
         </div>
       ))}
-      {o.chiefRival && <p className="small warn">총사령관 후보 1순위: {o.chiefRival}. 평판으로 앞질러야 해요.</p>}
+      {o.chiefRival && <p className="small warn">지도자 후보 1순위: {o.chiefRival}. 평판으로 앞질러야 해요.</p>}
     </Card>
   );
 }

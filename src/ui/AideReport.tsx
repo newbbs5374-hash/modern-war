@@ -1,6 +1,5 @@
 // 부관 보고 말풍선: 중요한 일이 끝나면 부관 얼굴과 함께 아래에 뜸. 누르면 다음 보고, 6초 뒤 저절로 넘어감.
 import { useEffect } from 'react';
-import { RANKS } from '../data/ranks';
 import { reportsOf } from '../game/report';
 import type { GameState } from '../game/state';
 import { AIDE_ICON } from './icons';
@@ -19,7 +18,7 @@ export function AideReport({ state, onNext }: { state: GameState; onNext: () => 
   if (!r) return null;
   const aides = state.officer.aides;
   const aide = (r.who && aides.find((a) => a.name === r.who)) || aides.find((a) => !a.errand || state.worldMs >= a.errand.endMs) || aides[0];
-  const title = `${RANKS[state.player.rankIndex].name}님`;
+  const title = '지도자님';
   return (
     <div className="aide-report" role="status" aria-live="polite" key={r.id}>
       <span className="aide-face">

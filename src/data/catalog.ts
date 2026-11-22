@@ -1,5 +1,5 @@
 // 화면에 보여 줄 목록(기획서 v2 초안). 실제 동작은 다음 단계에서 붙인다.
-// rank = 열리는 계급 번호(0 소위 … 10 총사령관)
+// rank = 열리는 계급 번호(0 소위 … 10 지도자)
 
 export const STAT_GROUPS = [
   {
@@ -69,7 +69,7 @@ export const TRAININGS: Array<{ name: string; frame: string; raises: string; ran
 /** 재화(기획서 "재화" 표). 지금 실제로 쌓이는 것은 봉급뿐 */
 export const CURRENCIES = [
   { id: 'salary', name: '봉급', icon: '💵', where: '계급마다 시간당 · 홈에서 받기' },
-  { id: 'merit', name: '공훈', icon: '🎖️', where: '임무 성공 · 진급하면 0부터 다시' },
+  { id: 'merit', name: '공훈', icon: '🎖️', where: '임무 성공 · 승급하면 0부터 다시' },
   { id: 'drill', name: '훈련 일정', icon: '📅', where: '실제 4시간마다 1개 · 최대 6개' },
   { id: 'boost', name: '가속권', icon: '🎫', where: '임무·심부름·생산 시간 30분 줄이기 · 시험판은 넉넉히 줌' },
   { id: 'ruby', name: '루비', icon: '💎', where: '시간 줄이기 (나중에 정함)' },

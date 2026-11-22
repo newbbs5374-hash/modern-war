@@ -15,13 +15,13 @@ export const MISSION_EXP_WIN = 20;
 export const MISSION_EXP_LOSE = 6;
 export const START_STAT = 8;
 
-/** 진급 조건(지금 계급 → 다음 계급). 마지막(총사령관)은 없음 */
+/** 승급 조건(지금 계급 → 다음 계급). 마지막(지도자)은 없음 */
 export interface PromotionRule {
   merit: number;
   stars: number;
-  /** 지도자 신뢰도 최소(장군급부터) */
+  /** 의회 신뢰도 최소(장군급부터) */
   trust: number;
-  /** 진급 심사 작전 이름 */
+  /** 승급 심사 작전 이름 */
   exam: string;
 }
 export const PROMOTION: PromotionRule[] = [
@@ -34,7 +34,7 @@ export const PROMOTION: PromotionRule[] = [
   { merit: 1880, stars: 66, trust: 40, exam: '여단 반격전' },
   { merit: 2240, stars: 72, trust: 45, exam: '사단 포위 작전' },
   { merit: 2640, stars: 78, trust: 50, exam: '군단 상륙 작전' },
-  { merit: 3120, stars: 84, trust: 60, exam: '총사령관 심의' },
+  { merit: 3120, stars: 84, trust: 60, exam: '지도자 심의' },
 ];
 
 /** 임무 종류: 쓰는 스탯, 걸리는 실제 시간(시간), 세계에 주는 영향 */
@@ -61,7 +61,7 @@ export type AideSpecialty = (typeof AIDE_SPECIALTIES)[number];
 
 /** 부관 칸: 중위 1 · 소령 2 · 대령 3 */
 export const aideSlots = (rank: number) => (rank >= 5 ? 3 : rank >= 3 ? 2 : rank >= 1 ? 1 : 0);
-/** 장군 칸: 준장 1 · 소장 2 · 중장 3 · 대장 4 · 총사령관 5 */
+/** 장군 칸: 준장 1 · 소장 2 · 중장 3 · 대장 4 · 지도자 5 */
 export const generalSlots = (rank: number) => Math.max(0, rank - 5);
 
 export const GENERAL_FIELDS = ['육군', '해군', '공군', '정보', '군수'] as const;

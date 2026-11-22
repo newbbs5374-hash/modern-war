@@ -99,7 +99,7 @@ export function ForcesScreen(props: ScreenProps) {
             <Chip icon="🔨" value={`${e.queue.length}/${QUEUE_MAX}`} label="모집 줄" />
           </div>
           <Help title="부대">
-            <p>병과 15개와 우리 나라 특별 병과(🌟)를 육군·해군·공군으로 나눴어요. 병과는 계급이 오르면 하나씩 열려요.</p>
+            <p>병과 15개와 우리 나라 특별 병과(🌟)를 육군·해군·공군으로 나눴어요. 병과는 등급이 오르면 하나씩 열려요.</p>
             <p>
               <b>모집</b>: 국방예산과 전략 자원을 써서 1부대를 모아요. 한 번에 {QUEUE_MAX}개까지 줄을 세울 수 있고, 차례대로 완성돼요.
             </p>

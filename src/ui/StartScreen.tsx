@@ -22,7 +22,7 @@ export function StartScreen({ onStart, onImport }: Props) {
       <h1>현대전 사령관 · 시험판</h1>
       <p className="muted">
         대융기로 바다에서 떠오른 새 군도, 여명 군도. 막 세워진 나라들은 평화롭게 출발하지만 자원과 항로를 두고 긴장이
-        쌓입니다. 나라를 골라 소위로 시작하세요. 세계 시계는 실제 1시간 = 게임 하루로 흐르고, 게임을 꺼 두어도 흐릅니다.
+        쌓입니다. 나라를 골라 지도자로 취임하세요. 처음엔 임시 지도자이고, 명성과 신뢰를 쌓아 전설의 지도자까지 등급을 올려요. 세계 시계는 실제 1시간 = 게임 하루로 흐르고, 게임을 꺼 두어도 흐릅니다.
       </p>
       <label className="field">
         장교 이름
@@ -71,7 +71,7 @@ export function StartScreen({ onStart, onImport }: Props) {
         disabled={!pick || !name.trim()}
         onClick={() => pick && onStart(name.trim(), pick, randomLeaders)}
       >
-        {pick && name.trim() ? '소위로 임관하기' : '이름을 쓰고 나라를 고르세요'}
+        {pick && name.trim() ? '지도자로 취임하기' : '이름을 쓰고 나라를 고르세요'}
       </button>
 
       <details className="import">

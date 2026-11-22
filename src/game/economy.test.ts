@@ -23,7 +23,7 @@ describe('내정', () => {
     const w = { ...s.world, owner: { ...s.world.owner, 'jp-0': 'kr' } };
     expect(resPerDay({ ...s, world: w }).반도체).toBe(4); // 도쿄 2 × 0.5
   });
-  it('준장 전에는 잠김, 준장부터 내정 일 → 경험치, 총사령관이 되면 시설 올리기', () => {
+  it('준장 전에는 잠김, 준장부터 내정 일 → 경험치, 지도자가 되면 시설 올리기', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 2 }));
     expect(canUpgrade(s, '산업')).not.toBeNull();
     expect(startChore(s, '산업')).toBe(s);
@@ -33,7 +33,7 @@ describe('내정', () => {
     s = claimChore(advance(s, H));
     expect(s.economy.facilities.산업.exp).toBeGreaterThanOrEqual(30);
     s = advance(s, 40 * H); // 가만히 있어도 경험치
-    expect(canUpgrade(s, '산업')).toMatch(/총사령관/);
+    expect(canUpgrade(s, '산업')).toMatch(/지도자/);
     s = setRank(s, 10);
     const before = budgetPerDay(s, 'kr');
     s = upgradeFacility(s, '산업');
@@ -53,7 +53,7 @@ describe('내정', () => {
     let s = rich(setRank(newGame('t', 'kr', 0, { seed: 3 }), 6));
     expect(canProduce(s, '보병')).toMatch(/강철/);
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20 } } };
-    expect(canProduce(s, '항공모함')).toMatch(/대장|총사령관|부터/);
+    expect(canProduce(s, '항공모함')).toMatch(/대장|지도자|부터/);
     const base = advance(s, 4 * H);
     s = produce(s, '전차');
     s = produce(s, '보병');
@@ -120,7 +120,7 @@ describe('5단계 훈련·대전투', () => {
 });
 
 describe('승리', () => {
-  it('총사령관 + 연합·정복 조건을 일정 기간 지키면 판이 끝남', async () => {
+  it('지도자 + 연합·정복 조건을 일정 기간 지키면 판이 끝남', async () => {
     const { checkVictory, victoryProgress } = await import('./victory');
     const { CITIES } = await import('../data/cities');
     let s = newGame('t', 'kr', 0, { seed: 9 });
@@ -128,7 +128,7 @@ describe('승리', () => {
     for (const c of CITIES.slice(0, 30)) owner[c.id] = 'kr';
     s = { ...s, world: { ...s.world, owner } };
     expect(victoryProgress(s).mine).toBeGreaterThanOrEqual(20);
-    expect(checkVictory(s).ending).toBeNull(); // 아직 총사령관 아님
+    expect(checkVictory(s).ending).toBeNull(); // 아직 지도자 아님
     const { HOLD_DAYS } = await import('./victory');
     let w = checkVictory(setRank(s, 10));
     expect(w.ending).toBeNull(); // 막 채움: 지키는 중

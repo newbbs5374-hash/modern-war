@@ -17,7 +17,7 @@ export function VictoryCard({ state }: ScreenProps) {
   const p = victoryProgress(state);
   const ready = state.player.rankIndex >= VICTORY_RANK;
   return (
-    <Card title="승리 조건" right={<small className="muted">{ready ? '총사령관 · 하나만 이루면 승리' : `${RANKS[VICTORY_RANK].name}이 되면 열림`}</small>}>
+    <Card title="승리 조건" right={<small className="muted">{ready ? '지도자 · 하나만 이루면 승리' : `${RANKS[VICTORY_RANK].name}가 되면 열림`}</small>}>
       <div className="small">
         ① 연합 승리: 우리 + 연합국 도시 {p.allied} / {p.needAllied}
         <Meter have={p.allied} need={p.needAllied} />
@@ -25,7 +25,7 @@ export function VictoryCard({ state }: ScreenProps) {
         <Meter have={p.mine} need={p.needAlone} />
       </div>
       {holdLeft(state) !== null && <p className="small result">🏁 조건 달성! {timeLeft(holdLeft(state)!)} 더 지키면 승리해요.</p>}
-      <p className="small muted">둘 중 하나를 {HOLD_DAYS}일 동안 지키면 이겨요. 총사령관 외교로 연합국을 늘릴 수 있어요. 대전투로 적 도시를 차지하고, 만든 부대와 복지로 점령지를 지키세요. 점령지는 가끔 반란이 일어나요.</p>
+      <p className="small muted">둘 중 하나를 {HOLD_DAYS}일 동안 지키면 이겨요. 지도자 외교로 연합국을 늘릴 수 있어요. 대전투로 적 도시를 차지하고, 만든 부대와 복지로 점령지를 지키세요. 점령지는 가끔 반란이 일어나요.</p>
     </Card>
   );
 }
@@ -37,7 +37,7 @@ export function EndingCard({ state, actions }: ScreenProps) {
     <div className="ending">
       <h2>🏆 {e.kind}!</h2>
       <p>
-        {e.name} 총사령관이 이끈 {e.country}이(가) 전쟁 {e.day}일째에 전쟁을 끝냈어요.
+        {e.name} 지도자가 이끈 {e.country}이(가) 전쟁 {e.day}일째에 전쟁을 끝냈어요.
       </p>
       <p className="small">
         도시 {e.cities}개{e.captured.length ? ` · 점령: ${e.captured.join(', ')}` : ''}

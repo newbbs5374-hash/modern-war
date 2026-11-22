@@ -12,7 +12,7 @@ import { budgetPerDay, troopsPerDay, type GameState } from '../game/state';
 export const HOUR = 60 * 60 * 1000;
 export const fmt = (n: number) => Math.floor(n).toLocaleString('ko-KR');
 
-/** 계급이 모자라면 잠금 글 */
+/** 등급이 모자라면 잠금 글 */
 export function rankLock(state: GameState, rank: number): string | null {
   return state.player.rankIndex >= rank ? null : `${RANKS[rank].name}부터`;
 }
