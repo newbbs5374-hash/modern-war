@@ -133,7 +133,7 @@ export function incomeShare(w: WorldState, countryId: string): number {
 }
 
 /** 처음 도시의 반 넘게 잃었는가 */
-function isLosing(w: WorldState, id: string): boolean {
+export function isLosing(w: WorldState, id: string): boolean {
   const home = CITIES.filter((c) => c.home === id);
   const kept = home.filter((c) => w.owner[c.id] === id).length;
   return kept * 2 < home.length;
@@ -161,7 +161,7 @@ export function isRival(a: string, b: string): boolean {
   return faithClash(a, b);
 }
 
-function sameBloc(a: string, b: string): boolean {
+export function sameBloc(a: string, b: string): boolean {
   const ba = countryById(a).bloc;
   return ba !== 'independent' && ba === countryById(b).bloc;
 }

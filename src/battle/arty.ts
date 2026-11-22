@@ -46,6 +46,8 @@ export interface ArtySetup {
   rank: number;
   stats: Record<string, number>;
   seed: number;
+  /** 비·눈이면 바람이 셈 */
+  weather?: string;
 }
 
 export function heightAt(b: { ground: number[] }, x: number): number {
@@ -74,7 +76,7 @@ export function createArty(o: ArtySetup): ArtyBattle {
     ground,
     me: { x: 50, hp: 100 + o.rank * 5, maxHp: 100 + o.rank * 5 },
     foe: { x: ARTY_W - 50, hp: foeHp, maxHp: foeHp },
-    wind: Math.round(rng.range(-3, 3)),
+    wind: Math.round(rng.range(-3, 3) * (o.weather === '비' || o.weather === '눈' ? 1.5 : 1)),
     turn: 'me',
     round: 1,
     seed: rng.seed,

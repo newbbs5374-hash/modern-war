@@ -26,7 +26,7 @@ import { BattleBar, type FrameProps } from './BattleScreen';
 
 export function GridView({ spec, stats, rank, aides, playerName, onEnd }: FrameProps) {
   const [b, setB] = useState<GridBattle>(() =>
-    createGridBattle({ goal: spec.variant as Goal, difficulty: spec.difficulty, rank, stats, aides, seed: spec.seed, playerName, squadSize: spec.squadSize }),
+    createGridBattle({ goal: spec.variant as Goal, difficulty: spec.difficulty, rank, stats, aides, seed: spec.seed, playerName, squadSize: spec.squadSize, weather: spec.weather, enemy: spec.enemy }),
   );
   const [sel, setSel] = useState<number | null>(null);
   const [auto, setAuto] = useState(false);
@@ -149,7 +149,7 @@ export function GridView({ spec, stats, rank, aides, playerName, onEnd }: FrameP
               {b.mark && b.mark.x === x && b.mark.y === y && <span className="mark">{b.goal === 'survive' ? '🚩' : '⭐'}</span>}
               {showU && u && (
                 <span className={`unit ${u.side} ${u.hidden ? 'hidden' : ''} ${u.moved && u.acted && u.side === 'me' ? 'done' : ''}`}>
-                  <span className="ico">{UNIT_BASE[u.kind].icon}</span>
+                  <span className="ico">{u.boss ? "🎖️" : UNIT_BASE[u.kind].icon}</span>
                   {u.kind !== '인질' && (
                     <span className="hp">
                       <span style={{ width: `${(u.hp / u.maxHp) * 100}%` }} />

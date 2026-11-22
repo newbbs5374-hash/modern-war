@@ -1,6 +1,8 @@
 // 어떤 전투를 열지 정하는 곳: 훈련 12개 · 임무 · 작전(여러 판) · 대전투(도시 점령) · 진급 심사 · 연습장.
 import type { ActiveMission } from '../game/officer';
 import type { MissionKind } from '../data/officers';
+import { Rng } from '../game/rng';
+import type { Weather } from './grid';
 
 export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range';
 export type Source = 'mission' | 'practice' | 'training';
@@ -14,6 +16,10 @@ export interface BattleSpec {
   difficulty: number;
   seed: number;
   squadSize?: number;
+  /** 날씨·시간(격자·포격에 효과) */
+  weather?: Weather;
+  /** 적 이름(예: 중국군) */
+  enemy?: string;
 }
 
 /** 한 번에 치르는 전투 묶음(훈련·임무는 1판, 작전 2~3판, 대전투 5판) */
@@ -144,15 +150,22 @@ export function battleLabel(a: ActiveMission, rank: number): string {
   return picks.map((p) => p.label).join(' → ');
 }
 
-export function planForMission(a: ActiveMission, rank: number, officerSeed: number): BattlePlan {
+/** 임무 날씨(씨앗으로 정해짐): 맑음 50% · 밤 · 비 · 안개 · 눈 */
+export function weatherOf(seed: number): Weather {
+  const r = new Rng((seed ^ 0x9e3779b9) >>> 0).next();
+  return r < 0.5 ? '맑음' : r < 0.65 ? '밤' : r < 0.77 ? '비' : r < 0.89 ? '안개' : '눈';
+}
+
+export function planForMission(a: ActiveMission, rank: number, officerSeed: number, enemy?: string): BattlePlan {
   const { picks, mainIdx } = picksOf(a, rank);
   const seed = (a.id * 7919 + officerSeed) >>> 0;
+  const weather = weatherOf(seed);
   return {
     title: a.title,
     source: 'mission',
     mainIdx,
     intro: a.kind === '대전투' ? '단계마다 이기면 다음 단계가 쉬워져요. 시가지 돌입은 꼭 이겨야 하고, 다섯 판 중 세 판 이상 이기면 도시를 차지해요. 어떤 단계든 부관에게 맡길 수 있어요(별 최대 2개).' : undefined,
-    stages: picks.map((p, i) => ({ ...p, title: p.label ? `${i + 1}. ${p.label}` : a.title, difficulty: a.difficulty, seed: seed + i * 131 })),
+    stages: picks.map((p, i) => ({ ...p, title: p.label ? `${i + 1}. ${p.label}` : a.title, difficulty: a.difficulty, seed: seed + i * 131, weather, enemy })),
   };
 }
 

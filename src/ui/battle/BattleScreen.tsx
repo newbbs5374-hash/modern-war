@@ -1,9 +1,14 @@
 // 전투 화면: 훈련·임무·작전(여러 판)·대전투·진급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { claimMission, finishTraining, perkBonus } from '../../game/officer';
+import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
 import { Card } from '../common';
+import { Tile } from '../kit';
+import { FRAME_ICON } from '../icons';
+import { COUNTRIES, countryById } from '../../data/world';
+import { relationOf } from '../../game/world';
+import { WEATHER_ICON, WEATHER_TEXT } from '../../battle/grid';
 import type { ScreenProps } from '../screens';
 import { GridView } from './GridView';
 import { SideView } from './SideView';
@@ -23,7 +28,7 @@ export interface FrameProps {
   spec: BattleSpec;
   stats: Record<string, number>;
   rank: number;
-  aides: Array<{ name: string; specialty: string; level: number }>;
+  aides: Array<{ name: string; specialty: string; level: number; bond?: number }>;
   playerName: string;
   onEnd: (r: Outcome) => void;
 }
@@ -88,7 +93,12 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     const pending = getPendingPlan();
     if (pending && (pending.source !== 'training' || o.training)) return pending;
     const a = o.active;
-    return a && state.worldMs >= a.endMs ? planForMission(a, rank, o.seed) : null;
+    if (!a || state.worldMs < a.endMs) return null;
+    // 적 이름: 도시 주인이 남이면 그 나라, 내 도시면 전쟁 중인 나라
+    const me = state.player.countryId;
+    const owner = state.world.owner[a.city];
+    const foeId = owner !== me ? owner : COUNTRIES.find((c) => c.id !== me && relationOf(state.world, me, c.id) === '전쟁')?.id;
+    return planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined);
   });
   const [results, setResults] = useState<Array<Outcome & { auto: boolean }>>([]);
   const [current, setCurrent] = useState<(Outcome & { auto: boolean }) | null>(null);
@@ -112,7 +122,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   const perks = perkBonus(o);
   const stats: Record<string, number> = { ...o.stats };
   for (const [k, v] of Object.entries(perks)) stats[k] = (stats[k] ?? 0) + v;
-  const props: FrameProps = { spec, stats, rank, aides: o.aides, playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }) };
+  const props: FrameProps = { spec, stats, rank, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }) };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
@@ -129,7 +139,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     setAutoUsed(false);
   };
   const delegate = () => {
-    const r = autoResult({ spec, stats, rank, aides: o.aides });
+    const r = autoResult({ spec, stats, rank, aides: readyAides(o, state.worldMs) });
     const who = o.generals[0]?.name ?? o.aides[0]?.name ?? '부대장';
     setCurrent({ ...r, stars: Math.min(2, r.stars), text: `${who}에게 맡겼어요. ${r.text}`, auto: true });
   };
@@ -165,6 +175,8 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
             {multi ? `${Math.min(stageIdx + 1, plan.stages.length)} / ${plan.stages.length}판 · ` : ''}
             {FRAME_NAMES[spec.frame]}
             {plan.source === 'practice' ? ' · 연습(보상 없음)' : ''}
+            {spec.weather && spec.weather !== '맑음' ? ` · ${WEATHER_ICON[spec.weather]} ${spec.weather}(${WEATHER_TEXT[spec.weather]})` : ''}
+            {spec.enemy ? ` · 상대 ${spec.enemy}` : ''}
           </small>
           {!done && !current && (
             <button className="link" onClick={leave}>
@@ -173,14 +185,19 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
           )}
         </div>
         {multi && (
-          <ol className="stages small">
+          <div className={`tiles c${Math.min(5, plan.stages.length)}`}>
             {plan.stages.map((st, i) => (
-              <li key={i} className={i < stageIdx ? (results[i].win ? 'won' : 'lost') : i === stageIdx ? 'now' : ''}>
-                {st.label}
-                {i === plan.mainIdx ? ' ⚑' : ''} {i < stageIdx ? (results[i].win ? starText(results[i].stars) : '패배') : ''}
-              </li>
+              <Tile
+                key={i}
+                icon={i < stageIdx ? (results[i].win ? '✅' : '❌') : FRAME_ICON[st.frame]}
+                label={`${i + 1}${i === plan.mainIdx ? ' ⚑' : ''}`}
+                sub={st.label}
+                tone={i === stageIdx ? 'gold' : i < stageIdx ? (results[i].win ? 'green' : 'red') : undefined}
+              >
+                {i < stageIdx && results[i].win && <small className="stars">{starText(results[i].stars)}</small>}
+              </Tile>
             ))}
-          </ol>
+          </div>
         )}
         {plan.intro && stageIdx === 0 && !current && <p className="small muted">{plan.intro}</p>}
         {!done && !current && multi && (
@@ -196,8 +213,9 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
           <div className={`battle-result ${current.win ? 'win' : 'lose'}`}>
             <b>
               {multi ? `${spec.label}: ` : ''}
-              {current.win ? '승리' : '패배'} {current.win ? starText(current.stars) : ''}
+              {current.win ? '🏅 승리' : '💀 패배'}
             </b>
+            {current.win && <div className="big-stars">{starText(current.stars)}</div>}
             <p className="small">{current.text}</p>
             <div className="buttons">
               {plan.source === 'practice' ? (
@@ -225,8 +243,9 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
           <div className={`battle-result ${final.win ? 'win' : 'lose'}`}>
             <b>
               {multi ? '전체 결과: ' : ''}
-              {final.win ? '승리' : '패배'} {final.win ? starText(final.stars) : ''}
+              {final.win ? '🏆 승리' : '💀 패배'}
             </b>
+            {final.win && <div className="big-stars">{starText(final.stars)}</div>}
             {multi && <p className="small muted">꼭 이길 판 ⚑ 승리 + 절반 넘게 이기면 성공</p>}
             {claimed !== null && <p className="small result">{claimed}</p>}
             <div className="buttons">

@@ -1,6 +1,7 @@
 // 승리 조건 진행 카드 · 엔딩 · 명예의 전당
 import { RANKS } from '../data/ranks';
-import { loadHall, recordHall, victoryProgress, VICTORY_RANK, type HallEntry } from '../game/victory';
+import { HOLD_DAYS, holdLeft, loadHall, recordHall, victoryProgress, VICTORY_RANK, type HallEntry } from '../game/victory';
+import { timeLeft } from './officerScreens';
 import { Card } from './common';
 import type { ScreenProps } from './screens';
 
@@ -23,7 +24,8 @@ export function VictoryCard({ state }: ScreenProps) {
         ② 정복 승리: 우리 도시 {p.mine} / {p.needAlone}
         <Meter have={p.mine} need={p.needAlone} />
       </div>
-      <p className="small muted">대전투로 적 도시를 차지하고, 만든 부대와 복지로 점령지를 지키세요. 점령지는 가끔 반란이 일어나요.</p>
+      {holdLeft(state) !== null && <p className="small result">🏁 조건 달성! {timeLeft(holdLeft(state)!)} 더 지키면 승리해요.</p>}
+      <p className="small muted">둘 중 하나를 {HOLD_DAYS}일 동안 지키면 이겨요. 총사령관 외교로 연합국을 늘릴 수 있어요. 대전투로 적 도시를 차지하고, 만든 부대와 복지로 점령지를 지키세요. 점령지는 가끔 반란이 일어나요.</p>
     </Card>
   );
 }

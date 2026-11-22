@@ -6,7 +6,7 @@ import { BattleBar, type FrameProps } from './BattleScreen';
 const Y = (y: number) => ARTY_H - y;
 
 export function ArtyView({ spec, stats, rank, onEnd }: FrameProps) {
-  const [b, setB] = useState<ArtyBattle>(() => createArty({ difficulty: spec.difficulty, rank, stats, seed: spec.seed }));
+  const [b, setB] = useState<ArtyBattle>(() => createArty({ difficulty: spec.difficulty, rank, stats, seed: spec.seed, weather: spec.weather }));
   const [angle, setAngle] = useState(45);
   const [power, setPower] = useState(60);
   const [auto, setAuto] = useState(false);
