@@ -170,6 +170,8 @@ export interface OfficerState {
   winSinceMs?: number | null;
   /** 가속권 */
   boosts?: number;
+  /** 시험판 자원 지급을 받았는지 */
+  testGrant?: number;
 }
 
 export function newOfficer(seed: number): OfficerState {

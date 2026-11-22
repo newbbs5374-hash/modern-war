@@ -1,6 +1,7 @@
 import { checkVictory } from './game/victory';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as G from './game/state';
+import { firstTestGrant } from './game/testgrant';
 import { deleteSave, exportCode, importCode, loadGame, saveGame } from './game/save';
 import { SCREENS, type GameActions } from './ui/screens';
 import { Shell } from './ui/Shell';
@@ -129,7 +130,7 @@ export function App() {
     return (
       <StartScreen
         onStart={(name, countryId, randomLeaders) => {
-          const s = G.newGame(name, countryId, Date.now(), { randomLeaders });
+          const s = firstTestGrant(G.newGame(name, countryId, Date.now(), { randomLeaders }));
           saveGame(s);
           setState(s);
           setNotices([]);

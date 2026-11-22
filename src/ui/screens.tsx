@@ -16,6 +16,7 @@ import { FacilityCard, ProductionCard, ResourceCard, TradeCard, UnitModal } from
 import { Chip, Help, Modal, Tabs, Tile, useTab } from './kit';
 import { UNIT_ICON } from './icons';
 import { FLAG } from './flag';
+import { fillPromotion, grantTestResources } from '../game/testgrant';
 import { HomeLand } from './HomeLand';
 import { boostsOf } from '../game/boost';
 import { ECON_RANK } from '../data/economy';
@@ -613,6 +614,12 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
 
       <Card title="시험용 버튼" right={<small className="muted">정식판에서는 빠짐</small>}>
         <small>시간 건너뛰기</small>
+        <div className="buttons">
+          <button className="gold" onClick={() => (actions.apply(grantTestResources), setMsg('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))}>🎁 시험 자원 넉넉히</button>
+          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 계급의 진급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 진급 심사를 보세요.'))}>
+            🎖️ 진급 조건 채우기
+          </button>
+        </div>
         <div className="buttons">
           <button onClick={() => actions.skip(HOUR)}>+1시간 (1일)</button>
           <button onClick={() => actions.skip(12 * HOUR)}>+12시간</button>
