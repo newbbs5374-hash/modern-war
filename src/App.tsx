@@ -8,6 +8,22 @@ import { StartScreen } from './ui/StartScreen';
 
 const TICK_MS = 250;
 const AUTOSAVE_MS = 5000;
+const SEEN_KEY = 'modern-war-herald-seen';
+
+function readSeen(): number {
+  try {
+    return Number(localStorage.getItem(SEEN_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+function writeSeen(t: number) {
+  try {
+    localStorage.setItem(SEEN_KEY, String(t));
+  } catch {
+    /* 무시 */
+  }
+}
 
 /** 꺼 둔 사이 흐른 시간을 반영하고, 알림 글을 만든다 */
 function resume(saved: G.GameState, now: number): { state: G.GameState; notice: string } {
@@ -58,6 +74,18 @@ export function App() {
     setScreen(prev);
   };
   const [speed, setSpeedState] = useState(1);
+  // 전령을 마지막으로 본 시각(세계 시간). 그 뒤의 내 나라 소식 + 새 알림이 있으면 빨간 점
+  const [seenT, setSeenT] = useState(readSeen);
+  const [noticesSeen, setNoticesSeen] = useState(0);
+  useEffect(() => {
+    if (screen !== 'herald' || !state) return;
+    const t = state.world.events[0]?.t ?? 0;
+    if (t > seenT) {
+      setSeenT(t);
+      writeSeen(t);
+    }
+    if (noticesSeen !== notices.length) setNoticesSeen(notices.length);
+  }, [screen, state, seenT, notices.length, noticesSeen]);
   const speedRef = useRef(1);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -99,8 +127,8 @@ export function App() {
   if (!state) {
     return (
       <StartScreen
-        onStart={(name, countryId) => {
-          const s = G.newGame(name, countryId, Date.now());
+        onStart={(name, countryId, randomLeaders) => {
+          const s = G.newGame(name, countryId, Date.now(), { randomLeaders });
           saveGame(s);
           setState(s);
           setNotices([]);
@@ -110,8 +138,14 @@ export function App() {
     );
   }
 
-  const update = (f: (s: G.GameState) => G.GameState) =>
-    setState((s) => (s ? f(G.catchUp(s, Date.now(), speedRef.current)) : s));
+  // 버튼으로 바꾼 것은 바로 저장(창을 금방 닫아도 남도록)
+  const update = (f: (s: G.GameState) => G.GameState) => {
+    if (!stateRef.current) return;
+    const next = f(G.catchUp(stateRef.current, Date.now(), speedRef.current));
+    stateRef.current = next;
+    setState(next);
+    saveGame(next);
+  };
 
   const actions: GameActions = {
     claim: () => update(G.claimSalary),
@@ -130,6 +164,9 @@ export function App() {
       deleteSave();
       setState(null);
       setNotices([]);
+      setNoticesSeen(0);
+      setSeenT(0);
+      writeSeen(0);
       history.current = [];
       location.hash = '';
       setScreen('home');
@@ -148,7 +185,14 @@ export function App() {
   const View = SCREENS[screen];
   return (
     <Shell state={state} screen={screen} speed={speed} go={go} back={back}>
-      <View state={state} speed={speed} notices={notices} actions={actions} go={go} />
+      <View
+        state={state}
+        speed={speed}
+        notices={notices}
+        unread={state.world.events.filter((e) => e.mine && e.t > seenT).length + (notices.length - noticesSeen)}
+        actions={actions}
+        go={go}
+      />
     </Shell>
   );
 }

@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import { STAT_GROUPS, TRAININGS, UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
-import { BLOCS, COUNTRIES, FRONTS, countryById, startingRelation } from '../data/world';
+import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { PENDING_CAP_HOURS } from '../game/balance';
 import { budgetPerDay, gameClock, pendingCap, salaryPerDay, troopsPerDay, type GameState } from '../game/state';
-import { Card, CountryInfo, HOUR, Soon, fmt, rankLock } from './common';
+import { citiesOf, isAlive, relationOf } from '../game/world';
+import { Card, CountryInfo, EventList, HOUR, RelTag, Soon, TensionBar, fmt, leaderText, rankLock } from './common';
 import type { Screen } from './nav';
-import { WorldMap } from './WorldMap';
+import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 
 export interface GameActions {
   claim: () => void;
@@ -25,6 +26,8 @@ export interface ScreenProps {
   state: GameState;
   speed: number;
   notices: string[];
+  /** 전령을 마지막으로 본 뒤 생긴 내 나라 소식 수 */
+  unread: number;
   actions: GameActions;
   go: (s: Screen) => void;
 }
@@ -32,13 +35,15 @@ export interface ScreenProps {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /* ───────── 본부(홈): 왼쪽 = 지도·임무·받기, 오른쪽 = 작은 버튼 줄 ───────── */
-export function HomeScreen({ state, notices, actions, go }: ScreenProps) {
+export function HomeScreen({ state, unread, actions, go }: ScreenProps) {
   const me = countryById(state.player.countryId);
   const clock = gameClock(state.worldMs);
   const pending = state.player.pendingSalary;
   const cap = pendingCap(state);
   const n = state.nations[me.id];
-  const wars = COUNTRIES.filter((c) => c.id !== me.id && startingRelation(me.id, c.id) === '전쟁');
+  const wars = COUNTRIES.filter((c) => c.id !== me.id && isAlive(state.world, c.id) && relationOf(state.world, me.id, c.id) === '전쟁');
+  const latest = state.world.events.find((e) => e.mine);
+  const fallen = !isAlive(state.world, me.id);
 
   return (
     <div className="home">
@@ -49,18 +54,30 @@ export function HomeScreen({ state, notices, actions, go }: ScreenProps) {
         <small className="muted">전쟁 {clock.dayNumber}일째 · 실제 1시간 = 게임 하루</small>
       </div>
 
+      {fallen && (
+        <div className="alert">
+          {me.name}의 도시를 모두 잃었어요. 망명 정부로 버티는 중이고, 점령지에서 반란이 일어나면 되찾아요.
+        </div>
+      )}
       <div className="home-body">
         <div className="home-left">
           <button className="minimap" onClick={() => go('ops')}>
-            <WorldMap playerCountryId={me.id} selectedId={null} onSelect={() => go('ops')} mini />
+            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => go('ops')} mini />
             <small>세계 지도</small>
           </button>
 
           <div className="missions">
             <small>주요 임무</small>
-            <button onClick={() => go('ops')}>전선 배치 대기 · {wars.length}개 나라와 전쟁 중</button>
+            <button onClick={() => go('ops')}>
+              전선 배치 대기 · {wars.length ? `${wars.map((c) => c.name).join('·')}와 전쟁 중` : '지금은 전쟁 없음'}
+            </button>
+            {latest && (
+              <button className="latest" onClick={() => go('herald')}>
+                <small>최근 전황</small> {latest.text}
+              </button>
+            )}
             <small>보조 임무</small>
-            <span className="muted small">다음 단계에서 열림</span>
+            <span className="muted small">3단계에서 열림</span>
           </div>
 
           <button className="chip claim" disabled={pending < 1} onClick={actions.claim}>
@@ -76,7 +93,9 @@ export function HomeScreen({ state, notices, actions, go }: ScreenProps) {
           </button>
 
           <button className="chip" onClick={() => go('nation')}>
-            <small>{me.name} 국방예산 · 병력</small>
+            <small>
+              {me.name} 국방예산 · 병력 · 도시 {citiesOf(state.world, me.id).length}
+            </small>
             <b>
               {fmt(n.treasury)} · {fmt(n.troops)}명
             </b>
@@ -86,7 +105,7 @@ export function HomeScreen({ state, notices, actions, go }: ScreenProps) {
         <div className="utilities">
           <button onClick={() => go('herald')}>
             📯<small>전령</small>
-            {notices.length > 0 && <i className="dot" aria-label="새 소식" />}
+            {unread > 0 && <i className="dot" aria-label="새 소식" />}
           </button>
           <button className="locked" disabled>
             📋<small>의뢰</small>
@@ -103,40 +122,77 @@ export function HomeScreen({ state, notices, actions, go }: ScreenProps) {
   );
 }
 
-/* ───────── 작전: 세계 지도 · 전선 · 나라 정보 ───────── */
+/* ───────── 작전: 세계 지도 · 전쟁 · 전황 ───────── */
 export function OpsScreen({ state }: ScreenProps) {
   const me = state.player.countryId;
+  const w = state.world;
   const [sel, setSel] = useState(me);
+  const [mode, setMode] = useState<MapMode>('관계');
+  const wars = Object.entries(w.pairs)
+    .filter(([k, p]) => p.rel === '전쟁' && k.split('|').every((id) => isAlive(w, id)))
+    .map(([k, p]) => ({ ids: k.split('|'), p }));
+  const myWars = wars.filter((x) => x.ids.includes(me));
+  const otherWars = wars.filter((x) => !x.ids.includes(me));
+  const nm = (id: string) => countryById(id).name;
   return (
     <>
-      <Card title="세계 지도">
-        <WorldMap playerCountryId={me} selectedId={sel} onSelect={setSel} />
-        <div className="legend small">
-          {Object.values(BLOCS).map((b) => (
-            <span key={b.name}>
-              <i style={{ background: b.color }} /> {b.name}
-            </span>
-          ))}
-          <span>
-            <i className="line war" /> 전쟁
+      <Card
+        title="세계 지도"
+        right={
+          <span className="seg">
+            {(['관계', '묶음'] as MapMode[]).map((m) => (
+              <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
+                {m}
+              </button>
+            ))}
           </span>
+        }
+      >
+        <WorldMap world={w} playerCountryId={me} selectedId={sel} onSelect={setSel} mode={mode} />
+        <div className="legend small">
+          {mode === '관계'
+            ? (Object.keys(REL_COLORS) as Array<keyof typeof REL_COLORS>).map((k) => (
+                <span key={k}>
+                  <i style={{ background: REL_COLORS[k] }} /> {k === '나' ? '내 나라' : k}
+                </span>
+              ))
+            : Object.values(BLOCS).map((b) => (
+                <span key={b.name}>
+                  <i style={{ background: b.color }} /> {b.name}
+                </span>
+              ))}
           <span>
-            <i className="line truce" /> 휴전
+            <i className="ring" /> 점령된 도시
           </span>
         </div>
         <CountryInfo id={sel} state={state} />
       </Card>
-      <Card title="전선">
-        {FRONTS.map((f) => (
-          <div key={f.name} className="list-row">
-            <span>{f.name}</span>
-            <span className={f.kind === '전쟁' ? 'tag war' : 'tag truce'}>{f.kind}</span>
-          </div>
-        ))}
+      <Card title={`우리 전쟁 ${myWars.length}`}>
+        {myWars.length === 0 && <p className="small muted">지금 우리나라는 전쟁 중이 아니에요.</p>}
+        {myWars.map(({ ids, p }) => {
+          const foe = ids[0] === me ? ids[1] : ids[0];
+          return (
+            <button key={foe} className="list-row wide" onClick={() => setSel(foe)}>
+              <span>⚔️ {nm(foe)}</span>
+              <small className="muted">피로도 {Math.round(p.weariness)}</small>
+            </button>
+          );
+        })}
       </Card>
-      <Card title="임무 · 전투">
+      <Card title={`다른 나라 전쟁 ${otherWars.length}`}>
+        <div className="chips">
+          {otherWars.map(({ ids }) => (
+            <span key={ids.join()} className="tag">
+              {nm(ids[0])} ↔ {nm(ids[1])}
+            </span>
+          ))}
+        </div>
+      </Card>
+      <Card title="최근 전황">
+        <EventList events={w.events} limit={10} />
+      </Card>
+      <Card title="직접 싸우기">
         <Soon stage="4단계">격자 턴제·옆보기 등 전투 틀 5개</Soon>
-        <Soon stage="2단계">AI 나라의 침공·전쟁·휴전 변화</Soon>
         <Soon stage="준장">전략 지도에서 부대 움직이기</Soon>
       </Card>
     </>
@@ -254,18 +310,47 @@ export function NationScreen({ state, go }: ScreenProps) {
         <div className="kv">
           <span>국방예산</span>
           <b>
-            {fmt(n.treasury)} <small className="muted">시간당 +{fmt(budgetPerDay(me.id))}</small>
+            {fmt(n.treasury)} <small className="muted">시간당 +{fmt(budgetPerDay(state, me.id))}</small>
           </b>
           <span>병력</span>
           <b>
-            {fmt(n.troops)}명 <small className="muted">시간당 +{fmt(troopsPerDay(me.id))}</small>
+            {fmt(n.troops)}명 <small className="muted">시간당 +{fmt(troopsPerDay(state, me.id))}</small>
           </b>
         </div>
+        <p className="small">지도자: {leaderText(state, me.id)}</p>
         <p className="small muted">준장이 되면 도시 내정을, 총사령관이 되면 예산 나누기를 맡아요.</p>
       </Card>
       <Card title="내정 · 자원 · 외교">
         <Soon stage="6단계">내정 시설(산업·인프라·복지) · 전략 자원 7종 · 생산·교역</Soon>
-        <Soon stage="2단계">동맹·휴전·선전포고, 긴장도</Soon>
+        <Soon stage="총사령관">선전포고 요청·휴전 제안(지금은 AI 지도자가 정함)</Soon>
+      </Card>
+      <Card title="외교 (우리와)">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>나라</th>
+                <th>관계</th>
+                <th>긴장도</th>
+                <th>지도자 성향</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COUNTRIES.map((c) => (
+                <tr key={c.id} className={c.id === me.id ? 'sel' : ''} onClick={() => go('codex')}>
+                  <td>{c.name}</td>
+                  <td>
+                    <RelTag state={state} id={c.id} />
+                  </td>
+                  <td>
+                    <TensionBar state={state} a={me.id} b={c.id} />
+                  </td>
+                  <td>{state.world.personalities[c.id]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
       <Card title="모든 나라 (실시간)">
         <div className="table-wrap">
@@ -273,7 +358,7 @@ export function NationScreen({ state, go }: ScreenProps) {
             <thead>
               <tr>
                 <th>나라</th>
-                <th>우리와</th>
+                <th>도시</th>
                 <th>국방예산</th>
                 <th>병력</th>
               </tr>
@@ -284,7 +369,7 @@ export function NationScreen({ state, go }: ScreenProps) {
                   <td>
                     <i className="dot-bloc" style={{ background: BLOCS[c.bloc].color }} /> {c.name}
                   </td>
-                  <td>{c.id === me.id ? '—' : startingRelation(me.id, c.id)}</td>
+                  <td>{citiesOf(state.world, c.id).length}</td>
                   <td>{fmt(state.nations[c.id].treasury)}</td>
                   <td>{fmt(state.nations[c.id].troops)}</td>
                 </tr>
@@ -307,20 +392,37 @@ export function ShopScreen(_: ScreenProps) {
   );
 }
 
-/* ───────── 전령: 소식 ───────── */
-export function HeraldScreen({ notices }: ScreenProps) {
+/* ───────── 전령: 내 소식 · 세계 소식 ───────── */
+export function HeraldScreen({ state, notices }: ScreenProps) {
+  const [tab, setTab] = useState<'mine' | 'all'>('mine');
+  const events = tab === 'mine' ? state.world.events.filter((e) => e.mine) : state.world.events;
   return (
-    <Card title="받은 소식">
-      {notices.length === 0 ? (
-        <p className="small muted">새 소식이 없어요.</p>
-      ) : (
-        notices.map((t, i) => (
-          <p key={i} className="small list-row">
-            {t}
-          </p>
-        ))
+    <>
+      {notices.length > 0 && (
+        <Card title="알림">
+          {notices.map((t, i) => (
+            <p key={i} className="small list-row">
+              {t}
+            </p>
+          ))}
+        </Card>
       )}
-    </Card>
+      <Card
+        title="전황 소식"
+        right={
+          <span className="seg">
+            <button className={tab === 'mine' ? 'on' : ''} onClick={() => setTab('mine')}>
+              우리나라
+            </button>
+            <button className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>
+              세계
+            </button>
+          </span>
+        }
+      >
+        <EventList events={events} />
+      </Card>
+    </>
   );
 }
 
@@ -336,7 +438,9 @@ export function CodexScreen({ state }: ScreenProps) {
               <i className="dot-bloc" style={{ background: BLOCS[c.bloc].color }} /> <b>{c.name}</b>{' '}
               <small className="muted">{BLOCS[c.bloc].name}</small>
             </span>
-            <span className="small">{c.difficulty}</span>
+            <span className="small">
+              {isAlive(state.world, c.id) ? c.difficulty : '도시 없음'}
+            </span>
           </button>
           {open === c.id && <CountryInfo id={c.id} state={state} />}
         </div>

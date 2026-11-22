@@ -2,7 +2,10 @@
 
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
+import { PERSONALITIES } from '../data/leaders';
+import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import {
+  AI_TICK_MS,
   BUDGET_PER_DAY_PER_POINT,
   GAME_START_DATE,
   PENDING_CAP_HOURS,
@@ -10,9 +13,10 @@ import {
   START_TREASURY_PER_POINT,
   START_TROOPS_PER_POINT,
   TROOPS_PER_DAY_PER_POINT,
+  TROOP_ATTRITION_PER_DAY,
 } from './balance';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface NationState {
   /** 나라 금고(국방예산) */
@@ -39,9 +43,18 @@ export interface GameState {
   nations: Record<string, NationState>;
   /** 시험 버튼으로 건너뛴 총 시간(ms). 기록용 */
   debugSkippedMs: number;
+  /** 2단계: 외교·도시 주인·AI 지도자·소식 */
+  world: WorldState;
 }
 
-export function newGame(name: string, countryId: string, now: number): GameState {
+export interface NewGameOptions {
+  /** 지도자 성향을 무작위로 */
+  randomLeaders?: boolean;
+  /** 세계 난수 씨앗(시험용으로 고정할 수 있음) */
+  seed?: number;
+}
+
+export function newGame(name: string, countryId: string, now: number, opt: NewGameOptions = {}): GameState {
   countryById(countryId); // 없는 나라면 오류
   const nations: Record<string, NationState> = {};
   for (const c of COUNTRIES) {
@@ -57,6 +70,7 @@ export function newGame(name: string, countryId: string, now: number): GameState
     player: { name, countryId, rankIndex: 0, salary: 0, pendingSalary: 0 },
     nations,
     debugSkippedMs: 0,
+    world: newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS),
   };
 }
 
@@ -69,29 +83,58 @@ export function salaryPerDay(s: GameState): number {
 export function pendingCap(s: GameState): number {
   return salaryPerDay(s) * (PENDING_CAP_HOURS * 60 * 60 * 1000) / REAL_MS_PER_GAME_DAY;
 }
-export function budgetPerDay(countryId: string): number {
-  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT;
+/** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
+export function budgetPerDay(s: GameState, countryId: string): number {
+  const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
+  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId);
 }
-export function troopsPerDay(countryId: string): number {
-  return countryById(countryId).military * TROOPS_PER_DAY_PER_POINT * (TROOP_BONUS[countryId] ?? 1);
+/** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
+export function troopsPerDay(s: GameState, countryId: string): number {
+  return (
+    countryById(countryId).military *
+    TROOPS_PER_DAY_PER_POINT *
+    (TROOP_BONUS[countryId] ?? 1) *
+    incomeShare(s.world, countryId)
+  );
 }
 
-/**
- * 세계 시간을 ms만큼 흘린다. 실시간·꺼 둔 동안·시험 버튼 모두 이 함수 하나로 계산한다.
- * 상태를 직접 바꾸지 않고 새 상태를 돌려준다.
- */
-export function advance(s: GameState, ms: number): GameState {
+/** 쌓이는 것만 ms만큼(판단 없이) */
+function accrue(s: GameState, ms: number): GameState {
   if (!(ms > 0)) return s;
   const days = ms / REAL_MS_PER_GAME_DAY;
   const nations: Record<string, NationState> = {};
   for (const [id, n] of Object.entries(s.nations)) {
     nations[id] = {
-      treasury: n.treasury + budgetPerDay(id) * days,
-      troops: n.troops + troopsPerDay(id) * days,
+      treasury: n.treasury + budgetPerDay(s, id) * days,
+      troops: n.troops * Math.exp(-TROOP_ATTRITION_PER_DAY * days) + troopsPerDay(s, id) * days,
     };
   }
   const pendingSalary = Math.min(pendingCap(s), s.player.pendingSalary + salaryPerDay(s) * days);
   return { ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations };
+}
+
+/**
+ * 세계 시간을 ms만큼 흘린다. 실시간·꺼 둔 동안·시험 버튼 모두 이 함수 하나로 계산한다.
+ * 실제 15분마다 AI가 판단(외교·침공)하고, 그 사이에는 수입이 쌓인다.
+ * 상태를 직접 바꾸지 않고 새 상태를 돌려준다.
+ */
+export function advance(s: GameState, ms: number): GameState {
+  if (!(ms > 0)) return s;
+  let cur = s;
+  let left = ms;
+  let world: WorldState | null = null;
+  while (cur.worldMs + left >= cur.world.nextTickMs) {
+    const step = cur.world.nextTickMs - cur.worldMs;
+    cur = accrue(cur, step);
+    left -= step;
+    if (!world) world = cloneWorld(cur.world);
+    const nations: Record<string, NationState> = {};
+    for (const [id, n] of Object.entries(cur.nations)) nations[id] = { ...n };
+    aiTick(world, nations, cur.worldMs, cur.player.countryId);
+    world.nextTickMs += AI_TICK_MS;
+    cur = { ...cur, nations, world };
+  }
+  return accrue(cur, left);
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */

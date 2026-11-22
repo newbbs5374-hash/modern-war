@@ -3,7 +3,10 @@
 
 import { COUNTRIES } from '../data/world';
 import { RANKS } from '../data/ranks';
+import { CITIES } from '../data/cities';
+import { AI_TICK_MS } from './balance';
 import { SAVE_VERSION, type GameState } from './state';
+import { newWorld } from './world';
 
 export const SAVE_KEY = 'modern-war-save';
 
@@ -25,7 +28,17 @@ function storage(): Storage | null {
 export function parseSave(text: string): GameState | null {
   try {
     const s = JSON.parse(text) as GameState;
-    if (!s || s.version !== SAVE_VERSION) return null;
+    if (!s || typeof s !== 'object') return null;
+    // 1단계 저장(세계 정보 없음) → 시작 구도로 세계를 새로 만들어 이어감
+    if (s.version === 1 && typeof s.worldMs === 'number') {
+      s.world = newWorld((s.lastRealTime ^ 0x5eed) >>> 0, false, s.worldMs + AI_TICK_MS);
+      s.version = SAVE_VERSION;
+    }
+    if (s.version !== SAVE_VERSION) return null;
+    const w = s.world;
+    if (!w || typeof w.seed !== 'number' || typeof w.nextTickMs !== 'number' || !Array.isArray(w.events)) return null;
+    if (!w.pairs || !w.personalities || !w.owner || !w.defense) return null;
+    if (CITIES.some((c) => typeof w.owner[c.id] !== 'string' || typeof w.defense[c.id] !== 'number')) return null;
     if (typeof s.worldMs !== 'number' || typeof s.lastRealTime !== 'number') return null;
     const p = s.player;
     if (!p || typeof p.name !== 'string' || !COUNTRIES.some((c) => c.id === p.countryId)) return null;
