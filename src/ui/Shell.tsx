@@ -6,6 +6,7 @@ import { countryById } from '../data/world';
 import { gameClock, type GameState } from '../game/state';
 import { fmt } from './common';
 import { Flag } from './flag';
+import { Face } from './Portrait';
 import { NAV, SCREEN_TITLES, type Screen } from './nav';
 
 interface Props {
@@ -60,7 +61,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
         {screen === 'home' ? (
           <button className="who" onClick={() => go('officer')}>
             <span className="portrait">
-              <Flag id={me.id} />
+              <Face keys={['player', `leader-${me.id}`]} fallback={<Flag id={me.id} />} />
             </span>
             <span>
               <b>
