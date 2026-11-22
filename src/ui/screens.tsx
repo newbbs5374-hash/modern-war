@@ -667,6 +667,12 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         <small>시간 건너뛰기</small>
         <div className="buttons">
           <button className="gold" onClick={() => (actions.apply(grantTestResources), setMsg('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))}>🎁 시험 자원 넉넉히</button>
+          <button
+            className={state.officer.examPenalty ? '' : 'on'}
+            onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, examPenalty: !s.officer.examPenalty, examReadyMs: 0 } }))}
+          >
+            진급 심사 탈락 대기: {state.officer.examPenalty ? '켜짐(6시간)' : '꺼짐(바로 재도전)'}
+          </button>
           <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 계급의 진급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 진급 심사를 보세요.'))}>
             🎖️ 진급 조건 채우기
           </button>
