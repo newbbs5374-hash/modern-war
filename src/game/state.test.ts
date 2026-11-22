@@ -7,12 +7,13 @@ import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } f
 const HOUR = 60 * 60 * 1000;
 
 describe('세계 데이터', () => {
-  it('나라 13개, 도시 3~4개, 대륙 5개 안', () => {
+  it('나라 13개, 도시 2~10개(모티브 면적), 대륙 5개 안', () => {
     expect(COUNTRIES).toHaveLength(13);
     for (const c of COUNTRIES) {
-      expect(c.cities.length).toBeGreaterThanOrEqual(3);
-      expect(c.cities.length).toBeLessThanOrEqual(4);
+      expect(c.cities.length).toBeGreaterThanOrEqual(2);
+      expect(c.cities.length).toBeLessThanOrEqual(10);
     }
+    expect(COUNTRIES.find((c) => c.id === 'ru')!.cities).toHaveLength(10);
     expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(5);
   });
   it('시작 구도', () => {

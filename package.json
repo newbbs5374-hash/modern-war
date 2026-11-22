@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "sim": "vitest run --config sim/vitest.config.ts --silent=false"
+    "sim": "vitest run --config sim/vitest.config.ts --silent=false",
+    "hexmap": "OUT=docs/hexmap.svg vitest run --config sim/vitest.config.ts sim/hex.test.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

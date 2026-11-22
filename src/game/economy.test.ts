@@ -88,7 +88,7 @@ describe('내정', () => {
     const { economy: _e, ...rest } = s;
     void _e;
     const loaded = parseSave(JSON.stringify({ ...rest, version: 3 }));
-    expect(loaded?.version).toBe(5);
+    expect(loaded?.version).toBe(6);
     expect(loaded?.economy.facilities.산업.level).toBe(1);
     expect(loaded?.officer.training).toBeNull();
   });
@@ -124,7 +124,7 @@ describe('승리', () => {
     const { CITIES } = await import('../data/cities');
     let s = newGame('t', 'kr', 0, { seed: 9 });
     const owner = { ...s.world.owner };
-    for (const c of CITIES.slice(0, 20)) owner[c.id] = 'kr';
+    for (const c of CITIES.slice(0, 30)) owner[c.id] = 'kr';
     s = { ...s, world: { ...s.world, owner } };
     expect(victoryProgress(s).mine).toBeGreaterThanOrEqual(20);
     expect(checkVictory(s).ending).toBeNull(); // 아직 총사령관 아님

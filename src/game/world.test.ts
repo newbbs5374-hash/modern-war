@@ -63,7 +63,7 @@ describe('세계 움직이기', () => {
     void _w;
     const old = JSON.stringify({ ...rest, version: 1, worldMs: 5 * 3600e3 });
     const loaded = parseSave(old);
-    expect(loaded?.version).toBe(5);
+    expect(loaded?.version).toBe(6);
     expect(loaded?.world.nextTickMs).toBeGreaterThan(5 * 3600e3);
     expect(loaded?.player.name).toBe('대장');
   });

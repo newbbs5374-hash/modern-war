@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES } from '../data/cities';
-import { BLOCS, CONTINENTS, COUNTRIES, HOLY_CITY, MAP_SIZE, countryById, type Relation } from '../data/world';
+import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from '../data/world';
+import { EDGE_DIR, HEX_DIRS, HEX_SIZE, HOLY_HEX, MAP_BOUNDS, PIONEER_ISLANDS, TILES, TILE_AT, disk, hexCorners, hexKey, pixelToHex, seaNear } from '../data/hexmap';
 import { isAlive, relationOf, type WorldState } from '../game/world';
 import { Carrier, Escort, Jet } from './units';
 
@@ -25,73 +26,69 @@ interface Props {
   mini?: boolean;
 }
 
-const Y0 = 40;
-const { w: MW, h: MH } = MAP_SIZE;
+const B = MAP_BOUNDS;
+const X0 = B.x;
+const Y0 = B.y;
+const MW = B.w;
+const MH = B.h;
 
 function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return h >>> 0;
 }
-function rng(seed: number) {
-  let a = seed || 1;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
-/** 네모 대륙을 들쭉날쭉한 섬 모양으로(둥근 네모 둘레 + 흔들림) */
-function islandPath(id: string, x: number, y: number, w: number, h: number): string {
-  const r = rng(hash(id));
-  const pad = 7;
-  const cx = x + w / 2;
-  const cy = y + h / 2;
-  const ax = w / 2 + pad;
-  const ay = h / 2 + pad;
-  const n = 48;
-  const pts: string[] = [];
-  for (let i = 0; i < n; i++) {
-    const t = (i / n) * Math.PI * 2;
-    // 초타원(네모에 가까운 둥근 모양)
-    const c = Math.cos(t);
-    const s = Math.sin(t);
-    const k = 0.35;
-    const px = cx + ax * Math.sign(c) * Math.abs(c) ** k;
-    const py = cy + ay * Math.sign(s) * Math.abs(s) ** k;
-    const j = (r() - 0.5) * 9;
-    pts.push(`${(px + c * j).toFixed(1)},${(py + s * j).toFixed(1)}`);
-  }
-  return `M${pts.join(' L')}Z`;
-}
+const polyPath = (x: number, y: number) =>
+  'M' +
+  hexCorners(x, y)
+    .map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`)
+    .join('L') +
+  'Z';
+/** 장소(도시·섬)마다 육각형을 모은 경로 하나(그림 수를 줄여 휴대폰에서도 가볍게) */
+const PLACE_PATH: Record<string, string> = {};
+for (const t of TILES) PLACE_PATH[t.place] = (PLACE_PATH[t.place] ?? '') + polyPath(t.x, t.y);
+const CITY_PLACES = CITIES.map((c) => c.id);
+/** 바다 무늬 한 칸(가로 √3·S × 세로 3·S)에 들어가는 육각형 테두리 */
+const HEX_PATTERN = (() => {
+  const w = HEX_SIZE * Math.sqrt(3);
+  const h = HEX_SIZE * 3;
+  return [
+    [0, 0],
+    [w, 0],
+    [w / 2, h / 2],
+    [0, h],
+    [w, h],
+  ]
+    .map(([x, y]) => polyPath(x, y))
+    .join('');
+})();
+/** 해안선: 땅 칸의 변 중 바다와 닿은 변 */
+const COAST = (() => {
+  let d = '';
+  for (const t of TILES)
+    hexCorners(t.x, t.y).forEach((p, i) => {
+      // 꼭짓점 i와 i+1 사이 변의 이웃 방향
+      const dir = HEX_DIRS[EDGE_DIR[i]];
+      if (!TILE_AT.has(hexKey(t.q + dir.q, t.r + dir.r))) {
+        const q2 = hexCorners(t.x, t.y)[(i + 1) % 6];
+        d += `M${p[0].toFixed(1)},${p[1].toFixed(1)}L${q2[0].toFixed(1)},${q2[1].toFixed(1)}`;
+      }
+    });
+  return d;
+})();
+/** 나라 이름 자리(그 나라 땅 한가운데) */
+const COUNTRY_LABEL = Object.fromEntries(
+  COUNTRIES.map((c) => {
+    const ts = TILES.filter((t) => t.home === c.id);
+    return [c.id, { x: ts.reduce((a, t) => a + t.x, 0) / ts.length, y: ts.reduce((a, t) => a + t.y, 0) / ts.length }];
+  }),
+);
 
-const ISLANDS = CONTINENTS.flatMap((ct) => ct.shapes.map((r, i) => ({ key: `${ct.id}${i}`, d: islandPath(ct.id + i, r.x, r.y, r.w, r.h) })));
-
-const onLand = (x: number, y: number) => CONTINENTS.some((ct) => ct.shapes.some((r) => x > r.x - 4 && x < r.x + r.w + 4 && y > r.y - 4 && y < r.y + r.h + 4));
-
-/** 나라 수도 앞바다(대륙 네모의 가장 가까운 변 바깥) */
-function seaPoint(id: string): { x: number; y: number; vertical: boolean } {
-  const c = countryById(id);
-  const cap = CITIES.find((x) => x.home === id && x.capital)!;
-  const ct = CONTINENTS.find((x) => x.id === c.continent)!;
-  const r = ct.shapes.reduce((best, s) => {
-    const inS = cap.x >= s.x && cap.x <= s.x + s.w && cap.y >= s.y && cap.y <= s.y + s.h;
-    return inS ? s : best;
-  }, ct.shapes[0]);
-  const out = 24;
-  const sides = [
-    { d: cap.x - r.x, x: r.x - out, y: cap.y, vertical: true },
-    { d: r.x + r.w - cap.x, x: r.x + r.w + out, y: cap.y, vertical: true },
-    { d: cap.y - r.y, x: cap.x, y: r.y - out, vertical: false },
-    { d: r.y + r.h - cap.y, x: cap.x, y: r.y + r.h + out, vertical: false },
-  ].filter((s) => s.x > 8 && s.x < MW - 8 && s.y > Y0 + 8 && s.y < Y0 + MH - 8 && !onLand(s.x, s.y));
-  sides.sort((a, b) => a.d - b.d);
-  const s = sides[0] ?? { x: cap.x, y: cap.y + 30, vertical: false };
-  return { x: s.x, y: s.y, vertical: s.vertical };
-}
-const SEA = Object.fromEntries(COUNTRIES.map((c) => [c.id, seaPoint(c.id)]));
+const onLand = (x: number, y: number) => {
+  const h = pixelToHex(x, y);
+  return disk(h, 1).some((n) => TILE_AT.has(hexKey(n.q, n.r)));
+};
+const SEA = Object.fromEntries(COUNTRIES.map((c) => [c.id, { ...seaNear(c.id), vertical: false }]));
 
 /** 함대: 평시엔 앞바다 순찰, 전쟁이면 적 쪽으로 전진하고 전투기가 출격 */
 function Fleets({ world, colorOf }: { world: WorldState; colorOf: (id: string) => string }) {
@@ -188,7 +185,7 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
   // 화면 비율(가로/세로). 세로 화면이면 지도 높이에 맞추고 좌우로 끌어 봄
   const [ar, setAr] = useState(MW / MH);
   const kMin = Math.min(1, (MH * ar) / MW);
-  const capX = CITIES.find((c) => c.home === playerCountryId && c.capital)?.x ?? MW / 2;
+  const capX = (CITIES.find((c) => c.home === playerCountryId && c.capital)?.x ?? X0 + MW / 2) - X0;
   const [view, setView] = useState<View>({ k: 1, x: capX - (MH * (MW / MH)) / 2, y: 0 });
   const centered = useRef(false);
   useEffect(() => {
@@ -224,7 +221,7 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
     const m = svgRef.current?.getScreenCTM();
     if (!m) return { x: cx, y: cy };
     const p = new DOMPoint(cx, cy).matrixTransform(m.inverse());
-    return { x: p.x, y: p.y - Y0 };
+    return { x: p.x - X0, y: p.y - Y0 };
   };
   const zoomAt = (px: number, py: number, f: number, v: View) => {
     const k = Math.max(kMin, Math.min(MAX_K, v.k * f));
@@ -274,7 +271,27 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
   };
 
   const cv = clamp(view);
-  const vb = mini ? `0 ${Y0} ${MW} ${MH}` : `${cv.x.toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
+  const vb = mini ? `${X0} ${Y0} ${MW} ${MH}` : `${(X0 + cv.x).toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
+  const owner = world.owner;
+  // 나라 경계: 옆 칸 주인이 다르면 선
+  const borders = useMemo(() => {
+    let d = '';
+    const own = (t: { kind: string; place: string; home: string }) => (t.kind === 'city' ? owner[t.place] : t.place);
+    for (const t of TILES) {
+      const o = own(t);
+      const cs = hexCorners(t.x, t.y);
+      for (let i = 0; i < 6; i++) {
+        const dir = HEX_DIRS[EDGE_DIR[i]];
+        const n = TILE_AT.get(hexKey(t.q + dir.q, t.r + dir.r));
+        if (n && own(n) !== o && (t.kind === 'city' || n.kind === 'city') && (EDGE_DIR[i] < 3)) {
+          const a = cs[i];
+          const b = cs[(i + 1) % 6];
+          d += `M${a[0].toFixed(1)},${a[1].toFixed(1)}L${b[0].toFixed(1)},${b[1].toFixed(1)}`;
+        }
+      }
+    }
+    return d;
+  }, [owner]);
 
   const svg = (
     <svg
@@ -294,84 +311,97 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
           <stop offset="0%" stopColor="#0f3a5c" />
           <stop offset="100%" stopColor="#071a2c" />
         </radialGradient>
+        {/* 바다 육각 칸(뾰족한 위). 가로 √3·S, 세로 3·S마다 되풀이 */}
+        <pattern id="wm-hexsea" width={HEX_SIZE * Math.sqrt(3)} height={HEX_SIZE * 3} patternUnits="userSpaceOnUse">
+          <path d={HEX_PATTERN} fill="none" stroke="#7cc4f0" strokeOpacity="0.09" strokeWidth="0.5" />
+        </pattern>
         <pattern id="wm-wave" width="26" height="14" patternUnits="userSpaceOnUse">
           <path d="M2,8 q4,-4 8,0 t8,0" fill="none" stroke="#5fa8d3" strokeOpacity="0.12" strokeWidth="0.8" />
         </pattern>
       </defs>
-      <rect x="0" y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
-      {!mini && <rect x="0" y={Y0} width={MW} height={MH} fill="url(#wm-wave)" className="wm-waves" />}
-      {/* 섬: 얕은 바다 → 모래 → 땅 */}
-      {ISLANDS.map((is) => (
-        <path key={`sh${is.key}`} d={is.d} fill="none" stroke="#1d5c80" strokeOpacity="0.55" strokeWidth="12" strokeLinejoin="round" />
+      <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
+      {!mini && <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-hexsea)" />}
+      {!mini && <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-wave)" className="wm-waves" />}
+      {/* 얕은 바다 → 모래 해안 → 땅 */}
+      <path d={COAST} fill="none" stroke="#1d5c80" strokeOpacity="0.6" strokeWidth="7" strokeLinecap="round" />
+      <path d={COAST} fill="none" stroke="#cdb77a" strokeWidth="1.6" strokeLinecap="round" />
+      {CITY_PLACES.map((id) => {
+        const home = id.split('-')[0];
+        const o = owner[id];
+        const sel = home === selectedId;
+        const alive = isAlive(world, home);
+        return (
+          <path
+            key={id}
+            d={PLACE_PATH[id]}
+            className="map-country"
+            fill={colorOf(o)}
+            fillOpacity={sel ? 0.75 : o === playerCountryId ? 0.62 : alive ? 0.48 : 0.25}
+            stroke="#0c1a2b"
+            strokeOpacity="0.35"
+            strokeWidth="0.4"
+            onClick={() => pick(home)}
+          />
+        );
+      })}
+      {PIONEER_ISLANDS.map((p) => (
+        <g key={p.id}>
+          <path d={PLACE_PATH[p.id]} fill="#cdb77a" fillOpacity="0.7" stroke="#0c1a2b" strokeOpacity="0.3" strokeWidth="0.4">
+            <title>
+              {p.name} · 주인 없는 개척 섬 · {p.res}
+            </title>
+          </path>
+          {!mini && (
+            <text x={p.x} y={p.y + HEX_SIZE * 5.6} textAnchor="middle" className="map-island">
+              {p.name}
+            </text>
+          )}
+        </g>
       ))}
-      {ISLANDS.map((is) => (
-        <path key={is.key} d={is.d} fill="#2a4733" stroke="#cdb77a" strokeWidth="2" strokeLinejoin="round" />
-      ))}
-      {CONTINENTS.map((ct) => (
-        <text key={ct.id} x={ct.label.x} y={ct.label.y} className="map-continent">
-          {ct.name}
+      <path d={PLACE_PATH.holy} fill="#fbbf24" fillOpacity="0.85">
+        <title>{HOLY_CITY.name}</title>
+      </path>
+      {/* 나라 경계(지금 주인 기준) */}
+      <path d={borders} fill="none" stroke="#f8fafc" strokeOpacity="0.85" strokeWidth="1.1" strokeLinecap="round" pointerEvents="none" />
+      {COUNTRIES.map((c) => (
+        <text
+          key={c.id}
+          x={COUNTRY_LABEL[c.id].x}
+          y={COUNTRY_LABEL[c.id].y}
+          textAnchor="middle"
+          className="map-label"
+          fontSize={mini ? 22 : 11}
+          opacity={isAlive(world, c.id) ? 1 : 0.4}
+        >
+          {c.id === playerCountryId ? '★ ' : ''}
+          {c.name}
         </text>
       ))}
-      {COUNTRIES.map((c) => {
-        const color = colorOf(c.id);
-        const mine = c.id === playerCountryId;
-        const sel = c.id === selectedId;
-        const alive = isAlive(world, c.id);
+      {CITIES.map((city) => {
+        const o = owner[city.id];
+        const occupied = o !== city.home;
         return (
-          <g key={c.id} className="map-country" onClick={() => pick(c.id)}>
-            {c.shapes.map((r, i) => (
-              <rect
-                key={i}
-                x={r.x}
-                y={r.y}
-                width={r.w}
-                height={r.h}
-                rx="8"
-                fill={color}
-                fillOpacity={!alive ? 0.06 : sel ? 0.5 : 0.24}
-                stroke={sel ? '#fff' : color}
-                strokeWidth={mine || sel ? 2.5 : 1.25}
-                strokeDasharray={alive ? undefined : '3 3'}
-              />
-            ))}
-            <text x={c.label.x} y={c.label.y} textAnchor="middle" className="map-label" fontSize={c.name.length > 4 ? 10.5 : 12}>
-              {mine ? '★ ' : ''}
-              {c.name}
-            </text>
+          <g key={city.id} className="map-city" onClick={() => pick(city.home)}>
+            <circle cx={city.x} cy={city.y} r={city.capital ? 3.8 : 2.8} fill={colorOf(o)} stroke={occupied ? '#fff' : '#0c1a2b'} strokeWidth={occupied ? 1.6 : 1} />
+            {!mini && (
+              <text x={city.x} y={city.y - 5} textAnchor="middle" className="map-cityname">
+                {city.capital ? '★' : ''}
+                {city.name}
+              </text>
+            )}
+            <title>
+              {city.name}
+              {city.capital ? '(수도)' : ''} · {COUNTRIES.find((c) => c.id === o)!.name}
+              {occupied ? ' 점령 중' : ''}
+            </title>
           </g>
         );
       })}
-      {CITIES.map((city) => {
-        const owner = world.owner[city.id];
-        const occupied = owner !== city.home;
-        return (
-          <circle
-            key={city.id}
-            className="map-city"
-            cx={city.x}
-            cy={city.y}
-            r={city.capital ? 3.6 : 2.6}
-            fill={colorOf(owner)}
-            stroke={occupied ? '#fff' : '#0c1a2b'}
-            strokeWidth={occupied ? 1.6 : 1}
-            onClick={() => pick(city.home)}
-          >
-            <title>
-              {city.name}
-              {city.capital ? '(수도)' : ''} · {COUNTRIES.find((c) => c.id === owner)!.name}
-              {occupied ? ' 점령 중' : ''}
-            </title>
-          </circle>
-        );
-      })}
-      <g>
-        <circle cx={HOLY_CITY.x} cy={HOLY_CITY.y} r="5" fill="#f59e0b">
-          {!mini && <animate attributeName="r" values="4;6;4" dur="3s" repeatCount="indefinite" />}
-        </circle>
-        <text x={HOLY_CITY.x} y={HOLY_CITY.y + 57} textAnchor="middle" className="map-continent">
+      {!mini && (
+        <text x={HOLY_HEX.x} y={HOLY_HEX.y + HEX_SIZE * 3.6} textAnchor="middle" className="map-island holy">
           {HOLY_CITY.name}
         </text>
-      </g>
+      )}
       {!mini && <Fleets world={world} colorOf={colorOf} />}
     </svg>
   );

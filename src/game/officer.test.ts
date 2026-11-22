@@ -131,7 +131,7 @@ describe('장교', () => {
     const { officer: _o, ...rest } = s;
     void _o;
     const loaded = parseSave(JSON.stringify({ ...rest, version: 2 }));
-    expect(loaded?.version).toBe(5);
+    expect(loaded?.version).toBe(6);
     expect(loaded?.officer.rivals.length).toBe(3);
   });
 });
