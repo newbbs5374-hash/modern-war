@@ -5,6 +5,7 @@ import { COUNTRIES } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { CITIES } from '../data/cities';
 import { AI_TICK_MS } from './balance';
+import { TEST_BOOSTS } from './boost';
 import { SAVE_VERSION, type GameState } from './state';
 import { newEconomy } from './economy';
 import { newWorld } from './world';
@@ -76,6 +77,7 @@ export function parseSave(text: string): GameState | null {
     if (!o.perfect) o.perfect = {};
     if (o.training === undefined) o.training = null;
     if (s.ending === undefined) s.ending = null;
+    if (typeof o.boosts !== 'number') o.boosts = TEST_BOOSTS; // 시험판: 옛 저장에도 가속권 지급
     return s;
   } catch {
     return null;

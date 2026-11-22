@@ -1,4 +1,5 @@
 // 나라 화면 탭: 전략 자원 · 내정 시설 · 병과 생산 · 무역, 그리고 병과 팝업(부대 화면과 같이 씀)
+import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { UNITS } from '../data/catalog';
 import { CHORE_EXP, ECON_RANK, FACILITIES, FACILITY_EFF, FACILITY_TEXT, RESOURCES, RES_ICON, SELL_RATE, TOP_RANK, UNIT_COST, specialCost, type Facility, type Res, type UnitCost } from '../data/economy';
@@ -112,6 +113,13 @@ export function FacilityCard({ state, actions }: ScreenProps) {
           </button>
         )}
       </div>
+      {chore && <BoostBar state={state} apply={actions.apply} target={{ kind: 'chore' }} />}
+      {FACILITIES.filter((f) => e.facilities[f].buildEndMs > state.worldMs).map((f) => (
+        <div key={f} className="promo-line">
+          <small>🏗️ {f} 공사</small>
+          <BoostBar state={state} apply={actions.apply} target={{ kind: 'build', fac: f }} compact />
+        </div>
+      ))}
       {!chore && !choreWhy && (
         <div className="buttons">
           {FACILITIES.map((f) => (
@@ -231,6 +239,7 @@ export function ProductionCard(props: ScreenProps) {
           </small>
           <Meter value={Math.max(0, state.worldMs - q.startMs)} max={q.endMs - q.startMs} tone="blue" />
           <small className="muted">{timeLeft(q.endMs - state.worldMs)}</small>
+          <BoostBar state={state} apply={props.actions.apply} target={{ kind: 'queue', id: q.id }} compact />
         </div>
       ))}
       <div className="tiles c5" style={{ marginTop: 6 }}>
