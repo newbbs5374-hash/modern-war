@@ -102,7 +102,8 @@ describe('5단계 훈련·대전투', () => {
     const r = finishTraining(s, { win: true, stars: 3, auto: true });
     expect(r.result.ok && r.result.stars).toBe(2);
     const l = finishTraining(startTraining(r.state, '체력'), { win: false, stars: 0, auto: false });
-    expect(l.result.ok && l.result.gains.체력).toBe(0.5);
+    expect(l.result.ok && l.result.exp.체력).toBe(10);
+    expect(l.result.ok && l.result.gains.체력).toBe(0);
   });
   it('대전투: 준장부터, 전쟁 중인 나라 도시, 이기면 점령', () => {
     let s = setRank(war(newGame('t', 'kr', 0, { seed: 7 }), 'kr', 'kp'), 6);

@@ -151,8 +151,8 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
         return { state: r.state, out: r.result };
       });
       if (res?.ok) {
-        const gains = Object.entries(res.gains)
-          .map(([k, v]) => `${k} +${v}`)
+        const gains = Object.entries(res.exp)
+          .map(([k, v]) => `${k} 경험치 +${v}${res.gains[k as keyof typeof res.gains] ? ` (⬆️${state.officer.stats[k as keyof typeof state.officer.stats] + (res.gains[k as keyof typeof res.gains] ?? 0)})` : ''}`)
           .join(' · ');
         setClaimed(`${plan.training} 훈련 ${starText(res.stars)} · ${gains}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}${res.perk ? ` · 특기 "${res.perk}"!` : ''}`);
       } else setClaimed(res && !res.ok ? res.why : '');

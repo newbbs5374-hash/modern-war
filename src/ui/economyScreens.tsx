@@ -193,10 +193,10 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
             disabled={!!why}
             onClick={() => {
               actions.apply((s) => produce(s, name, special));
-              setMsg('생산 줄에 넣었어요.');
+              setMsg('모집을 시작했어요.');
             }}
           >
-            {why ?? `🛠️ 만들기 (${timeLeft(buildMs(state, name, special))})`}
+            {why ?? `🪖 모집 (${timeLeft(buildMs(state, name, special))})`}
           </button>
         </>
       }
@@ -212,7 +212,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
         <span>보유</span>
         <b>{state.economy.army[special ? me.specialUnit.name : name] ?? 0}부대</b>
         <span>열리는 계급</span>
-        <b>{RANKS[Math.max(info.rank, ECON_RANK)].name}</b>
+        <b>{RANKS[info.rank].name}</b>
       </div>
       <p className="small muted" style={{ marginTop: 6 }}>
         비용

@@ -74,3 +74,36 @@ export const CURRENCIES = [
   { id: 'boost', name: '가속권', icon: '🎫', where: '임무·심부름·생산 시간 30분 줄이기 · 시험판은 넉넉히 줌' },
   { id: 'ruby', name: '루비', icon: '💎', where: '시간 줄이기 (나중에 정함)' },
 ] as const;
+
+/** 부대 화면 분류: 1차 육·해·공 → 2차 세부(병과 15개 + 나라 특별 병과 = 16개) */
+export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; icon: string; groups: Array<{ name: string; icon: string; units: string[] }> }> = [
+  {
+    id: '육',
+    name: '육군',
+    icon: '🪖',
+    groups: [
+      { name: '보병', icon: '🪖', units: ['보병', '기갑병'] },
+      { name: '특수전', icon: '🥷', units: ['특수부대', '해킹부대'] },
+      { name: '기갑·화력', icon: '🛡️', units: ['전차', '포병', '방공부대'] },
+    ],
+  },
+  {
+    id: '해',
+    name: '해군',
+    icon: '⚓',
+    groups: [
+      { name: '수상함', icon: '🚢', units: ['구축함', '항공모함'] },
+      { name: '잠수함', icon: '🫧', units: ['잠수함'] },
+    ],
+  },
+  {
+    id: '공',
+    name: '공군',
+    icon: '✈️',
+    groups: [
+      { name: '무인기', icon: '🛸', units: ['무인드론'] },
+      { name: '항공기', icon: '✈️', units: ['공격헬기', '전투기', '폭격기'] },
+      { name: '미사일', icon: '🚀', units: ['미사일'] },
+    ],
+  },
+];

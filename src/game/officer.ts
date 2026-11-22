@@ -18,6 +18,11 @@ import {
   aideSlots,
   generalSlots,
   statCap,
+  statExpNeed,
+  TRAIN_EXP_PER_STAR,
+  TRAIN_EXP_LOSE,
+  MISSION_EXP_WIN,
+  MISSION_EXP_LOSE,
   type AideSpecialty,
   type MissionKind,
   type StatId,
@@ -129,7 +134,10 @@ export interface ActiveMission extends Mission {
 export interface OfficerState {
   seed: number;
   nextId: number;
+  /** 스탯(정수). 경험치가 다 차면 1씩 오름 */
   stats: Record<StatId, number>;
+  /** 스탯마다 모은 경험치(다음 1점까지) */
+  statExp?: Partial<Record<StatId, number>>;
   /** 이번 계급에서 모은 공훈 / 전체 공훈 */
   merit: number;
   totalMerit: number;
@@ -192,6 +200,7 @@ export function newOfficer(seed: number): OfficerState {
     seed: rng.seed,
     nextId: 1,
     stats,
+    statExp: {},
     merit: 0,
     totalMerit: 0,
     fame: 0,
@@ -291,7 +300,43 @@ export const TRAINING_STATS: Record<string, StatId[]> = {
 
 export type TrainResult =
   | { ok: false; why: string }
-  | { ok: true; stars: number; gains: Partial<Record<StatId, number>>; perk?: string; featured?: boolean; masteryUp?: number; record?: boolean };
+  | {
+      ok: true;
+      stars: number;
+      /** 오른 스탯 점수 */
+      gains: Partial<Record<StatId, number>>;
+      /** 받은 경험치 */
+      exp: Partial<Record<StatId, number>>;
+      perk?: string;
+      featured?: boolean;
+      masteryUp?: number;
+      record?: boolean;
+    };
+
+/** 다음 1점까지 모은 경험치 */
+export const statExpOf = (o: OfficerState, id: StatId) => o.statExp?.[id] ?? 0;
+
+/**
+ * 스탯 경험치 주기: 다 차면 스탯 +1(여러 번 오를 수 있음). 상한이면 경험치는 더 쌓이지 않음.
+ * 오른 점수를 돌려줌.
+ */
+export function gainStatExp(o: OfficerState, id: StatId, exp: number, cap: number): number {
+  const ex = (o.statExp ??= {});
+  const before = o.stats[id];
+  let v = Math.floor(before);
+  let e = (ex[id] ?? 0) + Math.max(0, exp);
+  while (v < cap && e >= statExpNeed(v)) {
+    e -= statExpNeed(v);
+    v++;
+  }
+  if (v >= cap) {
+    v = Math.max(v, Math.floor(before));
+    e = 0;
+  }
+  o.stats[id] = v;
+  ex[id] = Math.round(e * 10) / 10;
+  return v - Math.floor(before);
+}
 
 /** 숙련 단계: 같은 훈련을 이만큼 하면 1~5단계(단계마다 오르는 스탯 +10%) */
 export const MASTERY_AT = [0, 5, 15, 30, 60];
@@ -368,10 +413,10 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
     if (record) best[name] = stars;
     const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1);
     const gains: Partial<Record<StatId, number>> = {};
+    const exp: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
-      const before = o.stats[id];
-      o.stats[id] = Math.min(cap, before + (stars ? stars * 1.5 : 0.5) * mult);
-      gains[id] = Math.round((o.stats[id] - before) * 10) / 10;
+      exp[id] = Math.round((stars ? stars * TRAIN_EXP_PER_STAR : TRAIN_EXP_LOSE) * mult);
+      gains[id] = gainStatExp(o, id, exp[id]!, cap);
     }
     o.stars += stars;
     let perk: string | undefined;
@@ -394,7 +439,7 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
       ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops + 500 * stars } };
     }
     if (lvAfter > lvBefore) note(ns, `${name} 훈련 숙련 ${MASTERY_NAME[lvAfter - 1]}(${lvAfter}단계)! 오르는 스탯 +${(lvAfter - 1) * 10}%`);
-    result = { ok: true, stars, gains, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record };
+    result = { ok: true, stars, gains, exp, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record };
   });
   return { state, result };
 }
@@ -802,7 +847,7 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
     const merit = MISSION_MERIT * kindMult * a.difficulty * (1 + 0.3 * r) * (win ? starMult : 0.25);
     o.merit += merit;
     o.totalMerit += merit;
-    for (const id of info.stats) o.stats[id] = Math.min(cap, o.stats[id] + (win ? 1 : 0.3));
+    for (const id of info.stats) gainStatExp(o, id, win ? MISSION_EXP_WIN : MISSION_EXP_LOSE, cap);
     const c = cityById(a.city);
     if (win) {
       o.fame += a.kind === '구출' ? 6 : a.kind === '대전투' ? 15 : a.kind === '작전' ? 4 : 2;
