@@ -17,7 +17,10 @@ import { Chip, Help, Modal, Tabs, Tile, useTab } from './kit';
 import { UNIT_ICON } from './icons';
 import { FLAG } from './flag';
 import { fillPromotion, grantTestResources } from '../game/testgrant';
-import { HomeLand } from './HomeLand';
+import { HomeLand, cityStatus, type DayMode } from './HomeLand';
+import { cityById } from '../data/cities';
+import { CITY_RES, RES_ICON, type Res } from '../data/economy';
+import { CITY_DEFENSE_MAX } from '../game/balance';
 import { boostsOf } from '../game/boost';
 import { ECON_RANK } from '../data/economy';
 import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
@@ -67,6 +70,22 @@ export function HomeScreen(props: ScreenProps) {
   const promoPct = pc.lines.length ? Math.round((pc.lines.reduce((x, l) => x + Math.min(1, l.have / Math.max(1, l.need)), 0) / pc.lines.length) * 100) : 100;
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
   const [endingOpen, setEndingOpen] = useState(true);
+  const [cityPick, setCityPick] = useState<string | null>(null);
+  const [dayMode, setDayModeState] = useState<DayMode>(() => {
+    try {
+      return (localStorage.getItem('modern-war-day') as DayMode) || '자동';
+    } catch {
+      return '자동';
+    }
+  });
+  const setDayMode = (m: DayMode) => {
+    setDayModeState(m);
+    try {
+      localStorage.setItem('modern-war-day', m);
+    } catch {
+      /* 무시 */
+    }
+  };
   const goTab = (screen: Screen, key: string, tab: string) => {
     try {
       sessionStorage.setItem(`tab:${key}`, tab);
@@ -89,7 +108,8 @@ export function HomeScreen(props: ScreenProps) {
 
   return (
     <div className="home-stage">
-      <HomeLand countryId={me.id} world={state.world} />
+      <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} />
+      {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
 
       <div className="home-res">
         <Chip icon="💵" value={fmt(state.player.salary)} label="봉급" />
@@ -181,6 +201,37 @@ export function HomeScreen(props: ScreenProps) {
         </Modal>
       )}
     </div>
+  );
+}
+
+const STATUS_TEXT: Record<string, string> = {
+  평화: '🌤️ 평화로운 일상이에요. 시장과 도로가 붐벼요.',
+  전시: '🛡️ 나라는 전쟁 중이지만 이 도시는 아직 평온해요.',
+  공격받음: '🔥 적의 공격을 받고 있어요! 방어도가 떨어졌어요.',
+  점령당함: '🚩 적에게 빼앗겼어요. 대전투로 되찾을 수 있어요.',
+};
+
+/** 본부 지도에서 도시를 눌렀을 때 */
+function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string; atWar: boolean; onClose: () => void }) {
+  const c = cityById(id);
+  const owner = state.world.owner[id];
+  const st = cityStatus(c, state.world, state.player.countryId, atWar);
+  const def = Math.round(state.world.defense[id]);
+  const res = Object.entries(CITY_RES[c.name] ?? {}) as Array<[Res, number]>;
+  return (
+    <Modal title={c.name} icon={FLAG[owner]} onClose={onClose}>
+      <p className="small">{STATUS_TEXT[st]}</p>
+      <div className="tiles c3">
+        <Tile icon={c.capital ? '★' : '🏙️'} label={c.capital ? '수도' : '도시'} sub={countryById(owner).name} />
+        <Tile icon="🛡️" label={`방어도 ${def}`} sub={`최대 ${CITY_DEFENSE_MAX}`} tone={def < CITY_DEFENSE_MAX - 2 ? 'red' : 'green'} />
+        <Tile icon="⛏️" label="자원" sub={res.map(([r, n]) => `${RES_ICON[r]}${n}`).join(' ') || '없음'} />
+      </div>
+      {st === '점령당함' && (
+        <button className="primary wide-btn" onClick={() => go('ops')}>
+          🏙️ 작전 화면에서 되찾기
+        </button>
+      )}
+    </Modal>
   );
 }
 
