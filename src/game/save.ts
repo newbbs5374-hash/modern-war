@@ -6,6 +6,7 @@ import { RANKS } from '../data/ranks';
 import { CITIES } from '../data/cities';
 import { AI_TICK_MS } from './balance';
 import { SAVE_VERSION, type GameState } from './state';
+import { newEconomy } from './economy';
 import { newWorld } from './world';
 import { newOfficer } from './officer';
 
@@ -38,6 +39,17 @@ export function parseSave(text: string): GameState | null {
     // 2단계 저장(장교 정보 없음) → 소위 장교를 새로 만들고 계급은 그대로
     if (s.version === 2) {
       s.officer = newOfficer((s.lastRealTime * 7 + 13) >>> 0);
+      s.version = 3;
+    }
+    // 4단계까지 저장(훈련 미니게임·내정 없음) → 새 칸을 채움
+    if (s.version === 3) {
+      const o = s.officer as Partial<GameState['officer']>;
+      if (o) {
+        o.training = null;
+        o.grandReadyMs = 0;
+        o.perfect = {};
+      }
+      s.economy = newEconomy();
       s.version = SAVE_VERSION;
     }
     if (s.version !== SAVE_VERSION) return null;
@@ -58,6 +70,11 @@ export function parseSave(text: string): GameState | null {
       if (!n || typeof n.treasury !== 'number' || typeof n.troops !== 'number') return null;
     }
     if (typeof s.debugSkippedMs !== 'number') s.debugSkippedMs = 0;
+    const e = s.economy;
+    if (!e || !e.facilities || !e.stock || !Array.isArray(e.queue)) return null;
+    if (typeof o.grandReadyMs !== 'number') o.grandReadyMs = 0;
+    if (!o.perfect) o.perfect = {};
+    if (o.training === undefined) o.training = null;
     return s;
   } catch {
     return null;

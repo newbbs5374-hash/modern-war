@@ -23,8 +23,11 @@ import {
   startExam,
   startMission,
 } from '../game/officer';
-import { train } from '../game/officer';
-import { FRAME_NAMES, PRACTICE, battleOf, practiceSpec, setPractice } from '../battle/spec';
+import { PERKS, PERK_AT, canGrand, canTrain, grandTargets, startGrand, startTraining } from '../game/officer';
+import { FRAME_NAMES, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan, trainingScale } from '../battle/spec';
+import { GRAND_COOLDOWN_HOURS, GRAND_RANK, OPERATION_RANK } from '../data/officers';
+import { cityById } from '../data/cities';
+import { countryById } from '../data/world';
 import { Card, fmt, rankLock } from './common';
 import type { ScreenProps } from './screens';
 
@@ -64,14 +67,14 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
           </small>
           <Bar have={state.worldMs - a.startMs} need={a.endMs - a.startMs} />
           <small className="muted">
-            전투: {FRAME_NAMES[battleOf(a, state.player.rankIndex).frame]}
+            전투: {battleLabel(a, state.player.rankIndex)}
           </small>
           {state.worldMs >= a.endMs ? (
             <div className="buttons">
               <button
                 className="primary"
                 onClick={() => {
-                  setPractice(null);
+                  setPendingPlan(null);
                   go('battle');
                 }}
               >
@@ -268,7 +271,39 @@ export function OfficerScreen(props: ScreenProps) {
   );
 }
 
-/* ───────── 훈련(간이) ───────── */
+/* ───────── 대전투(준장부터): 도시 하나를 다섯 판으로 차지 ───────── */
+export function GrandCard({ state, actions }: ScreenProps) {
+  const rank = state.player.rankIndex;
+  if (rank < OPERATION_RANK) return null;
+  const why = canGrand(state);
+  const targets = rank >= GRAND_RANK ? grandTargets(state).slice(0, 4) : [];
+  return (
+    <Card title="대전투 · 도시 점령" right={<small className="muted">{rank >= GRAND_RANK ? `${GRAND_COOLDOWN_HOURS}시간마다` : '준장부터'}</small>}>
+      <p className="small muted">
+        방공망 해킹 → 외곽 포격 → 제공권 → 시가지 돌입 → 적 사령관 생포, 다섯 판을 이어 싸워요. 이기면 그 도시가 내 나라 땅이 돼요. 대위부터는 임무 게시판에 2~3판짜리 작전도 나와요.
+      </p>
+      {rank < GRAND_RANK ? (
+        <p className="small">{why}</p>
+      ) : why ? (
+        <p className="small">{why}</p>
+      ) : (
+        targets.map((id) => {
+          const c = cityById(id);
+          return (
+            <div key={id} className="row">
+              <span className="small">
+                {c.name} <span className="muted">({countryById(state.world.owner[id]).name} · 방어도 {Math.round(state.world.defense[id])})</span>
+              </span>
+              <button onClick={() => actions.apply((s) => startGrand(s, id))}>대전투 시작</button>
+            </div>
+          );
+        })
+      )}
+    </Card>
+  );
+}
+
+/* ───────── 훈련(미니게임 12개) ───────── */
 export function TrainingScreen({ state, actions, go }: ScreenProps) {
   const o = state.officer;
   const d = drillsNow(o, state.worldMs);
@@ -279,18 +314,29 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
       <Card title={`훈련 일정 ${d.count} / ${DRILL_MAX}`} right={<small className="muted">훈련 별 {o.stars}</small>}>
         <p className="small muted">
           {d.count < DRILL_MAX ? `다음 1개까지 ${timeLeft(d.nextInMs)}. ` : ''}실제 4시간마다 1개 차요. 같은 훈련은 하루
-          3번째부터 효과 절반. 지금은 별이 스탯으로 정해지는 간이 훈련이고, 5단계에서 미니게임으로 바뀌어요.
+          3번째부터 효과 절반. 훈련은 직접 하는 미니게임이에요. 자동·즉시완료를 쓰면 별은 최대 2개, 져도 스탯이 조금 올라요. 별 3개를 {PERK_AT}번 받으면 특기가 생겨요.
         </p>
         {msg && <p className="small result">{msg}</p>}
+        {o.training && (
+          <button
+            className="primary"
+            onClick={() => {
+              setPendingPlan(trainingPlan(o.training!.name, state.player.rankIndex, o.training!.seed));
+              go('battle');
+            }}
+          >
+            ▶ {o.training.name} 훈련 이어서 하기
+          </button>
+        )}
       </Card>
       <Card title="전투 연습장" right={<small className="muted">보상 없음</small>}>
-        <p className="small muted">전투 틀 5개를 마음대로 해 볼 수 있어요. 5단계에서 훈련 12개가 이 틀 위에서 돌아가요.</p>
+        <p className="small muted">임무에 나오는 전투를 보상 없이 연습해요. 훈련 12개도 같은 전투 틀 위에서 돌아가요.</p>
         <div className="buttons practice">
           {PRACTICE.map((x, i) => (
             <button
               key={x.label}
               onClick={() => {
-                setPractice(practiceSpec(i, (Date.now() & 0xffff) + i));
+                setPendingPlan(practicePlan(i, (Date.now() & 0xffff) + i));
                 go('battle');
               }}
             >
@@ -309,27 +355,27 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
               className={`tile ${lock ? 'locked' : ''}`}
               disabled={!!lock || d.count <= 0}
               onClick={() => {
-                const res = actions.applyWith((s) => {
-                  const r = train(s, t.name);
-                  return { state: r.state, out: r.result };
+                const why = canTrain(state, t.name);
+                if (why) return setMsg(why);
+                const ns = actions.applyWith((s) => {
+                  const r = startTraining(s, t.name);
+                  return { state: r, out: r.officer.training };
                 });
-                if (!res) return;
-                setMsg(
-                  res.ok
-                    ? `${t.name} 훈련 ${'★'.repeat(res.stars)}${'☆'.repeat(3 - res.stars)} · ${Object.entries(res.gains)
-                        .map(([k, v]) => `${k} +${v}`)
-                        .join(' · ')}`
-                    : res.why,
-                );
+                if (!ns) return;
+                setPendingPlan(trainingPlan(t.name, state.player.rankIndex, ns.seed));
+                go('battle');
               }}
             >
               <b>
                 {lock ? '🔒 ' : ''}
                 {t.name}
               </b>
-              <small>{t.frame}</small>
+              <small>{trainingScale(t.name, state.player.rankIndex) || t.frame}</small>
               <small className="muted">↑ {TRAINING_STATS[t.name].join('·')}</small>
-              <small className="muted">{lock ?? (n ? `오늘 ${n}번` : '바로 하기')}</small>
+              <small className="muted">
+                {lock ?? (n ? `오늘 ${n}번` : '바로 하기')}
+                {!lock && PERKS[t.name] ? ` · ★3 ${Math.min(PERK_AT, o.perfect[t.name] ?? 0)}/${PERK_AT}` : ''}
+              </small>
             </button>
           );
         })}

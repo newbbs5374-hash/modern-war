@@ -5,6 +5,7 @@ import { RANKS } from '../data/ranks';
 import { PERSONALITIES } from '../data/leaders';
 import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
+import { accrueEconomy, economyTick, industryMult, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
   AI_TICK_MS,
   BUDGET_PER_DAY_PER_POINT,
@@ -17,7 +18,7 @@ import {
   TROOP_ATTRITION_PER_DAY,
 } from './balance';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface NationState {
   /** 나라 금고(국방예산) */
@@ -48,6 +49,8 @@ export interface GameState {
   world: WorldState;
   /** 3단계: 장교 성장·임무·부관·장군·라이벌 */
   officer: OfficerState;
+  /** 6단계: 내 나라 내정(시설·자원·생산·무역) */
+  economy: EconomyState;
 }
 
 export interface NewGameOptions {
@@ -75,6 +78,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     debugSkippedMs: 0,
     world: newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS),
     officer: newOfficer(((opt.seed ?? now) * 7 + 13) >>> 0),
+    economy: newEconomy(),
   };
 }
 
@@ -90,7 +94,8 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId);
+  const ind = countryId === s.player.countryId ? industryMult(s.economy) : 1;
+  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
 export function troopsPerDay(s: GameState, countryId: string): number {
@@ -98,7 +103,8 @@ export function troopsPerDay(s: GameState, countryId: string): number {
     countryById(countryId).military *
     TROOPS_PER_DAY_PER_POINT *
     (TROOP_BONUS[countryId] ?? 1) *
-    incomeShare(s.world, countryId)
+    incomeShare(s.world, countryId) *
+    (countryId === s.player.countryId ? welfareMult(s.economy) : 1)
   );
 }
 
@@ -114,7 +120,8 @@ function accrue(s: GameState, ms: number): GameState {
     };
   }
   const pendingSalary = Math.min(pendingCap(s), s.player.pendingSalary + salaryPerDay(s) * days);
-  return { ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations };
+  const economy = accrueEconomy(s, ms);
+  return economyTick({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy });
 }
 
 /**

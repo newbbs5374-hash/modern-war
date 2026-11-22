@@ -11,6 +11,9 @@ import {
   PROMOTION,
   START_STAT,
   STAT_IDS,
+  GRAND_COOLDOWN_HOURS,
+  GRAND_RANK,
+  OPERATION_RANK,
   aideSlots,
   generalSlots,
   statCap,
@@ -19,11 +22,13 @@ import {
   type StatId,
 } from '../data/officers';
 import { TRAININGS } from '../data/catalog';
+import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { REAL_MS_PER_GAME_DAY } from './balance';
+import { CAPTURED_DEFENSE, REAL_MS_PER_GAME_DAY } from './balance';
 import { Rng } from './rng';
 import type { GameState } from './state';
+import { armyPower } from './economy';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
 
 const HOUR = 60 * 60 * 1000;
@@ -85,6 +90,8 @@ export interface Mission {
   difficulty: number;
   hours: number;
   exam?: boolean;
+  /** 작전 종류 번호(spec의 OPERATIONS) */
+  op?: number;
 }
 
 export interface ActiveMission extends Mission {
@@ -122,6 +129,12 @@ export interface OfficerState {
   dismissDeadlineMs: number | null;
   /** 총사령관 자리를 가진 라이벌 이름(없으면 null) */
   chiefRival: string | null;
+  /** 5단계: 지금 하고 있는 훈련(훈련 일정을 이미 씀) */
+  training: { name: string; seed: number } | null;
+  /** 다음 대전투를 열 수 있는 시각 */
+  grandReadyMs: number;
+  /** 훈련별 별 3개 받은 횟수(특기) */
+  perfect: Record<string, number>;
 }
 
 export function newOfficer(seed: number): OfficerState {
@@ -154,6 +167,9 @@ export function newOfficer(seed: number): OfficerState {
     rivals,
     dismissDeadlineMs: null,
     chiefRival: null,
+    training: null,
+    grandReadyMs: 0,
+    perfect: {},
   };
 }
 
@@ -162,7 +178,7 @@ export function newOfficer(seed: number): OfficerState {
 function withOfficer(s: GameState, f: (o: OfficerState, rng: Rng, s: GameState) => void): GameState {
   const o: OfficerState = structuredClone(s.officer);
   const rng = new Rng(o.seed);
-  const next: GameState = { ...s, officer: o, world: { ...s.world, events: [...s.world.events], defense: { ...s.world.defense } } };
+  const next: GameState = { ...s, officer: o, world: { ...s.world, events: [...s.world.events], defense: { ...s.world.defense }, owner: { ...s.world.owner } } };
   f(o, rng, next);
   o.seed = rng.seed;
   return next;
@@ -228,45 +244,100 @@ export const TRAINING_STATS: Record<string, StatId[]> = {
   해상: ['전술', '통솔'],
 };
 
-export type TrainResult = { ok: false; why: string } | { ok: true; stars: number; gains: Partial<Record<StatId, number>> };
+export type TrainResult = { ok: false; why: string } | { ok: true; stars: number; gains: Partial<Record<StatId, number>>; perk?: string };
 
-export function train(s: GameState, name: string): { state: GameState; result: TrainResult } {
+/** 훈련 별 3개를 이만큼 받으면 특기 */
+export const PERK_AT = 10;
+export const PERKS: Record<string, string> = {
+  잠입: '그림자 걸음',
+  사격: '명사수',
+  체력: '강철 체력',
+  포격: '포병 감각',
+  전술: '전장의 눈',
+  통솔: '타고난 지휘관',
+};
+
+export function canTrain(s: GameState, name: string): string | null {
   const t = TRAININGS.find((x) => x.name === name);
-  if (!t) return { state: s, result: { ok: false, why: '없는 훈련' } };
-  if (s.player.rankIndex < t.rank) return { state: s, result: { ok: false, why: `${rankName(t.rank)}부터 할 수 있어요` } };
-  if (drillsNow(s.officer, s.worldMs).count <= 0) return { state: s, result: { ok: false, why: '훈련 일정이 없어요' } };
+  if (!t) return '없는 훈련';
+  if (s.player.rankIndex < t.rank) return `${rankName(t.rank)}부터 할 수 있어요`;
+  if (s.officer.training) return `하던 ${s.officer.training.name} 훈련을 먼저 끝내세요`;
+  if (drillsNow(s.officer, s.worldMs).count <= 0) return '훈련 일정이 없어요';
+  return null;
+}
+
+/** 훈련 시작: 훈련 일정 1개를 씀. 전투 화면에서 끝나면 finishTraining */
+export function startTraining(s: GameState, name: string): GameState {
+  if (canTrain(s, name)) return s;
+  return withOfficer(s, (o, rng, ns) => {
+    useDrill(o, ns.worldMs);
+    o.training = { name, seed: Math.floor(rng.next() * 1e9) };
+  });
+}
+
+/**
+ * 훈련 결과 반영. auto(자동·즉시완료)면 별 최대 2개.
+ * 별이 많을수록 스탯이 더 오르고, 져도 조금은 오름. 같은 훈련은 하루 3번째부터 절반.
+ */
+export function finishTraining(s: GameState, outcome: { win: boolean; stars: number; auto: boolean }): { state: GameState; result: TrainResult } {
+  const cur = s.officer.training;
+  if (!cur) return { state: s, result: { ok: false, why: '하고 있는 훈련이 없어요' } };
+  const name = cur.name;
   let result: TrainResult = { ok: false, why: '' };
   const state = withOfficer(s, (o, rng, ns) => {
-    useDrill(o, ns.worldMs);
+    o.training = null;
     const day = Math.floor(ns.worldMs / REAL_MS_PER_GAME_DAY);
     if (o.trainDay !== day) {
       o.trainDay = day;
       o.trainCounts = {};
     }
     o.trainCounts[name] = (o.trainCounts[name] ?? 0) + 1;
+    const stars = outcome.win ? Math.min(outcome.auto ? 2 : 3, Math.max(1, outcome.stars)) : 0;
     const ids = TRAINING_STATS[name];
     const cap = statCap(ns.player.rankIndex);
-    const level = ids.reduce((a, id) => a + o.stats[id], 0) / ids.length / cap;
-    // 실력(스탯 비율)이 높을수록 별이 잘 나옴
-    const roll = rng.next() * 0.7 + level * 0.5;
-    const stars = roll > 0.85 ? 3 : roll > 0.45 ? 2 : 1;
     const tired = o.trainCounts[name] >= 3 ? 0.5 : 1;
     const gains: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
       const before = o.stats[id];
-      o.stats[id] = Math.min(cap, before + stars * 1.5 * tired);
+      o.stats[id] = Math.min(cap, before + (stars ? stars * 1.5 : 0.5) * tired);
       gains[id] = Math.round((o.stats[id] - before) * 10) / 10;
     }
     o.stars += stars;
+    let perk: string | undefined;
+    if (stars === 3) {
+      o.perfect[name] = (o.perfect[name] ?? 0) + 1;
+      if (o.perfect[name] === PERK_AT && PERKS[name]) {
+        perk = PERKS[name];
+        note(ns, `특기 "${perk}"을 얻었어요(${name} 별 3개 ${PERK_AT}번).`);
+      }
+    }
     // 모병 훈련 별 3개: 숨은 인재가 부관으로 합류(칸이 있으면)
-    if (name === '모병' && stars === 3 && o.aides.length < aideSlots(ns.player.rankIndex) && rng.chance(0.4)) {
+    if (name === '모병' && stars === 3 && o.aides.length < aideSlots(ns.player.rankIndex) && rng.chance(0.5)) {
       const a = makeAide(o, rng);
       o.aides.push(a);
       note(ns, `모병 훈련에서 숨은 인재 ${ga(a.name)} 부관으로 합류했어요(${a.specialty}).`);
     }
-    result = { ok: true, stars, gains };
+    // 모병 훈련은 나라 병력도 조금 보탬
+    if (name === '모병' && stars > 0) {
+      const me = ns.player.countryId;
+      ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops + 500 * stars } };
+    }
+    result = { ok: true, stars, gains, perk };
   });
   return { state, result };
+}
+
+/** 특기 효과(전투 보정) */
+export function perkBonus(o: OfficerState): Record<string, number> {
+  const has = (n: string) => (o.perfect[n] ?? 0) >= PERK_AT;
+  return {
+    은밀: has('잠입') ? 4 : 0,
+    사격: has('사격') ? 4 : 0,
+    체력: has('체력') ? 4 : 0,
+    포격: has('포격') ? 4 : 0,
+    전술: has('전술') ? 4 : 0,
+    통솔: has('통솔') ? 4 : 0,
+  };
 }
 
 // ── 부관 ──
@@ -343,8 +414,10 @@ function makeMission(o: OfficerState, rng: Rng, kind: MissionKind, city: string,
     정찰: `${c.name} 정찰`,
     호송: `${c.name} 보급 호송`,
     구출: `${c.name} 고립 부대 구출`,
+    작전: `${c.name} 작전`,
+    대전투: `${c.name} 점령 대전투`,
   };
-  return {
+  const m: Mission = {
     id: o.nextId++,
     kind,
     title: words[kind],
@@ -352,6 +425,19 @@ function makeMission(o: OfficerState, rng: Rng, kind: MissionKind, city: string,
     difficulty: Math.round(rng.range(0.8, 1.3 + rank * 0.01) * 100) / 100,
     hours: MISSION_KINDS[kind].hours,
   };
+  return m;
+}
+
+/** 작전 하나 만들기: 공격형은 적 도시, 지키는 작전은 우리 도시 */
+function makeOperation(o: OfficerState, rng: Rng, mine: string[], enemyCities: string[], rank: number): Mission | null {
+  const opIdx = Math.floor(rng.next() * OPERATIONS.length);
+  const op = OPERATIONS[opIdx];
+  const pool = op.attack ? enemyCities : mine;
+  if (!pool.length) return null;
+  const m = makeMission(o, rng, '작전', rng.pick(pool), rank);
+  m.op = opIdx;
+  m.title = `${cityById(m.city).name} ${op.name}`;
+  return m;
 }
 
 /** 임무 게시판: 지금 세계(우리 전쟁·도시)에 맞춰 3개 */
@@ -368,7 +454,9 @@ function buildBoard(s: GameState, o: OfficerState, rng: Rng): Mission[] {
   if (enemies.length && mine.length) {
     out.push(makeMission(o, rng, '방어', weakest ?? rng.pick(mine), r));
     out.push(makeMission(o, rng, '기습', rng.pick(near.length ? near : enemyCities), r));
-    {
+    const op = r >= OPERATION_RANK ? makeOperation(o, rng, mine, enemyCities, r) : null;
+    if (op) out.push(op);
+    else {
       const k = rng.pick(['정찰', '구출', '호송'] as MissionKind[]);
       out.push(makeMission(o, rng, k, k === '호송' ? rng.pick(mine) : rng.pick(enemyCities), r));
     }
@@ -521,15 +609,39 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
       }
       return;
     }
-    const merit = MISSION_MERIT * a.difficulty * (1 + 0.3 * r) * (win ? starMult : 0.25);
+    const kindMult = a.kind === '대전투' ? 4 : a.kind === '작전' ? 2.2 : 1;
+    const merit = MISSION_MERIT * kindMult * a.difficulty * (1 + 0.3 * r) * (win ? starMult : 0.25);
     o.merit += merit;
     o.totalMerit += merit;
     for (const id of info.stats) o.stats[id] = Math.min(cap, o.stats[id] + (win ? 1 : 0.3));
     const c = cityById(a.city);
     if (win) {
-      o.fame += a.kind === '구출' ? 6 : 2;
-      o.trust = Math.min(100, o.trust + 2);
+      o.fame += a.kind === '구출' ? 6 : a.kind === '대전투' ? 15 : a.kind === '작전' ? 4 : 2;
+      o.trust = Math.min(100, o.trust + (a.kind === '대전투' ? 8 : a.kind === '작전' ? 4 : 2));
       const w = ns.world;
+      const me = ns.player.countryId;
+      let extra = '';
+      if (a.kind === '작전') {
+        const op = OPERATIONS[(a.op ?? 0) % OPERATIONS.length];
+        if (w.owner[a.city] === me) {
+          w.defense[a.city] = Math.min(100, w.defense[a.city] + 40);
+          extra = `${c.name} 방어도 +40`;
+        } else {
+          w.defense[a.city] = Math.max(0, w.defense[a.city] - 45);
+          extra = `${c.name} 방어도 −45`;
+          if (w.defense[a.city] <= 0 && relationOf(w, me, w.owner[a.city]) === '전쟁') {
+            extra += ` · ${eul(c.name)} 점령했어요!`;
+            captureCity(ns, a.city);
+          }
+        }
+        extra = `${op.name} · ${extra}`;
+      }
+      if (a.kind === '대전투') {
+        if (w.owner[a.city] !== me) {
+          captureCity(ns, a.city);
+          extra = `${eul(c.name)} 점령했어요!`;
+        } else extra = `${c.name}는 이미 우리 도시예요`;
+      }
       if (a.kind === '방어') w.defense[a.city] = Math.min(100, w.defense[a.city] + 25);
       if (a.kind === '기습') w.defense[a.city] = Math.max(0, w.defense[a.city] - 20);
       if (a.kind === '정찰') o.intel += 10;
@@ -543,11 +655,17 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
         정찰: '정보 점수 +10',
         호송: '병력 +2%',
         구출: '명성 +6',
+        작전: extra,
+        대전투: extra,
       };
       text = `${a.title} 성공!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''} 공훈 +${Math.round(merit)} · ${effect[a.kind]}`;
     } else {
-      o.trust = Math.max(0, o.trust - 2);
-      text = `${a.title} 실패… 공훈 +${Math.round(merit)}`;
+      o.trust = Math.max(0, o.trust - (a.kind === '대전투' ? 5 : 2));
+      if (a.kind === '대전투') {
+        const me = ns.player.countryId;
+        ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops * 0.95 } };
+      }
+      text = `${a.title} 실패… 공훈 +${Math.round(merit)}${a.kind === '대전투' ? ' · 병력 −5%' : ''}`;
     }
     note(ns, text);
     // 성공한 임무에서 가끔 인재가 합류
@@ -558,6 +676,46 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
     }
   });
   return { state, text };
+}
+
+/** 도시를 우리 나라가 차지 */
+function captureCity(ns: GameState, city: string) {
+  const w = ns.world;
+  const me = ns.player.countryId;
+  const prev = w.owner[city];
+  w.owner[city] = me;
+  w.defense[city] = CAPTURED_DEFENSE;
+  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전)`, mine: true };
+  w.events.unshift(ev);
+}
+
+/** 대전투 시작(준장부터, 12시간마다): 전쟁 중인 나라의 도시 */
+export function grandTargets(s: GameState): string[] {
+  const me = s.player.countryId;
+  const w = s.world;
+  return CITIES.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁')
+    .map((c) => c.id)
+    .sort((a, b) => w.defense[a] - w.defense[b]);
+}
+export function canGrand(s: GameState): string | null {
+  if (s.player.rankIndex < GRAND_RANK) return `${rankName(GRAND_RANK)}부터 열려요`;
+  if (s.officer.active) return '다른 임무를 하는 중이에요';
+  if (s.worldMs < s.officer.grandReadyMs) return '다음 대전투를 준비하는 중이에요';
+  if (!grandTargets(s).length) return '전쟁 중인 나라가 없어요';
+  return null;
+}
+export function startGrand(s: GameState, city: string): GameState {
+  if (canGrand(s) || !grandTargets(s).includes(city)) return s;
+  return withOfficer(s, (o, rng, ns) => {
+    const m = makeMission(o, rng, '대전투', city, ns.player.rankIndex);
+    // 방어도가 높을수록 어려움
+    // 직접 만든 부대가 많을수록 쉬워짐(6단계 생산)
+    const army = Math.min(0.3, armyPower(ns) / 300);
+    m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
+    o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
+    o.grandReadyMs = ns.worldMs + GRAND_COOLDOWN_HOURS * HOUR;
+    o.board = [];
+  });
 }
 
 // ── 라이벌 ──

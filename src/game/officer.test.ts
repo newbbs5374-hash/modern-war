@@ -15,11 +15,17 @@ import {
   rivalRank,
   startExam,
   startMission,
-  train,
+  finishTraining,
+  startTraining,
 } from './officer';
 import { parseSave } from './save';
 
 const H = 3600e3;
+
+/** 훈련 시작 → 미니게임 결과(별 stars, 직접) 반영 */
+function train(s: GameState, name: string, stars = 2, auto = false) {
+  return finishTraining(startTraining(s, name), { win: stars > 0, stars, auto });
+}
 
 function finishMission(s: GameState): GameState {
   const s2 = advance(s, s.officer.active!.endMs - s.worldMs);
@@ -27,7 +33,7 @@ function finishMission(s: GameState): GameState {
 }
 
 describe('장교', () => {
-  it('간이 훈련: 일정 1개 쓰고 별·스탯이 오름, 일정은 4시간마다 1개 회복', () => {
+  it('훈련: 일정 1개 쓰고 별·스탯이 오름, 일정은 4시간마다 1개 회복', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     const r = train(s, '사격');
     expect(r.result.ok).toBe(true);
@@ -125,7 +131,7 @@ describe('장교', () => {
     const { officer: _o, ...rest } = s;
     void _o;
     const loaded = parseSave(JSON.stringify({ ...rest, version: 2 }));
-    expect(loaded?.version).toBe(3);
+    expect(loaded?.version).toBe(4);
     expect(loaded?.officer.rivals.length).toBe(3);
   });
 });
