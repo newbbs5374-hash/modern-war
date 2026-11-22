@@ -27,6 +27,7 @@ import { InteriorScreen } from './InteriorScreen';
 import { DiplomacyScreen } from './DiplomacyScreen';
 import { debugTalk } from '../game/talk';
 import { PortraitList } from './Portrait';
+import { FieldArtList } from './FieldArtList';
 
 export interface GameActions {
   claim: () => void;
@@ -569,6 +570,9 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
       </Card>
       <Card title="🖼️ 인물 사진 칸">
         <PortraitList />
+      </Card>
+      <Card title="🗺️ 지도 전투 그림 칸">
+        <FieldArtList />
       </Card>
     </>
   );

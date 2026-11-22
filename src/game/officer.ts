@@ -124,6 +124,8 @@ export interface Mission {
   exam?: boolean;
   /** 작전 종류 번호(spec의 OPERATIONS) */
   op?: number;
+  /** 대전투를 지도 위 전투로(아니면 다섯 판) */
+  field?: boolean;
 }
 
 export interface ActiveMission extends Mission {
@@ -938,13 +940,14 @@ export function canGrand(s: GameState): string | null {
   if (!grandTargets(s).length) return '전쟁 중인 나라가 없어요';
   return null;
 }
-export function startGrand(s: GameState, city: string): GameState {
+export function startGrand(s: GameState, city: string, field = true): GameState {
   if (canGrand(s) || !grandTargets(s).includes(city)) return s;
   return withOfficer(s, (o, rng, ns) => {
     const m = makeMission(o, rng, '대전투', city, ns.player.rankIndex);
     // 방어도가 높을수록 어려움
     // 직접 만든 부대가 많을수록 쉬워짐(6단계 생산)
     const army = Math.min(0.3, armyPower(ns) / 300);
+    m.field = field;
     m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
     // 지도자는 6시간마다
