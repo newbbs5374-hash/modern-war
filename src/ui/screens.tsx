@@ -49,7 +49,6 @@ export interface ScreenProps {
   go: (s: Screen) => void;
 }
 
-
 /* ───────── 본부(홈): 왼쪽 = 지도·임무·받기, 오른쪽 = 작은 버튼 줄 ───────── */
 export function HomeScreen(props: ScreenProps) {
   const { state, unread, actions, go } = props;
@@ -78,19 +77,20 @@ export function HomeScreen(props: ScreenProps) {
   const missionReady = !!a && state.worldMs >= a.endMs;
 
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
-  const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> = [
-    { icon: '🗺️', label: '작전본부', x: 90, y: 10, on: () => goTab('ops', 'ops', 'mission'), badge: !a || missionReady ? '!' : null, main: true },
-    { icon: '🎖️', label: '장교', x: 90, y: 23, on: () => goTab('officer', 'officer', 'stats'), badge: pc.ready ? '!' : null },
-    { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
-    { icon: '🎯', label: '훈련장', x: 90, y: 49, on: () => go('training'), badge: drills > 0 ? drills : null },
-    { icon: '🪖', label: '부대', x: 90, y: 62, on: () => go('forces') },
-    { icon: '🏛️', label: '정부', x: 90, y: 75, on: () => go('nation') },
-    { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
-    { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
-    { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
-    { icon: '🛒', label: '상점', x: 70, y: 87, on: () => go('shop'), locked: true },
-    { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
-  ];
+  const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
+    [
+      { icon: '🗺️', label: '작전본부', x: 90, y: 10, on: () => goTab('ops', 'ops', 'mission'), badge: !a || missionReady ? '!' : null, main: true },
+      { icon: '🎖️', label: '장교', x: 90, y: 23, on: () => goTab('officer', 'officer', 'stats'), badge: pc.ready ? '!' : null },
+      { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
+      { icon: '🎯', label: '훈련장', x: 90, y: 49, on: () => go('training'), badge: drills > 0 ? drills : null },
+      { icon: '🪖', label: '부대', x: 90, y: 62, on: () => go('forces') },
+      { icon: '🏛️', label: '정부', x: 90, y: 75, on: () => go('nation') },
+      { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
+      { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
+      { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
+      { icon: '🛒', label: '상점', x: 70, y: 87, on: () => go('shop'), locked: true },
+      { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
+    ];
 
   return (
     <div className="home-stage">
@@ -131,7 +131,9 @@ export function HomeScreen(props: ScreenProps) {
           <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => go('training')}>
             <span>📅</span>
             <span className="hq-main">
-              <b>훈련 일정 {drills}/{DRILL_MAX}</b>
+              <b>
+                훈련 일정 {drills}/{DRILL_MAX}
+              </b>
               <small>{drills > 0 ? '훈련할 수 있어요' : '일정이 차는 중'}</small>
             </span>
           </button>
@@ -157,19 +159,20 @@ export function HomeScreen(props: ScreenProps) {
         </div>
       </div>
 
-      {spots.map((sp) => (
-        <button
-          key={sp.label}
-          className={`bld ${sp.main ? 'main' : ''} ${sp.locked ? 'locked' : ''}`}
-          style={{ left: `${sp.x}%`, top: `${sp.y}%` }}
-          onClick={sp.locked ? undefined : sp.on}
-          aria-label={sp.label}
-        >
-          <span className="bld-ico">{sp.locked ? '🔒' : sp.icon}</span>
-          <small>{sp.label}</small>
-          {sp.badge != null && sp.badge !== 0 && !sp.locked && <i className="bld-badge">{sp.badge}</i>}
-        </button>
-      ))}
+      <div className="bld-col">
+        {spots.map((sp) => (
+          <button
+            key={sp.label}
+            className={`bld ${sp.main ? 'main' : ''} ${sp.locked ? 'locked' : ''}`}
+            onClick={sp.locked ? undefined : sp.on}
+            aria-label={sp.label}
+          >
+            <span className="bld-ico">{sp.locked ? '🔒' : sp.icon}</span>
+            <small>{sp.label}</small>
+            {sp.badge != null && sp.badge !== 0 && !sp.locked && <i className="bld-badge">{sp.badge}</i>}
+          </button>
+        ))}
+      </div>
 
       {latest && (
         <button className="home-news" onClick={() => go('herald')}>
@@ -326,15 +329,14 @@ export function ForcesScreen(props: ScreenProps) {
           </div>
           <Help title="부대">
             <p>병과 15개와 우리 나라 특별 병과예요. 눌러서 역할과 생산 비용을 봐요.</p>
-            <p>준장부터 국방예산과 전략 자원으로 부대를 만들 수 있어요. 만든 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요.</p>
+            <p>
+              준장부터 국방예산과 전략 자원으로 부대를 만들 수 있어요. 만든 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요.
+            </p>
           </Help>
         </div>
         {e.queue.length > 0 && (
           <div className="small" style={{ marginTop: 6 }}>
-            🔨 생산 중:{' '}
-            {e.queue
-              .map((q) => `${q.special ? me.specialUnit.name : q.unit}(${timeLeft(q.endMs - state.worldMs)})`)
-              .join(' · ')}
+            🔨 생산 중: {e.queue.map((q) => `${q.special ? me.specialUnit.name : q.unit}(${timeLeft(q.endMs - state.worldMs)})`).join(' · ')}
           </div>
         )}
       </section>
@@ -431,7 +433,9 @@ function AllNations({ state }: ScreenProps) {
             label={c.name}
             sub={`🏙️${citiesOf(state.world, c.id).length} · ${fmt(state.nations[c.id].troops / 1000)}k`}
             locked={!isAlive(state.world, c.id)}
-            tone={c.id === me ? 'gold' : relationOf(state.world, me, c.id) === '전쟁' ? 'red' : relationOf(state.world, me, c.id) === '연합' ? 'blue' : undefined}
+            tone={
+              c.id === me ? 'gold' : relationOf(state.world, me, c.id) === '전쟁' ? 'red' : relationOf(state.world, me, c.id) === '연합' ? 'blue' : undefined
+            }
             onClick={() => setSel(c.id)}
           />
         ))}
@@ -490,10 +494,12 @@ function DiplomacyCard({ state, actions }: ScreenProps) {
                     title={why ?? ''}
                     onClick={() => {
                       if (act === '선전포고' && !window.confirm(`${countryById(sel).name}에 선전포고할까요?`)) return;
-                      setMsg(actions.applyWith((s) => {
-                        const r = doDiplo(s, sel, act);
-                        return { state: r.state, out: r.text };
-                      }) ?? '');
+                      setMsg(
+                        actions.applyWith((s) => {
+                          const r = doDiplo(s, sel, act);
+                          return { state: r.state, out: r.text };
+                        }) ?? '',
+                      );
                     }}
                   >
                     {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : '🤝'} {act}
@@ -562,7 +568,14 @@ export function CodexScreen({ state }: ScreenProps) {
     <Card title="나라 도감 13개" icon="📖" help={<p>나라마다 특별 병과·특수 능력·신앙이 달라요. 이긴 나라는 첫 화면 명예의 전당에 남아요.</p>}>
       <div className="tiles c4">
         {COUNTRIES.map((c) => (
-          <Tile key={c.id} icon={FLAG[c.id]} label={c.name} sub={isAlive(state.world, c.id) ? c.difficulty : '도시 없음'} locked={!isAlive(state.world, c.id)} onClick={() => setSel(c.id)}>
+          <Tile
+            key={c.id}
+            icon={FLAG[c.id]}
+            label={c.name}
+            sub={isAlive(state.world, c.id) ? c.difficulty : '도시 없음'}
+            locked={!isAlive(state.world, c.id)}
+            onClick={() => setSel(c.id)}
+          >
             <i className="dot-bloc" style={{ background: BLOCS[c.bloc].color }} />
           </Tile>
         ))}
@@ -587,17 +600,10 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         <div className="buttons">
           <button onClick={() => (actions.save(), setMsg('저장했어요.'))}>지금 저장</button>
           <button onClick={() => (actions.load(), setMsg('마지막 저장을 불러왔어요.'))}>마지막 저장 불러오기</button>
-          <button
-            onClick={() => (
-              setCode(actions.exportCode()),
-              setMsg('아래 저장 코드를 복사해 두면 다른 기기에서도 이어할 수 있어요.')
-            )}
-          >
+          <button onClick={() => (setCode(actions.exportCode()), setMsg('아래 저장 코드를 복사해 두면 다른 기기에서도 이어할 수 있어요.'))}>
             저장 코드 만들기
           </button>
-          <button onClick={() => setMsg(actions.importCode(code) ?? '저장 코드로 불러왔어요.')}>
-            저장 코드로 불러오기
-          </button>
+          <button onClick={() => setMsg(actions.importCode(code) ?? '저장 코드로 불러왔어요.')}>저장 코드로 불러오기</button>
         </div>
         <textarea value={code} onChange={(e) => setCode(e.target.value)} placeholder="저장 코드" />
         {msg && <p className="small">{msg}</p>}
@@ -656,7 +662,13 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
                 return {
                   ...s,
                   nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 50000 } },
-                  economy: { ...s.economy, stock, facilities: Object.fromEntries(Object.entries(s.economy.facilities).map(([k, f]) => [k, { ...f, exp: f.exp + 500 }])) as typeof s.economy.facilities },
+                  economy: {
+                    ...s.economy,
+                    stock,
+                    facilities: Object.fromEntries(
+                      Object.entries(s.economy.facilities).map(([k, f]) => [k, { ...f, exp: f.exp + 500 }]),
+                    ) as typeof s.economy.facilities,
+                  },
                 };
               })
             }
@@ -664,7 +676,9 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             내정 시험(예산·자원·경험치 채우기)
           </button>
           <button onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, boosts: boostsOf(s) + 100 } }))}>🎫 가속권 +100</button>
-          <button onClick={() => actions.apply((s) => debugAddAide({ ...s, player: { ...s.player, salary: s.player.salary + 5000 } }))}>부관 데려오기 + 봉급 5000</button>
+          <button onClick={() => actions.apply((s) => debugAddAide({ ...s, player: { ...s.player, salary: s.player.salary + 5000 } }))}>
+            부관 데려오기 + 봉급 5000
+          </button>
         </div>
         <small>계급 바로 바꾸기 (진급 심사 없이)</small>
         <select value={state.player.rankIndex} onChange={(e) => actions.setRank(Number(e.target.value))}>
