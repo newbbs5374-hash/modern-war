@@ -473,3 +473,12 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 .cc-stat small { font-size: 10.5px; color: var(--muted); }
 .country-card .row b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .portrait .flag { width: 30px; height: 20px; }
+
+/* 아래 메뉴: 아이콘 + 이름만(배경·강조 칸 없음) */
+.bottom button, .bottom button.main, .bottom button.active { background: none; box-shadow: none; }
+.bottom .ico { font-size: 24px; filter: drop-shadow(0 1px 2px #000a); transition: transform 0.15s; }
+.bottom small { color: var(--muted); font-weight: 600; }
+.bottom button.main small { color: var(--muted); font-weight: 600; }
+.bottom button.active .ico { transform: scale(1.15); }
+.bottom button.active small { color: #fde68a; }
+.bottom button.locked { opacity: 0.45; }
