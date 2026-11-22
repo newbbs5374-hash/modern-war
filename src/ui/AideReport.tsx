@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { reportsOf } from '../game/report';
 import type { GameState } from '../game/state';
 import { AIDE_ICON } from './icons';
+import { Face, aideKeys } from './Portrait';
 
 export const REPORT_SHOW_MS = 6000;
 
@@ -22,7 +23,7 @@ export function AideReport({ state, onNext }: { state: GameState; onNext: () => 
   return (
     <div className="aide-report" role="status" aria-live="polite" key={r.id}>
       <span className="aide-face">
-        {aide ? AIDE_ICON[aide.specialty] : '🧑‍✈️'}
+        <Face keys={aideKeys(aide)} fallback={aide ? AIDE_ICON[aide.specialty] : '🧑‍✈️'} />
         <i>{r.icon}</i>
       </span>
       <button className="aide-bubble" onClick={onNext}>

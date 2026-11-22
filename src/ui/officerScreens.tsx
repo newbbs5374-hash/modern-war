@@ -55,6 +55,7 @@ import {
 import { AIDE_EFFECT } from '../battle/grid';
 import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan, trainingScale } from '../battle/spec';
 import { Card, fmt } from './common';
+import { Face, aideKeys } from './Portrait';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
 import { Chip, Help, Meter, Modal, Tabs, Tile, stars, useTab } from './kit';
@@ -292,7 +293,9 @@ export function OfficerScreen(props: ScreenProps) {
       )}
       <section className="card">
         <div className="hero">
-          <span className="avatar">{RANK_ICON[r]}</span>
+          <span className="avatar">
+            <Face keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+          </span>
           <div className="hero-main">
             <b>
               {RANKS[r].name} {state.player.name}
@@ -437,7 +440,7 @@ function AidesPanel({ state, actions }: ScreenProps) {
           return (
             <Tile
               key={a.id}
-              icon={AIDE_ICON[a.specialty]}
+              icon={<Face keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="tile-face" />}
               label={a.name}
               sub={`${a.specialty} · Lv.${a.level}`}
               badge={done ? '✓' : null}
@@ -491,7 +494,7 @@ function AideModal({
   const gWhy = canGift(state, a.id);
   const tWhy = canTrainAide(state, a.id);
   return (
-    <Modal title={`${a.name} 부관`} icon={AIDE_ICON[a.specialty]} onClose={onClose}>
+    <Modal title={`${a.name} 부관`} icon={<Face keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="modal-face" />} onClose={onClose}>
       <div className="ichips">
         <Chip icon="🏷️" value={a.specialty} />
         <Chip icon="⬆️" value={`Lv.${a.level}`} />

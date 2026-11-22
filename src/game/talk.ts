@@ -60,6 +60,8 @@ export interface Talk {
   who: string;
   speaker: string;
   icon: string;
+  /** 인물 사진 파일 이름(src/assets/portraits). 없으면 icon */
+  face?: string;
   text: string;
   choices: TalkChoice[];
   untilMs: number;
@@ -158,6 +160,7 @@ const MAKERS: Maker[] = [
       kind: '맞수 사절',
       who: x,
       speaker: leader(x),
+      face: `leader-${x}`,
       icon: '🧑‍⚖️',
       text: `"${what}은 우리가 먼저 찾았소. 당신네 함대가 물러나지 않으면, 우리도 가만있지 않겠소."`,
       choices: [
@@ -178,6 +181,7 @@ const MAKERS: Maker[] = [
       kind: '휴전 제의',
       who: x,
       speaker: `${nm(x)} 특사`,
+      face: 'envoy',
       icon: '🏳️',
       text: `"${leader(x)}께서 전하라 하셨소. 더 피를 흘릴 필요가 있겠소? 지금 멈추면 서로 살 수 있소."`,
       choices: [
@@ -203,6 +207,7 @@ const MAKERS: Maker[] = [
       kind: '지원 요청',
       who: y,
       speaker: leader(y),
+      face: `leader-${y}`,
       icon: '📨',
       text: `"${nm(z)}의 함대가 우리 섬을 노리고 있소. 동맹이라면 함께 싸워 주시오."`,
       choices: [
@@ -226,6 +231,7 @@ const MAKERS: Maker[] = [
       kind: '친선 사절',
       who: x,
       speaker: leader(x),
+      face: `leader-${x}`,
       icon: '🎁',
       text: `"새 바다에서 이웃끼리 다툴 필요가 없지요. 우리 ${nm(x)}과 더 가까워질 방법이 있을까요?"`,
       choices: [
@@ -245,6 +251,7 @@ const MAKERS: Maker[] = [
       kind: '휴전선 사건',
       who: x,
       speaker: '해안 경비대장',
+      face: 'coastguard',
       icon: '🚨',
       text: `"${nm(x)} 초계정이 휴전선을 넘어 총을 쐈습니다! 병사 둘이 다쳤습니다. 명령을 내려 주십시오."`,
       choices: [
@@ -265,6 +272,7 @@ const MAKERS: Maker[] = [
       kind: '시민',
       who: x,
       speaker: '개척민 대표',
+      face: 'settler',
       icon: '📢',
       text: `"우린 섬을 일구러 왔지 싸우러 온 게 아닙니다! ${gwa(nm(x))}의 전쟁을 멈춰 주세요!"`,
       choices: [
@@ -278,7 +286,8 @@ const MAKERS: Maker[] = [
   // 평화 시: 개척민·부관 이야기(언제나 가능)
   (s, rng) => {
     const o = s.officer;
-    const aide = o.aides.length ? `부관 ${rng.pick(o.aides).name}` : '당직 부관';
+    const who = o.aides.length ? rng.pick(o.aides) : null;
+    const aide = who ? `부관 ${who.name}` : '당직 부관';
     const xs = others(s).filter((id) => pairOf(s, id).rel !== '전쟁');
     const x = xs.length ? rng.pick(xs) : others(s)[0];
     if (!x) return null;
@@ -286,6 +295,7 @@ const MAKERS: Maker[] = [
       kind: '부관',
       who: x,
       speaker: aide,
+      face: who ? `aide-${who.name}` : 'aide',
       icon: '🧑‍✈️',
       text: `"${nm(x)} 쪽 개척선이 우리 앞바다에서 길을 잃었답니다. 어떻게 할까요?"`,
       choices: [
