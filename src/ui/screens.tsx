@@ -26,6 +26,8 @@ import { ECON_RANK } from '../data/economy';
 import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
+import { TalkModal } from './TalkModal';
+import { debugTalk } from '../game/talk';
 
 export interface GameActions {
   claim: () => void;
@@ -71,6 +73,8 @@ export function HomeScreen(props: ScreenProps) {
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
+  const [talkOpen, setTalkOpen] = useState(false);
+  const talks = state.officer.talks ?? [];
   const [dayMode, setDayModeState] = useState<DayMode>(() => {
     try {
       return (localStorage.getItem('modern-war-day') as DayMode) || '자동';
@@ -99,6 +103,7 @@ export function HomeScreen(props: ScreenProps) {
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
   const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
     [
+      { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
       { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
       { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
@@ -109,6 +114,7 @@ export function HomeScreen(props: ScreenProps) {
   return (
     <div className="home-stage">
       <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} />
+      {talkOpen && <TalkModal state={state} actions={actions} onClose={() => setTalkOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
 
       <div className="home-res">
@@ -127,6 +133,18 @@ export function HomeScreen(props: ScreenProps) {
 
         <div className="home-quests">
           <b className="hq-title">📌 주요 임무</b>
+          {talks.length > 0 && (
+            <button className="hq hot talk-hq" onClick={() => setTalkOpen(true)}>
+              <span>{talks[0].icon}</span>
+              <span className="hq-main">
+                <b>
+                  {talks[0].speaker}
+                  {talks.length > 1 ? ` 외 ${talks.length - 1}` : ''}
+                </b>
+                <small>💬 대화를 기다려요 · {timeLeft(talks[0].untilMs - state.worldMs)}</small>
+              </span>
+            </button>
+          )}
           <button className={`hq ${!a || missionReady ? 'hot' : ''}`} onClick={() => goTab('ops', 'ops', 'mission')}>
             <span>{a ? (missionReady ? '✅' : '⏳') : '🎯'}</span>
             <span className="hq-main">
@@ -673,6 +691,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           >
             진급 심사 탈락 대기: {state.officer.examPenalty ? '켜짐(6시간)' : '꺼짐(바로 재도전)'}
           </button>
+          <button className="gold" onClick={() => (actions.apply(debugTalk), setMsg('대화가 하나 왔어요. 본부의 💬 대화를 눌러 보세요.'))}>💬 대화 바로 받기</button>
           <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 계급의 진급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 진급 심사를 보세요.'))}>
             🎖️ 진급 조건 채우기
           </button>

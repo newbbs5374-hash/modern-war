@@ -57,12 +57,16 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
   const mine = countryById(me).name;
   let text: string;
   let trust = 0;
+  let fame = 0;
+  const promised = (s.officer.promises ?? []).some((x) => x.who === id && x.untilMs > s.worldMs);
   if (act === '선전포고') {
-    trust = p.rel === '휴전' ? -5 : 0;
+    trust = (p.rel === '휴전' ? -5 : 0) + (promised ? -10 : 0);
+    fame = promised ? -10 : 0;
+    const brokeTruce = p.rel === '휴전';
     p.rel = '전쟁';
     p.tension = 0;
     p.weariness = 0;
-    text = `${mine}, ${nm}에 선전포고했어요.${trust ? ' (휴전을 깨서 신뢰도 −5)' : ''}`;
+    text = `${mine}, ${nm}에 선전포고했어요.${brokeTruce ? ' (휴전을 깨서 신뢰도 −5)' : ''}${promised ? ' (불가침 약속을 깨서 신뢰 −10 · 명성 −10)' : ''}`;
   } else if (act === '휴전 제안') {
     if (ok) {
       p.rel = '휴전';
@@ -86,7 +90,7 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
     state: {
       ...s,
       world: { ...s.world, pairs, events: [ev, ...s.world.events] },
-      officer: { ...s.officer, diploReadyMs: s.worldMs + DIPLO_COOLDOWN_HOURS * H, trust: Math.max(0, Math.min(100, s.officer.trust + trust)) },
+      officer: { ...s.officer, fame: Math.max(0, s.officer.fame + fame), promises: act === '선전포고' ? (s.officer.promises ?? []).filter((x) => x.who !== id) : s.officer.promises, diploReadyMs: s.worldMs + DIPLO_COOLDOWN_HOURS * H, trust: Math.max(0, Math.min(100, s.officer.trust + trust)) },
     },
   };
 }

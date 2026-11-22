@@ -536,3 +536,30 @@ button.gold { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1b1
 @keyframes mw-blink { 0%, 60%, 100% { opacity: 0; } 70%, 90% { opacity: 1; } }
 .homeland .blink { animation: mw-blink 1.4s infinite; }
 @media (prefers-reduced-motion: reduce) { .homeland * { animation: none !important; } }
+
+/* 대화 */
+.mood { background: #0f1830; border: 1px solid #2a3a5c; border-radius: 10px; padding: 7px 9px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+.mood-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+.mood-bar { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #34d399 0 30%, #60a5fa 30% 60%, #f59e0b 60% 80%, #ef4444 80%); }
+.mood-bar span { position: absolute; top: -3px; width: 4px; height: 14px; margin-left: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 4px #000; }
+.talk-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.talk-tabs button { font-size: 12px; padding: 4px 8px; }
+.talk-tabs button.on { border-color: #fbbf24; color: #fde68a; }
+.talk-who { display: flex; gap: 8px; align-items: center; }
+.talk-who > span:last-child { display: flex; flex-direction: column; }
+.talk-face { font-size: 30px; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: #22335a; border: 2px solid #fbbf24; }
+.talk-text { background: #f8fafc; color: #111827; border-radius: 12px; padding: 9px 11px; margin: 8px 0; font-size: 14px; line-height: 1.5; position: relative; }
+.talk-text::before { content: ''; position: absolute; top: -7px; left: 18px; border: 7px solid transparent; border-top: 0; border-bottom-color: #f8fafc; }
+.talk-choices { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.talk-choice { display: flex; gap: 8px; align-items: center; text-align: left; padding: 7px 8px; }
+.talk-choice:disabled { opacity: 0.5; }
+.talk-att { display: flex; flex-direction: column; align-items: center; font-size: 20px; min-width: 34px; }
+.talk-att small { font-size: 10px; color: var(--muted); }
+.talk-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.talk-main b { font-size: 13.5px; }
+.talk-main small { font-size: 11px; color: var(--muted); }
+.talk-main small.warn { color: #fca5a5; }
+.talk-result { border-radius: 10px; padding: 7px 9px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.talk-result.ok { background: #064e3b; border: 1px solid #10b981; }
+.talk-result.bad { background: #4c1d1d; border: 1px solid #ef4444; }
+.talk-result small { color: #d1d5db; }
