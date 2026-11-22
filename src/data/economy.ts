@@ -5,6 +5,16 @@ import { UNITS } from './catalog';
 export const RESOURCES = ['강철', '석유', '알루미늄', '티타늄', '희토류', '리튬', '반도체'] as const;
 export type Res = (typeof RESOURCES)[number];
 export const RES_ICON: Record<Res, string> = { 강철: '🔩', 석유: '🛢️', 알루미늄: '🥫', 티타늄: '💠', 희토류: '🪨', 리튬: '🔋', 반도체: '💾' };
+/** 자원 설명 */
+export const RES_DESC: Record<Res, string> = {
+  강철: '배·전차·대포의 뼈대. 가장 많이 쓰는 기본 금속',
+  석유: '전차·비행기·배를 움직이는 연료',
+  알루미늄: '가볍고 단단해 비행기·드론 몸체에 씀',
+  티타늄: '열과 충격에 강한 고급 금속. 전투기·폭격기·미사일',
+  희토류: '레이더·유도장치에 드는 귀한 광물',
+  리튬: '전지 재료. 드론·잠수함 동력',
+  반도체: '모든 첨단 무기의 두뇌. 가장 비쌈',
+};
 /** 무역 기본 값(1개) */
 export const RES_PRICE: Record<Res, number> = { 강철: 40, 석유: 60, 알루미늄: 50, 티타늄: 120, 희토류: 150, 리튬: 110, 반도체: 200 };
 export type Stock = Record<Res, number>;
@@ -69,33 +79,63 @@ export function specialCost(base: string): UnitCost {
   return { money: Math.round(b.money * 1.5), res, hours: Math.ceil(b.hours * 1.3), power: Math.round(b.power * 1.7), troops: Math.round(b.troops * 1.2) };
 }
 
-/** 생산은 준장부터, 내정 일은 준장부터, 시설 올리기는 지도자부터(그전엔 경험치만) */
-export const ECON_RANK = 6;
+/** 생산·무역·내정 일은 처음부터(지도자로 시작). 예전 숫자는 시험·호환용으로 남김 */
+export const ECON_RANK = 0;
 export const TOP_RANK = 10;
 
 export const FACILITIES = ['산업', '인프라', '복지'] as const;
 export type Facility = (typeof FACILITIES)[number];
 export const FACILITY_TEXT: Record<Facility, string> = {
   산업: '국방예산과 자원이 더 많이 쌓임',
-  인프라: '병과 생산이 빨라짐',
-  복지: '모병(병력 증가)이 빨라짐',
+  인프라: '육·해·공 부대 모집이 빨라짐',
+  복지: '병력이 늘고, 덜 줄고, 점령지가 조용해짐',
 };
+
+/** 내정 시설 9개(분야마다 3개). 단계 1~5 */
+export const BUILDINGS = [
+  { id: '군수공장', fac: '산업', icon: '🏭', does: '국방예산 수입', unit: '예산' },
+  { id: '제련소', fac: '산업', icon: '🔥', does: '강철·알루미늄·티타늄 생산', unit: '금속' },
+  { id: '첨단공단', fac: '산업', icon: '🔬', does: '석유·희토류·리튬·반도체 생산', unit: '첨단' },
+  { id: '철도망', fac: '인프라', icon: '🚆', does: '육군 모집 속도', unit: '육군' },
+  { id: '군항', fac: '인프라', icon: '⚓', does: '해군 모집 속도', unit: '해군' },
+  { id: '공군기지', fac: '인프라', icon: '🛫', does: '공군 모집 속도', unit: '공군' },
+  { id: '징병소', fac: '복지', icon: '📝', does: '병력 증가', unit: '모병' },
+  { id: '군병원', fac: '복지', icon: '🏥', does: '병력 줄어듦 감소', unit: '감소' },
+  { id: '치안청', fac: '복지', icon: '🚓', does: '점령지 반란 감소', unit: '반란' },
+] as const;
+export type BuildingId = (typeof BUILDINGS)[number]['id'];
+export const BUILDING_IDS = BUILDINGS.map((b) => b.id) as BuildingId[];
+export const buildingInfo = (id: BuildingId) => BUILDINGS.find((b) => b.id === id)!;
+/** 금속 자원은 제련소, 나머지는 첨단공단 */
+export const RES_BUILDING: Record<Res, BuildingId> = { 강철: '제련소', 알루미늄: '제련소', 티타늄: '제련소', 석유: '첨단공단', 희토류: '첨단공단', 리튬: '첨단공단', 반도체: '첨단공단' };
+
 /** 단계(1~5)마다 효과 */
 export const FACILITY_EFF = [0, 0.15, 0.35, 0.6, 1.0];
-/** 다음 단계로 올리는 데 필요한 경험치·예산·시간(인덱스 = 지금 단계) */
-export const UPGRADE_EXP = [0, 100, 250, 500, 900];
+/** 시설을 다음 단계로 올리는 데 필요한 분야 경험치·예산·시간(인덱스 = 지금 단계) */
+export const UPGRADE_EXP = [0, 60, 150, 300, 600];
 export const UPGRADE_MONEY = [0, 2000, 5000, 12000, 25000];
-export const UPGRADE_HOURS = [0, 2, 4, 8, 12];
-/** 시설 경험치: 가만히 있어도 실제 1시간에 이만큼 */
+export const UPGRADE_HOURS = [0, 1, 3, 6, 10];
+/** 지도자 등급마다 올릴 수 있는 최고 단계: 1등급 2단계 … */
+export const buildingMaxLevel = (rank: number) => Math.min(5, 2 + Math.floor(rank / 3));
+/** 분야 경험치: 가만히 있어도 실제 1시간에 이만큼 */
 export const PASSIVE_EXP_PER_HOUR = 2;
-/** 내정 일 1개: 실제 1시간, 경험치 */
+/** 내정 업무 1개: 실제 1시간, 분야 경험치 + 그 시설 특별 가동(버프) */
 export const CHORE_HOURS = 1;
 export const CHORE_EXP = 30;
-export const CHORES: Record<Facility, string[]> = {
-  산업: ['공장 생산 라인 점검', '수출 계약 협상', '자원 광산 시찰'],
-  인프라: ['철도 보수 지시', '항만 확장 회의', '전력망 복구'],
-  복지: ['군 가족 지원', '부상병 병원 방문', '징병소 개선'],
+export const BUFF_HOURS = 6;
+export const BUFF_EFF = 0.2;
+export const CHORES: Record<BuildingId, string> = {
+  군수공장: '방산 수출 계약 협상',
+  제련소: '용광로 증설 독려',
+  첨단공단: '연구소 인재 영입',
+  철도망: '군용 철도 보수',
+  군항: '부두 확장 회의',
+  공군기지: '활주로 정비',
+  징병소: '모병 홍보 순회',
+  군병원: '부상병 병원 방문',
+  치안청: '점령지 순찰 강화',
 };
+
 /** 점령한 도시는 자원이 절반만 남 */
 export const OCCUPIED_RES = 0.5;
 /** 무역: 상대 지도자 성향에 따른 값 배율 */

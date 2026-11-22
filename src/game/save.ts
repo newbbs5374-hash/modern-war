@@ -8,7 +8,7 @@ import { AI_TICK_MS } from './balance';
 import { firstTestGrant } from './testgrant';
 import { TEST_BOOSTS } from './boost';
 import { SAVE_VERSION, type GameState } from './state';
-import { newEconomy } from './economy';
+import { newBuildings, newEconomy } from './economy';
 import { newWorld } from './world';
 import { newOfficer } from './officer';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
@@ -75,6 +75,8 @@ export function parseSave(text: string): GameState | null {
     if (typeof s.debugSkippedMs !== 'number') s.debugSkippedMs = 0;
     const e = s.economy;
     if (!e || !e.facilities || !e.stock || !Array.isArray(e.queue)) return null;
+    // 내정 시설 9개(옛 저장): 분야 단계를 그대로 물려받음
+    if (!e.buildings) e.buildings = newBuildings(e.facilities);
     if (typeof o.grandReadyMs !== 'number') o.grandReadyMs = 0;
     if (!o.perfect) o.perfect = {};
     if (o.training === undefined) o.training = null;

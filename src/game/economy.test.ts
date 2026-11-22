@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { advance, budgetPerDay, newGame, setRank, troopsPerDay, type GameState } from './state';
-import { canProduce, canTrade, canUpgrade, claimChore, produce, resPerDay, startChore, trade, tradePartners, upgradeFacility } from './economy';
+import { addContract, buildMs, canProduce, canTrade, canUpgrade, cancelContract, claimChore, produce, producesOf, resPerDay, startChore, trade, tradePartners, upgradeFacility } from './economy';
 import { claimMission, finishTraining, grandTargets, startGrand, startTraining } from './officer';
 import { parseSave } from './save';
 
@@ -23,31 +23,52 @@ describe('내정', () => {
     const w = { ...s.world, owner: { ...s.world.owner, 'jp-0': 'kr' } };
     expect(resPerDay({ ...s, world: w }).반도체).toBe(4); // 도쿄 2 × 0.5
   });
-  it('준장 전에는 잠김, 준장부터 내정 일 → 경험치, 지도자가 되면 시설 올리기', () => {
+  it('내정 업무 → 분야 경험치 + 시설 특별 가동, 시설 올리기는 등급마다 최고 단계', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 2 }));
-    expect(canUpgrade(s, '산업')).not.toBeNull();
-    expect(startChore(s, '산업')).toBe(s);
-    s = setRank(s, 6);
-    s = startChore(s, '산업');
+    expect(canUpgrade(s, '군수공장')).toMatch(/경험치/);
+    s = startChore(s, '군수공장');
     expect(s.economy.chore?.fac).toBe('산업');
+    const b0 = budgetPerDay(s, 'kr');
     s = claimChore(advance(s, H));
     expect(s.economy.facilities.산업.exp).toBeGreaterThanOrEqual(30);
-    s = advance(s, 40 * H); // 가만히 있어도 경험치
-    expect(canUpgrade(s, '산업')).toMatch(/지도자/);
-    s = setRank(s, 10);
+    expect(budgetPerDay(s, 'kr')).toBeGreaterThan(b0); // 특별 가동 +20%
+    s = advance(s, 7 * H); // 특별 가동 끝
+    s = { ...s, economy: { ...s.economy, facilities: { ...s.economy.facilities, 산업: { ...s.economy.facilities.산업, exp: 5000 } } } };
     const before = budgetPerDay(s, 'kr');
-    s = upgradeFacility(s, '산업');
-    expect(s.economy.facilities.산업.buildEndMs).toBeGreaterThan(0);
+    s = upgradeFacility(s, '군수공장');
+    expect(s.economy.buildings.군수공장.buildEndMs).toBeGreaterThan(0);
     s = advance(s, 2 * H);
-    expect(s.economy.facilities.산업.level).toBe(2);
+    expect(s.economy.buildings.군수공장.level).toBe(2);
     expect(budgetPerDay(s, 'kr')).toBeGreaterThan(before);
-    s = { ...s, economy: { ...s.economy, facilities: { ...s.economy.facilities, 산업: { level: 5, exp: 9999, buildEndMs: 0 } } } };
-    expect(canUpgrade(s, '산업')).toBe('최고 단계');
+    expect(canUpgrade(s, '군수공장')).toMatch(/부터 더 올려요/); // 1등급은 2단계까지
+    s = setRank(s, 10);
+    expect(canUpgrade(s, '군수공장')).toBeNull();
+    s = { ...s, economy: { ...s.economy, buildings: { ...s.economy.buildings, 군수공장: { level: 5, buildEndMs: 0, buffEndMs: 0 } } } };
+    expect(canUpgrade(s, '군수공장')).toBe('최고 단계');
   });
-  it('복지는 모병을 늘림', () => {
+  it('징병소는 모병을 늘리고, 철도망은 육군 모집만 빠르게', () => {
     const s = newGame('t', 'kr', 0, { seed: 2 });
-    const s2 = { ...s, economy: { ...s.economy, facilities: { ...s.economy.facilities, 복지: { level: 5, exp: 0, buildEndMs: 0 } } } };
+    const s2 = { ...s, economy: { ...s.economy, buildings: { ...s.economy.buildings, 징병소: { level: 5, buildEndMs: 0, buffEndMs: 0 }, 철도망: { level: 5, buildEndMs: 0, buffEndMs: 0 } } } };
     expect(troopsPerDay(s2, 'kr')).toBeCloseTo(troopsPerDay(s, 'kr') * 2, 5);
+    expect(buildMs(s2, '보병', false)).toBeCloseTo(buildMs(s, '보병', false) / 2, 5);
+    expect(buildMs(s2, '구축함', false)).toBeCloseTo(buildMs(s, '구축함', false), 5);
+  });
+  it('정기 무역 계약: 매시간 수입, 전쟁이 나면 멈춤', () => {
+    let s = rich(newGame('t', 'kr', 0, { seed: 9 }));
+    const partner = tradePartners(s).find((id) => producesOf(s, id).includes('석유'))!;
+    s = addContract(s, partner, '석유', 5, true);
+    expect(s.economy.contracts?.length).toBe(1);
+    const oil = s.economy.stock.석유;
+    const money = s.nations.kr.treasury;
+    s = advance(s, 2 * H);
+    expect(s.economy.stock.석유 - oil).toBeGreaterThan(9.9);
+    expect(s.nations.kr.treasury).toBeLessThan(money + budgetPerDay(s, 'kr') * 2);
+    s = war(s, 'kr', partner);
+    const oil2 = s.economy.stock.석유;
+    s = advance(s, 1 * H);
+    expect(s.economy.stock.석유 - oil2).toBeCloseTo(resPerDay(s).석유, 3);
+    s = cancelContract(s, s.economy.contracts![0].id);
+    expect(s.economy.contracts?.length).toBe(0);
   });
   it('생산: 예산·자원을 쓰고 시간이 지나면 부대·병력이 늘어남, 인프라가 빠르게', () => {
     let s = rich(setRank(newGame('t', 'kr', 0, { seed: 3 }), 6));
@@ -90,6 +111,7 @@ describe('내정', () => {
     const loaded = parseSave(JSON.stringify({ ...rest, version: 3 }));
     expect(loaded?.version).toBe(6);
     expect(loaded?.economy.facilities.산업.level).toBe(1);
+    expect(loaded?.economy.buildings.제련소.level).toBe(1);
     expect(loaded?.officer.training).toBeNull();
   });
 });

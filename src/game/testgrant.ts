@@ -13,7 +13,11 @@ export function grantTestResources(s: GameState): GameState {
     ...s,
     player: { ...s.player, salary: s.player.salary + 200_000 },
     nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 2_000_000, troops: s.nations[me].troops + 300_000 } },
-    economy: { ...s.economy, stock },
+    economy: {
+      ...s.economy,
+      stock,
+      facilities: Object.fromEntries(Object.entries(s.economy.facilities).map(([k, f]) => [k, { ...f, exp: f.exp + 1000 }])) as GameState['economy']['facilities'],
+    },
     officer: {
       ...s.officer,
       boosts: (s.officer.boosts ?? 0) + 300,
