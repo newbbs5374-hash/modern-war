@@ -1,4 +1,4 @@
-// 가상 AI 지도자(실제 정치인 이름·얼굴은 쓰지 않음). 성향은 기본값이고, 새 게임에서 "무작위"를 고를 수 있다.
+// 가상 AI 지도자(나라 이름·도시처럼 모두 가상). 성향은 기본값이고, 새 게임에서 "무작위"를 고를 수 있다.
 
 export type Personality = '공격형' | '방어형' | '경제형' | '기회주의';
 
@@ -22,19 +22,19 @@ export const PERSONALITIES: Record<Personality, PersonalityInfo> = {
 };
 
 export const LEADERS: Record<string, { name: string; title: string; personality: Personality }> = {
-  us: { name: '엘리엇 브랜트', title: '대통령', personality: '공격형' },
-  cn: { name: '량원쉬', title: '주석', personality: '경제형' },
-  ru: { name: '볼코프 아르템', title: '대통령', personality: '공격형' },
-  de: { name: '마렌 크뤼거', title: '총리', personality: '방어형' },
-  jp: { name: '시노하라 레이지', title: '총리', personality: '방어형' },
-  uk: { name: '헨리 애슈크로프트', title: '총리', personality: '기회주의' },
-  in: { name: '아르준 메라', title: '총리', personality: '경제형' },
-  kr: { name: '서지환', title: '대통령', personality: '방어형' },
-  tr: { name: '케렘 아스란', title: '대통령', personality: '기회주의' },
-  il: { name: '다니엘 오르벡', title: '총리', personality: '공격형' },
-  ir: { name: '대신관 파르자드', title: '최고 지도자', personality: '공격형' },
-  ua: { name: '올레나 코브추크', title: '대통령', personality: '방어형' },
-  kp: { name: '림철웅', title: '위원장', personality: '공격형' },
+  us: { name: '케일럽 스톤웰', title: '대통령', personality: '공격형' },
+  cn: { name: '룽톈하오', title: '주석', personality: '경제형' },
+  ru: { name: '드미트란 볼스키', title: '대통령', personality: '공격형' },
+  de: { name: '하겐 아이젠라트', title: '총리', personality: '방어형' },
+  jp: { name: '아마기 소우겐', title: '총리', personality: '방어형' },
+  uk: { name: '에드윈 그레이번', title: '총리', personality: '기회주의' },
+  in: { name: '비크람 라자단', title: '총리', personality: '경제형' },
+  kr: { name: '한도윤', title: '대통령', personality: '방어형' },
+  tr: { name: '볼칸 카라테페', title: '대통령', personality: '기회주의' },
+  il: { name: '아브넬 하리시', title: '총리', personality: '공격형' },
+  ir: { name: '대신관 다리우센', title: '최고 지도자', personality: '공격형' },
+  ua: { name: '야리나 졸로타', title: '대통령', personality: '방어형' },
+  kp: { name: '강철명', title: '위원장', personality: '공격형' },
 };
 
 export const PERSONALITY_LIST = Object.keys(PERSONALITIES) as Personality[];

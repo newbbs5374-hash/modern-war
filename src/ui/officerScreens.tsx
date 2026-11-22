@@ -53,7 +53,8 @@ import {
 import { AIDE_EFFECT } from '../battle/grid';
 import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan, trainingScale } from '../battle/spec';
 import { Card, fmt } from './common';
-import { AIDE_ICON, FLAG, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
+import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
+import { FLAG } from './flag';
 import { Chip, Help, Meter, Modal, Tabs, Tile, stars, useTab } from './kit';
 import type { ScreenProps } from './screens';
 

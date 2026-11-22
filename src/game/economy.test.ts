@@ -11,7 +11,7 @@ describe('내정', () => {
   it('내 도시에서 자원이 쌓이고, 점령 도시는 절반', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     const per = resPerDay(s);
-    expect(per.반도체).toBe(3); // 서울 2 + 대전 1
+    expect(per.반도체).toBe(3); // 한빛 2 + 별가람 1
     s = advance(s, 2 * H);
     expect(s.economy.stock.반도체).toBeCloseTo(6, 5);
     const w = { ...s.world, owner: { ...s.world.owner, 'jp-0': 'kr' } };

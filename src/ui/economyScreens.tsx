@@ -25,7 +25,8 @@ import {
 import { relationOf } from '../game/world';
 import { Card, fmt } from './common';
 import { timeLeft } from './officerScreens';
-import { FACILITY_ICON, FLAG, UNIT_ICON } from './icons';
+import { FACILITY_ICON, UNIT_ICON } from './icons';
+import { FLAG } from './flag';
 import { Chip, Meter, Modal, Tile } from './kit';
 import type { ScreenProps } from './screens';
 

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { BLOCS, COUNTRIES } from '../data/world';
 import { HallList } from './victoryScreens';
+import { Flag } from './flag';
+import { LEADERS } from '../data/leaders';
 
 interface Props {
   onStart: (name: string, countryId: string, randomLeaders: boolean) => void;
@@ -37,15 +39,26 @@ export function StartScreen({ onStart, onImport }: Props) {
             onClick={() => setPick(c.id)}
           >
             <div className="row">
+              <Flag id={c.id} size={1.2} />
               <b>{c.name}</b>
               <span className={`diff diff-${c.difficulty.replace(' ', '')}`}>{c.difficulty}</span>
             </div>
-            <div className="muted small">{BLOCS[c.bloc].name}</div>
-            <div className="small">
-              경제 {c.economy} · 예산 {c.budget} · 군사 {c.military}
-              {c.estimated ? ' (추정)' : ''}
+            <div className="muted small">
+              {BLOCS[c.bloc].name} · {LEADERS[c.id].title} {LEADERS[c.id].name}
             </div>
-            <div className="small">특별 병과: {c.specialUnit.name}</div>
+            {(['경제', '예산', '군사'] as const).map((k) => {
+              const v = k === '경제' ? c.economy : k === '예산' ? c.budget : c.military;
+              return (
+                <div key={k} className="cc-stat">
+                  <small>{k}</small>
+                  <span className="bar">
+                    <span className="bar-fill" style={{ width: `${v}%` }} />
+                  </span>
+                </div>
+              );
+            })}
+            <div className="small">⭐ {c.ability.name}</div>
+            <div className="small muted">🪖 {c.specialUnit.name}</div>
           </button>
         ))}
       </div>

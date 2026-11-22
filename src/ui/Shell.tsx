@@ -5,6 +5,7 @@ import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
 import { gameClock, type GameState } from '../game/state';
 import { fmt } from './common';
+import { Flag } from './flag';
 import { NAV, SCREEN_TITLES, type Screen } from './nav';
 
 interface Props {
@@ -53,7 +54,7 @@ export function Shell({ state, screen, speed, go, back, children }: Props) {
       <header className="top">
         {screen === 'home' ? (
           <button className="who" onClick={() => go('officer')}>
-            <span className="portrait">{me.name.slice(0, 1)}</span>
+            <span className="portrait"><Flag id={me.id} /></span>
             <span>
               <b>
                 {rank.name} {state.player.name}
