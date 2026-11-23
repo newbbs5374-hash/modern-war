@@ -69,7 +69,7 @@ export function MinIcon({ id, size = 30 }: { id: MinistryId; size?: number }) {
   return url ? <img className="cab-min-art" src={url} alt="" draggable={false} style={{ width: size, height: size }} /> : <>{ministryById(id).icon}</>;
 }
 
-export function PersonFace({ p, size = 36 }: { p: Person; size?: number }) {
+export function PersonFace({ p, size = 44 }: { p: Person; size?: number }) {
   const url = personFaceUrl(lookOf(p), p.sex, p.age, p.id);
   return (
     <span className="cab-face" style={{ width: size, height: size, fontSize: size * 0.55 }}>
@@ -387,7 +387,7 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
             return (
               <button key={id} className="cab-min" onClick={() => setOpen(id)}>
                 <span className="cab-min-ico">
-                  <MinIcon id={id} size={34} />
+                  <MinIcon id={id} size={54} />
                   {mn && <span className="cab-min-face"><PersonFace p={mn} size={18} /></span>}
                 </span>
                 <span className="cab-main">
