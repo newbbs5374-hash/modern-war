@@ -24,6 +24,7 @@ import { CountryInfo, RelTag, TensionBar, fmt } from './common';
 import { FLAG, Flag } from './flag';
 import { Chip, Help, Modal, Tabs, useTab } from './kit';
 import { timeLeft } from './officerScreens';
+import { FieldBar } from './PresUI';
 import type { ScreenProps } from './screens';
 import { civOf } from '../game/civ';
 import { AgreePanel, CouncilPanel, FavorBox, IslandPanel } from './CivScreens';
@@ -38,6 +39,7 @@ export function DiplomacyScreen(props: ScreenProps) {
   const civ = civOf(props.state);
   return (
     <>
+      <FieldBar state={props.state} field="diplo" />
       <Tabs
         value={tab}
         onChange={setTab}

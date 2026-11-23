@@ -133,7 +133,12 @@ export function summarizeAway(b: GameState, a: GameState, awayMs: number): AwayS
   for (const c of crises) rows.push({ icon: '⚡', label: '돌발 사건', value: c });
   const auto = ordersOf(a).log.slice(0, Math.max(0, (ordersOf(a).n ?? 0) - (ordersOf(b).n ?? 0))).slice(0, 3);
   for (const t of auto) rows.push({ icon: '📋', label: '미리 명령', value: t });
-  if (a.officer.trust !== b.officer.trust) rows.push({ icon: '🏛️', label: '의회 신뢰도', value: `${Math.round(b.officer.trust)} → ${Math.round(a.officer.trust)}`, tone: a.officer.trust >= b.officer.trust ? 'good' : 'bad' });
+  {
+    const pa = Math.round(a.pres?.approval ?? 50);
+    const pb = Math.round(b.pres?.approval ?? 50);
+    if (pa !== pb) rows.push({ icon: '🙂', label: '지지도', value: `${pb} → ${pa}`, tone: pa >= pb ? 'good' : 'bad' });
+  }
+  if (Math.round(a.officer.trust) !== Math.round(b.officer.trust)) rows.push({ icon: '🤝', label: '신뢰도', value: `${Math.round(b.officer.trust)} → ${Math.round(a.officer.trust)}`, tone: a.officer.trust >= b.officer.trust ? 'good' : 'bad' });
   const events = a.world.events.filter((e) => e.mine && e.t > b.worldMs).slice(0, 6).map((e) => e.text);
   return { hours: awayMs / 3600e3, rows, events };
 }

@@ -14,6 +14,7 @@ import { ShopScreen } from './ShopScreen';
 import { AidesPanel, GeneralsPanel, LeaderHero, RivalsPanel, StatsPanel, TrainingScreen } from './officerScreens';
 import { OpsScreen, type ScreenProps } from './screens';
 import { Tabs, useTab, type TabDef } from './kit';
+import { FieldBar } from './PresUI';
 import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
 
 /** 시설 15개를 효과가 닿는 분야로 나눔 */
@@ -51,6 +52,7 @@ export function PersonalScreen(props: ScreenProps) {
   const tab = pickTab(tabs, raw);
   return (
     <>
+      <FieldBar state={state} field="personal" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'profile' && (
         <>
@@ -84,6 +86,7 @@ export function DefenseScreen(props: ScreenProps) {
   const tab = pickTab(tabs, raw);
   return (
     <>
+      <FieldBar state={state} field="defense" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'ops' && <OpsScreen {...props} />}
       {tab === 'forces' && <ForcesScreen {...props} />}
@@ -112,6 +115,7 @@ export function SocietyScreen(props: ScreenProps) {
   const tab = pickTab(tabs, raw);
   return (
     <>
+      <FieldBar state={state} field="society" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'city' && <CityPanel {...props} />}
       {tab === 'gov' && <GovPanel {...props} />}
@@ -135,6 +139,7 @@ export function EconomyScreen(props: ScreenProps) {
   const tab = pickTab(tabs, raw);
   return (
     <>
+      <FieldBar state={props.state} field="economy" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'vault' && <TreasuryPanel {...props} />}
       {tab === 'res' && <ResourcePanel {...props} />}

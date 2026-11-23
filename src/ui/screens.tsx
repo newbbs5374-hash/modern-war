@@ -32,6 +32,8 @@ import { GUIDE, claimGuide, guideOf, guideStep, hideGuide, rewardText } from '..
 import { DiplomacyScreen } from './DiplomacyScreen';
 import { DefenseScreen, EconomyScreen, PersonalScreen, SocietyScreen } from './MainScreens';
 import { routeTo } from './nav';
+import { PresModal } from './PresUI';
+import { moodLabel, presOf } from '../game/approval';
 import { debugTalk } from '../game/talk';
 import { PortraitList } from './Portrait';
 import { FieldArtList, IconArtList } from './FieldArtList';
@@ -82,6 +84,7 @@ export function HomeScreen(props: ScreenProps) {
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
+  const [presOpen, setPresOpen] = useState(false);
   const [talkOpen, setTalkOpen] = useState(false);
   const [crisisOpen, setCrisisOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
@@ -131,10 +134,19 @@ export function HomeScreen(props: ScreenProps) {
       {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
       {ordersOpen && <OrdersModal state={state} apply={actions.apply} onClose={() => setOrdersOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
+      {presOpen && <PresModal state={state} onClose={() => setPresOpen(false)} />}
 
       <div className="home-res">
-        <Chip icon="💵" value={fmt(state.player.salary)} label="봉급" />
-        <Chip icon="🏅" value={fmt(state.officer.merit)} label="공훈" />
+        <button className={`ichip pres-chip ${moodLabel(presOf(state).approval).tone ?? ''}`} onClick={() => setPresOpen(true)} aria-label="지지도, 국정 현황 보기">
+          <span>🙂</span>
+          <b>{Math.round(presOf(state).approval)}</b>
+          <small>지지도{presOf(state).impeachMs !== null ? ' ⚠️' : ''}</small>
+        </button>
+        <button className={`ichip pres-chip ${moodLabel(state.officer.trust).tone ?? ''}`} onClick={() => setPresOpen(true)} aria-label="신뢰도, 국정 현황 보기">
+          <span>🤝</span>
+          <b>{Math.round(state.officer.trust)}</b>
+          <small>신뢰도{state.officer.dismissDeadlineMs !== null ? ' ⚠️' : ''}</small>
+        </button>
         <Chip icon="💰" value={fmt(n.treasury)} label="국방예산" />
         <Chip icon="🪖" value={fmt(n.troops)} label="병력" />
         <Chip icon="🏙️" value={citiesOf(state.world, me.id).length} label="도시" />

@@ -299,3 +299,30 @@ button.on { outline: 1px solid var(--amber); }
 .guide-hq .hq { width: 100%; border-color: #6cb8ff; }
 .guide-hq .hq small { white-space: normal; line-height: 1.3; }
 .guide-hide { position: absolute; top: 2px; right: 2px; padding: 0 5px; min-height: 0; font-size: 11px; background: transparent; border: 0; color: var(--muted); }
+
+/* ───────── 대통령식 내정: 지지도·신뢰도·분야 점수 ───────── */
+.field-bar { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 30px; padding: 3px 8px; margin: 0 0 6px; background: #08120c; border: 1px solid var(--hud-dim); color: var(--text); font-size: 12px; }
+.field-bar.warn { border-color: #ff5a4f; box-shadow: inset 0 0 8px #ff5a4f44; }
+.field-bar .fb-name { white-space: nowrap; font-weight: 700; }
+.field-bar .meter { flex: 1; min-width: 40px; }
+.field-bar .num { font-family: var(--num); min-width: 22px; text-align: right; }
+.field-bar .fb-mini { font-family: var(--num); white-space: nowrap; color: var(--muted); }
+.field-bar .fb-mini.red { color: #ff7a6f; }
+.field-bar .fb-mini.gold { color: var(--gold); }
+.field-bar .fb-mini.green { color: var(--hud); }
+.field-bar .fb-arrow { color: var(--hud); }
+.pres-gauge { margin: 4px 0 8px; }
+.pres-gauge .row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.pres-gauge.red b { color: #ff7a6f; }
+.pres-fields .fold summary { padding: 4px 0; }
+.pres-field-head { display: inline-flex; align-items: center; gap: 6px; width: calc(100% - 16px); }
+.pres-field-head .meter { flex: 1; }
+.pres-field-head .num { font-family: var(--num); min-width: 24px; text-align: right; color: var(--text); }
+.kv-list { list-style: none; padding: 0; margin: 2px 0 4px; font-size: 12px; }
+.kv-list li { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px dashed #1d4a3255; }
+.spark { display: block; margin: 2px 0 6px; background: #06100a; border: 1px solid var(--hud-dim); }
+.spark-line { stroke: var(--hud); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.spark-line-warn { stroke: #ff5a4f88; stroke-dasharray: 4 3; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.home-res .ichip.pres-chip { cursor: pointer; border-color: var(--hud); }
+.home-res .ichip.pres-chip.red { border-color: #ff5a4f; color: #ff7a6f; }
+.home-res .ichip.pres-chip.gold { border-color: var(--gold); color: var(--gold); }
