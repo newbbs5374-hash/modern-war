@@ -1,6 +1,6 @@
-# 실사 세계지도 그림
+# 세계지도 바탕 그림
 
-`world-map.png`(또는 .webp) 한 장을 이 폴더에 넣으면 세계지도 바탕이 그 그림으로 바뀌어요.
-- 크기 1536×1024(3:2). 땅 모양은 `npm run worldart` 로 만든 docs/worldart-guide.svg 와 같아야 해요.
-- 함대·전투기·국경·도시 점·이름은 게임이 그 위에 그려요.
-- 명령문: /mnt/project-files/guides/world-art-prompts.md
+`world-map.webp`: 실제 지구 위성 사진(NASA Blue Marble, 공개 자료. three.js 예제 텍스처 earth_day_4096.jpg에서 잘라 냄).
+- 잘라 낸 범위: 경도 -15°~300°(=서경 60°), 위도 5°~80°, 정거원통 투영, 1도 = 9px → 2835×675.
+- 게임 좌표(src/data/realGeo.ts)는 같은 범위, 1도 = 6px. 그림은 지도 크기에 맞춰 늘려 깔림.
+- 다른 그림으로 바꾸려면 같은 범위·같은 투영으로 만든 그림을 같은 이름으로 넣으면 돼요.

@@ -6,6 +6,7 @@
 // 배치는 정해진 규칙(목표 자리에 가장 가까운 빈 곳)으로 계산하므로 언제나 같은 결과가 나온다.
 import { COUNTRIES, type Country } from './world';
 import type { Res } from './economy';
+import { islandXY } from './realmap';
 
 export const HEX_SIZE = 5.2;
 const SQ3 = Math.sqrt(3);
@@ -279,7 +280,7 @@ function build() {
   for (const p of PIONEER_DEF) {
     const { c, tiles } = placeIsland(p.at, ISLAND_TILES);
     for (const t of tiles) put(t, { home: '', place: p.id, kind: 'island', center: t.q === c.q && t.r === c.r, continent: '' });
-    pioneers.push({ id: p.id, name: p.name, res: p.res, q: c.q, r: c.r, ...hexToPixel(c.q, c.r) });
+    pioneers.push({ id: p.id, name: p.name, res: p.res, q: c.q, r: c.r, ...islandXY(p.id) });
   }
   const tiles: Tile[] = [...owner.entries()].map(([k, v]) => {
     const [q, r] = k.split(',').map(Number);
@@ -292,7 +293,7 @@ function build() {
   const bounds = { x: Math.floor(Math.min(...xs) - M), y: Math.floor(Math.min(...ys) - M), w: 0, h: 0 };
   bounds.w = Math.ceil(Math.max(...xs) + M - bounds.x);
   bounds.h = Math.ceil(Math.max(...ys) + M - bounds.y);
-  return { tiles, centers, pioneers, holy: { q: holyC.q, r: holyC.r, ...hexToPixel(holyC.q, holyC.r) }, bounds };
+  return { tiles, centers, pioneers, holy: { q: holyC.q, r: holyC.r, ...islandXY('holy') }, bounds };
 }
 
 function ring(c: Hex, R: number): Hex[] {

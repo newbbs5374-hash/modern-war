@@ -7,25 +7,16 @@ import {
 } from "react";
 import { CITIES } from "../data/cities";
 import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from "../data/world";
+import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
 import {
-  EDGE_DIR,
-  HEX_DIRS,
-  HEX_SIZE,
-  HOLY_HEX,
-  MAP_BOUNDS,
-  WORLD_ART,
-  PIONEER_ISLANDS,
-  TILES,
-  TILE_AT,
-  disk,
-  hexCorners,
-  hexKey,
-  pixelToHex,
-  seaNear,
-} from "../data/hexmap";
+  GEO,
+  GEO_PATH,
+  isLand,
+  seaNearXY,
+  voronoiCells,
+} from "../data/realmap";
 import { isAlive, relationOf, type WorldState } from "../game/world";
 import { Carrier, Escort, Jet } from "./units";
-import { smoothPath, type Seg } from "./smoothHex";
 
 export type MapMode = "나라" | "관계" | "묶음";
 /** 나라마다 한눈에 구분되는 색(국경선 대신 색으로 영토를 보여 줌). 이웃끼리 겹치지 않게 고름 */
@@ -42,7 +33,7 @@ export const COUNTRY_COLORS: Record<string, string> = {
   il: "#38bdf8",
   ir: "#a16207",
   ua: "#84cc16",
-  kp: "#64748b",
+  kp: "#06b6d4",
 };
 
 export const REL_COLORS: Record<Relation | "나", string> = {
@@ -71,11 +62,10 @@ const ART_FILES = import.meta.glob(
 ) as Record<string, string>;
 const ART: string | undefined = Object.values(ART_FILES)[0];
 
-const B = MAP_BOUNDS;
-const X0 = B.x;
-const Y0 = B.y;
-const MW = B.w;
-const MH = B.h;
+const X0 = 0;
+const Y0 = 0;
+const MW = GEO.W;
+const MH = GEO.H;
 
 function hash(s: string): number {
   let h = 2166136261;
@@ -84,37 +74,7 @@ function hash(s: string): number {
   return h >>> 0;
 }
 
-const polyPath = (x: number, y: number) =>
-  "M" +
-  hexCorners(x, y)
-    .map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`)
-    .join("L") +
-  "Z";
-/** 장소(도시·섬)마다 육각형을 모은 경로 하나(그림 수를 줄여 휴대폰에서도 가볍게) */
-const PLACE_PATH: Record<string, string> = {};
-for (const t of TILES)
-  PLACE_PATH[t.place] = (PLACE_PATH[t.place] ?? "") + polyPath(t.x, t.y);
-const CITY_PLACES = CITIES.map((c) => c.id);
-/** 해안선: 땅 칸의 변 중 바다와 닿은 변(육각 그대로) */
-const COAST_SEGS: Seg[] = [];
-/** 장소마다 바다와 닿은 변(곡선 해안까지 색을 채우는 굵은 선) */
-const PLACE_COAST: Record<string, string> = {};
-for (const t of TILES) {
-  const cs = hexCorners(t.x, t.y);
-  cs.forEach((p, i) => {
-    const dir = HEX_DIRS[EDGE_DIR[i]];
-    if (!TILE_AT.has(hexKey(t.q + dir.q, t.r + dir.r))) {
-      const q2 = cs[(i + 1) % 6];
-      COAST_SEGS.push([p, q2]);
-      PLACE_COAST[t.place] =
-        (PLACE_COAST[t.place] ?? "") +
-        `M${p[0].toFixed(1)},${p[1].toFixed(1)}L${q2[0].toFixed(1)},${q2[1].toFixed(1)}`;
-    }
-  });
-}
-/** 화면에 그리는 해안선: 육각 계단 대신 둥근 곡선 */
-const COAST = smoothPath(COAST_SEGS, { relax: 14, wiggle: HEX_SIZE * 0.9 });
-const LAND_BASE = "#06140d";
+const LAND_BASE = "#1b2a24";
 /** 땅 색을 바탕색과 미리 섞어 불투명하게(겹쳐도 진해지지 않게) */
 function mixColor(hex: string, a: number): string {
   const n = (h: string, i: number) =>
@@ -123,26 +83,49 @@ function mixColor(hex: string, a: number): string {
     Math.round(n(hex, i) * a + n(LAND_BASE, i) * (1 - a));
   return `rgb(${c(0)},${c(1)},${c(2)})`;
 }
-/** 나라 이름 자리(그 나라 땅 한가운데) */
+/** 나라마다 도시 영역(실제 나라 모양 안에서 가장 가까운 도시 몫): 도시를 빼앗기면 그 영역 색이 바뀜 */
+const CELL_PATH: Record<string, string> = {};
+for (const c of COUNTRIES) {
+  const cells = voronoiCells(CITIES.filter((x) => x.home === c.id));
+  for (const [id, poly] of Object.entries(cells))
+    CELL_PATH[id] =
+      "M" +
+      poly.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L") +
+      "Z";
+}
+/** 나라 이름 자리: 수도 가까이(멀리 떨어진 섬 도시는 빼고) 도시들의 가운데 */
 const COUNTRY_LABEL = Object.fromEntries(
   COUNTRIES.map((c) => {
-    const ts = TILES.filter((t) => t.home === c.id);
+    const cap = CITIES.find((x) => x.home === c.id && x.capital)!;
+    const cs = CITIES.filter(
+      (x) =>
+        x.home === c.id && Math.hypot(x.x - cap.x, x.y - cap.y) < GEO.PX * 30,
+    );
     return [
       c.id,
       {
-        x: ts.reduce((a, t) => a + t.x, 0) / ts.length,
-        y: ts.reduce((a, t) => a + t.y, 0) / ts.length,
+        x: cs.reduce((a, t) => a + t.x, 0) / cs.length,
+        y: cs.reduce((a, t) => a + t.y, 0) / cs.length + 12,
       },
     ];
   }),
 );
-
-const onLand = (x: number, y: number) => {
-  const h = pixelToHex(x, y);
-  return disk(h, 1).some((n) => TILE_AT.has(hexKey(n.q, n.r)));
+/** 분쟁 섬·성지 모양(작은 가상 섬) */
+const islandPath = (x: number, y: number, r: number, seed: number) => {
+  const pts = Array.from({ length: 9 }, (_, i) => {
+    const a = (i / 9) * Math.PI * 2;
+    const rr = r * (0.75 + (((seed * (i + 3) * 2654435761) >>> 0) % 100) / 200);
+    return `${(x + Math.cos(a) * rr * 1.3).toFixed(1)},${(y + Math.sin(a) * rr).toFixed(1)}`;
+  });
+  return `M${pts.join("L")}Z`;
 };
+
+const onLand = (x: number, y: number) => isLand(x, y);
 const SEA = Object.fromEntries(
-  COUNTRIES.map((c) => [c.id, { ...seaNear(c.id), vertical: false }]),
+  COUNTRIES.map((c) => {
+    const cap = CITIES.find((x) => x.home === c.id && x.capital)!;
+    return [c.id, { ...seaNearXY(cap.x, cap.y, 9), vertical: false }];
+  }),
 );
 
 /** 함대: 평시엔 앞바다 순찰, 전쟁이면 적 쪽으로 전진하고 전투기가 출격 */
@@ -177,8 +160,8 @@ function Fleets({
             fy = ny;
           }
         }
-        const rx = p.vertical ? 7 : 17;
-        const ry = p.vertical ? 17 : 7;
+        const rx = p.vertical ? 4 : 10;
+        const ry = p.vertical ? 10 : 4;
         const loop = `M${fx - rx},${fy} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
         const dur = 34 + (hash(c.id) % 14);
         // 전투기: 평시 = 큰 원 순찰, 전쟁 = 적 수도까지 갔다가 돌아옴
@@ -202,7 +185,7 @@ function Fleets({
           const c2 = `${(fx + dx / 2 + dy * 0.25).toFixed(1)},${(fy + dy / 2 - dx * 0.25).toFixed(1)}`;
           jetPath = `M${fx},${fy} Q${c1} ${target.x},${target.y} Q${c2} ${fx},${fy}`;
         } else {
-          const R = 26;
+          const R = 16;
           jetPath = `M${fx - R},${fy} a${R},${R * 0.7} 0 1,1 ${R * 2},0 a${R},${R * 0.7} 0 1,1 ${-R * 2},0`;
         }
         const jdur = target ? 9 : 12;
@@ -225,12 +208,12 @@ function Fleets({
               <g key={j}>
                 {j === 0 ? (
                   carrier ? (
-                    <Carrier s={1.15} color={color} />
+                    <Carrier s={0.7} color={color} />
                   ) : (
-                    <Escort s={1.3} color={color} />
+                    <Escort s={0.8} color={color} />
                   )
                 ) : (
-                  <Escort s={0.85} color={color} />
+                  <Escort s={0.55} color={color} />
                 )}
                 <animateMotion
                   dur={`${dur}s`}
@@ -244,7 +227,7 @@ function Fleets({
             ))}
             {Array.from({ length: jets }, (_, j) => (
               <g key={`j${j}`}>
-                <Jet s={1} color={color} />
+                <Jet s={0.65} color={color} />
                 <animateMotion
                   dur={`${jdur}s`}
                   begin={`${-j * 0.35 - (hash(c.id) % 7)}s`}
@@ -282,7 +265,9 @@ function Fleets({
   );
 }
 
-const MAX_K = 4;
+const MAX_K = 9;
+/** 처음 열 때 확대: 내 나라 둘레가 보이게 */
+const START_K = 2;
 type View = { k: number; x: number; y: number };
 
 /** 전략 지도(임시 도형). 섬 = 들쭉날쭉한 땅, 나라 = 색 네모, 도시 = 점(지금 주인 색), 함대·전투기가 움직임 */
@@ -298,10 +283,10 @@ export function WorldMap({
     mode === "나라"
       ? (COUNTRY_COLORS[id] ?? "#94a3b8")
       : mode === "묶음"
-      ? BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color
-      : id === playerCountryId
-        ? REL_COLORS["나"]
-        : REL_COLORS[relationOf(world, playerCountryId, id)];
+        ? BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color
+        : id === playerCountryId
+          ? REL_COLORS["나"]
+          : REL_COLORS[relationOf(world, playerCountryId, id)];
 
   // ── 확대·이동(작은 지도는 없음) ──
   const svgRef = useRef<SVGSVGElement>(null);
@@ -312,10 +297,13 @@ export function WorldMap({
   const capX =
     (CITIES.find((c) => c.home === playerCountryId && c.capital)?.x ??
       X0 + MW / 2) - X0;
+  const capY =
+    (CITIES.find((c) => c.home === playerCountryId && c.capital)?.y ??
+      Y0 + MH / 2) - Y0;
   const [view, setView] = useState<View>({
-    k: 1,
-    x: capX - (MH * (MW / MH)) / 2,
-    y: 0,
+    k: START_K,
+    x: capX - (MH * (MW / MH)) / START_K / 2,
+    y: capY - MH / START_K / 2,
   });
   const centered = useRef(false);
   useEffect(() => {
@@ -329,7 +317,11 @@ export function WorldMap({
         // 처음 한 번: 내 나라가 가운데 오게
         if (!centered.current) {
           centered.current = true;
-          setView((v) => ({ ...v, x: capX - (MH * a) / v.k / 2 }));
+          setView((v) => ({
+            ...v,
+            x: capX - (MH * a) / v.k / 2,
+            y: capY - MH / v.k / 2,
+          }));
         }
       }
     });
@@ -409,8 +401,9 @@ export function WorldMap({
   };
 
   const cv = clamp(view);
+  // 작은 지도(본부 레이더): 내 수도를 가운데 둔 정사각형
   const vb = mini
-    ? `${X0} ${Y0} ${MW} ${MH}`
+    ? `${(Math.max(0, Math.min(MW - MH, capX - MH / 2)) + X0).toFixed(1)} ${Y0} ${MH} ${MH}`
     : `${(X0 + cv.x).toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
   const owner = world.owner;
 
@@ -432,10 +425,12 @@ export function WorldMap({
           <stop offset="0%" stopColor="#0b2a1c" />
           <stop offset="100%" stopColor="#030a06" />
         </radialGradient>
-        {/* 땅 모양(곡선 해안) 안쪽만 칠하기 */}
-        <clipPath id="wm-land">
-          <path d={COAST} clipRule="evenodd" />
-        </clipPath>
+        {/* 13개 나라 모양 안쪽만 칠하기 */}
+        {COUNTRIES.map((c) => (
+          <clipPath key={c.id} id={`wm-c-${c.id}`}>
+            <path d={GEO_PATH[c.id]} />
+          </clipPath>
+        ))}
         <pattern
           id="wm-wave"
           width="26"
@@ -453,24 +448,14 @@ export function WorldMap({
       </defs>
       <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
       {ART ? (
-        <>
-          {/* 실사 지도 그림 위에 바다만 살짝 어둡게(작전 콘솔 느낌 유지) */}
-          <image
-            href={ART}
-            x={WORLD_ART.x}
-            y={WORLD_ART.y}
-            width={WORLD_ART.w}
-            height={WORLD_ART.h}
-            preserveAspectRatio="none"
-          />
-          <path
-            d={`M${WORLD_ART.x},${WORLD_ART.y}h${WORLD_ART.w}v${WORLD_ART.h}h${-WORLD_ART.w}Z${COAST}`}
-            fill="#020a06"
-            fillOpacity="0.35"
-            fillRule="evenodd"
-            pointerEvents="none"
-          />
-        </>
+        <image
+          href={ART}
+          x={X0}
+          y={Y0}
+          width={MW}
+          height={MH}
+          preserveAspectRatio="none"
+        />
       ) : (
         <>
           {!mini && (
@@ -483,112 +468,96 @@ export function WorldMap({
               className="wm-waves"
             />
           )}
-          {/* 얕은 바다 → 곡선 해안 → 땅 */}
-          <path
-            d={COAST}
-            fill="none"
-            stroke="#1d6b44"
-            strokeOpacity="0.6"
-            strokeWidth="7"
-            strokeLinejoin="round"
-          />
-          <path d={COAST} fill={LAND_BASE} fillRule="evenodd" />
+          {/* 땅 바탕(모든 나라) */}
+          {Object.values(GEO_PATH).map((d, i) => (
+            <path key={i} d={d} fill={LAND_BASE} />
+          ))}
         </>
       )}
-      <g clipPath="url(#wm-land)">
-        {/* 그림이 있으면 나라 색은 반투명하게 덮어 땅 그림이 비침 */}
-        <g opacity={ART ? (mode === "나라" ? 0.5 : 0.4) : 1}>
-          {CITY_PLACES.map((id) => {
-            const home = id.split("-")[0];
-            const o = owner[id];
-            const sel = home === selectedId;
-            const alive = isAlive(world, home);
-            const c = mixColor(
-              colorOf(o),
-              mode === "나라"
-                ? sel
-                  ? 0.95
-                  : alive
-                    ? 0.8
-                    : 0.4
-                : sel
-                  ? 0.75
-                  : o === playerCountryId
-                    ? 0.62
-                    : alive
-                      ? 0.48
-                      : 0.25,
-            );
-            return (
-              <g key={id} className="map-country" onClick={() => pick(home)}>
-                <path
-                  d={PLACE_PATH[id]}
-                  fill={c}
-                  stroke={c}
-                  strokeWidth={0.8}
-                />
-                {PLACE_COAST[id] && (
-                  <path
-                    d={PLACE_COAST[id]}
-                    fill="none"
-                    stroke={c}
-                    strokeWidth={HEX_SIZE * 2.4}
-                    strokeLinecap="round"
-                  />
-                )}
-              </g>
-            );
-          })}
-          {PIONEER_ISLANDS.map((p) => {
-            const c = mixColor("#cdb77a", 0.7);
-            return (
-              <g key={p.id}>
-                <title>
-                  {p.name} · 주인 없는 분쟁 섬 · {p.res}
-                </title>
-                <path d={PLACE_PATH[p.id]} fill={c} />
-                {PLACE_COAST[p.id] && (
-                  <path
-                    d={PLACE_COAST[p.id]}
-                    fill="none"
-                    stroke={c}
-                    strokeWidth={HEX_SIZE * 2.4}
-                    strokeLinecap="round"
-                  />
-                )}
-              </g>
-            );
-          })}
-          <g>
-            <title>{HOLY_CITY.name}</title>
-            <path d={PLACE_PATH.holy} fill={mixColor("#fbbf24", 0.85)} />
-            {PLACE_COAST.holy && (
-              <path
-                d={PLACE_COAST.holy}
-                fill="none"
-                stroke={mixColor("#fbbf24", 0.85)}
-                strokeWidth={HEX_SIZE * 2.4}
-                strokeLinecap="round"
-              />
-            )}
-          </g>
-        </g>
-      </g>
+      {/* 게임에 없는 나라: 회색으로 덮어 꺼 둠 */}
       <path
-        d={COAST}
-        fill="none"
-        stroke="#45f59a"
-        strokeOpacity="0.8"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
+        d={GEO_PATH.x}
+        fill="#4b5563"
+        fillOpacity={ART ? 0.55 : 0.6}
+        stroke="#0f172a"
+        strokeOpacity="0.4"
+        strokeWidth="0.4"
         pointerEvents="none"
       />
+      {/* 13개 나라: 도시 영역마다 지금 주인 색 */}
+      <g opacity={ART ? (mode === "나라" ? 0.58 : 0.48) : 1}>
+        {COUNTRIES.map((c) => (
+          <g
+            key={c.id}
+            clipPath={`url(#wm-c-${c.id})`}
+            className="map-country"
+            onClick={() => pick(c.id)}
+          >
+            {CITIES.filter((x) => x.home === c.id).map((city) => {
+              const o = owner[city.id];
+              const sel = c.id === selectedId;
+              const alive = isAlive(world, o);
+              const col = mixColor(
+                colorOf(o),
+                mode === "나라"
+                  ? sel
+                    ? 0.95
+                    : alive
+                      ? 0.8
+                      : 0.4
+                  : sel
+                    ? 0.75
+                    : o === playerCountryId
+                      ? 0.62
+                      : alive
+                        ? 0.48
+                        : 0.25,
+              );
+              return <path key={city.id} d={CELL_PATH[city.id]} fill={col} />;
+            })}
+          </g>
+        ))}
+      </g>
+      {/* 13개 나라 해안선 */}
+      {COUNTRIES.map((c) => (
+        <path
+          key={c.id}
+          d={GEO_PATH[c.id]}
+          fill="none"
+          stroke={c.id === selectedId ? "#e2f3ff" : "#7dd3fc"}
+          strokeOpacity={c.id === selectedId ? 0.9 : 0.45}
+          strokeWidth={c.id === selectedId ? 1 : 0.6}
+          pointerEvents="none"
+        />
+      ))}
+      {/* 분쟁 섬(가상의 작은 섬)·고대 성지 */}
+      {PIONEER_ISLANDS.map((p) => (
+        <path
+          key={p.id}
+          d={islandPath(p.x, p.y, 3.4, hash(p.id))}
+          fill="#cdb77a"
+          stroke="#0f172a"
+          strokeWidth="0.5"
+        >
+          <title>
+            {p.name} · 주인 없는 분쟁 섬 · {p.res}
+          </title>
+        </path>
+      ))}
+      <path
+        d={islandPath(HOLY_HEX.x, HOLY_HEX.y, 3, 7)}
+        fill="#fbbf24"
+        stroke="#0f172a"
+        strokeWidth="0.5"
+      >
+        <title>{HOLY_CITY.name}</title>
+      </path>
       {!mini &&
         PIONEER_ISLANDS.map((p) => (
           <text
             key={p.id}
             x={p.x}
-            y={p.y + HEX_SIZE * 5.6}
+            y={p.y + 11}
             textAnchor="middle"
             className="map-island"
           >
@@ -602,7 +571,7 @@ export function WorldMap({
           y={COUNTRY_LABEL[c.id].y}
           textAnchor="middle"
           className="map-label"
-          fontSize={mini ? 22 : 11}
+          fontSize={mini ? 22 : c.cities.length >= 4 ? 11 : 6.5}
           opacity={isAlive(world, c.id) ? 1 : 0.4}
         >
           {c.id === playerCountryId ? "★ " : ""}
@@ -645,7 +614,7 @@ export function WorldMap({
       {!mini && (
         <text
           x={HOLY_HEX.x}
-          y={HOLY_HEX.y + HEX_SIZE * 3.6}
+          y={HOLY_HEX.y + 10}
           textAnchor="middle"
           className="map-island holy"
         >
