@@ -15,6 +15,7 @@ import {
   HOLY_HEX,
   MAP_BOUNDS,
   WORLD_ART,
+  LAND_PATH,
   PIONEER_ISLANDS,
   TILES,
   TILE_AT,
@@ -114,7 +115,8 @@ for (const t of TILES) {
   });
 }
 /** 화면에 그리는 해안선: 육각 계단 대신 둥근 곡선 */
-const COAST = smoothPath(COAST_SEGS, { relax: 14, wiggle: HEX_SIZE * 0.9 });
+/** 화면에 그리는 해안선: 손으로 그린 땅 모양(land.ts) 그대로 */
+const COAST = LAND_PATH;
 const LAND_BASE = "#06140d";
 /** 땅 색을 바탕색과 미리 섞어 불투명하게(겹쳐도 진해지지 않게) */
 function mixColor(hex: string, a: number): string {
@@ -299,10 +301,10 @@ export function WorldMap({
     mode === "나라"
       ? (COUNTRY_COLORS[id] ?? "#94a3b8")
       : mode === "묶음"
-      ? BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color
-      : id === playerCountryId
-        ? REL_COLORS["나"]
-        : REL_COLORS[relationOf(world, playerCountryId, id)];
+        ? BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color
+        : id === playerCountryId
+          ? REL_COLORS["나"]
+          : REL_COLORS[relationOf(world, playerCountryId, id)];
 
   // ── 확대·이동(작은 지도는 없음) ──
   const svgRef = useRef<SVGSVGElement>(null);
@@ -424,11 +426,36 @@ export function WorldMap({
       for (let i = 0; i < 6; i++) {
         const dir = HEX_DIRS[EDGE_DIR[i]];
         const n = TILE_AT.get(hexKey(t.q + dir.q, t.r + dir.r));
-        if (!n || n.kind !== "city" || owner[n.place] !== o) (segs[o] ??= []).push([cs[i], cs[(i + 1) % 6]]);
+        if (!n || n.kind !== "city" || owner[n.place] !== o)
+          (segs[o] ??= []).push([cs[i], cs[(i + 1) % 6]]);
       }
     }
-    return Object.entries(segs).map(([o, sg]) => ({ o, d: smoothPath(sg, { relax: 10 }) }));
+    return Object.entries(segs).map(([o, sg]) => ({
+      o,
+      d: smoothPath(sg, { relax: 10 }),
+    }));
   }, [owner]);
+  const ownerFills = ownerShapes.map(({ o, d }) => {
+    const sel = o === selectedId;
+    const alive = isAlive(world, o);
+    const c = mixColor(
+      colorOf(o),
+      mode === "나라"
+        ? sel
+          ? 0.95
+          : alive
+            ? 0.8
+            : 0.4
+        : sel
+          ? 0.75
+          : o === playerCountryId
+            ? 0.62
+            : alive
+              ? 0.48
+              : 0.25,
+    );
+    return { o, d, c };
+  });
 
   const svg = (
     <svg
@@ -514,35 +541,35 @@ export function WorldMap({
       <g clipPath="url(#wm-land)">
         {/* 그림이 있으면 나라 색은 반투명하게 덮어 땅 그림이 비침 */}
         <g opacity={ART ? (mode === "나라" ? 0.5 : 0.4) : 1}>
-          {ownerShapes.map(({ o, d }) => {
-            const sel = o === selectedId;
-            const alive = isAlive(world, o);
-            const c = mixColor(
-              colorOf(o),
-              mode === "나라"
-                ? sel
-                  ? 0.95
-                  : alive
-                    ? 0.8
-                    : 0.4
-                : sel
-                  ? 0.75
-                  : o === playerCountryId
-                    ? 0.62
-                    : alive
-                      ? 0.48
-                      : 0.25,
-            );
+          {/* 해안 가장자리 메우기(먼저) → 나라 땅(곡선) 순서: 메움이 이웃 나라로 번지지 않게 */}
+          {ownerFills.map(({ o, c }) => {
             const coast = CITY_PLACES.filter((id) => owner[id] === o)
               .map((id) => PLACE_COAST[id] ?? "")
               .join("");
-            return (
-              <g key={o} className="map-country" onClick={() => pick(o)}>
-                <path d={d} fill={c} fillRule="evenodd" stroke={c} strokeWidth={2} strokeLinejoin="round" />
-                {coast && <path d={coast} fill="none" stroke={c} strokeWidth={HEX_SIZE * 2.4} strokeLinecap="round" />}
-              </g>
-            );
+            return coast ? (
+              <path
+                key={o}
+                d={coast}
+                fill="none"
+                stroke={c}
+                strokeWidth={HEX_SIZE * 2.4}
+                strokeLinecap="round"
+                pointerEvents="none"
+              />
+            ) : null;
           })}
+          {ownerFills.map(({ o, d, c }) => (
+            <g key={o} className="map-country" onClick={() => pick(o)}>
+              <path
+                d={d}
+                fill={c}
+                fillRule="evenodd"
+                stroke={c}
+                strokeWidth={2}
+                strokeLinejoin="round"
+              />
+            </g>
+          ))}
           {PIONEER_ISLANDS.map((p) => {
             const c = mixColor("#cdb77a", 0.7);
             return (

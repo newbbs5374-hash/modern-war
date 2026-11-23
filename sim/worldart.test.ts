@@ -1,7 +1,7 @@
 // 실사 세계지도 밑그림: npm run worldart → docs/worldart-guide.svg(땅/바다/국경, 글자 없음) · docs/worldart-label.svg(이름 포함)
 import { it } from 'vitest';
 import { writeFileSync } from 'fs';
-import { TILES, TILE_AT, HEX_DIRS, EDGE_DIR, hexCorners, hexKey, WORLD_ART, HEX_SIZE, PIONEER_ISLANDS, HOLY_HEX } from '../src/data/hexmap';
+import { TILES, TILE_AT, HEX_DIRS, EDGE_DIR, hexCorners, hexKey, WORLD_ART, LAND_PATH, PIONEER_ISLANDS, HOLY_HEX } from '../src/data/hexmap';
 import { CITIES } from '../src/data/cities';
 import { COUNTRIES } from '../src/data/world';
 import { smoothPath, type Seg } from '../src/ui/smoothHex';
@@ -18,7 +18,7 @@ it('worldart guide', () => {
       else if (n.home !== t.home && EDGE_DIR[i] < 3) border.push([p, cs[(i + 1) % 6]]);
     });
   }
-  const COAST = smoothPath(coast, { relax: 14, wiggle: HEX_SIZE * 0.9 });
+  const COAST = LAND_PATH;
   const BORDER = smoothPath(border, { relax: 6 });
   const A = WORLD_ART;
   const W = 1536;

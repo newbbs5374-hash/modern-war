@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CITY_HEX, HEX_DIRS, ISLAND_TILES, PIONEER_ISLANDS, SIZE_TILES, TILES, TILE_AT, citySizes, disk, hexDist, hexKey, hexToPixel, pixelToHex } from './hexmap';
+import { CITY_HEX, HEX_DIRS, PIONEER_ISLANDS, TILES, TILE_AT, citySizes, disk, hexDist, hexKey, hexToPixel, pixelToHex } from './hexmap';
 import { COUNTRIES } from './world';
 
 describe('육각 타일 지도', () => {
@@ -10,21 +10,20 @@ describe('육각 타일 지도', () => {
     expect(citySizes(10)).toEqual([4, 3, 3, 2, 2, 2, 2, 2, 2, 2]);
     expect(citySizes(2)).toEqual([3, 2]);
   });
-  it('나라 타일 수 = 도시 묶음 합(겹침 없음), 표와 같음', () => {
-    const want: Record<string, number> = { ru: 472, us: 398, cn: 398, in: 263, ir: 226, tr: 135, ua: 135, jp: 98, de: 98, uk: 98, kr: 98, kp: 98, il: 98 };
-    for (const c of COUNTRIES) {
-      const n = TILES.filter((t) => t.home === c.id).length;
-      expect(n).toBe(want[c.id]);
-      expect(n).toBe(citySizes(c.cities.length).reduce((a, s) => a + SIZE_TILES[s], 0));
-    }
+  it('도시마다 땅이 넉넉하고(15칸 이상) 겹치지 않음, 큰 나라가 더 넓음', () => {
     expect(new Set(TILES.map((t) => `${t.q},${t.r}`)).size).toBe(TILES.length);
-    for (const [id, h] of Object.entries(CITY_HEX)) expect(TILES.filter((t) => t.place === id)).toHaveLength(SIZE_TILES[h.size]);
+    for (const id of Object.keys(CITY_HEX)) expect(TILES.filter((t) => t.place === id).length).toBeGreaterThanOrEqual(15);
+    const n = (id: string) => TILES.filter((t) => t.home === id).length;
+    expect(n('ru')).toBeGreaterThan(n('cn'));
+    expect(n('cn')).toBeGreaterThan(n('kr'));
+    expect(n('us')).toBeGreaterThan(n('jp'));
   });
-  it('분쟁 섬 12개(작은 7칸), 다른 땅과 떨어져 있음', () => {
+  it('분쟁 섬 12개(작은 5~12칸), 다른 땅과 떨어져 있음', () => {
     expect(PIONEER_ISLANDS).toHaveLength(12);
     for (const p of PIONEER_ISLANDS) {
-      expect(TILES.filter((t) => t.place === p.id)).toHaveLength(ISLAND_TILES);
-      expect(ISLAND_TILES).toBe(7);
+      const k = TILES.filter((t) => t.place === p.id).length;
+      expect(k).toBeGreaterThanOrEqual(5);
+      expect(k).toBeLessThanOrEqual(12);
       const mine = TILES.filter((t) => t.place === p.id);
       const others = TILES.filter((t) => t.place !== p.id);
       for (const t of mine) expect(Math.min(...others.map((o) => hexDist(t, o)))).toBeGreaterThanOrEqual(3);
