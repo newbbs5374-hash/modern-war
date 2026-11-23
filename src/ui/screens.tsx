@@ -6,7 +6,7 @@ import { pendingCap, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, HOUR, Soon, fmt } from './common';
 import type { Screen } from './nav';
-import { REL_COLORS, WorldMap, type MapMode } from './WorldMap';
+import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
 import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
@@ -335,7 +335,7 @@ function MapPanel({ state }: ScreenProps) {
   const me = state.player.countryId;
   const w = state.world;
   const [sel, setSel] = useState<string | null>(null);
-  const [mode, setMode] = useState<MapMode>('관계');
+  const [mode, setMode] = useState<MapMode>('나라');
   const otherWars = Object.entries(w.pairs)
     .filter(([k, p]) => p.rel === '전쟁' && !k.split('|').includes(me) && k.split('|').every((id) => isAlive(w, id)))
     .map(([k]) => k.split('|'));
@@ -346,7 +346,7 @@ function MapPanel({ state }: ScreenProps) {
         icon="🗺️"
         right={
           <span className="seg">
-            {(['관계', '묶음'] as MapMode[]).map((m) => (
+            {(['나라', '관계', '묶음'] as MapMode[]).map((m) => (
               <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
                 {m}
               </button>
@@ -357,7 +357,13 @@ function MapPanel({ state }: ScreenProps) {
       >
         <WorldMap world={w} playerCountryId={me} selectedId={sel ?? me} onSelect={setSel} mode={mode} />
         <div className="legend small">
-          {mode === '관계'
+          {mode === '나라'
+            ? COUNTRIES.filter((c) => isAlive(w, c.id)).map((c) => (
+                <span key={c.id}>
+                  <i style={{ background: COUNTRY_COLORS[c.id] }} /> {c.id === me ? `${c.name}(나)` : c.name}
+                </span>
+              ))
+            : mode === '관계'
             ? (Object.keys(REL_COLORS) as Array<keyof typeof REL_COLORS>).map((k) => (
                 <span key={k}>
                   <i style={{ background: REL_COLORS[k] }} /> {k === '나' ? '내 나라' : k}
