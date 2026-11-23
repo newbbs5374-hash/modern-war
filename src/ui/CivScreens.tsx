@@ -773,7 +773,7 @@ export function IslandPanel(props: ScreenProps) {
           </Help>
         </div>
       </section>
-      <div className="tiles c4">
+      <div className="tiles c3 isle-tiles">
         {PIONEER_ISLANDS.map((p) => {
           const lead = C.islandLeader(state, p.id);
           const mineV = c.influence[p.id]?.[me] ?? 0;

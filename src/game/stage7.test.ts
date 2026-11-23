@@ -102,20 +102,19 @@ describe('승리 유지', () => {
   });
 });
 
-describe('시험판: 승급 심사 탈락 대기', () => {
-  test('기본은 바로 재도전, 켜면 6시간', async () => {
+describe('승급(심사 없음, 11-23)', () => {
+  test('조건을 채우면 바로 다음 등급, 공훈·별은 다시 모음', async () => {
     const { fillPromotion } = await import('./testgrant');
-    const { startExam, claimMission, promotionCheck } = await import('./officer');
-    let s = fillPromotion(newGame('t', 'kr', 0, { seed: 3 }));
-    s = startExam(s);
-    s = advance(s, 6 * H);
-    const lose = claimMission(s, { win: false, stars: 0 }).state;
-    expect(lose.player.rankIndex).toBe(0);
-    expect(promotionCheck(lose).ready).toBe(true);
-    let p = startExam({ ...fillPromotion(newGame('t', 'kr', 0, { seed: 3 })), officer: { ...fillPromotion(newGame('t', 'kr', 0, { seed: 3 })).officer, examPenalty: true } });
-    p = advance(p, 6 * H);
-    const lose2 = claimMission(p, { win: false, stars: 0 }).state;
-    expect(promotionCheck(lose2).why).toContain('기다려야');
+    const { promoteNow, promotionCheck } = await import('./officer');
+    const s0 = newGame('t', 'kr', 0, { seed: 3 });
+    expect(promoteNow(s0).player.rankIndex).toBe(0);
+    const s = fillPromotion(s0);
+    expect(promotionCheck(s).ready).toBe(true);
+    const up = promoteNow(s);
+    expect(up.player.rankIndex).toBe(1);
+    expect(up.officer.stars).toBe(0);
+    expect(up.officer.active).toBeNull();
+    expect(promotionCheck(up).ready).toBe(false);
   });
 });
 

@@ -44,7 +44,7 @@ import {
   recruitGeneral,
   rivalsView,
   sendAide,
-  startExam,
+  promoteNow,
   startGrand,
   startMission,
   startTraining,
@@ -294,7 +294,6 @@ export function OfficerScreen(props: ScreenProps) {
   const r = state.player.rankIndex;
   const pc = promotionCheck(state);
   const [tab, setTab] = useTab<OfficerTab>('officer', 'stats');
-  const examRunning = o.active?.exam;
   const errandsDone = o.aides.filter((a) => a.errand && state.worldMs >= a.errand.endMs).length;
   return (
     <>
@@ -332,8 +331,8 @@ export function OfficerScreen(props: ScreenProps) {
             <div className="row">
               <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
               <Help title="승급">
-                <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 승급 심사 작전(2시간)을 볼 수 있어요.</p>
-                <p>심사에 붙으면 승급하고, 공훈과 별은 0부터 다시 모아요. 대장 → 지도자은 라이벌보다 평판이 높아야 해요.</p>
+                <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급할 수 있어요. 심사는 없어요.</p>
+                <p>승급하면 공훈과 별은 다시 모아요. 마지막 등급은 라이벌보다 평판이 높아야 해요.</p>
               </Help>
             </div>
             {pc.lines.map((l) => (
@@ -347,13 +346,9 @@ export function OfficerScreen(props: ScreenProps) {
                 </small>
               </div>
             ))}
-            {examRunning ? (
-              <p className="small center">🎓 승급 심사 중 · 작전 화면에서 결과를 받아요</p>
-            ) : (
-              <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => actions.apply(startExam)}>
-                {pc.ready ? '🎓 승급 심사 시작 (2시간)' : pc.why}
-              </button>
-            )}
+            <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => actions.apply(promoteNow)}>
+              {pc.ready ? `⏫ ${RANKS[r + 1].name}(으)로 승급` : pc.why}
+            </button>
           </div>
         )}
       </section>

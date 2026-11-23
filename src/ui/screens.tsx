@@ -168,7 +168,7 @@ export function HomeScreen(props: ScreenProps) {
           <button className={`hq ${pc.ready ? 'hot' : ''}`} onClick={() => goTab('officer', 'officer', 'stats')}>
             <span>🎓</span>
             <span className="hq-main">
-              <b>{pc.ready ? '승급 심사 가능!' : `승급 준비 ${promoPct}%`}</b>
+              <b>{pc.ready ? '승급 가능!' : `승급 준비 ${promoPct}%`}</b>
               <span className="bar">
                 <span className="bar-fill" style={{ width: `${promoPct}%` }} />
               </span>
@@ -398,7 +398,7 @@ function MapPanel({ state }: ScreenProps) {
 export function ShopScreen(_: ScreenProps) {
   return (
     <Card title="상점">
-      <p className="small muted">루비로 기다리는 시간(훈련 일정·승급 심사·생산·이동)을 줄이는 곳이에요.</p>
+      <p className="small muted">루비로 기다리는 시간(훈련 일정·생산·이동)을 줄이는 곳이에요.</p>
       <Soon stage="나중에">루비 얻는 곳과 결제는 아직 정하지 않았어요</Soon>
     </Card>
   );
@@ -516,21 +516,15 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         <small>시간 건너뛰기</small>
         <div className="buttons">
           <button className="gold" onClick={() => (actions.apply(grantTestResources), setMsg('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))}>🎁 시험 자원 넉넉히</button>
-          <button
-            className={state.officer.examPenalty ? '' : 'on'}
-            onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, examPenalty: !s.officer.examPenalty, examReadyMs: 0 } }))}
-          >
-            승급 심사 탈락 대기: {state.officer.examPenalty ? '켜짐(6시간)' : '꺼짐(바로 재도전)'}
-          </button>
           <button className="gold" onClick={() => (actions.apply(debugTalk), setMsg('대화가 하나 왔어요. 본부의 💬 대화를 눌러 보세요.'))}>💬 대화 바로 받기</button>
           <button
             className="gold"
             disabled={state.player.rankIndex >= PROMOTION.length}
-            onClick={() => (actions.apply(debugPromote), setMsg('승급 심사 없이 바로 다음 등급으로 올렸어요.'))}
+            onClick={() => (actions.apply(debugPromote), setMsg('조건 없이 바로 다음 등급으로 올렸어요.'))}
           >
-            ⏫ 바로 승급(심사 생략)
+            ⏫ 바로 승급(조건 무시)
           </button>
-          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 등급의 승급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 승급 심사를 보세요.'))}>
+          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 등급의 승급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 승급을 누르세요.'))}>
             🎖️ 승급 조건 채우기
           </button>
         </div>
@@ -595,7 +589,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             부관 데려오기 + 봉급 5000
           </button>
         </div>
-        <small>등급 바로 바꾸기 (승급 심사 없이)</small>
+        <small>등급 바로 바꾸기 (조건 없이)</small>
         <select value={state.player.rankIndex} onChange={(e) => actions.setRank(Number(e.target.value))}>
           {RANKS.map((r, i) => (
             <option key={r.name} value={i}>
