@@ -76,7 +76,7 @@ export const CURRENCIES = [
   { id: 'merit', name: '공훈', icon: '🎖️', where: '임무 성공 · 승급하면 0부터 다시' },
   { id: 'drill', name: '훈련 일정', icon: '📅', where: '실제 4시간마다 1개 · 최대 6개' },
   { id: 'boost', name: '가속권', icon: '🎫', where: '임무·심부름·생산 시간 30분 줄이기 · 시험판은 넉넉히 줌' },
-  { id: 'ruby', name: '루비', icon: '💎', where: '시간 줄이기 (나중에 정함)' },
+  { id: 'ruby', name: '루비', icon: '💎', where: '매일 할 일·업적으로 얻고 상점에서 가속권·자원으로 바꿈' },
 ] as const;
 
 /** 부대 화면 분류: 1차 육·해·공 → 2차 세부(병과 15개 + 독점 병과 3개). 특화 유닛은 바탕 병과 밑에 붙음 */

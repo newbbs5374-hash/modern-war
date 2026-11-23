@@ -9,6 +9,7 @@ import { generalDefense, newOfficer, officerTick, type OfficerState } from './of
 import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
 import type { PeaceState } from './peace';
+import type { GoalsState } from './goals';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
@@ -64,6 +65,8 @@ export interface GameState {
   civ?: CivState;
   /** 평화 승리(세계 평화 헌장). 없으면 아직 제안 안 함 */
   peace?: PeaceState;
+  /** 루비·매일 할 일·업적. 없으면 불러올 때·처음 쓸 때 채움 */
+  goals?: GoalsState;
 }
 
 export interface NewGameOptions {

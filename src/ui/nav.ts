@@ -37,7 +37,7 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
   { screen: 'training', icon: '🎯', label: '훈련' },
   { screen: 'nation', icon: '🏛️', label: '내정' },
   { screen: 'diplo', icon: '🌐', label: '외교' },
-  { screen: 'shop', icon: '🛒', label: '상점', locked: '준비 중' },
+  { screen: 'shop', icon: '🛒', label: '상점' },
 ];
 
 export function parseScreen(hash: string): Screen {
