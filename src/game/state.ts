@@ -8,6 +8,7 @@ import { applyContracts, contractMoneyPerHour } from './economy';
 import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
+import type { PeaceState } from './peace';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
@@ -61,6 +62,8 @@ export interface GameState {
   reports?: Report[];
   /** 문명식 운영(연구·체제·호감·협정·분쟁 섬·국제 회의·도시 구역/민심/인구). 옛 저장은 불러올 때 채움 */
   civ?: CivState;
+  /** 평화 승리(세계 평화 헌장). 없으면 아직 제안 안 함 */
+  peace?: PeaceState;
 }
 
 export interface NewGameOptions {
