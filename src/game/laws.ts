@@ -57,6 +57,8 @@ export interface AssemblyState {
   confLoss: number;
   /** 미리 알림을 했는지(하루 전) */
   confWarned: boolean;
+  /** 통과시킨 법안 수 */
+  passed?: number;
   log: string[];
 }
 

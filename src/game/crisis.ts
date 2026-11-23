@@ -4,6 +4,7 @@
 import { COUNTRIES, countryById } from '../data/world';
 import type { Res } from '../data/economy';
 import { addFavorNote, civOf } from './civ';
+import { addPresMod } from './approval';
 import { Rng } from './rng';
 import { pushReport } from './report';
 import type { GameState } from './state';
@@ -27,7 +28,8 @@ export type Fx =
   | { k: 'boost'; v: number }
   | { k: 'research'; v: number } // 연구 점수(군사·사회 두 줄에 각각)
   | { k: 'favor'; who: 'target' | 'rivals' | 'all'; v: number }
-  | { k: 'tension'; v: number }; // 대상국과 긴장
+  | { k: 'tension'; v: number } // 대상국과 긴장
+  | { k: 'approval'; v: number }; // 지지도(하루 동안)
 
 export interface CrisisOption {
   label: string;
@@ -214,6 +216,41 @@ export const CRISES: CrisisDef[] = [
       { label: '뽑아서 정예로 키워요', fx: [{ k: 'troops', v: 0.015 }, { k: 'merit', v: 20 }, { k: 'boost', v: 2 }], say: '정예 훈련을 시작했습니다.' },
     ],
   },
+  // 11-23 대통령식 내정: 지지도와 이어지는 사건
+  {
+    id: 'protest',
+    icon: '🪧',
+    title: '광장의 대규모 시위',
+    text: '물가와 세금에 지친 시민 수십만 명이 광장에 모였어요.',
+    auto: 1,
+    options: [
+      { label: '직접 나가 대화해요', fx: [{ k: 'approval', v: 6 }, { k: 'fame', v: 10 }, { k: 'money', v: -800 }], say: '지도자님이 나서자 분위기가 누그러졌습니다.' },
+      { label: '경찰로 해산시켜요', fx: [{ k: 'approval', v: -8 }, { k: 'trust', v: 3 }], say: '광장은 비었지만 민심이 싸늘합니다.' },
+    ],
+  },
+  {
+    id: 'leak',
+    icon: '📂',
+    title: '대통령실 문서 유출',
+    text: '내부 회의 문서가 언론에 흘러나갔어요. 누가 흘렸는지 모릅니다.',
+    auto: 0,
+    options: [
+      { label: '내부 감찰을 해요', fx: [{ k: 'intel', v: 15 }, { k: 'trust', v: 2 }], say: '유출 경로를 막았습니다.' },
+      { label: '모든 걸 공개해요', fx: [{ k: 'approval', v: 4 }, { k: 'trust', v: -4 }], say: '솔직함에 국민이 박수를 보냅니다.' },
+    ],
+  },
+  {
+    id: 'hostage',
+    icon: '✈️',
+    title: '해외 국민 억류',
+    text: '{X}에서 우리 국민 여행객들이 억류됐어요.',
+    target: 'any',
+    auto: 0,
+    options: [
+      { label: '조용히 협상해요', fx: [{ k: 'favor', who: 'target', v: 4 }, { k: 'money', v: -1200 }, { k: 'approval', v: 3 }], say: '모두 무사히 돌아왔습니다.' },
+      { label: '강하게 압박해요', fx: [{ k: 'tension', v: 15 }, { k: 'approval', v: 5 }, { k: 'favor', who: 'target', v: -8 }], say: '국민은 환호하지만 그 나라와 사이가 틀어졌습니다.' },
+    ],
+  },
 ];
 export const crisisById = (id: string) => CRISES.find((c) => c.id === id)!;
 
@@ -255,6 +292,8 @@ export function fxText(fx: Fx[], target: string | null): string {
           return `🪖 병력 ${sg(Math.round(f.v * 1000) / 10)}%`;
         case 'trust':
           return `🏛️ 신뢰 ${sg(f.v)}`;
+        case 'approval':
+          return `🙂 지지도 ${sg(f.v)}(하루)`;
         case 'fame':
           return `⭐ 명성 ${sg(f.v)}`;
         case 'merit':
@@ -328,6 +367,9 @@ function applyFx(s: GameState, fx: Fx[], target: string | null): GameState {
         for (const id of who) ns = addFavorNote(ns, id, f.v > 0 ? '돌발 사건 때 도움' : '돌발 사건 때 갈등', f.v);
         break;
       }
+      case 'approval':
+        ns = addPresMod(ns, '⚡ 돌발 사건', f.v, 24);
+        break;
       case 'tension': {
         if (!target) break;
         const k = pairKey(me, target);

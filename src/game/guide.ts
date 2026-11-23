@@ -4,6 +4,9 @@ import { civOf } from './civ';
 import { goalsOf } from './goals';
 import { ordersOf, ORDER_INFO } from './orders';
 import { spyOf } from './spy';
+import { scheduleOf } from './schedule';
+import { cabinetOf } from './cabinet';
+import { assemblyOf } from './assembly';
 import type { GameState } from './state';
 
 export interface GuideStep {
@@ -31,6 +34,10 @@ export const GUIDE: GuideStep[] = [
   { id: 'trade', icon: '🚢', title: '무역 한 번 하기', say: '경제 → 무역에서 자원을 사거나 팔아 보세요. 협정은 외교 탭에서 맺어요.', go: { screen: 'diplo', key: 'diplo', tab: 'trade' }, done: (s) => s.economy.log.some((t) => /사기|팔기/.test(t)) || total(s, 'pact') > 0, reward: { salary: 500 } },
   { id: 'orders', icon: '📋', title: '미리 명령 켜기', say: '본부 오른쪽 📋 명령에서 "봉급 자동 받기"를 켜 두면 자리를 비워도 편해요.', go: { screen: 'home' }, done: (s) => ORDER_INFO.some((x) => ordersOf(s)[x.key]), reward: { boosts: 3 } },
   { id: 'spy', icon: '🕵️', title: '위성 정찰 보내기', say: '국방 → 정보전에서 맞수 나라에 위성 정찰을 보내 보세요.', go: { screen: 'ops', key: 'ops', tab: 'spy' }, done: (s) => spyOf(s).done > 0 || spyOf(s).active.length > 0, reward: { ruby: 5 } },
+  { id: 'plan', icon: '🗓️', title: '대통령 일정 넣기', say: '개인 → 일정에서 오늘 할 활동을 하나 골라 보세요. 하루 3칸, 넣자마자 효과가 나요.', go: { screen: 'personal', key: 'personal', tab: 'plan' }, done: (s) => scheduleOf(s).total > 0, reward: { ruby: 5 } },
+  { id: 'talent', icon: '👥', title: '인재 영입하기', say: '개인 → 인재에서 마음에 드는 사람을 영입해 보세요. 출신마다 잘하는 일이 달라요.', go: { screen: 'personal', key: 'personal', tab: 'talent' }, done: (s) => !!s.cabinet && cabinetOf(s).people.some((p) => p.group === '내각' && !p.buddy), reward: { salary: 500 } },
+  { id: 'seat', icon: '🏛️', title: '장관·차관 앉히기', say: '영입한 사람을 눌러 장관 후보(청문회)나 차관으로 앉혀 보세요. 부처 힘이 나라 전체에 퍼져요.', go: { screen: 'personal', key: 'personal', tab: 'talent' }, done: (s) => !!s.cabinet && (cabinetOf(s).people.some((p) => p.seat) || !!cabinetOf(s).hearing), reward: { ruby: 5 } },
+  { id: 'bill', icon: '📜', title: '법안 내기', say: '사회 → 정계의 국회에서 법안 카드 하나를 내 보세요. 2시간 뒤 표결해요.', go: { screen: 'society', key: 'society', tab: 'politics' }, done: (s) => !!assemblyOf(s).vote || (assemblyOf(s).passed ?? 0) > 0 || assemblyOf(s).log.length > 0, reward: { boosts: 2 } },
   { id: 'daily', icon: '📅', title: '매일 할 일 보상 받기', say: '본부 🛒 상점(개인 → 업적·상점) → 매일 할 일에서 다 한 일의 루비를 받아 보세요. 매일 바뀌어요.', go: { screen: 'shop', key: 'shop', tab: 'daily' }, done: (s) => goalsOf(s).daily.some((d) => d.claimed) || goalsOf(s).got.length > 0, reward: { ruby: 10, boosts: 3 } },
 ];
 

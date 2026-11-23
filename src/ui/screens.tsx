@@ -1,4 +1,6 @@
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
+import { BriefingModal } from './BriefingUI';
+import { todos } from '../game/briefing';
 import { useState } from 'react';
 import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
@@ -85,6 +87,7 @@ export function HomeScreen(props: ScreenProps) {
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
   const [presOpen, setPresOpen] = useState(false);
+  const [brfOpen, setBrfOpen] = useState(false);
   const [talkOpen, setTalkOpen] = useState(false);
   const [crisisOpen, setCrisisOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
@@ -124,6 +127,7 @@ export function HomeScreen(props: ScreenProps) {
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
       { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
       { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
+      { icon: '📰', label: '국정 보고', x: 70, y: 87, on: () => setBrfOpen(true), badge: todos(state).length || null },
       { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
     ];
 
@@ -135,6 +139,7 @@ export function HomeScreen(props: ScreenProps) {
       {ordersOpen && <OrdersModal state={state} apply={actions.apply} onClose={() => setOrdersOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
       {presOpen && <PresModal state={state} onClose={() => setPresOpen(false)} />}
+      {brfOpen && <BriefingModal state={state} onClose={() => setBrfOpen(false)} goTab={goTab} />}
 
       <div className="home-res">
         <button className={`ichip pres-chip ${moodLabel(presOf(state).approval).tone ?? ''}`} onClick={() => setPresOpen(true)} aria-label="지지도, 국정 현황 보기">
