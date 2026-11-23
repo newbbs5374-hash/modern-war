@@ -15,6 +15,7 @@ import { AidesPanel, GeneralsPanel, LeaderHero, RivalsPanel, StatsPanel, Trainin
 import { OpsScreen, type ScreenProps } from './screens';
 import { Tabs, useTab, type TabDef } from './kit';
 import { FieldBar } from './PresUI';
+import { PolicyPanel } from './PolicyPanel';
 import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
 
 /** 시설 15개를 효과가 닿는 분야로 나눔 */
@@ -131,6 +132,7 @@ export function EconomyScreen(props: ScreenProps) {
   const [raw, setTab] = useTab<EconomyTab>('economy', 'vault');
   const tabs: TabDef<EconomyTab>[] = [
     { id: 'vault', label: '금고', icon: '💰' },
+    { id: 'tax', label: '예산·세금', icon: '📊' },
     { id: 'res', label: '자원', icon: '⛏️' },
     { id: 'ind', label: '산업 시설', icon: '🏭', badge: choreIn(props, ECONOMY_BUILDINGS) ? '!' : null },
     { id: 'trade', label: '무역', icon: '🚢' },
@@ -142,6 +144,7 @@ export function EconomyScreen(props: ScreenProps) {
       <FieldBar state={props.state} field="economy" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'vault' && <TreasuryPanel {...props} />}
+      {tab === 'tax' && <PolicyPanel {...props} />}
       {tab === 'res' && <ResourcePanel {...props} />}
       {tab === 'ind' && <FacilityPanel {...props} only={ECONOMY_BUILDINGS} />}
       {tab === 'trade' && <TradePanel {...props} />}

@@ -12,6 +12,7 @@ import { addLoyalty } from './loyal';
 import { note } from './officer';
 import { incomeShare, isAlive, pairKey, relationOf } from './world';
 import type { GameState } from './state';
+import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
 export const IMPEACH_BELOW = 20;
@@ -97,6 +98,8 @@ function defenseRows(s: GameState): Rows {
   }
   if (lost) rows.push([`빼앗긴 우리 도시 ${lost}곳`, -12 * lost]);
   if (won) rows.push([`차지한 도시 ${won}곳`, Math.min(15, 3 * won)]);
+  const sp = splitDefenseScore(s);
+  if (sp) rows.push([`국방 예산 ${splitOf(s).def}%`, sp]);
   return rows;
 }
 
@@ -123,6 +126,8 @@ function diploRows(s: GameState): Rows {
     if (Math.abs(avg) >= 2) rows.push([`평균 호감 ${r0(avg)}`, avg * 0.25]);
   }
   if (wars) rows.push([`전쟁 ${wars}곳`, -6 * wars]);
+  const sp = splitDiploScore(s);
+  if (sp) rows.push([`외교 예산 ${splitOf(s).dip}%`, sp]);
   return rows;
 }
 
@@ -144,6 +149,8 @@ function economyRows(s: GameState): Rows {
   if (contracts) rows.push([`무역 계약 ${contracts}개`, Math.min(10, 3 * contracts)]);
   if (BASIC_RES.some((r) => (s.economy.stock[r] ?? 0) < 1)) rows.push(['기본 자원 부족', -10]);
   if ((s.nations[me]?.treasury ?? 0) < 0) rows.push(['금고 빚', -15]);
+  const sp = splitEcoScore(s);
+  if (sp) rows.push([`경제 예산 ${splitOf(s).eco}%`, sp]);
   return rows;
 }
 
@@ -192,6 +199,8 @@ export function fieldScores(s: GameState): Record<FieldId, number> {
 
 export function approvalRows(s: GameState, sc: Record<FieldId, number> = fieldValues(s)): Rows {
   const rows: Rows = FIELDS.filter((f) => APPROVAL_W[f.id] > 0).map((f) => [`${f.icon} ${f.name} ${r0(sc[f.id])} × ${Math.round(APPROVAL_W[f.id] * 100)}%`, sc[f.id] * APPROVAL_W[f.id]]);
+  const tx = taxApproval(s);
+  if (tx) rows.push([`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, tx]);
   for (const m of presOf(s).mods) if (m.untilMs > s.worldMs && m.v) rows.push([m.why, m.v]);
   return rows;
 }
