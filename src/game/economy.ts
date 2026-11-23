@@ -10,9 +10,8 @@ import {
   CITY_RES,
   ECON_RANK,
   FACILITIES,
-  FACILITY_EFF,
   BUILDING_IDS,
-  BUFF_EFF,
+  buildingStart,
   BUFF_HOURS,
   RES_BUILDING,
   buildingInfo,
@@ -40,6 +39,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { isAlive, relationOf } from './world';
+import { facBonus, facEff } from './facility';
 import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, tradeEdge, unitTechLock } from './civ';
 import { EXCLUSIVES, exclusiveLock, specialById, specialsOf, type SpecialDef } from '../data/specials';
 
@@ -110,16 +110,16 @@ export const CONTRACT_QTY = [1, 2, 5, 10];
 
 export function newEconomy(): EconomyState {
   const f = (): FacilityState => ({ level: 1, exp: 0, buildEndMs: 0 });
-  return { facilities: { 산업: f(), 인프라: f(), 복지: f() }, buildings: newBuildings(), stock: emptyStock(), chore: null, queue: [], army: {}, power: 0, nextId: 1, log: [] };
+  return { facilities: { 산업: f(), 인프라: f(), 복지: f(), 과학: f(), 국방: f() }, buildings: newBuildings(), stock: emptyStock(), chore: null, queue: [], army: {}, power: 0, nextId: 1, log: [] };
 }
 
 export function newBuildings(from?: Partial<Record<Facility, FacilityState>>): Record<BuildingId, BuildingState> {
-  return Object.fromEntries(BUILDING_IDS.map((id) => [id, { level: from?.[buildingInfo(id).fac]?.level ?? 1, buildEndMs: 0, buffEndMs: 0 }])) as Record<BuildingId, BuildingState>;
+  return Object.fromEntries(BUILDING_IDS.map((id) => [id, { level: buildingStart(id) === 0 ? 0 : (from?.[buildingInfo(id).fac]?.level ?? 1), buildEndMs: 0, buffEndMs: 0 }])) as Record<BuildingId, BuildingState>;
 }
 
 function cloneEco(e: EconomyState): EconomyState {
   return {
-    facilities: { 산업: { ...e.facilities.산업 }, 인프라: { ...e.facilities.인프라 }, 복지: { ...e.facilities.복지 } },
+    facilities: Object.fromEntries(Object.entries(e.facilities).map(([k, v]) => [k, { ...v }])) as EconomyState['facilities'],
     buildings: Object.fromEntries(Object.entries(e.buildings).map(([k, v]) => [k, { ...v }])) as Record<BuildingId, BuildingState>,
     stock: { ...e.stock },
     chore: e.chore ? { ...e.chore } : null,
@@ -140,10 +140,10 @@ function log(e: EconomyState, text: string) {
 
 /** 시설 효과(단계 + 특별 가동 중이면 +BUFF_EFF). 0 = 효과 없음 */
 export function buildingEff(s: GameState, id: BuildingId): number {
-  const b = s.economy.buildings?.[id];
-  if (!b) return 0;
-  return FACILITY_EFF[Math.max(0, Math.min(4, b.level - 1))] + (b.buffEndMs > s.worldMs ? BUFF_EFF : 0);
+  return facEff(s, id);
 }
+/** 새 시설 효과(세기 반영): 국방과학연구소 연구 · 정보본부 임무 · 우주기지 전투력 · 방공포대 방어 · 훈련소 훈련 · 비축창고 보급 */
+export { facBonus };
 export const buffActive = (s: GameState, id: BuildingId) => (s.economy.buildings?.[id]?.buffEndMs ?? 0) > s.worldMs;
 /** 군수공장: 국방예산 배율 */
 export const budgetMult = (s: GameState) => 1 + buildingEff(s, '군수공장');
@@ -227,9 +227,15 @@ export function canChore(s: GameState): string | null {
   if (s.economy.chore) return '하고 있는 내정 업무가 있어요';
   return null;
 }
+/** 그 시설에 업무를 맡길 수 있는지(아직 안 지은 시설은 못 맡김) */
+export function canChoreAt(s: GameState, id: BuildingId): string | null {
+  if ((s.economy.buildings[id]?.level ?? 0) < 1) return '먼저 지어야 해요';
+  return canChore(s);
+}
 /** 시설 이름(또는 예전처럼 분야 이름)으로 업무 시작 */
 export function startChore(s: GameState, target: BuildingId | Facility): GameState {
   if (canChore(s)) return s;
+  if (!(FACILITIES as readonly string[]).includes(target) && canChoreAt(s, target as BuildingId)) return s;
   const e = cloneEco(s.economy);
   const building = (FACILITIES as readonly string[]).includes(target) ? BUILDING_IDS.find((id) => buildingInfo(id).fac === target)! : (target as BuildingId);
   e.chore = { fac: buildingInfo(building).fac, building, title: CHORES[building], endMs: s.worldMs + CHORE_HOURS * HOUR };
@@ -365,7 +371,7 @@ export function armyPower(s: GameState): number {
  */
 export const PLAYER_REBEL_MULT = 0.25;
 export function occupyHold(s: GameState): { rebel: number; defense: number } {
-  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * buildingEff(s, '치안청')), defense: (1 + Math.min(1, s.economy.power / 1500)) * (1 + homeDefBonus(s)) };
+  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * buildingEff(s, '치안청')), defense: (1 + Math.min(1, s.economy.power / 1500)) * (1 + homeDefBonus(s)) * (1 + facBonus(s, '방공포대')) };
 }
 
 // ── 무역(준장부터, 전쟁 중이 아닌 나라와) ──

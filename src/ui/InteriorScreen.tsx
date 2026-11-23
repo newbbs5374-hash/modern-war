@@ -1,5 +1,5 @@
-// 내정 화면: 금고(나라 살림 한눈에) · 자원(설명·사용처·획득처) · 시설(분야별 3개 + 내정 업무)
-import { ResIcon } from './iconArt';
+// 내정 화면: 금고(나라 살림 한눈에) · 자원(설명·사용처·획득처) · 시설(분야 5개 × 3개 + 내정 업무, 단계마다 그림)
+import { ResIcon, facilityArtExact, facilityArtUrl, vaultArtUrl, type VaultName } from './iconArt';
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { CITIES } from '../data/cities';
@@ -7,12 +7,13 @@ import {
   BUFF_EFF,
   BUFF_HOURS,
   BUILDINGS,
+  BUILDING_SCALE,
   CHORES,
   CHORE_EXP,
   CHORE_HOURS,
   CITY_RES,
   FACILITIES,
-  FACILITY_EFF,
+  levelEff,
   FACILITY_TEXT,
   OCCUPIED_RES,
   COMPOSITE_INPUT,
@@ -36,7 +37,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import {
   buffActive,
   buildingEff,
-  canChore,
+  canChoreAt,
   canUpgrade,
   claimChore,
   contractMoneyPerHour,
@@ -167,6 +168,27 @@ export function InteriorScreen(props: ScreenProps) {
 }
 
 /* ───────── 금고 ───────── */
+/** 금고 칸 이름: 그림이 있으면 오른쪽 위에 그림, 없으면 이모지 */
+function VaultLabel({ n, emoji }: { n: VaultName; emoji: string }) {
+  const url = vaultArtUrl(n);
+  return url ? (
+    <>
+      <img className="vbox-art" src={url} alt="" draggable={false} />
+      <small>{n}</small>
+    </>
+  ) : (
+    <small>
+      {emoji} {n}
+    </small>
+  );
+}
+/** 시설 효과 %(그 단계 기준, 특별 가동 빼고) */
+const levelPct = (id: BuildingId, lv: number) => Math.round(levelEff(id, lv) * (BUILDING_SCALE[id] ?? 1) * 1000) / 10;
+/** 시설 그림(단계마다 다름) 또는 이모지 */
+function FacArt({ id, level, cls = '' }: { id: BuildingId; level: number; cls?: string }) {
+  const url = facilityArtUrl(id, level);
+  return url ? <img className={`fac-art ${level < 1 ? 'empty' : ''} ${cls}`} src={url} alt={id} draggable={false} /> : <span className={`bcard-ico ${level < 1 ? 'empty' : ''}`}>{buildingInfo(id).icon}</span>;
+}
 function TreasuryPanel({ state, actions }: ScreenProps) {
   const me = countryById(state.player.countryId);
   const n = state.nations[me.id];
@@ -182,7 +204,8 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
   const contracts = e.contracts ?? [];
   const cm = contractMoneyPerHour(state);
   const buffs = BUILDINGS.filter((b) => buffActive(state, b.id)).length;
-  const avgLv = BUILDINGS.reduce((a, b) => a + (e.buildings[b.id]?.level ?? 1), 0) / BUILDINGS.length;
+  const avgLv = BUILDINGS.reduce((a, b) => a + (e.buildings[b.id]?.level ?? 0), 0) / BUILDINGS.length;
+  const builtN = BUILDINGS.filter((b) => (e.buildings[b.id]?.level ?? 0) >= 1).length;
   const bRows = budgetBreakdown(state);
   const tRows = troopsBreakdown(state);
   const budget = budgetPerDay(state, me.id);
@@ -201,17 +224,17 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
       </section>
       <div className="vault">
         <div className="vbox big">
-          <small>💰 국방예산</small>
+          <VaultLabel n="국방예산" emoji="💰" />
           <b>{fmt(n.treasury)}</b>
           <Tip label={`+${fmt(budget + cm)}/시간`} title="국방예산 시간당" rows={bRows} total={`+${fmt(budget + cm)}`} />
         </div>
         <div className="vbox big">
-          <small>🪖 병력</small>
+          <VaultLabel n="병력" emoji="🪖" />
           <b>{fmt(n.troops)}명</b>
           <Tip label={`${sign(troops - troopLoss)}/시간`} title="병력 시간당" rows={tRows} total={sign(troops - troopLoss)} />
         </div>
         <div className="vbox">
-          <small>💵 봉급</small>
+          <VaultLabel n="봉급" emoji="💵" />
           <b>{fmt(state.player.salary)}</b>
           <Tip
             label={`+${fmt(salaryPerDay(state))}/시간`}
@@ -224,19 +247,19 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
           />
         </div>
         <div className="vbox">
-          <small>🏙️ 도시</small>
+          <VaultLabel n="도시" emoji="🏙️" />
           <b>{mine.length}</b>
           <small className="muted">
             본토 {mine.length - occupied}/{home.length} · 점령 {occupied}
           </small>
         </div>
         <div className="vbox">
-          <small>💪 전투력</small>
+          <VaultLabel n="전투력" emoji="💪" />
           <b>{fmt(e.power)}</b>
           <small className="muted">부대 {units} · 모집 중 {e.queue.length}</small>
         </div>
         <div className="vbox">
-          <small>🌐 외교</small>
+          <VaultLabel n="외교" emoji="🌐" />
           <b>
             🤝{relCount('연합')} ⚔️{relCount('전쟁')}
           </b>
@@ -245,12 +268,12 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
           </small>
         </div>
         <div className="vbox">
-          <small>📦 자원 값어치</small>
+          <VaultLabel n="자원 값어치" emoji="📦" />
           <b>{fmt(stockValue)}</b>
           <small className="muted">7종 보유량 × 기본값</small>
         </div>
         <div className="vbox">
-          <small>🔁 무역 계약</small>
+          <VaultLabel n="무역 계약" emoji="🔁" />
           <b>{contracts.length}개</b>
           <small className={cm >= 0 ? 'ok' : 'warn'}>
             {cm >= 0 ? '+' : ''}
@@ -258,12 +281,14 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
           </small>
         </div>
         <div className="vbox">
-          <small>🏭 시설</small>
+          <VaultLabel n="시설" emoji="🏭" />
           <b>평균 {r1(avgLv)}단계</b>
-          <small className="muted">특별 가동 {buffs}곳</small>
+          <small className="muted">
+            {builtN}/{BUILDINGS.length}곳 · 특별 가동 {buffs}곳
+          </small>
         </div>
         <div className="vbox">
-          <small>🕵️ 정보 · 🤝 신뢰</small>
+          <VaultLabel n="정보 · 신뢰" emoji="🕵️ 정보" />
           <b>
             {fmt(state.officer.intel)} · {Math.round(state.officer.trust)}
           </b>
@@ -473,14 +498,13 @@ function FacilityGroup({ state, fac, onPick }: ScreenProps & { fac: Facility; on
           const building = st.buildEndMs > state.worldMs;
           const buff = buffActive(state, b.id);
           const ready = !canUpgrade(state, b.id);
+          const empty = st.level < 1;
           return (
-            <button key={b.id} className={`bcard ${buff ? 'buff' : ''} ${ready ? 'ready' : ''}`} onClick={() => onPick(b.id)}>
+            <button key={b.id} className={`bcard ${buff ? 'buff' : ''} ${ready ? 'ready' : ''} ${empty ? 'empty' : ''}`} onClick={() => onPick(b.id)}>
               {buff && <i className="badge">⚡</i>}
-              <span className="bcard-ico">{b.icon}</span>
+              <FacArt id={b.id} level={st.level} />
               <b>{b.id}</b>
-              <small>
-                Lv.{st.level} · +{Math.round(buildingEff(state, b.id) * 100)}%
-              </small>
+              <small>{empty ? '빈 땅 · 지을 수 있어요' : `Lv.${st.level} · +${Math.round(buildingEff(state, b.id) * (BUILDING_SCALE[b.id] ?? 1) * 1000) / 10}%`}</small>
               {building ? (
                 <small className="ok">🏗️ {timeLeft(st.buildEndMs - state.worldMs)}</small>
               ) : st.level < 5 ? (
@@ -500,13 +524,14 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
   const info = buildingInfo(id);
   const st = state.economy.buildings[id];
   const why = canUpgrade(state, id);
-  const choreWhy = canChore(state);
+  const choreWhy = canChoreAt(state, id);
+  const empty = st.level < 1;
   const c = upgradeCost(state, id);
   const [msg, setMsg] = useState('');
   return (
     <Modal
       title={id}
-      icon={info.icon}
+      icon={facilityArtUrl(id, st.level) ? undefined : info.icon}
       onClose={onClose}
       footer={
         <>
@@ -524,28 +549,40 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
             disabled={!!why}
             onClick={() => {
               actions.apply((s) => upgradeFacility(s, id));
-              setMsg('공사를 시작했어요.');
+              setMsg(empty ? '짓기 시작했어요.' : '공사를 시작했어요.');
             }}
           >
-            {why ?? '⬆️ 올리기'}
+            {why ?? (empty ? '🏗️ 짓기' : '⬆️ 올리기')}
           </button>
         </>
       }
     >
+      <div className="fac-hero">
+        <FacArt id={id} level={st.level} cls="big" />
+      </div>
+      <div className="fac-steps">
+        {[1, 2, 3, 4, 5].map((lv) => {
+          const u = facilityArtExact(id, lv);
+          return (
+            <span key={lv} className={`fac-step ${lv <= st.level ? 'on' : ''} ${lv === st.level ? 'now' : ''}`}>
+              {u ? <img src={u} alt="" draggable={false} /> : <i>{lv <= st.level ? info.icon : '·'}</i>}
+              <small>{lv}단계</small>
+            </span>
+          );
+        })}
+      </div>
       <p>
         <span className="tag">{info.fac}</span> {info.does}
       </p>
       <div className="kv2">
         <span>지금</span>
-        <b>
-          {st.level}단계 · +{Math.round(FACILITY_EFF[st.level - 1] * 100)}%
-        </b>
+        <b>{empty ? '빈 땅(아직 안 지음)' : `${st.level}단계 · +${levelPct(id, st.level)}%`}</b>
         <span>특별 가동</span>
-        <b>{buffActive(state, id) ? `⚡ +${BUFF_EFF * 100}% · ${timeLeft(st.buffEndMs - state.worldMs)}` : '없음'}</b>
+        <b>{buffActive(state, id) ? `⚡ +${Math.round(BUFF_EFF * (BUILDING_SCALE[id] ?? 1) * 1000) / 10}% · ${timeLeft(st.buffEndMs - state.worldMs)}` : '없음'}</b>
         {st.level < 5 && (
           <>
             <span>다음 단계</span>
-            <b>+{Math.round(FACILITY_EFF[st.level] * 100)}%</b>
+            <b>+{levelPct(id, st.level + 1)}%</b>
             <span>{info.fac} 경험</span>
             <b>
               {fmt(state.economy.facilities[info.fac].exp)} / {c.exp}
@@ -561,7 +598,7 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
       </div>
       {st.buildEndMs > state.worldMs && <BoostBar state={state} apply={actions.apply} target={{ kind: 'build', fac: id }} />}
       <p className="small muted" style={{ marginTop: 6 }}>
-        📋 업무 "{CHORES[id]}": {CHORE_HOURS}시간 뒤 {info.fac} 경험 +{CHORE_EXP}, 그리고 {BUFF_HOURS}시간 동안 이 시설 효과 +{BUFF_EFF * 100}%.
+        📋 업무 "{CHORES[id]}": {CHORE_HOURS}시간 뒤 {info.fac} 경험 +{CHORE_EXP}, 그리고 {BUFF_HOURS}시간 동안 이 시설 효과 +{Math.round(BUFF_EFF * (BUILDING_SCALE[id] ?? 1) * 1000) / 10}%.
       </p>
       {msg && <p className="small result">{msg}</p>}
     </Modal>

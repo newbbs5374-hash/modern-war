@@ -126,15 +126,17 @@ export function specialCost(base: string, k: { money?: number; hours?: number; p
 export const ECON_RANK = 0;
 export const TOP_RANK = 10;
 
-export const FACILITIES = ['산업', '인프라', '복지'] as const;
+export const FACILITIES = ['산업', '인프라', '복지', '과학', '국방'] as const;
 export type Facility = (typeof FACILITIES)[number];
 export const FACILITY_TEXT: Record<Facility, string> = {
   산업: '국방예산과 자원이 더 많이 쌓임',
   인프라: '육·해·공 부대 모집이 빨라짐',
   복지: '병력이 늘고, 덜 줄고, 점령지가 조용해짐',
+  과학: '연구·임무·전투력이 좋아짐',
+  국방: '도시를 잘 지키고, 훈련·대전투가 좋아짐',
 };
 
-/** 내정 시설 9개(분야마다 3개). 단계 1~5 */
+/** 내정 시설 15개(분야마다 3개). 단계 1~5. start 0 = 처음엔 빈 땅이라 직접 지어야 함(11-23 대장 결정) */
 export const BUILDINGS = [
   { id: '군수공장', fac: '산업', icon: '🏭', does: '국방예산 수입', unit: '예산' },
   { id: '제련소', fac: '산업', icon: '🔥', does: '강철·알루미늄·티타늄·구리 생산', unit: '금속' },
@@ -145,7 +147,27 @@ export const BUILDINGS = [
   { id: '징병소', fac: '복지', icon: '📝', does: '병력 증가', unit: '모병' },
   { id: '군병원', fac: '복지', icon: '🏥', does: '병력 줄어듦 감소', unit: '감소' },
   { id: '치안청', fac: '복지', icon: '🚓', does: '점령지 반란 감소', unit: '반란' },
+  { id: '국방과학연구소', fac: '과학', icon: '🧬', does: '연구 속도', unit: '연구', start: 0 },
+  { id: '정보본부', fac: '과학', icon: '🕵️', does: '임무 성공률', unit: '임무', start: 0 },
+  { id: '우주기지', fac: '과학', icon: '🛰️', does: '정찰 위성으로 모든 전투력', unit: '전투력', start: 0 },
+  { id: '방공포대', fac: '국방', icon: '🛡️', does: '우리 도시 방어도', unit: '방어', start: 0 },
+  { id: '훈련소', fac: '국방', icon: '🎯', does: '훈련 경험치', unit: '훈련', start: 0 },
+  { id: '비축창고', fac: '국방', icon: '📦', does: '대전투 연료·탄약 아끼기', unit: '보급', start: 0 },
 ] as const;
+/** 처음 단계(없으면 1) */
+export const buildingStart = (id: string): number => {
+  const b = BUILDINGS.find((x) => x.id === id) as { start?: number } | undefined;
+  return b?.start ?? 1;
+};
+/** 효과 세기(단계 효과 × 이 값) */
+export const BUILDING_SCALE: Partial<Record<string, number>> = {
+  국방과학연구소: 0.5, // 연구 +5% … +50%
+  정보본부: 0.1, // 임무 성공률 +1%p … +10%p
+  우주기지: 0.1, // 전투력 +1% … +10%
+  방공포대: 0.5, // 방어 +5% … +50%
+  훈련소: 0.5, // 훈련 경험치 +5% … +50%
+  비축창고: 0.5, // 연료·탄약 −5% … −50%
+};
 export type BuildingId = (typeof BUILDINGS)[number]['id'];
 export const BUILDING_IDS = BUILDINGS.map((b) => b.id) as BuildingId[];
 export const buildingInfo = (id: BuildingId) => BUILDINGS.find((b) => b.id === id)!;
@@ -160,10 +182,19 @@ export const COMPOSITE_INPUT: Partial<Stock> = { 알루미늄: 2, 석유: 1 };
 
 /** 단계(1~5)마다 효과 */
 export const FACILITY_EFF = [0, 0.15, 0.35, 0.6, 1.0];
+/** 새로 짓는 시설(빈 땅 시작)은 1단계부터 효과가 있음 */
+export const NEW_FACILITY_EFF = [0.1, 0.25, 0.45, 0.7, 1.0];
+/** 그 단계의 효과(특별 가동 빼고, 세기 곱하기 전). 0단계 = 0 */
+export function levelEff(id: string, lv: number): number {
+  if (lv < 1) return 0;
+  const t = buildingStart(id) === 0 ? NEW_FACILITY_EFF : FACILITY_EFF;
+  return t[Math.min(4, lv - 1)];
+}
 /** 시설을 다음 단계로 올리는 데 필요한 분야 경험치·예산·시간(인덱스 = 지금 단계) */
-export const UPGRADE_EXP = [0, 60, 150, 300, 600];
-export const UPGRADE_MONEY = [0, 2000, 5000, 12000, 25000];
-export const UPGRADE_HOURS = [0, 1, 3, 6, 10];
+/** 0단계(빈 땅) → 1단계 = 새로 짓기 */
+export const UPGRADE_EXP = [30, 60, 150, 300, 600];
+export const UPGRADE_MONEY = [3000, 2000, 5000, 12000, 25000];
+export const UPGRADE_HOURS = [1, 1, 3, 6, 10];
 /** 지도자 등급마다 올릴 수 있는 최고 단계: 1등급 2단계 … */
 export const buildingMaxLevel = (rank: number) => Math.min(5, 2 + Math.floor(rank / 3));
 /** 분야 경험치: 가만히 있어도 실제 1시간에 이만큼 */
@@ -183,6 +214,12 @@ export const CHORES: Record<BuildingId, string> = {
   징병소: '모병 홍보 순회',
   군병원: '부상병 병원 방문',
   치안청: '점령지 순찰 강화',
+  국방과학연구소: '연구원 성과 발표회',
+  정보본부: '해외 정보원 접선',
+  우주기지: '위성 발사 참관',
+  방공포대: '방공 비상 훈련',
+  훈련소: '훈련병 수료식 참석',
+  비축창고: '보급품 재고 점검',
 };
 
 /** 지도 위 대전투 한 번에 드는 연료(석유)·탄약(구리). 모자라면 그만큼 적게 채우고 출발 */

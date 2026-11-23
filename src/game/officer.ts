@@ -38,6 +38,7 @@ import type { GameState } from './state';
 import { armyPower } from './economy';
 import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
+import { facBonus } from './facility';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
 
 const HOUR = 60 * 60 * 1000;
@@ -420,7 +421,7 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
     const featured = featuredTraining(ns.worldMs, ns.player.rankIndex) === name;
     const record = stars > (best[name] ?? 0);
     if (record) best[name] = stars;
-    const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1);
+    const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1) * (1 + facBonus(ns, '훈련소'));
     const gains: Partial<Record<StatId, number>> = {};
     const exp: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
@@ -962,13 +963,17 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
     if (field) {
       // 연료·탄약: 창고의 석유·구리를 씀(모자라면 그만큼만 채우고 출발)
       const st = { ...ns.economy.stock };
-      const fuel = Math.min(FIELD_FUEL_COST, Math.max(0, st.석유));
-      const ammo = Math.min(FIELD_AMMO_COST, Math.max(0, st.구리 ?? 0));
+      // 비축창고: 같은 양을 채우는 데 드는 석유·구리가 줄어듦
+      const save = 1 - facBonus(ns, '비축창고');
+      const needF = FIELD_FUEL_COST * save;
+      const needA = FIELD_AMMO_COST * save;
+      const fuel = Math.min(needF, Math.max(0, st.석유));
+      const ammo = Math.min(needA, Math.max(0, st.구리 ?? 0));
       st.석유 -= fuel;
       st.구리 = (st.구리 ?? 0) - ammo;
       ns.economy = { ...ns.economy, stock: st };
-      m.fuel = Math.round((fuel / FIELD_FUEL_COST) * 100) / 100;
-      m.ammo = Math.round((ammo / FIELD_AMMO_COST) * 100) / 100;
+      m.fuel = Math.round((needF ? fuel / needF : 1) * 100) / 100;
+      m.ammo = Math.round((needA ? ammo / needA : 1) * 100) / 100;
     }
     m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };

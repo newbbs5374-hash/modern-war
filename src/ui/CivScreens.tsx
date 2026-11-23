@@ -45,7 +45,7 @@ import { Help, Meter, Modal, Tile } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 import { Tip } from './InteriorScreen';
-import { IslandIcon, ResIcon, islandArtUrl } from './iconArt';
+import { ArtIcon, IslandIcon, ResIcon, cardArtKey, eraArtKey, govArtKey, iconArt, islandArtUrl, techArtKey } from './iconArt';
 
 const H = 3600e3;
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -67,7 +67,7 @@ export function ResearchPanel(props: ScreenProps) {
     const got = t ? (c.progress[t.id] ?? 0) : 0;
     return (
       <button className={`civ-cur ${t ? '' : 'idle'}`} onClick={() => (setLine(l), t && setPick(t))}>
-        <span className="civ-cur-ico">{t ? t.icon : l === 'mil' ? '⚙️' : '📜'}</span>
+        <span className="civ-cur-ico">{t ? <ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} /> : l === 'mil' ? '⚙️' : '📜'}</span>
         <span className="civ-cur-main">
           <small className="muted">{l === 'mil' ? '군사 기술' : '사회 제도'}</small>
           <b>{t ? t.name : '고르는 중…'}</b>
@@ -88,7 +88,7 @@ export function ResearchPanel(props: ScreenProps) {
       <section className="card">
         <div className="row">
           <span className="civ-era">
-            {ERAS[c.era].icon} <b>{ERAS[c.era].name}</b> <small className="muted">· 끝낸 연구 {c.done.length}/35</small>
+            <ArtIcon k={eraArtKey(c.era)} emoji={ERAS[c.era].icon} cls="inline" /> <b>{ERAS[c.era].name}</b> <small className="muted">· 끝낸 연구 {c.done.length}/35</small>
           </span>
           <Tip label={`🔬 ×${r1(rate)}`} title="연구 속도(실제 1시간에)" rows={C.researchBreakdown(state).map(([k, v]) => [k, `+${r1(v)}`])} total={`${r1(rate)}`} />
           <Help title="연구">
@@ -121,7 +121,7 @@ export function ResearchPanel(props: ScreenProps) {
       {([1, 2, 3, 4] as const).map((era) => (
         <div key={era} className="civ-era-row">
           <small className="stat-group-name">
-            {ERAS[era].icon} {ERAS[era].name}
+            <ArtIcon k={eraArtKey(era)} emoji={ERAS[era].icon} cls="inline" /> {ERAS[era].name}
           </small>
           <div className="tiles c5">
             {list
@@ -134,7 +134,7 @@ export function ResearchPanel(props: ScreenProps) {
                 return (
                   <Tile
                     key={t.id}
-                    icon={t.icon}
+                    icon={<ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} />}
                     label={t.name}
                     sub={done ? '✓ 완료' : now ? `${Math.round(prog * 100)}%` : why ? '선행 연구' : `${r1(C.techCost(state, t))}시간`}
                     badge={!done && c.eureka.includes(t.id) ? '💡' : null}
@@ -178,7 +178,7 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
   return (
     <Modal
       title={t.name}
-      icon={t.icon}
+      icon={<ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} />}
       onClose={onClose}
       footer={
         done ? (
@@ -192,6 +192,11 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
         )
       }
     >
+      {iconArt(techArtKey(t.id)) && (
+        <div className="fac-hero">
+          <img className="fac-art big" src={iconArt(techArtKey(t.id))!} alt={t.name} draggable={false} />
+        </div>
+      )}
       <p>
         <span className="tag">{t.line === 'mil' ? '⚙️ 군사 기술' : '📜 사회 제도'}</span> <span className="tag">{ERAS[t.era].icon} {ERAS[t.era].name}</span>
       </p>
@@ -246,7 +251,7 @@ export function GovPanel(props: ScreenProps) {
         <div className="row">
           {gov ? (
             <span className="civ-gov">
-              <span className="civ-gov-ico">{gov.icon}</span>
+              <span className="civ-gov-ico"><ArtIcon k={govArtKey(gov.id)} emoji={gov.icon} alt={gov.name} /></span>
               <span>
                 <b>{gov.name}</b>
                 <small className="muted">{gov.text}</small>
@@ -284,7 +289,7 @@ export function GovPanel(props: ScreenProps) {
               return (
                 <Tile
                   key={i}
-                  icon={card ? card.icon : SLOT_ICON[k as keyof typeof SLOT_ICON]}
+                  icon={card ? <ArtIcon k={cardArtKey(card.id)} emoji={card.icon} alt={card.name} /> : SLOT_ICON[k as keyof typeof SLOT_ICON]}
                   label={card ? card.name : `${k} 칸`}
                   sub={open ? (card ? card.text : '비어 있음 · 누르기') : `${RANKS[needRank]?.name ?? ''}부터`}
                   locked={!open}
@@ -328,7 +333,7 @@ export function GovPanel(props: ScreenProps) {
             return (
               <div key={k.id} className={`list-row ${unlocked ? '' : 'is-locked'}`}>
                 <span>
-                  {k.icon} <b>{k.name}</b> <span className="tag">{k.kind}</span>
+                  <ArtIcon k={cardArtKey(k.id)} emoji={k.icon} alt={k.name} cls="inline" /> <b>{k.name}</b> <span className="tag">{k.kind}</span>
                   <br />
                   <small className="muted">{unlocked ? k.text : `🔒 ${from?.name ?? ''} 연구로 열림 · ${k.text}`}</small>
                 </span>
@@ -361,7 +366,7 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
               onDone();
             }}
           >
-            <span className="civ-gov-ico">{g.icon}</span>
+            <span className="civ-gov-ico"><ArtIcon k={govArtKey(g.id)} emoji={g.icon} alt={g.name} /></span>
             <b>{g.name}</b>
             <small>{g.slots.map((k) => SLOT_ICON[k]).join(' ')}</small>
             <small>{g.text}</small>
