@@ -264,3 +264,12 @@ button.on { outline: 1px solid var(--amber); }
 .away-rows .list-row b { text-align: right; max-width: 62%; }
 .away-good b { color: var(--green, #45f59a); }
 .away-bad b { color: #ff6b6b; }
+
+/* 첩보 */
+.spy-targets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.spy-target { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 2px; font-size: 11px; }
+.spy-target small { font-size: 10.5px; white-space: nowrap; }
+.spy-target.on { border-color: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.spy-target .rel { font-style: normal; font-size: 9.5px; color: var(--muted); }
+.spy-target .rel-전쟁 { color: #ff6b6b; }
+.spy-target .rel-연합 { color: #45f59a; }

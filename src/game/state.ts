@@ -12,6 +12,7 @@ import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
+import { spyTick, type SpyState } from './spy';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
@@ -73,6 +74,8 @@ export interface GameState {
   crisis?: CrisisState;
   /** 미리 명령(자리 비운 동안 부관이 지키는 규칙) */
   orders?: OrdersState;
+  /** 첩보·특수 작전 */
+  spy?: SpyState;
 }
 
 export interface NewGameOptions {
@@ -208,10 +211,10 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = civTick(cur, pairsBefore);
-    cur = ordersTick(crisisTick(cur));
+    cur = spyTick(ordersTick(crisisTick(cur)));
     world = cur.world;
   }
-  return ordersTick(crisisTick(checkVictory(accrue(cur, left))));
+  return spyTick(ordersTick(crisisTick(checkVictory(accrue(cur, left)))));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */
