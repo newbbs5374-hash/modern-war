@@ -1,5 +1,5 @@
 /* ───────── 시안 A "작전 콘솔" 옷 (11/23 대장 선택) ─────────
-   검정 + 형광 초록(주 색) + 주황(강조·경고). 각진 모서리, 계기판 숫자, 얇은 주사선.
+   검정 + 형광 초록(주 색) + 주황(강조·경고). 각진 모서리, 계기판 숫자. (11/23 대장: 화면 전체 가로 주사선은 보기 불편해서 뺌)
    style.css 뒤에 읽혀서 모양만 덮어쓴다. 색 이름은 아래 :root 한 곳에서 고친다. */
 :root {
   --bg: #040705;
@@ -25,12 +25,6 @@ body {
   background: #020403;
 }
 .frame { background: var(--frame); }
-/* 얇은 주사선(화면 전체, 누르기 방해 안 함) */
-.frame::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 90;
-  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
-}
-
 /* 각진 모서리 */
 .card, .modal, .tabs, .itile, .tile, .chip, .hq, .home-quests, .mood, .ichip, button, .bubble, .aide-bubble {
   border-radius: 2px !important;
