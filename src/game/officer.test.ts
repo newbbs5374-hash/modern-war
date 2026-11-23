@@ -45,10 +45,9 @@ describe('장교', () => {
     expect(drillsNow(s.officer, s.worldMs + 4 * H).count).toBe(1);
     expect(drillsNow(s.officer, s.worldMs + 30 * H).count).toBe(DRILL_MAX);
   });
-  it('계급이 모자라면 훈련 잠김', () => {
+  it('11-24: 호칭과 상관없이 처음부터 모든 훈련이 열림', () => {
     const s = newGame('t', 'kr', 0, { seed: 1 });
-    expect(train(s, '포격').result.ok).toBe(false);
-    expect(train(setRank(s, 1), '포격').result.ok).toBe(true);
+    expect(train(s, '포격').result.ok).toBe(true);
   });
   it('스탯은 계급 상한을 넘지 않음', () => {
     let s = newGame('t', 'kr', 0, { seed: 2 });
@@ -56,7 +55,7 @@ describe('장교', () => {
       for (let i = 0; i < 6; i++) s = train(s, '사격').state;
       s = advance(s, 24 * H);
     }
-    expect(s.officer.stats['사격']).toBeLessThanOrEqual(statCap(0));
+    expect(s.officer.stats['사격']).toBeLessThanOrEqual(statCap(s.player.rankIndex));
   });
   it('임무: 게시판 3개 → 시작 → 시간이 지나야 결과, 공훈이 쌓임', () => {
     let s = newGame('t', 'kr', 0, { seed: 3 });

@@ -23,9 +23,10 @@ describe('첩보·특수 작전', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     expect(canSpy(s, 'scout', 'kp')).toMatch(/정보/);
     s = ready(s);
-    expect(canSpy(s, 'sabotage', 'kp')).toMatch(/호칭/);
-    expect(spyTeams(s)).toBe(1);
+    expect(spyTeams(s)).toBe(3); // 11-24: 호칭 잠금 없음
     s = startSpy(s, 'scout', 'kp');
+    s = startSpy(s, 'scout', 'jp');
+    s = startSpy(s, 'scout', 'us');
     expect(canSpy(s, 'scout', 'cn')).toMatch(/팀/);
     expect(canSpy(s, 'scout', 'kr')).toMatch(/나라/);
   });

@@ -5,7 +5,6 @@ import { COUNTRIES, countryById } from '../data/world';
 import { CITIES } from '../data/cities';
 import { BASIC_RES } from '../data/economy';
 import { titlePenalty } from './title';
-import { RANKS } from '../data/ranks';
 import { budgetMult } from './economy';
 import { activeAgreements, chaos, civBudgetMult, cityTotals, favorOf } from './civ';
 import { addLoyalty } from './loyal';
@@ -172,8 +171,6 @@ function personalRows(s: GameState): Rows {
   if (fame) rows.push([`명성 ${r0(o.fame)}`, fame]);
   const pol = Math.min(20, Math.floor(o.stats['정치'] ?? 0) * 0.5);
   if (pol) rows.push([`정치 스탯 ${Math.floor(o.stats['정치'] ?? 0)}`, pol]);
-  const rk = s.player.rankIndex;
-  if (rk) rows.push([`호칭 단계(${RANKS[rk].name})`, Math.min(10, rk)]);
   return rows;
 }
 

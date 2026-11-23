@@ -353,7 +353,7 @@ export function canAppointMinister(s: GameState, pid: number, min: MinistryId): 
   if (c.hearing) return '다른 청문회가 진행 중이에요';
   if (ministerOf(c, min)) return '이미 장관이 있어요(먼저 해임)';
   const cur = p.seat?.kind === 'min' ? 0 : 1;
-  if (ministerCount(c) + cur > ministerSlots(s.player.rankIndex)) return `장관 자리가 다 찼어요(${ministerSlots(s.player.rankIndex)}석, 호칭이 오르면 늘어요)`;
+  if (ministerCount(c) + cur > ministerSlots(s.player.rankIndex)) return `장관 자리가 다 찼어요(${ministerSlots(s.player.rankIndex)}석)`;
   return null;
 }
 /** 장관 임명: 국회 인사청문회(실제 30분) 뒤 결과 */

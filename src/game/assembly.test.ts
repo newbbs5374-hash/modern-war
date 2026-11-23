@@ -35,7 +35,7 @@ describe('국회·재신임', () => {
     expect(assemblyOf(won).confMs).toBeGreaterThan(CONF_MS);
     s = { ...s, pres: { ...newPres(), approval: 0 } };
     const lost = advance(s, 0.3 * H);
-    expect(lost.player.rankIndex).toBe(3);
+    expect(lost.player.rankIndex).toBe(10);
     const lost2 = advance(lost, 1 * H);
     expect(assemblyOf(lost2).confLoss).toBe(1);
     expect(lost2.player.title!).toBeLessThan(lost.player.title!);
