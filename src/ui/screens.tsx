@@ -30,6 +30,7 @@ import { spyOf } from '../game/spy';
 import { ORDER_INFO, ordersOf } from '../game/orders';
 import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
 import { goalsOf } from '../game/goals';
+import { GUIDE, claimGuide, guideOf, guideStep, hideGuide, rewardText } from '../game/guide';
 import { ForcesScreen } from './ForcesScreen';
 import { InteriorScreen } from './InteriorScreen';
 import { DiplomacyScreen } from './DiplomacyScreen';
@@ -87,6 +88,8 @@ export function HomeScreen(props: ScreenProps) {
   const [crisisOpen, setCrisisOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const crisis = crisisOf(state).open;
+  const gstep = guideStep(state);
+  const gready = !!gstep && gstep.done(state);
   const talks = state.officer.talks ?? [];
   const [dayMode, setDayModeState] = useState<DayMode>(() => {
     try {
@@ -161,6 +164,26 @@ export function HomeScreen(props: ScreenProps) {
 
         <div className="home-quests">
           <b className="hq-title">📌 주요 임무</b>
+          {gstep && !guideOf(state).hidden && (
+            <div className="guide-hq">
+              <button
+                className={`hq ${gready ? 'hot' : ''}`}
+                onClick={() => (gready ? actions.apply(claimGuide) : goTab(gstep.go.screen as Screen, gstep.go.key ?? '', gstep.go.tab ?? ''))}
+                title={gstep.say}
+              >
+                <span>{gstep.icon}</span>
+                <span className="hq-main">
+                  <b>
+                    📘 {guideOf(state).step + 1}/{GUIDE.length} {gstep.title}
+                  </b>
+                  <small>{gready ? `✅ 보상 받기 · ${rewardText(gstep.reward)}` : gstep.say}</small>
+                </span>
+              </button>
+              <button className="guide-hide" aria-label="안내 숨기기" onClick={() => actions.apply((s) => hideGuide(s, true))}>
+                ✕
+              </button>
+            </div>
+          )}
           {crisis && (
             <button className="hq hot crisis-hq" onClick={() => setCrisisOpen(true)}>
               <span>{crisisById(crisis.def).icon}</span>
@@ -607,6 +630,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           </button>
           <button onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, boosts: boostsOf(s) + 100 } }))}>🎫 가속권 +100</button>
           <button onClick={() => actions.apply(debugCrisis)}>⚡ 돌발 사건 바로 열기</button>
+          <button onClick={() => actions.apply((s) => hideGuide(s, !guideOf(s).hidden))}>📘 첫 판 안내 {guideOf(state).hidden ? '다시 보기' : '숨기기'}</button>
           <button onClick={() => actions.apply((s) => ({ ...s, goals: { ...goalsOf(s), ruby: goalsOf(s).ruby + 200 } }))}>💎 루비 +200</button>
           <button onClick={() => actions.apply((s) => debugAddAide({ ...s, player: { ...s.player, salary: s.player.salary + 5000 } }))}>
             부관 데려오기 + 봉급 5000
