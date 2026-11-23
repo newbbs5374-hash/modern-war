@@ -293,3 +293,9 @@ button.on { outline: 1px solid var(--amber); }
 .fleet-ctrl button { padding: 4px 10px; }
 .fleet-ctrl button.on { border-color: var(--amber, #ffb02e); color: var(--amber, #ffb02e); }
 .fleet-ctrl small { margin-left: auto; }
+
+/* 첫 판 안내 */
+.guide-hq { position: relative; }
+.guide-hq .hq { width: 100%; border-color: #6cb8ff; }
+.guide-hq .hq small { white-space: normal; line-height: 1.3; }
+.guide-hide { position: absolute; top: 2px; right: 2px; padding: 0 5px; min-height: 0; font-size: 11px; background: transparent; border: 0; color: var(--muted); }
