@@ -120,7 +120,7 @@ export function smoothPath(segs: Seg[], opts: SmoothOpts = {}): string {
     else ctrl = [pts[0], ...pts.slice(0, -1).map((p, i) => mid(p, pts[i + 1])), pts[pts.length - 1]];
     if (ctrl.length < 2) continue;
     // 작은 섬은 덜 다듬어 사라지지 않게
-    const r = closed ? Math.min(rn, Math.floor(ctrl.length / 2)) : rn;
+    const r = closed ? Math.min(rn, ctrl.length * 2) : rn;
     ctrl = relax(ctrl, closed, r);
     if (closed) ctrl = wiggle(ctrl, amp * Math.min(1, ctrl.length / 24));
     const s = chaikin(ctrl, closed, round);
