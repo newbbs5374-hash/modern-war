@@ -307,6 +307,27 @@ export function FieldView(props: FrameProps) {
         onWheel={onWheel}
       >
         <defs>
+          {/* 그림 말 테두리 색: 우리 편 파랑 · 적 빨강 · 고른 말 노랑 · 맞으면 하얗게 */}
+          {(
+            [
+              ['me', '#3b82f6'],
+              ['foe', '#ef4444'],
+              ['sel', '#fde047'],
+            ] as const
+          ).map(([id, color]) => (
+            <filter key={id} id={`fo-${id}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feMorphology in="SourceAlpha" operator="dilate" radius={id === 'sel' ? 1.3 : 0.9} result="thick" />
+              <feFlood floodColor={color} result="c" />
+              <feComposite in="c" in2="thick" operator="in" result="edge" />
+              <feMerge>
+                <feMergeNode in="edge" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          ))}
+          <filter id="fo-hit">
+            <feColorMatrix type="matrix" values="1 0 0 0 0.6  0 1 0 0 0.6  0 0 1 0 0.6  0 0 0 1 0" />
+          </filter>
           {terrains.map((t) => {
             const url = fieldArt(TILE_ART[t]);
             return url ? (
@@ -359,6 +380,32 @@ export function FieldView(props: FrameProps) {
           const jig = hit < 0.3 ? Math.sin(hit * 80) * 1.2 * (1 - hit / 0.3) : 0;
           const x = p.x + (air ? 6 : 0) + jig;
           const y = p.y + (air ? -6 : 0);
+          if (pic) {
+            // 그림이 있으면 동그란 바탕 없이 그림만 크게. 편은 테두리 색과 체력 막대 옆 작은 깃발로
+            const size = air ? 20 : big ? 30 : 25;
+            const half = size * 0.42;
+            const filter = hit < 0.2 ? 'url(#fo-hit)' : u.id === sel ? 'url(#fo-sel)' : `url(#fo-${u.side})`;
+            const hpw = big ? 16 : 13;
+            return (
+              <g key={u.id} transform={`translate(${x},${y})`} pointerEvents="none" className={u.side === 'me' && u.supply < 0.95 ? 'low-supply' : ''}>
+                {u.id === sel && <ellipse cx={0} cy={half * 0.55} rx={half * 0.95} ry={half * 0.38} fill="none" stroke="#fde047" strokeWidth={1} strokeDasharray="2 1.5" />}
+                <Sprite x={0} y={-1} art={artKey} emoji={FUNIT[u.kind].icon} size={size} flip={u.face < 0} filter={filter} />
+                {u.sp && (
+                  <text x={-half} y={-half + 3} fontSize={6}>
+                    🌟
+                  </text>
+                )}
+                <path d={`M${-hpw / 2 - 4},${half - 1.6} l3,1.6 l-3,1.6 z`} fill={SIDE_COLOR[u.side]} stroke="#fff" strokeWidth={0.3} />
+                <rect x={-hpw / 2} y={half - 1} width={hpw} height={2.2} fill="#0009" />
+                <rect x={-hpw / 2} y={half - 1} width={(hpw * Math.max(0, u.hp)) / u.maxHp} height={2.2} fill={u.hp / u.maxHp > 0.5 ? '#22c55e' : u.hp / u.maxHp > 0.25 ? '#f59e0b' : '#ef4444'} />
+                {u.side === 'me' && (u.supply < 0.95 || u.ammo <= 0 || (FUNIT[u.kind].layer !== 'land' && u.fuel <= 0)) && (
+                  <text x={half - 2} y={-half + 4} fontSize={6}>
+                    {u.ammo <= 0 ? '🎯' : FUNIT[u.kind].layer !== 'land' && u.fuel <= 0 ? '⛽' : '🔌'}
+                  </text>
+                )}
+              </g>
+            );
+          }
           return (
             <g key={u.id} transform={`translate(${x},${y})`} pointerEvents="none" className={u.side === 'me' && u.supply < 0.95 ? 'low-supply' : ''}>
               <circle r={r} fill={SIDE_COLOR[u.side]} fillOpacity={pic ? 0.55 : 0.85} stroke={u.id === sel ? '#fde047' : u.side === 'me' ? '#bfdbfe' : '#fecaca'} strokeWidth={u.id === sel ? 1.8 : pic ? 1.1 : 0.7} />
@@ -521,7 +568,7 @@ export function FieldView(props: FrameProps) {
 }
 
 /** 그림이 있으면 그림, 없으면 이모지 */
-function Sprite({ x, y, art, emoji, size, flip, opacity }: { x: number; y: number; art: string; emoji: string; size: number; flip?: boolean; opacity?: number }) {
+function Sprite({ x, y, art, emoji, size, flip, opacity, filter }: { x: number; y: number; art: string; emoji: string; size: number; flip?: boolean; opacity?: number; filter?: string }) {
   const url = fieldArt(art);
   if (url)
     return (
@@ -533,6 +580,7 @@ function Sprite({ x, y, art, emoji, size, flip, opacity }: { x: number; y: numbe
         height={size}
         opacity={opacity}
         pointerEvents="none"
+        filter={filter}
         transform={flip ? `translate(${2 * x},0) scale(-1,1)` : undefined}
       />
     );
