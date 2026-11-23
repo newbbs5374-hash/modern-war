@@ -62,7 +62,7 @@ describe('체제·정책 카드', () => {
     expect(C.canPutCard(s, 0, '경-세금')).toMatch(/군사/);
     s = C.putCard(s, 0, '군-훈련');
     expect(C.effSum(s, 'mission')).toBeCloseTo(0.04);
-    expect(C.canPutCard(s, 2, '군-보급')).toMatch(/없는 칸/);
+    expect(C.canPutCard(s, 8, '군-보급')).toMatch(/없는 칸/);
     // 바꾸기는 하루 1번 무료
     const t0 = s.nations.kr.treasury;
     s = C.putCard(s, 0, '군-보급');

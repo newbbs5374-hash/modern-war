@@ -1,7 +1,7 @@
 // 루비 얻는 길: 매일 할 일 3개 + 업적, 그리고 루비 상점.
 // 할 일·업적 진행은 바뀌기 전·후 상태를 비교해서 센다(실시간·꺼 둔 동안·버튼 모두 같은 함수).
 import { RESOURCES } from '../data/economy';
-import { RANKS } from '../data/ranks';
+import { TITLES } from '../data/ranks';
 import { CITIES } from '../data/cities';
 import { DRILL_MAX, DRILL_REFILL_MS, drillsNow } from './officer';
 import { civOf, myIslands } from './civ';
@@ -98,8 +98,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   ACH('city1', '첫 점령', '🏴', '다른 나라 도시 처음 차지하기', 50, (_, g) => [t(g, 'capture'), 1]),
   ACH('city5', '정복자', '🗺️', '다른 나라 도시 5개 차지하기', 120, (_, g) => [t(g, 'capture'), 5]),
   ACH('island1', '섬의 친구', '🏝️', '분쟁 섬 하나 차지하기', 40, (s) => [myIslands(s).length, 1]),
-  ACH('rank5', '존경받는 길', '⭐', `${RANKS[5].name} 되기`, 50, (s) => [s.player.rankIndex, 5]),
-  ACH('rankMax', '전설', '👑', `${RANKS[RANKS.length - 1].name} 되기`, 200, (s) => [s.player.rankIndex, RANKS.length - 1]),
+  ACH('rank5', '존경받는 길', '⭐', `${TITLES[8].name} 호칭 얻기`, 50, (s) => [s.player.title ?? 0, 8]),
+  ACH('rankMax', '전설', '👑', `${TITLES[TITLES.length - 1].name} 호칭 얻기`, 200, (s) => [s.player.title ?? 0, TITLES.length - 1]),
   ACH('event5', '위기 해결사', '⚡', '돌발 사건 5번 직접 해결', 40, (_, g) => [t(g, 'event'), 5]),
   ACH('spy5', '그림자 사령관', '🕵️', '첩보 작전 5번 성공', 50, (_, g) => [t(g, 'spy'), 5]),
   ACH('streak3', '성실한 지도자', '📅', '매일 할 일 3일 연속 다 하기', 60, (_, g) => [g.streak, 3]),
@@ -194,7 +194,7 @@ export function countDiff(b: GameState, a: GameState): Partial<Record<Count, num
   const me = a.player.countryId;
   if (b.player.countryId === me)
     add('capture', CITIES.filter((c) => c.home !== me && a.world.owner[c.id] === me && b.world.owner[c.id] !== me).length);
-  add('rank', a.player.rankIndex - b.player.rankIndex);
+  add('rank', (a.player.title ?? 0) - (b.player.title ?? 0));
   add('event', (a.crisis?.solved ?? 0) - (b.crisis?.solved ?? 0));
   add('spy', (a.spy?.ok ?? 0) - (b.spy?.ok ?? 0));
   return out;

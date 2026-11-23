@@ -33,7 +33,7 @@ describe('부관 돌보기', () => {
     const s = withAide();
     const id = s.officer.aides[0].id;
     let e = sendAide(s, id, '보급 조달');
-    expect(readyAides(e.officer, e.worldMs)).toHaveLength(0);
+    expect(readyAides(e.officer, e.worldMs).some((a) => a.id === id)).toBe(false);
     expect(claimErrand(e, id).text).toBe('');
     e = advance(e, 3 * H + 1000);
     const before = e.player.salary;

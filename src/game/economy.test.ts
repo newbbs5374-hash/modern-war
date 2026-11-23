@@ -42,8 +42,6 @@ describe('내정', () => {
     s = advance(s, 2 * H);
     expect(s.economy.buildings.군수공장.level).toBe(2);
     expect(budgetPerDay(s, 'kr')).toBeGreaterThan(before);
-    expect(canUpgrade(s, '군수공장')).toMatch(/부터 더 올려요/); // 1등급은 2단계까지
-    s = setRank(s, 10);
     expect(canUpgrade(s, '군수공장')).toBeNull();
     s = { ...s, economy: { ...s.economy, buildings: { ...s.economy.buildings, 군수공장: { level: 5, buildEndMs: 0, buffEndMs: 0 } } } };
     expect(canUpgrade(s, '군수공장')).toBe('최고 단계');
@@ -78,7 +76,6 @@ describe('내정', () => {
     expect(canProduce({ ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20 } } }, '전차')).toMatch(/연구/); // 등급 + 연구 둘 다
     s = debugAllResearch(s);
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20, 특수강: 5, 텅스텐: 5 } } };
-    expect(canProduce(s, '항공모함')).toMatch(/대장|지도자|부터/);
     const base = advance(s, 4 * H);
     s = produce(s, '전차');
     s = produce(s, '보병');
