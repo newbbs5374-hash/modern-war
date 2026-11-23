@@ -671,7 +671,7 @@ function ActTab({ state, actions, who }: WinProps) {
         </button>
       )}
       {msg && <p className="small result">{msg}</p>}
-      {who.kind === 'player' && <p className="small muted">💡 스탯은 훈련 탭, 부관·장군은 사진을 눌러 각각 교류할 수 있어요. 지금 봉급 💵{fmt(state.player.salary)} · 선물 기준 {fmt(giftCost(r))}</p>}
+      {who.kind === 'player' && <p className="small muted">💡 스탯은 개인 → 훈련, 부관·장군은 사진을 눌러 각각 교류할 수 있어요. 지금 봉급 💵{fmt(state.player.salary)} · 선물 기준 {fmt(giftCost(r))}</p>}
     </>
   );
 }

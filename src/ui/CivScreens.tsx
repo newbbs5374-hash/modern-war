@@ -53,10 +53,12 @@ const signed = (v: number) => (v > 0 ? `+${v}` : `${v}`);
 
 /* ═════════════ 연구 ═════════════ */
 
-export function ResearchPanel(props: ScreenProps) {
-  const { state, actions } = props;
+/** 연구 칸. fixed를 주면 그 줄만(국방 = 군사 기술, 사회 = 사회 제도) */
+export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
+  const { state, actions, fixed } = props;
   const c = C.civOf(state);
-  const [line, setLine] = useState<'mil' | 'soc'>('mil');
+  const [lineSel, setLine] = useState<'mil' | 'soc'>(fixed ?? 'mil');
+  const line = fixed ?? lineSel;
   const [pick, setPick] = useState<Tech | null>(null);
   const rate = C.researchRate(state);
   const list = line === 'mil' ? MIL_TECHS : SOC_TECHS;
@@ -105,19 +107,23 @@ export function ResearchPanel(props: ScreenProps) {
             <p>연구 속도는 도시 인구·🔬연구소 구역·연구 협력 협정·카드로 빨라져요. 고르지 않은 동안 모인 점수는 12시간치까지 다음 연구에 쓰여요.</p>
           </Help>
         </div>
-        <div className="grid2">
-          {cur('mil')}
-          {cur('soc')}
-        </div>
+        {fixed ? (
+          cur(fixed)
+        ) : (
+          <div className="grid2">
+            {cur('mil')}
+            {cur('soc')}
+          </div>
+        )}
       </section>
-      <div className="seg branch-tabs">
+      {!fixed && <div className="seg branch-tabs">
         <button className={line === 'mil' ? 'on' : ''} onClick={() => setLine('mil')}>
           ⚙️ 군사 기술 <small>{c.done.filter((id) => id.startsWith('m-')).length}/{MIL_TECHS.length}</small>
         </button>
         <button className={line === 'soc' ? 'on' : ''} onClick={() => setLine('soc')}>
           📜 사회 제도 <small>{c.done.filter((id) => id.startsWith('s-')).length}/{SOC_TECHS.length}</small>
         </button>
-      </div>
+      </div>}
       {([1, 2, 3, 4] as const).map((era) => (
         <div key={era} className="civ-era-row">
           <small className="stat-group-name">

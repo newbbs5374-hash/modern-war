@@ -23,15 +23,15 @@ const total = (s: GameState, k: keyof ReturnType<typeof goalsOf>['total']) => go
 
 export const GUIDE: GuideStep[] = [
   { id: 'salary', icon: '💵', title: '봉급 받기', say: '본부의 "봉급 받기"를 눌러 쌓인 봉급을 받아 보세요.', go: { screen: 'home' }, done: (s) => total(s, 'salary') > 0, reward: { boosts: 2 } },
-  { id: 'train', icon: '🎯', title: '훈련 한 번 하기', say: '훈련 탭에서 아무 훈련이나 하나 끝내 보세요. 스탯이 올라요.', go: { screen: 'training' }, done: (s) => sum(s.officer.mastery) > 0, reward: { ruby: 5 } },
-  { id: 'recruit', icon: '🪖', title: '부대 모집하기', say: '부대 탭에서 보병을 모집해 보세요. 시간이 지나면 완성돼요.', go: { screen: 'forces' }, done: (s) => sum(s.economy.army) > 0 || s.economy.queue.length > 0, reward: { boosts: 2 } },
-  { id: 'mission', icon: '🎖️', title: '임무 하나 끝내기', say: '작전 → 임무에서 임무를 골라 끝내 보세요. 공훈이 쌓이면 등급이 올라요.', go: { screen: 'ops', key: 'ops', tab: 'mission' }, done: (s) => total(s, 'merit') > 0, reward: { ruby: 5 } },
-  { id: 'chore', icon: '🏗️', title: '내정 일 시키기', say: '내정 → 시설에서 일을 하나 시켜 보세요. 나라가 튼튼해져요.', go: { screen: 'nation', key: 'nation', tab: 'fac' }, done: (s) => !!s.economy.chore || total(s, 'chore') > 0, reward: { salary: 500 } },
-  { id: 'tech', icon: '🔬', title: '연구 고르기', say: '내정 → 연구에서 연구를 하나 골라 두세요. 실제 시간으로 쌓여요.', go: { screen: 'nation', key: 'nation', tab: 'tech' }, done: (s) => { const c = civOf(s); return !!c.cur.mil || !!c.cur.soc || c.done.length > 0; }, reward: { ruby: 5 } },
-  { id: 'trade', icon: '🚢', title: '무역 한 번 하기', say: '외교 → 무역에서 자원을 사거나 팔아 보세요. 협정도 맺을 수 있어요.', go: { screen: 'diplo', key: 'diplo', tab: 'trade' }, done: (s) => s.economy.log.some((t) => /사기|팔기/.test(t)) || total(s, 'pact') > 0, reward: { salary: 500 } },
+  { id: 'train', icon: '🎯', title: '훈련 한 번 하기', say: '개인 → 훈련에서 아무 훈련이나 하나 끝내 보세요. 스탯이 올라요.', go: { screen: 'training' }, done: (s) => sum(s.officer.mastery) > 0, reward: { ruby: 5 } },
+  { id: 'recruit', icon: '🪖', title: '부대 모집하기', say: '국방 → 부대에서 보병을 모집해 보세요. 시간이 지나면 완성돼요.', go: { screen: 'forces' }, done: (s) => sum(s.economy.army) > 0 || s.economy.queue.length > 0, reward: { boosts: 2 } },
+  { id: 'mission', icon: '🎖️', title: '임무 하나 끝내기', say: '국방 → 작전 → 임무에서 임무를 골라 끝내 보세요. 공훈이 쌓이면 등급이 올라요.', go: { screen: 'ops', key: 'ops', tab: 'mission' }, done: (s) => total(s, 'merit') > 0, reward: { ruby: 5 } },
+  { id: 'chore', icon: '🏗️', title: '내정 일 시키기', say: '경제 → 시설 현황에서 일을 하나 시켜 보세요. 나라가 튼튼해져요.', go: { screen: 'nation', key: 'nation', tab: 'fac' }, done: (s) => !!s.economy.chore || total(s, 'chore') > 0, reward: { salary: 500 } },
+  { id: 'tech', icon: '🔬', title: '연구 고르기', say: '국방 → 군사 연구(또는 사회 → 사회 연구)에서 연구를 하나 골라 두세요. 실제 시간으로 쌓여요.', go: { screen: 'nation', key: 'nation', tab: 'tech' }, done: (s) => { const c = civOf(s); return !!c.cur.mil || !!c.cur.soc || c.done.length > 0; }, reward: { ruby: 5 } },
+  { id: 'trade', icon: '🚢', title: '무역 한 번 하기', say: '경제 → 무역에서 자원을 사거나 팔아 보세요. 협정은 외교 탭에서 맺어요.', go: { screen: 'diplo', key: 'diplo', tab: 'trade' }, done: (s) => s.economy.log.some((t) => /사기|팔기/.test(t)) || total(s, 'pact') > 0, reward: { salary: 500 } },
   { id: 'orders', icon: '📋', title: '미리 명령 켜기', say: '본부 오른쪽 📋 명령에서 "봉급 자동 받기"를 켜 두면 자리를 비워도 편해요.', go: { screen: 'home' }, done: (s) => ORDER_INFO.some((x) => ordersOf(s)[x.key]), reward: { boosts: 3 } },
-  { id: 'spy', icon: '🕵️', title: '위성 정찰 보내기', say: '작전 → 첩보에서 맞수 나라에 위성 정찰을 보내 보세요.', go: { screen: 'ops', key: 'ops', tab: 'spy' }, done: (s) => spyOf(s).done > 0 || spyOf(s).active.length > 0, reward: { ruby: 5 } },
-  { id: 'daily', icon: '📅', title: '매일 할 일 보상 받기', say: '상점 → 매일 할 일에서 다 한 일의 루비를 받아 보세요. 매일 바뀌어요.', go: { screen: 'shop', key: 'shop', tab: 'daily' }, done: (s) => goalsOf(s).daily.some((d) => d.claimed) || goalsOf(s).got.length > 0, reward: { ruby: 10, boosts: 3 } },
+  { id: 'spy', icon: '🕵️', title: '위성 정찰 보내기', say: '국방 → 정보전에서 맞수 나라에 위성 정찰을 보내 보세요.', go: { screen: 'ops', key: 'ops', tab: 'spy' }, done: (s) => spyOf(s).done > 0 || spyOf(s).active.length > 0, reward: { ruby: 5 } },
+  { id: 'daily', icon: '📅', title: '매일 할 일 보상 받기', say: '본부 🛒 상점(개인 → 업적·상점) → 매일 할 일에서 다 한 일의 루비를 받아 보세요. 매일 바뀌어요.', go: { screen: 'shop', key: 'shop', tab: 'daily' }, done: (s) => goalsOf(s).daily.some((d) => d.claimed) || goalsOf(s).got.length > 0, reward: { ruby: 10, boosts: 3 } },
 ];
 
 export interface GuideState {
