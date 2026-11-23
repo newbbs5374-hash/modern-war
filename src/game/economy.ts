@@ -273,7 +273,7 @@ export function canUpgrade(s: GameState, id: BuildingId): string | null {
   if (st.level >= 5) return '최고 단계';
   if (st.level >= maxLevel(s.player.rankIndex)) {
     const next = RANKS.findIndex((_, i) => maxLevel(i) > st.level);
-    return `${RANKS[next]?.name ?? '다음 등급'}부터 더 올려요`;
+    return `${RANKS[next]?.name ?? '다음 호칭'}부터 더 올려요`;
   }
   if (st.buildEndMs) return '공사 중';
   const c = upgradeCost(s, id);

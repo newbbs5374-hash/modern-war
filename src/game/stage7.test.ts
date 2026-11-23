@@ -102,31 +102,3 @@ describe('승리 유지', () => {
   });
 });
 
-describe('승급(심사 없음, 11-23)', () => {
-  test('조건을 채우면 바로 다음 등급, 공훈·별은 다시 모음', async () => {
-    const { fillPromotion } = await import('./testgrant');
-    const { promoteNow, promotionCheck } = await import('./officer');
-    const s0 = newGame('t', 'kr', 0, { seed: 3 });
-    expect(promoteNow(s0).player.rankIndex).toBe(0);
-    const s = fillPromotion(s0);
-    expect(promotionCheck(s).ready).toBe(true);
-    const up = promoteNow(s);
-    expect(up.player.rankIndex).toBe(1);
-    expect(up.officer.stars).toBe(0);
-    expect(up.officer.active).toBeNull();
-    expect(promotionCheck(up).ready).toBe(false);
-  });
-});
-
-describe('시험용 바로 승급', () => {
-  test('심사 없이 한 계급 오르고, 맨 위에서는 그대로', async () => {
-    const { newGame, setRank } = await import('./state');
-    const { debugPromote } = await import('./officer');
-    const { PROMOTION } = await import('../data/officers');
-    const s = debugPromote(newGame('t', 'kr', 0, { seed: 1 }));
-    expect(s.player.rankIndex).toBe(1);
-    expect(s.officer.aides.length).toBe(1);
-    const top = setRank(newGame('t', 'kr', 0, { seed: 1 }), PROMOTION.length);
-    expect(debugPromote(top).player.rankIndex).toBe(PROMOTION.length);
-  });
-});

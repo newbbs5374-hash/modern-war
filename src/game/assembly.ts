@@ -1,6 +1,5 @@
 // 국회·재신임(11-23 기획 ⑤⑨): 법안 카드 3장 중 하나 제출 → 실제 2시간 뒤 표결 → 통과하면 7일 동안 법 효과.
-// 실제 14일마다 재신임 국민투표: 지지도로 결과. 통과하면 루비·명성, 실패하면 등급 한 단계 내려감(게임은 계속).
-import { RANKS } from '../data/ranks';
+// 실제 14일마다 재신임 국민투표: 지지도로 결과. 통과하면 루비·명성, 실패하면 신뢰도·명성 벌점(호칭이 내려갈 수 있음, 게임은 계속).
 import { addPresMod, approvalOf, demote } from './approval';
 import { cabinetOf } from './cabinet';
 import { goalsOf } from './goals';
@@ -129,10 +128,7 @@ export function assemblyTick(s: GameState): GameState {
       notes.push(`🎉 재신임 국민투표 통과! 루비 +${CONF_RUBY} · 명성 +${CONF_FAME} · 이틀 동안 지지도 +5`);
     } else {
       a.confLoss++;
-      const r = ns.player.rankIndex;
-      if (r >= 1) {
-        ns = demote({ ...ns, assembly: a }, `😞 재신임 국민투표에서 졌어요. ${RANKS[r - 1].name}(으)로 내려가요. 게임은 계속돼요.`);
-      } else notes.push('😞 재신임 국민투표에서 졌어요. 더 내려갈 등급이 없어 그대로예요.');
+      ns = demote({ ...ns, assembly: a }, '😞 재신임 국민투표에서 졌어요. 신뢰도 −15 · 명성 −100. 호칭이 내려갈 수 있어요. 게임은 계속돼요.');
     }
     a.log = [ok ? '🎉 재신임 통과' : '😞 재신임 실패', ...a.log].slice(0, 20);
   }

@@ -61,9 +61,9 @@ describe('부대 모집 + 부관 보고', () => {
     expect(s.economy.army.특수부대).toBe(1);
     expect(reportsOf(s)[0].text).toContain('특수부대 모집이 완료');
   });
-  it('승급하면 보고', () => {
+  it('호칭이 오르면 보고', () => {
     const s = newGame('t', 'kr', 0, { seed: 7 });
     const r = addReports(s, setRank(s, 1));
-    expect(reportsOf(r)[0].text).toContain('승급');
+    expect(reportsOf(r)[0].text).toContain('불리게');
   });
 });

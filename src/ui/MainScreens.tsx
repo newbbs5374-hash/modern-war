@@ -4,6 +4,7 @@ import { BUILDINGS, type BuildingId } from '../data/economy';
 import { spyOf } from '../game/spy';
 import { civOf } from '../game/civ';
 import { aideSlots, generalSlots } from '../data/officers';
+import { RANKS } from '../data/ranks';
 import { GovPanel, CityPanel, ResearchPanel } from './CivScreens';
 import { FacilityPanel, ResourcePanel, TreasuryPanel, needPick } from './InteriorScreen';
 import { TradePanel } from './DiplomacyScreen';
@@ -100,7 +101,7 @@ export function DefenseScreen(props: ScreenProps) {
       {tab === 'command' && (
         <>
           <MinistryCards state={state} actions={props.actions} ids={['mnd', 'nis']} title="국방 부처" />
-          {generalSlots(r) === 0 ? <p className="empty">🔒 장군 자리는 지도자 등급 5부터 열려요(최대 6자리: 합참의장 + 병과 5).</p> : <GeneralsPanel {...props} />}
+          {generalSlots(r) === 0 ? <p className="empty">🔒 장군 자리는 「{RANKS[5].name}」 호칭부터 열려요(최대 6자리: 합참의장 + 병과 5).</p> : <GeneralsPanel {...props} />}
           {generalSlots(r) > o.generals.length && <GeneralCandidates state={state} actions={props.actions} />}
         </>
       )}

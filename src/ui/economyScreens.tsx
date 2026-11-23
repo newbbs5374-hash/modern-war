@@ -67,7 +67,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
           <b>🪖 +{fmt(c.troops)}</b>
           <span>보유</span>
           <b>{state.economy.army[sp ? sp.name : name] ?? 0}부대</b>
-          <span>열리는 등급</span>
+          <span>열리는 호칭</span>
           <b>{RANKS[info.rank].name}</b>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
       </p>
       {sp && (
         <p className="small muted">
-          🌟 {name} 특화 유닛 · {name}와 같은 연구·등급에서 열려요(바탕 {name}도 계속 만들 수 있어요)
+          🌟 {name} 특화 유닛 · {name}와 같은 연구·호칭에서 열려요(바탕 {name}도 계속 만들 수 있어요)
           {crystalReady(state) ? ' · 🧪 지금 만들면 갈륨 1을 더 써서 갈륨 개량형(+15%)' : ''}
         </p>
       )}

@@ -2,11 +2,12 @@
 
 import { applyOrigin, type OriginId } from './origin';
 import { COUNTRIES, countryById } from '../data/world';
-import { RANKS } from '../data/ranks';
+import { RANKS, TITLES, firstTierOfRank } from '../data/ranks';
+import { TITLE_MAX, syncTitle } from './title';
 import { PERSONALITIES } from '../data/leaders';
 import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import { applyContracts, contractMoneyPerHour } from './economy';
-import { generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
+import { TRUST_START, generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
 import type { PeaceState } from './peace';
@@ -56,7 +57,10 @@ export interface GameState {
   player: {
     name: string;
     countryId: string;
+    /** 혜택 단계 0~10(자리 수·잠금·봉급). 11-23부터 호칭에서 저절로 정해짐(title.ts) */
     rankIndex: number;
+    /** 호칭 단계 0~14(신뢰도+명성). 옛 저장은 없음 */
+    title?: number;
     /** 받은 봉급(내 주머니) */
     salary: number;
     /** 아직 받지 않고 쌓인 봉급 */
@@ -141,7 +145,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     crisis: newCrisis(0),
   };
   s.cabinet = newCabinet(s);
-  return opt.origin ? addBuddy(applyOrigin(s, opt.origin), opt.origin, null) : s;
+  return syncTitle(opt.origin ? addBuddy(applyOrigin(s, opt.origin), opt.origin, null) : s, true);
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
@@ -256,7 +260,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)));
     world = cur.world;
   }
-  return spyTick(ordersTick(crisisTick(checkVictory(accrue(cur, left)))));
+  return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(accrue(cur, left))))));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */
@@ -282,10 +286,16 @@ export function claimSalary(s: GameState): GameState {
   };
 }
 
-/** 시험 버튼: 계급 바꾸기(승급 시스템은 다음 단계) */
+/** 시험용: 혜택 단계 r이 되도록 신뢰도·명성을 맞춤(호칭 제도라 점수로 정해짐) */
 export function setRank(s: GameState, rankIndex: number): GameState {
   const r = Math.max(0, Math.min(RANKS.length - 1, rankIndex));
-  return { ...s, player: { ...s.player, rankIndex: r } };
+  const t = firstTierOfRank(r);
+  const lo = TITLES[t].min;
+  const hi = t + 1 < TITLES.length ? TITLES[t + 1].min - 1 : TITLE_MAX;
+  const want = Math.round((lo + hi) / 2);
+  const trust = Math.max(TRUST_START, Math.min(100, want - 100 + 5));
+  const fame = Math.max(0, Math.min(1000, (want - trust) * 10));
+  return syncTitle({ ...s, officer: { ...s.officer, trust, fame }, player: { ...s.player, title: undefined, rankIndex: 0 } }, true);
 }
 
 export interface GameClock {

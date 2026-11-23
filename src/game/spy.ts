@@ -79,7 +79,7 @@ export function canSpy(s: GameState, op: SpyOpId, target: string): string | null
   const d = spyOpById(op);
   const me = s.player.countryId;
   if (target === me || !isAlive(s.world, target)) return '고를 수 없는 나라';
-  if (s.player.rankIndex < d.rank) return '등급이 더 올라야 해요';
+  if (s.player.rankIndex < d.rank) return '호칭이 더 올라야 해요';
   const sp = spyOf(s);
   if (sp.active.length >= spyTeams(s)) return `공작 팀 ${spyTeams(s)}개가 모두 나가 있어요`;
   if (sp.active.some((m) => m.target === target && m.op === op)) return '이미 같은 작전 중이에요';

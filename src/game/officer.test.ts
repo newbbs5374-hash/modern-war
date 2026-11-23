@@ -1,6 +1,6 @@
 import { SAVE_VERSION } from './state';
 import { describe, expect, it, test } from 'vitest';
-import { PROMOTION, aideSlots, generalSlots, statCap } from '../data/officers';
+import { aideSlots, generalSlots, statCap } from '../data/officers';
 import { advance, newGame, setRank, type GameState } from './state';
 import {
   DRILL_MAX,
@@ -10,9 +10,7 @@ import {
   generalDefense,
   missionChance,
   officerTick,
-  promotionCheck,
   recruitGeneral,
-  startExam,
   startMission,
   finishTraining,
   startTraining,
@@ -75,21 +73,6 @@ describe('장교', () => {
     expect(s.officer.merit).toBeGreaterThan(0);
     expect(s.world.events.some((e) => e.kind === '장교')).toBe(true);
   });
-  it('승급: 조건을 채우고 심사를 통과하면 중위, 첫 부관 합류', () => {
-    let s = newGame('t', 'kr', 0, { seed: 4 });
-    expect(promotionCheck(s).ready).toBe(false);
-    s = { ...s, officer: { ...s.officer, merit: PROMOTION[0].merit, stars: PROMOTION[0].stars } };
-    expect(promotionCheck(s).ready).toBe(true);
-    // 통과할 때까지(떨어지면 6시간 기다림)
-    for (let i = 0; i < 10 && s.player.rankIndex === 0; i++) {
-      if (!promotionCheck(s).ready) s = advance(s, 6 * H);
-      s = startExam(s);
-      s = finishMission(s);
-    }
-    expect(s.player.rankIndex).toBe(1);
-    expect(s.officer.aides.length).toBe(1);
-    expect(s.officer.stars).toBe(0);
-  });
   it('부관 승격·장군 영입은 장군 칸이 있어야, 장군은 방어 보너스', () => {
     let s = setRank(newGame('t', 'kr', 0, { seed: 5 }), 6); // 장군 2칸
     expect(generalSlots(7)).toBe(3);
@@ -113,15 +96,16 @@ describe('장교', () => {
     expect(recruitGeneral(s).officer.generals.length).toBe(2); // 칸이 꽉 참
     expect(generalDefense(s.officer)).toBeGreaterThan(1);
   });
-  it('불신임: 준장 이상에서 신뢰도가 낮으면 경고, 3일 안에 못 돌리면 한 계급 내려감', () => {
+  it('불신임: 신뢰도가 낮으면 경고, 3일 안에 못 돌리면 명성 −150', () => {
     let s = setRank(newGame('t', 'kr', 0, { seed: 7 }), 6);
     s = { ...s, officer: { ...s.officer, trust: 10 } };
     officerTick(s, s.world.owner, 15 * 60e3);
     expect(s.officer.dismissDeadlineMs).not.toBeNull();
     const deadline = s.officer.dismissDeadlineMs!;
+    const fame0 = s.officer.fame;
     s = { ...s, worldMs: deadline + 1, officer: { ...s.officer, trust: 10 } };
     officerTick(s, s.world.owner, 15 * 60e3);
-    expect(s.player.rankIndex).toBe(5);
+    expect(s.officer.fame).toBe(Math.max(0, fame0 - 150));
     expect(s.officer.dismissDeadlineMs).toBeNull();
   });
   it('2단계 저장을 불러오면 장교를 새로 만들어 이어감', () => {

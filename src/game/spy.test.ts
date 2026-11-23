@@ -23,7 +23,7 @@ describe('첩보·특수 작전', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     expect(canSpy(s, 'scout', 'kp')).toMatch(/정보/);
     s = ready(s);
-    expect(canSpy(s, 'sabotage', 'kp')).toMatch(/등급/);
+    expect(canSpy(s, 'sabotage', 'kp')).toMatch(/호칭/);
     expect(spyTeams(s)).toBe(1);
     s = startSpy(s, 'scout', 'kp');
     expect(canSpy(s, 'scout', 'cn')).toMatch(/팀/);

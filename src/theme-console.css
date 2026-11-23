@@ -506,3 +506,16 @@ button.on { outline: 1px solid var(--amber); }
 .g2 .lc-track i { background: var(--amber); }
 .g3 .lc-track i { background: #8fd16a; }
 .lc-bar b { width: 30px; text-align: right; font-family: var(--num); font-size: 15px; color: var(--text); }
+
+/* 호칭 카드(11-23) */
+.ttl-box { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 7px 8px; margin-bottom: 8px; }
+.ttl-ico { font-size: 22px; }
+.ttl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ttl-main b { font-size: 13px; }
+.ttl-main small { font-size: 10.5px; }
+.ttl-more { color: var(--muted); }
+.ttl-list { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.ttl-row { display: grid; grid-template-columns: 26px 1fr 52px 1.3fr; gap: 4px; align-items: center; padding: 4px 6px; border-radius: 6px; font-size: 12px; background: #0b151080; }
+.ttl-row small { font-size: 10px; }
+.ttl-row.done { opacity: 0.7; }
+.ttl-row.now { border: 1px solid var(--amber); background: #3b1d0e66; }
