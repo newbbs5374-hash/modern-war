@@ -1,4 +1,5 @@
 import { drillsNow } from '../game/officer';
+import { goalsReady, rubyOf } from '../game/goals';
 import { useState, type ReactNode } from 'react';
 import { CURRENCIES } from '../data/catalog';
 import { RANKS } from '../data/ranks';
@@ -39,6 +40,8 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
         ? state.officer.merit
         : id === 'boost'
           ? (state.officer.boosts ?? 0)
+          : id === 'ruby'
+            ? rubyOf(state)
           : id === 'drill'
             ? drillsNow(state.officer, state.worldMs).count
             : 0;
@@ -46,7 +49,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
     <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="보유 재화 보기">
       <span>💵 {fmt(state.player.salary)}</span>
       <span>🎫 {fmt(state.officer.boosts ?? 0)}</span>
-      <span>💎 0</span>
+      <span>💎 {fmt(rubyOf(state))}</span>
     </button>
   );
   const gear = (
@@ -120,6 +123,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           >
             <span className="ico">{n.icon}</span>
             <small>{n.label}</small>
+            {n.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
           </button>
         ))}
       </nav>

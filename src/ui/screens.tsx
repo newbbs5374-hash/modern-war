@@ -4,7 +4,7 @@ import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { pendingCap, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
-import { Card, CountryInfo, EventList, HOUR, Soon, fmt } from './common';
+import { Card, CountryInfo, EventList, HOUR, fmt } from './common';
 import type { Screen } from './nav';
 import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
@@ -394,15 +394,9 @@ function MapPanel({ state }: ScreenProps) {
   );
 }
 
-/* ───────── 상점 ───────── */
-export function ShopScreen(_: ScreenProps) {
-  return (
-    <Card title="상점">
-      <p className="small muted">루비로 기다리는 시간(훈련 일정·생산·이동)을 줄이는 곳이에요.</p>
-      <Soon stage="나중에">루비 얻는 곳과 결제는 아직 정하지 않았어요</Soon>
-    </Card>
-  );
-}
+/* ───────── 상점: ShopScreen.tsx ───────── */
+import { ShopScreen } from './ShopScreen';
+export { ShopScreen };
 
 /* ───────── 전령: 내 소식 · 세계 소식 ───────── */
 export function HeraldScreen({ state, notices }: ScreenProps) {

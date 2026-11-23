@@ -9,7 +9,11 @@ import { parseScreen, type Screen } from './ui/nav';
 import { StartScreen } from './ui/StartScreen';
 import { AideReport } from './ui/AideReport';
 import { PeopleProvider } from './ui/People';
-import { addReports, dismissReport } from './game/report';
+import { addReports as addReports0, dismissReport } from './game/report';
+import { trackGoals } from './game/goals';
+
+/** 바뀌기 전·후 비교: 부관 보고 + 매일 할 일·업적 */
+const addReports = (b: G.GameState | null, a: G.GameState) => trackGoals(b, addReports0(b, a));
 
 const TICK_MS = 250;
 const AUTOSAVE_MS = 5000;
