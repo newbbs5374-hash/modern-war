@@ -19,7 +19,8 @@ import { HomeLand, cityStatus, type DayMode } from './HomeLand';
 import { cityById } from '../data/cities';
 import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
-import { OPERATION_RANK } from '../data/officers';
+import { GRAND_RANK, OPERATION_RANK } from '../data/officers';
+import { RANKS } from '../data/ranks';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
 import { OrdersModal } from './OrdersModal';
@@ -261,7 +262,7 @@ export function HomeScreen(props: ScreenProps) {
           <button
             key={sp.label}
             className={`bld ${sp.main ? 'main' : ''} ${sp.locked ? 'locked' : ''}`}
-            onClick={sp.locked ? undefined : sp.on}
+            onClick={sp.on}
             aria-label={sp.label}
           >
             <span className="bld-ico">{sp.locked ? '🔒' : sp.icon}</span>
@@ -351,7 +352,7 @@ export function OpsScreen(props: ScreenProps) {
       )}
       {tab === 'grand' &&
         (rank < OPERATION_RANK ? (
-          <p className="empty">🔒 실무 지도자부터 작전, 존경받는 지도자부터 대전투(도시 점령)가 열려요.</p>
+          <p className="empty">🔒 {RANKS[OPERATION_RANK].name}부터 작전, {RANKS[GRAND_RANK].name}부터 대전투(도시 점령)가 열려요.</p>
         ) : (
           <>
             <GrandCard {...props} />

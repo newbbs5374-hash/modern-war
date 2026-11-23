@@ -162,7 +162,7 @@ export function canAppoint(s: GameState, id: number): string | null {
   if (!a) return '없는 부관';
   if (!a.schooled) return '장군 교육을 먼저 마쳐야 해요';
   const slots = generalSlots(s.player.rankIndex);
-  if (slots === 0) return '존경받는 지도자부터 장군을 둘 수 있어요';
+  if (slots === 0) return `${RANKS[5].name}부터 장군을 둘 수 있어요`;
   if (s.officer.generals.length >= slots) return `장군 자리가 다 찼어요(${slots}자리)`;
   return null;
 }
