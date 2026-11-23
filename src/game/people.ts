@@ -5,6 +5,8 @@ import { countryById } from '../data/world';
 import { REAL_MS_PER_GAME_DAY } from './balance';
 import { addFavorNote, favorOf } from './civ';
 import { giftCost } from './officer';
+import { addLoyalty, touchAide } from './loyal';
+import { PRESS_INTEL, ROLE_INFO, WATCH_HOURS, WOO_NEED, influenceOf, pressAmount, shiftInfluence, wooChance, wooCost } from './rivals';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { isAlive, relationOf } from './world';
@@ -18,7 +20,7 @@ export type PersonRef =
   | { kind: 'leader'; country: string }
   | { kind: 'npc'; role: NpcRole; country?: string };
 
-export type ActId = 'chat' | 'gift' | 'speech' | 'letter' | 'probe';
+export type ActId = 'chat' | 'gift' | 'speech' | 'letter' | 'probe' | 'press' | 'woo';
 
 export const NPC_INFO: Record<NpcRole, { name: string; icon: string; text: string }> = {
   envoy: { name: '특사', icon: '🕴️', text: '다른 나라가 보낸 특사예요. 지도자의 뜻을 전하고 우리 답을 가져가요. 대화 창에서 답하면 그 나라 호감이 바뀌어요.' },
@@ -67,6 +69,7 @@ export function actCost(s: GameState, p: PersonRef, act: ActId): number {
   if (act === 'gift' && p.kind === 'general') return giftCost(r);
   if (act === 'gift' && p.kind === 'leader') return giftCost(r) * 3;
   if (act === 'speech') return 200 + r * 80;
+  if (act === 'woo') return wooCost(r);
   return 0;
 }
 
@@ -77,6 +80,11 @@ export function canAct(s: GameState, p: PersonRef, act: ActId): string | null {
     if (p.country === s.player.countryId) return '우리 나라예요';
     if (!isAlive(s.world, p.country)) return '나라가 사라졌어요';
     if (act === 'gift' && relationOf(s.world, s.player.countryId, p.country) === '전쟁') return '전쟁 중엔 선물을 받지 않아요';
+  }
+  if (p.kind === 'rival') {
+    const rv = s.officer.rivals.find((x) => x.name === p.name)!;
+    if (rv.ally && act !== 'probe') return '이미 내 편이에요';
+    if (act === 'press' && s.officer.intel < PRESS_INTEL) return `정보 ${PRESS_INTEL} 필요`;
   }
   if (usedToday(s, p, act)) return '오늘은 이미 했어요(내일 다시)';
   const cost = actCost(s, p, act);
@@ -94,16 +102,20 @@ export function letterChance(s: GameState, country: string): number {
 export function actsOf(p: PersonRef): Array<{ id: ActId; icon: string; name: string; text: string }> {
   switch (p.kind) {
     case 'player':
-      return [{ id: 'speech', icon: '🎤', name: '대국민 연설', text: '명성 + · 의회 신뢰 +2' }];
+      return [{ id: 'speech', icon: '🎤', name: '대국민 연설', text: '명성 + · 의회 신뢰 +2 · 정적 영향력 −2' }];
     case 'aide':
-      return [{ id: 'chat', icon: '💬', name: '대화', text: '인연 +3 · 경험 +10' }];
+      return [{ id: 'chat', icon: '💬', name: '대화', text: '인연 +3 · 충성 +2 · 경험 +10' }];
     case 'general':
       return [
         { id: 'chat', icon: '💬', name: '작전 회의', text: '충성 +3' },
         { id: 'gift', icon: '🎁', name: '격려금', text: '충성 +8' },
       ];
     case 'rival':
-      return [{ id: 'probe', icon: '🕵️', name: '동향 살피기', text: '정보 + · 라이벌 속도 알기' }];
+      return [
+        { id: 'probe', icon: '🕵️', name: '동향 살피기', text: `${WATCH_HOURS}시간 지켜봄: 방해 공작을 미리 막음 · 정보 +` },
+        { id: 'press', icon: '🗞️', name: '견제', text: `정보 ${PRESS_INTEL}을 써서 영향력 −(정보 스탯)` },
+        { id: 'woo', icon: '🤝', name: '회유', text: `성공 ${WOO_NEED}번이면 내 편(정치 스탯)` },
+      ];
     case 'leader':
       return [
         { id: 'letter', icon: '✉️', name: '친서 보내기', text: '성공하면 호감 +5(정치 스탯)' },
@@ -138,11 +150,14 @@ export function doAct(s: GameState, p: PersonRef, act: ActId): { state: GameStat
     const fame = Math.round(10 + r * 6 + (o.stats['정치'] ?? 0) * 0.5);
     o.fame += fame;
     o.trust = Math.min(100, o.trust + 2);
-    out = `🎤 연설을 마쳤어요. 명성 +${fame} · 의회 신뢰 +2`;
+    shiftInfluence(o, -2);
+    out = `🎤 연설을 마쳤어요. 명성 +${fame} · 의회 신뢰 +2 · 정적 영향력 −2`;
   } else if (p.kind === 'aide' && act === 'chat') {
     const a = o.aides.find((x) => x.id === p.id)!;
     const line = rng.pick(AIDE_CHAT[a.bond >= 60 ? 'high' : a.bond >= 30 ? 'mid' : 'low']);
     a.bond = Math.min(100, a.bond + 3);
+    touchAide(a, s.worldMs);
+    addLoyalty(a, 2);
     a.exp += 10;
     while (a.exp >= a.level * 100 && a.level < 10) {
       a.exp -= a.level * 100;
@@ -153,12 +168,37 @@ export function doAct(s: GameState, p: PersonRef, act: ActId): { state: GameStat
     const g = o.generals.find((x) => x.id === p.id)!;
     const v = act === 'gift' ? 8 : 3;
     g.loyalty = Math.min(100, g.loyalty + v);
+    g.seenMs = s.worldMs;
     out = act === 'gift' ? `🎁 ${g.name} 장군이 격려금을 받았어요. 충성 +${v}` : `💬 ${g.name}: ${rng.pick(GENERAL_CHAT)} (충성 +${v})`;
-  } else if (p.kind === 'rival' && act === 'probe') {
+  } else if (p.kind === 'rival') {
     const rv = o.rivals.find((x) => x.name === p.name)!;
-    const intel = 3 + Math.floor(r / 2);
-    o.intel += intel;
-    out = `🕵️ ${rv.name}의 동향: 하루에 공훈 약 ${Math.round(rv.rate)}씩 쌓는 중이에요. 정보 +${intel}`;
+    if (act === 'probe') {
+      const intel = 3 + Math.floor(r / 2);
+      o.intel += intel;
+      rv.watchUntil = s.worldMs + WATCH_HOURS * 60 * 60 * 1000;
+      const left = Math.max(0, Math.round(((rv.nextPlotMs ?? 0) - s.worldMs) / 3600000));
+      out = rv.ally
+        ? `🕵️ ${rv.name}은(는) 약속대로 우리를 돕고 있어요. 정보 +${intel}`
+        : `🕵️ ${rv.name}의 동향: 영향력 ${Math.round(influenceOf(rv))}, 다음 움직임은 약 ${left}시간 뒤. ${WATCH_HOURS}시간 동안 지켜봐요. 정보 +${intel}`;
+    } else if (act === 'press') {
+      o.intel -= PRESS_INTEL;
+      const v = pressAmount(s);
+      rv.influence = Math.max(0, influenceOf(rv) - v);
+      out = `🗞️ ${rv.name}의 약점을 언론에 흘렸어요. 영향력 −${v}`;
+    } else {
+      const ok = rng.next() < wooChance(s, rv);
+      if (ok) {
+        rv.woo = (rv.woo ?? 0) + 1;
+        if (rv.woo >= WOO_NEED) {
+          rv.ally = true;
+          if (o.chiefRival === rv.name) o.chiefRival = null;
+          out = `🤝 ${rv.name}이(가) 손을 잡았어요! 이제 내 편이에요. ${ROLE_INFO[rv.role ?? '야당 대표'].ally}`;
+        } else out = `🤝 ${rv.name}이(가) 마음이 조금 움직였어요(회유 ${rv.woo}/${WOO_NEED}).`;
+      } else {
+        rv.influence = Math.min(100, influenceOf(rv) + 2);
+        out = `🤝 ${rv.name}이(가) 제안을 거절했어요. 영향력 +2`;
+      }
+    }
   } else if (p.kind === 'leader') {
     const L = LEADERS[p.country];
     const nm = `${countryById(p.country).name} ${L.title} ${L.name}`;

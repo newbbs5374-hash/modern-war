@@ -887,6 +887,12 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #1b1
 .civ-gov-card .civ-gov-ico .art-ico { width: 2.2em; height: 2.2em; }
 .fac-art.big.contain { object-fit: contain; aspect-ratio: 1; max-width: 150px; border: none; }
 
+/* 부관 인연·충성 · 장군 교육/임명(11-23) */
+.bond-box { margin-top: 6px; display: grid; gap: 2px; }
+.career-box { margin-top: 8px; padding: 6px; border: 1px dashed var(--line, #444); border-radius: 8px; display: grid; gap: 4px; }
+.field-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.field-pick .pw-act { flex-direction: column; padding: 4px 2px; min-width: 0; }
+.field-pick .pw-act.on { outline: 2px solid var(--gold, #e6b800); }
 /* 외교 > 국가정보(11-23): 왼쪽 국기 · 오른쪽 지도자 사진, 같은 높이로 크게 */
 .ncard-pics { display: flex; gap: 6px; height: 64px; }
 .ncard-flagbig { flex: 1 1 0; min-width: 0; display: grid; place-items: center; background: #0f1d15; border: 1px solid var(--hud-dim, #1d4a32); overflow: hidden; }

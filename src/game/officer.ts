@@ -40,6 +40,8 @@ import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
 import { facBonus } from './facility';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
+import { RIVAL_ROLES, chiefRivalOf, hasAlly, rivalBlock, rivalTick, shiftInfluence, type RivalRole } from './rivals';
+import { addLoyalty, generalMissionBonus, loyaltyMissionBonus, loyaltyMissionMult, loyaltyRewardMult, loyaltyTick, schoolTick, touchAide } from './loyal';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -75,6 +77,13 @@ export interface Aide {
   trainDay?: number;
   /** 따로 보낸 부관 임무(이 동안은 전투·임무에 못 나감) */
   errand?: { kind: ErrandKind; endMs: number } | null;
+  /** 충성 0~100(옛 저장은 인연으로 채움, loyal.ts) */
+  loyalty?: number;
+  /** 마지막으로 돌본 시각(대화·선물·훈련·임무·전투) */
+  seenMs?: number;
+  /** 장군 교육 중(이 동안 전투·임무에 못 나감) · 교육을 마침 */
+  school?: { endMs: number } | null;
+  schooled?: boolean;
 }
 
 export type ErrandKind = '정보 수집' | '보급 조달' | '전공 쌓기';
@@ -104,15 +113,27 @@ export interface General {
   skill: number;
   /** 충성도 0~100 */
   loyalty: number;
-  from: '부관 승격' | '영입';
+  from: '부관 승격' | '부관 임명' | '영입';
+  /** 부관 시절 인연 · 특기(부관에서 임명된 장군만) */
+  bond?: number;
+  specialty?: AideSpecialty;
+  /** 마지막 작전 회의·격려 시각 */
+  seenMs?: number;
 }
 
 export interface Rival {
   name: string;
-  /** 하루에 쌓는 공훈 */
+  /** 영향력이 쌓이는 빠르기(옛 '하루 공훈', 170~260) */
   rate: number;
-  /** 마지막으로 알린 계급 */
+  /** 예전 계급 알림(이제 안 씀) */
   shownRank: number;
+  /** 11/23 정적: 역할 · 영향력 0~100 · 협력(회유 성공) · 회유 횟수 · 다음 방해 시각 · 동향 살피기 끝 */
+  role?: RivalRole;
+  influence?: number;
+  ally?: boolean;
+  woo?: number;
+  nextPlotMs?: number;
+  watchUntil?: number;
 }
 
 export interface Mission {
@@ -205,7 +226,10 @@ export function newOfficer(seed: number): OfficerState {
   for (const id of STAT_IDS) stats[id] = START_STAT;
   const names = [...NAME_POOL];
   const take = () => names.splice(Math.floor(rng.next() * names.length), 1)[0];
-  const rivals: Rival[] = [0, 1, 2].map(() => ({ name: take(), rate: Math.round(rng.range(170, 260)), shownRank: 0 }));
+  const rivals: Rival[] = RIVAL_ROLES.map((role) => {
+    const rate = Math.round(rng.range(170, 260));
+    return { name: take(), rate, shownRank: 0, role, influence: Math.round(25 + (rate - 170) / 4), nextPlotMs: 6 * HOUR };
+  });
   return {
     seed: rng.seed,
     nextId: 1,
@@ -239,7 +263,7 @@ export function newOfficer(seed: number): OfficerState {
 
 // ── 공통 도우미 ──
 
-function withOfficer(s: GameState, f: (o: OfficerState, rng: Rng, s: GameState) => void): GameState {
+export function withOfficer(s: GameState, f: (o: OfficerState, rng: Rng, s: GameState) => void): GameState {
   const o: OfficerState = structuredClone(s.officer);
   const rng = new Rng(o.seed);
   const next: GameState = { ...s, officer: o, world: { ...s.world, events: [...s.world.events], defense: { ...s.world.defense }, owner: { ...s.world.owner } } };
@@ -248,7 +272,7 @@ function withOfficer(s: GameState, f: (o: OfficerState, rng: Rng, s: GameState) 
   return next;
 }
 
-function note(s: GameState, text: string) {
+export function note(s: GameState, text: string) {
   const ev: WorldEvent = { t: s.worldMs, kind: '장교', text, mine: true };
   s.world.events.unshift(ev);
   if (s.world.events.length > 150) s.world.events.length = 150;
@@ -492,10 +516,12 @@ export function debugAddAide(s: GameState): GameState {
 
 /** 지금 전투·임무에 나갈 수 있는 부관(따로 임무 중이면 빠짐) */
 export function readyAides(o: OfficerState, worldMs: number): Aide[] {
-  return o.aides.filter((a) => !a.errand || worldMs >= a.errand.endMs);
+  return o.aides.filter((a) => (!a.errand || worldMs >= a.errand.endMs) && !a.school);
 }
 
-function aideGain(ns: GameState, a: Aide, exp: number, bond: number) {
+function aideGain(ns: GameState, a: Aide, exp: number, bond: number, loyalty = 0) {
+  touchAide(a, ns.worldMs);
+  if (loyalty) addLoyalty(a, loyalty);
   a.exp += exp;
   a.bond = Math.min(100, a.bond + bond);
   while (a.exp >= a.level * 100 && a.level < 10) {
@@ -528,7 +554,7 @@ export function giftAide(s: GameState, id: number): GameState {
   const ns = withOfficer(s, (o, _rng, ns) => {
     const a = o.aides.find((x) => x.id === id)!;
     a.giftDay = gameDay(ns.worldMs);
-    aideGain(ns, a, 0, 8);
+    aideGain(ns, a, 0, 8, 3);
   });
   return { ...ns, player: { ...ns.player, salary: ns.player.salary - cost } };
 }
@@ -555,6 +581,7 @@ export function canErrand(s: GameState, id: number): string | null {
   const a = s.officer.aides.find((x) => x.id === id);
   if (!a) return '없는 부관';
   if (a.errand) return '이미 임무 중';
+  if (a.school) return '장군 교육 중';
   return null;
 }
 /** 부관 임무: 몇 시간 따로 나가 보상을 가져옴(그동안 전투에 못 나감) */
@@ -569,7 +596,7 @@ export function errandReward(s: GameState, a: Aide): { intel: number; salary: nu
   if (!a.errand) return { intel: 0, salary: 0, merit: 0 };
   const fit = ERRAND_FIT[a.errand.kind].includes(a.specialty) ? 2 : 1;
   const r = s.player.rankIndex;
-  const lv = 1 + 0.15 * (a.level - 1);
+  const lv = (1 + 0.15 * (a.level - 1)) * loyaltyRewardMult(a);
   if (a.errand.kind === '정보 수집') return { intel: Math.round(8 * fit * lv), salary: 0, merit: 0 };
   if (a.errand.kind === '보급 조달') return { intel: 0, salary: Math.round((150 + r * 60) * fit * lv), merit: 0 };
   return { intel: 0, salary: 0, merit: Math.round((20 + r * 12) * fit * lv) };
@@ -590,26 +617,6 @@ export function claimErrand(s: GameState, id: number): { state: GameState; text:
     note(ns, text);
   });
   return { state: { ...ns, player: { ...ns.player, salary: ns.player.salary + rw.salary } }, text };
-}
-
-/** 부관을 장군으로 승격(장군 칸이 있고 부관 레벨 3 이상) */
-export function promoteAide(s: GameState, aideId: number): GameState {
-  const o = s.officer;
-  const a = o.aides.find((x) => x.id === aideId);
-  if (!a || a.level < 3 || o.generals.length >= generalSlots(s.player.rankIndex)) return s;
-  return withOfficer(s, (o2, rng, ns) => {
-    o2.aides = o2.aides.filter((x) => x.id !== aideId);
-    o2.generals.push({
-      id: o2.nextId++,
-      name: a.name,
-      field: rng.pick([...GENERAL_FIELDS]),
-      style: rng.pick([...GENERAL_STYLES]),
-      skill: clamp(2 + a.level, 1, 10),
-      loyalty: clamp(60 + a.bond / 2, 0, 100),
-      from: '부관 승격',
-    });
-    note(ns, `부관 ${ga(a.name)} 장군으로 승격했어요. 이제 전선 하나를 맡아요.`);
-  });
 }
 
 /** 같은 나라 장군 영입(봉급으로) */
@@ -641,7 +648,7 @@ export function dismissGeneral(s: GameState, id: number): GameState {
 
 /** 장군들이 내 나라 도시를 지켜 주는 배율 */
 export function generalDefense(o: OfficerState): number {
-  return 1 + o.generals.reduce((a, g) => a + g.skill * (g.loyalty >= 30 ? 1 : 0.5), 0) * GENERAL_DEFENSE_PER_SKILL;
+  return 1 + o.generals.reduce((a, g) => a + g.skill * (g.loyalty >= 30 ? 1 : 0.5), 0) * GENERAL_DEFENSE_PER_SKILL + (hasAlly(o, '군부 실력자') ? 0.05 : 0);
 }
 
 // ── 임무 ──
@@ -725,8 +732,8 @@ export function missionChance(s: GameState, m: Mission): number {
   const info = MISSION_KINDS[m.kind];
   const cap = statCap(s.player.rankIndex);
   const level = info.stats.reduce((a, id) => a + o.stats[id], 0) / info.stats.length / cap;
-  const aide = readyAides(o, s.worldMs).reduce((a, x) => a + (x.specialty === info.aideFit ? 0.06 : 0.02) + x.level * 0.005 + (x.bond >= 90 ? 0.05 : 0), 0);
-  return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4 + civMission(s), 0.1, 0.95);
+  const aide = readyAides(o, s.worldMs).reduce((a, x) => a + ((x.specialty === info.aideFit ? 0.06 : 0.02) + x.level * 0.005 + (x.bond >= 90 ? 0.05 : 0)) * loyaltyMissionMult(x) + loyaltyMissionBonus(x), 0);
+  return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4 + civMission(s) + generalMissionBonus(s), 0.1, 0.95);
 }
 
 export function startMission(s: GameState, missionId: number): GameState {
@@ -761,8 +768,7 @@ export function promotionCheck(s: GameState): PromotionCheck {
   if (lines.some((l) => !l.ok)) why = '조건을 채워야 해요';
   else if (o.active) why = '다른 임무를 하는 중이에요';
   else if (r === PROMOTION.length - 1) {
-    const lead = rivalAhead(s);
-    if (lead) why = `라이벌 ${lead.name}의 평판이 더 높아요`;
+    why = rivalBlock(s);
   }
   return { ready: why === null, lines, why };
 }
@@ -812,10 +818,9 @@ function promote(ns: GameState, o: OfficerState, rng: Rng) {
     o.aides.push(a);
     note(ns, `첫 작전에서 함께 살아남은 ${ga(a.name)} 부관이 되었어요(${a.specialty}).`);
   }
-  if (r + 1 === PROMOTION.length) {
-    o.chiefRival = null;
-    note(ns, '지도자가 되었어요. 이제 나라 군대 전체를 맡아요.');
-  }
+  // 승급하면 정적들 힘이 빠짐
+  shiftInfluence(o, -10);
+  o.chiefRival = chiefRivalOf(o)?.name ?? null;
 }
 
 /** 시험용: 승급 심사 없이 바로 다음 계급으로(이번 계급 공훈·별 조건은 무시) */
@@ -852,7 +857,7 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
     const r = ns.player.rankIndex;
     const info = MISSION_KINDS[a.kind];
     const cap = statCap(r);
-    for (const x of readyAides(o, ns.worldMs)) aideGain(ns, x, win ? 25 : 10, win ? 3 : 1);
+    for (const x of readyAides(o, ns.worldMs)) aideGain(ns, x, win ? 25 : 10, win ? 3 : 1, win ? 2 : -2);
     if (a.exam) {
       if (win) {
         o.trust = Math.min(100, o.trust + 5);
@@ -993,33 +998,12 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
   });
 }
 
-// ── 라이벌 ──
+// ── 라이벌(정적) → rivals.ts ──
 
-/** 라이벌이 쌓은 공훈 / 계급(최대 대장) */
-export function rivalMerit(r: Rival, worldMs: number): number {
-  return (r.rate * worldMs) / REAL_MS_PER_GAME_DAY / 24;
-}
-export function rivalRank(r: Rival, worldMs: number): number {
-  let m = rivalMerit(r, worldMs);
-  let k = 0;
-  while (k < PROMOTION.length - 1 && m >= PROMOTION[k].merit) {
-    m -= PROMOTION[k].merit;
-    k++;
-  }
-  return k;
-}
 /** 평판 점수(지도자 경쟁) */
 export function myRenown(o: OfficerState): number {
   return Math.round(o.totalMerit + o.fame * 10 + o.trust * 20);
 }
-export function rivalRenown(r: Rival, worldMs: number): number {
-  return Math.round(rivalMerit(r, worldMs) * 1.1 + 1000);
-}
-function rivalAhead(s: GameState): Rival | null {
-  const mine = myRenown(s.officer);
-  return s.officer.rivals.find((r) => rivalRenown(r, s.worldMs) > mine) ?? null;
-}
-
 // ── 판단마다(실제 15분) ──
 
 /**
@@ -1030,18 +1014,6 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
   const o: OfficerState = structuredClone(ns.officer);
   const me = ns.player.countryId;
   const r = ns.player.rankIndex;
-  // 라이벌 승급
-  for (const rv of o.rivals) {
-    const rk = rivalRank(rv, ns.worldMs);
-    if (rk > rv.shownRank) {
-      rv.shownRank = rk;
-      if (rk >= r) note(ns, `라이벌 ${ga(rv.name)} ${ro(rankName(rk))} 승급했어요.${rk > r ? ' 나보다 앞서요!' : ''}`);
-    }
-    if (rk === PROMOTION.length - 1 && r < PROMOTION.length && !o.chiefRival && rivalRenown(rv, ns.worldMs) > myRenown(o)) {
-      o.chiefRival = rv.name;
-      note(ns, `라이벌 ${ga(rv.name)} 지도자 후보 1순위가 되었어요.`);
-    }
-  }
   // 내 나라 도시를 잃으면 신뢰도 하락(사령관이면 크게)
   for (const c of CITIES) {
     if (ownerBefore[c.id] === me && ns.world.owner[c.id] !== me) {
@@ -1049,6 +1021,8 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
       // 점령했던 남의 도시를 잃는 것은 덜 아픔
       const loss = (c.home !== me ? 2 : c.capital ? 20 : 8) * (big ? 1 : 0.4);
       o.trust = Math.max(0, o.trust - loss);
+      // 도시를 잃으면 정적들 목소리가 커짐
+      shiftInfluence(o, c.home === me ? 4 : 1);
       if (big) note(ns, `${eul(c.name)} 잃어 의회 신뢰도가 ${Math.round(loss)} 떨어졌어요.`);
     }
   }
@@ -1067,6 +1041,7 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
       o.merit = 0;
       o.stars = 0;
       o.trust = TRUST_SAFE;
+      for (const a of o.aides) addLoyalty(a, -10);
       ns.player = { ...ns.player, rankIndex: r - 1 };
       // 장군 칸이 줄면 마지막 장군부터 떠남
       while (o.generals.length > generalSlots(r - 1)) o.generals.pop();
@@ -1075,16 +1050,15 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
   } else {
     o.dismissDeadlineMs = null;
   }
+  schoolTick(ns, o);
+  loyaltyTick(ns, o, tickMs);
+  {
+    const rng = new Rng(o.seed);
+    rivalTick(ns, o, rng, tickMs);
+    o.seed = rng.seed;
+  }
   talkTick(ns, o);
   ns.officer = o;
 }
 
-/** 라이벌 중 지금 계급이 가장 높은 사람(화면용) */
-export function rivalsView(s: GameState) {
-  return s.officer.rivals.map((r) => ({
-    name: r.name,
-    rank: rivalRank(r, s.worldMs),
-    renown: rivalRenown(r, s.worldMs),
-  }));
-}
-
+export { rivalsView } from './rivals';

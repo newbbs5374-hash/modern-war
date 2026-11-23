@@ -38,8 +38,6 @@ import {
   grandTargets,
   masteryLevel,
   missionChance,
-  myRenown,
-  promoteAide,
   promotionCheck,
   recruitGeneral,
   rivalsView,
@@ -58,6 +56,9 @@ import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendi
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
 import { PersonFace } from './People';
+import { AideCareer, BondLoyalty } from './AideCareer';
+import { FIELD_ICON, branchSummary, generalEffectText, loyaltyOf } from '../game/loyal';
+import { BLOCK_AT, PLOT_MIN, ROLE_INFO } from '../game/rivals';
 import { TrainIcon } from './iconArt';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
@@ -332,7 +333,7 @@ export function OfficerScreen(props: ScreenProps) {
               <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
               <Help title="승급">
                 <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급할 수 있어요. 심사는 없어요.</p>
-                <p>승급하면 공훈과 별은 다시 모아요. 마지막 등급은 라이벌보다 평판이 높아야 해요.</p>
+                <p>승급하면 공훈과 별은 다시 모아요. 마지막 승급(전설의 지도자)은 영향력 70을 넘는 정적이 없어야 해요.</p>
               </Help>
             </div>
             {pc.lines.map((l) => (
@@ -359,7 +360,7 @@ export function OfficerScreen(props: ScreenProps) {
           { id: 'stats', label: '스탯', icon: '📈' },
           { id: 'aides', label: `부관 ${o.aides.length}/${aideSlots(r)}`, icon: '🧑‍✈️', badge: errandsDone || null },
           { id: 'generals', label: `장군 ${o.generals.length}/${generalSlots(r)}`, icon: '⭐', locked: generalSlots(r) === 0 },
-          { id: 'rivals', label: '라이벌', icon: '🏁', badge: o.chiefRival ? '!' : null },
+          { id: 'rivals', label: '정적', icon: '🏁', badge: o.chiefRival ? '!' : null },
         ]}
       />
       {tab === 'stats' && <StatsPanel {...props} />}
@@ -457,8 +458,9 @@ function AidesPanel({ state, actions }: ScreenProps) {
                 setPickId(a.id);
               }}
             >
-              <small>{busy ? `${ERRANDS[a.errand!.kind].icon} ${timeLeft(a.errand!.endMs - state.worldMs)}` : `💗 ${a.bond}`}</small>
+              <small>{a.school ? `🎓 ${timeLeft(a.school.endMs - state.worldMs)}` : busy ? `${ERRANDS[a.errand!.kind].icon} ${timeLeft(a.errand!.endMs - state.worldMs)}` : `💗 ${Math.round(a.bond)} · 🫡 ${Math.round(loyaltyOf(a))}`}</small>
               <Meter value={a.bond} max={100} tone="red" />
+              <Meter value={loyaltyOf(a)} max={100} tone="green" />
             </Tile>
           );
         })}
@@ -469,10 +471,10 @@ function AidesPanel({ state, actions }: ScreenProps) {
       </div>
       {slots > 0 && (
         <p className="small muted center" style={{ marginTop: 6 }}>
-          부관은 전투에 함께 나가고(레벨만큼 강함) 특기마다 분대에 효과를 줘요. 눌러서 선물·훈련·임무.
+          부관은 전투에 함께 나가고(레벨만큼 강함) 특기마다 분대에 효과를 줘요. 💗인연과 🫡충성을 키워 장군 교육을 보내면 장군으로 임명할 수 있어요.
         </p>
       )}
-      {pick && <AideModal aide={pick} state={state} actions={actions} msg={msg} setMsg={setMsg} onClose={() => setPickId(null)} canPromote={generalSlots(r) > o.generals.length && pick.level >= 3} />}
+      {pick && <AideModal aide={pick} state={state} actions={actions} msg={msg} setMsg={setMsg} onClose={() => setPickId(null)} />}
     </>
   );
 }
@@ -484,7 +486,6 @@ function AideModal({
   msg,
   setMsg,
   onClose,
-  canPromote,
 }: {
   aide: Aide;
   state: ScreenProps['state'];
@@ -492,7 +493,6 @@ function AideModal({
   msg: string;
   setMsg: (m: string) => void;
   onClose: () => void;
-  canPromote: boolean;
 }) {
   const r = state.player.rankIndex;
   const busy = a.errand && state.worldMs < a.errand.endMs;
@@ -505,8 +505,10 @@ function AideModal({
       <div className="ichips">
         <Chip icon="🏷️" value={a.specialty} />
         <Chip icon="⬆️" value={`Lv.${a.level}`} />
-        <Chip icon="💗" value={a.bond} label="인연" />
+        <Chip icon="💗" value={Math.round(a.bond)} label="인연" />
+        <Chip icon="🫡" value={Math.round(loyaltyOf(a))} label="충성" />
       </div>
+      <BondLoyalty a={a} />
       <div className="promo-line" style={{ marginTop: 6 }}>
         <small>경험</small>
         <Meter value={a.exp} max={a.level * 100} tone="blue" />
@@ -516,7 +518,7 @@ function AideModal({
       </div>
       <p className="small">⚔️ 전투 효과: {AIDE_EFFECT[a.specialty]}</p>
       <p className="small muted">인연 60: 전투 공격 +1 · 인연 90: 임무 성공 +5%</p>
-      {done ? (
+      {a.school ? null : done ? (
         <button
           className="gold wide"
           onClick={() =>
@@ -563,11 +565,7 @@ function AideModal({
           </div>
         </>
       )}
-      {canPromote && (
-        <button className="wide" style={{ marginTop: 8 }} onClick={() => (actions.apply((s) => promoteAide(s, a.id)), onClose())}>
-          ⭐ 장군으로 승격
-        </button>
-      )}
+      <AideCareer state={state} a={a} apply={actions.apply} onDone={(t) => (setMsg(t), t.startsWith('⭐') && onClose())} />
       {msg && <p className="small result">{msg}</p>}
       <div className="stories">
         <small className="muted">💬 인연 이야기 {told}/3</small>
@@ -585,14 +583,18 @@ function GeneralsPanel({ state, actions }: ScreenProps) {
   const o = state.officer;
   const r = state.player.rankIndex;
   const slots = generalSlots(r);
-  if (slots === 0) return <p className="empty">⭐ 존경받는 지도자가 되면 장군을 둘 수 있어요(부관 Lv.3 승격 또는 영입).</p>;
-  const FIELD_ICON: Record<string, string> = { 육군: '🪖', 해군: '⚓', 공군: '✈️', 정보: '🔐', 군수: '📦' };
+  if (slots === 0) return <p className="empty">⭐ 존경받는 지도자가 되면 장군을 둘 수 있어요(장군 교육을 마친 부관을 임명하거나 영입).</p>;
   return (
-    <Card title={`장군 ${o.generals.length} / ${slots}`} icon="⭐" right={<Chip icon="🛡️" value={`+${Math.round((generalDefense(o) - 1) * 100)}%`} label="방어" />} help={<p>장군은 내 나라 도시를 자동으로 지켜요(능력이 높을수록 방어 +). 부관 Lv.3을 승격하거나 봉급으로 영입해요.</p>}>
+    <Card title={`장군 ${o.generals.length} / ${slots}`} icon="⭐" right={<Chip icon="🛡️" value={`+${Math.round((generalDefense(o) - 1) * 100)}%`} label="방어" />} help={<p>장군은 맡은 병과의 효율을 올려요(육군·해군·공군 = 그 병과 전투력·모집 속도, 정보 = 임무 성공, 군수 = 전략 자원). 내 나라 도시 방어도 조금 올려요. 충성 80 넘으면 효과 ×1.2, 30 밑이면 절반. 장군 교육을 마친 부관을 임명하거나 봉급으로 영입해요.</p>}>
+      <div className="ichips">
+        {branchSummary(state).map((b) => (
+          <Chip key={b.field} icon={FIELD_ICON[b.field]} value={b.on ? b.text : '-'} label={b.field} />
+        ))}
+      </div>
       {o.generals.map((g) => (
         <div key={g.id} className="line-item">
           <span className="li-ico">
-            <PersonFace who={{ kind: 'general', id: g.id }} keys={[`aide-${g.name}`]} fallback={FIELD_ICON[g.field] ?? '⭐'} />
+            <PersonFace who={{ kind: 'general', id: g.id }} keys={[`aide-${g.name}`]} fallback={FIELD_ICON[g.field as keyof typeof FIELD_ICON] ?? '⭐'} />
           </span>
           <span className="li-main">
             <b>
@@ -601,6 +603,7 @@ function GeneralsPanel({ state, actions }: ScreenProps) {
             <small>
               능력 {g.skill} · 충성 {Math.round(g.loyalty)} · {g.from}
             </small>
+            <small className="muted" style={{ display: 'block' }}>📈 {generalEffectText(g)}</small>
           </span>
           <button onClick={() => window.confirm(`${g.name} 장군을 보낼까요?`) && actions.apply((s) => dismissGeneral(s, g.id))}>보내기</button>
         </div>
@@ -614,37 +617,39 @@ function GeneralsPanel({ state, actions }: ScreenProps) {
 
 function RivalsPanel({ state }: ScreenProps) {
   const o = state.officer;
-  const r = state.player.rankIndex;
   const rivals = rivalsView(state);
-  const mine = myRenown(o);
-  const top = Math.max(mine, ...rivals.map((x) => x.renown));
   return (
-    <Card title="지도자 경쟁" icon="🏁" help={<p>대장에서 지도자이 되려면 라이벌 세 명보다 평판(공훈 + 명성 + 신뢰도)이 높아야 해요. 라이벌도 시간이 지나면 승급해요.</p>}>
-      <div className="line-item">
-        <span className="li-ico">
-          <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
-        </span>
-        <span className="li-main">
-          <b>나 · {RANKS[r].name}</b>
-          <Meter value={mine} max={top} tone="green" />
-        </span>
-        <small>{fmt(mine)}</small>
-      </div>
+    <Card
+      title="나라 안 정적"
+      icon="🏁"
+      help={
+        <p>
+          지도자 자리를 흔드는 정적 3명이에요. 영향력이 {PLOT_MIN}을 넘으면 몇 시간마다 방해 공작을 해요(야당 대표 = 의회 신뢰 −, 군부 실력자 = 장군·부관 충성 −, 재벌 = 봉급 −). 영향력이 {BLOCK_AT}을 넘으면 전설의 지도자 승급을 막아요. 사진을 눌러 🕵️동향 살피기(공작을 미리 막음)·🗞️견제(영향력 −)·🤝회유(3번 성공하면 내 편)를 하세요. 승급·연설은 영향력을 낮추고, 도시를 잃으면 올라가요.
+        </p>
+      }
+    >
       {rivals.map((x) => (
         <div key={x.name} className="line-item">
           <span className="li-ico">
-            <PersonFace who={{ kind: 'rival', name: x.name }} keys={[`aide-${x.name}`]} fallback={RANK_ICON[x.rank]} />
+            <PersonFace who={{ kind: 'rival', name: x.name }} keys={[`aide-${x.name}`, `rival-${x.name}`]} fallback={ROLE_INFO[x.role].icon} />
           </span>
           <span className="li-main">
             <b>
-              {x.name} · {RANKS[x.rank].name} {x.rank > r ? '⚠️' : ''}
+              {x.name} <small className="muted">{x.role}</small> {x.ally ? '🤝' : x.influence >= BLOCK_AT ? '⚠️' : ''}
             </b>
-            <Meter value={x.renown} max={top} tone="red" />
+            {x.ally ? <small className="good">내 편 · {ROLE_INFO[x.role].ally}</small> : <Meter value={x.influence} max={100} tone={x.influence >= PLOT_MIN ? 'red' : 'gold'} />}
+            {!x.ally && (
+              <small className="muted">
+                영향력 {x.influence}
+                {x.watch ? ' · 🕵️ 지켜보는 중' : ''}
+                {x.woo ? ` · 회유 ${x.woo}/3` : ''}
+              </small>
+            )}
           </span>
-          <small>{fmt(x.renown)}</small>
         </div>
       ))}
-      {o.chiefRival && <p className="small warn">지도자 후보 1순위: {o.chiefRival}. 평판으로 앞질러야 해요.</p>}
+      <p className="small muted center">사진을 눌러 🕵️동향 살피기 · 🗞️견제 · 🤝회유</p>
+      {o.chiefRival && <p className="small warn">⚠️ {o.chiefRival}의 영향력이 {BLOCK_AT}을 넘었어요. 견제·회유로 낮춰야 전설의 지도자가 될 수 있어요.</p>}
     </Card>
   );
 }

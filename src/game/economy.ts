@@ -38,6 +38,7 @@ import {
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
+import { generalBuildMult, generalPowerMult, generalResMult } from './loyal';
 import { isAlive, relationOf } from './world';
 import { facBonus, facEff } from './facility';
 import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, tradeEdge, unitTechLock } from './civ';
@@ -150,7 +151,7 @@ export const budgetMult = (s: GameState) => 1 + buildingEff(s, '군수공장');
 /** 제련소·첨단공단: 자원 배율 */
 export const resMult = (s: GameState, r: Res) => {
   const b = RES_BUILDING[r];
-  return b ? 1 + buildingEff(s, b) : 1;
+  return (b ? 1 + buildingEff(s, b) : 1) * generalResMult(s);
 };
 /** 징병소: 모병 배율 */
 export const welfareMult = (s: GameState) => 1 + buildingEff(s, '징병소');
@@ -210,7 +211,7 @@ export function economyTick(s: GameState): GameState {
     const v = variantOf(s, q.sp ?? q.special);
     const c = costOf(s, q.unit, v?.id);
     const name = queueName(s, q);
-    const power = Math.round(c.power * civPowerMult(s, q.unit) * (v ? specialPowerMult(s) : 1) * (q.crystal ? CRYSTAL_POWER : 1));
+    const power = Math.round(c.power * civPowerMult(s, q.unit) * generalPowerMult(s, q.unit) * (v ? specialPowerMult(s) : 1) * (q.crystal ? CRYSTAL_POWER : 1));
     e.army[name] = (e.army[name] ?? 0) + 1;
     e.power += power;
     troops += c.troops;
@@ -313,7 +314,7 @@ export function costOf(s: GameState, unit: string, variant?: string | boolean): 
 }
 /** 인프라만큼 빨라진 실제 생산 시간(ms) */
 export function buildMs(s: GameState, unit: string, variant?: string | boolean): number {
-  return (costOf(s, unit, variant).hours * HOUR) / infraMult(s, unit) / civBuildSpeed(s, unit);
+  return (costOf(s, unit, variant).hours * HOUR) / infraMult(s, unit) / civBuildSpeed(s, unit) / generalBuildMult(s, unit);
 }
 export const QUEUE_MAX = 5;
 export function canProduce(s: GameState, unit: string, variant?: string | boolean): string | null {
