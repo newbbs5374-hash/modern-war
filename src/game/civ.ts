@@ -61,7 +61,7 @@ import {
   type GovId,
   type Tech,
 } from '../data/civ';
-import { BASIC_RES, CITY_RES, COMPOSITE_INPUT, COMPOSITE_PER_INDUSTRY, LUXURIES, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
+import { BASIC_RES, CITY_RES, COMPOSITE_PER_INDUSTRY, LUXURIES, PROCESSED, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
 import { HEX_DIRS, PIONEER_ISLANDS, TILES, TILE_AT, hexKey, type Tile } from '../data/hexmap';
 import { COUNTRIES, countryById } from '../data/world';
 import { facBonus } from './facility';
@@ -146,11 +146,12 @@ export interface CivState {
   log: string[];
 }
 
-const AI_GOV: Record<string, GovId> = { 공격형: 'navy', 경제형: 'merchant', 방어형: 'assembly', 기회주의: 'sanctum' };
+/** AI 나라 체제: 성향마다 두 가지 중 나라 순서대로 하나(11-23 체제 8가지) */
+const AI_GOV: Record<string, [GovId, GovId]> = { 공격형: ['navy', 'junta'], 경제형: ['merchant', 'technocracy'], 방어형: ['assembly', 'federation'], 기회주의: ['sanctum', 'republic'] };
 
 export function newCiv(s: Pick<GameState, 'world' | 'worldMs'>): CivState {
   const aiGov: Record<string, GovId> = {};
-  for (const c of COUNTRIES) aiGov[c.id] = AI_GOV[s.world.personalities[c.id]] ?? 'assembly';
+  COUNTRIES.forEach((c, i) => (aiGov[c.id] = AI_GOV[s.world.personalities[c.id]]?.[i % 2] ?? 'assembly'));
   const influence: Record<string, Record<string, number>> = {};
   for (const p of PIONEER_ISLANDS) influence[p.id] = {};
   return {
@@ -347,6 +348,8 @@ export function chaos(s: GameState): boolean {
 export function canSetGov(s: GameState, id: GovId): string | null {
   const c = civOf(s);
   if (c.gov === id) return '지금 체제예요';
+  const g = govById(id);
+  if (g.needs && !hasTech(s, g.needs)) return `${techById(g.needs)?.name ?? ''} 연구 뒤 고를 수 있어요`;
   if (c.gov && !hasTech(s, 's-charter')) return '국가 헌장 연구 뒤 바꿀 수 있어요';
   if (c.gov && s.nations[s.player.countryId].treasury < GOV_CHANGE_COST) return `국방예산 ${GOV_CHANGE_COST.toLocaleString()} 필요`;
   return null;
@@ -840,10 +843,17 @@ export function minePerHour(s: GameState): Partial<Record<Res, number>> {
   }
   return out;
 }
-/** 복합소재: 다 지은 공업 구역 수 × 시간당 */
-export function compositePerHour(s: GameState): number {
-  return s.economy.composite === false ? 0 : builtDistricts(s).filter((x) => x.d.id === 'industry').length * COMPOSITE_PER_INDUSTRY;
+/** 가공 자원(복합소재·특수강·정밀부품)을 만들고 있는지. 없으면 켜짐 */
+export function processOn(e: GameState['economy'], r: Res): boolean {
+  if (r === '복합소재') return e.composite !== false;
+  return e.process?.[r] !== false;
 }
+/** 가공 자원 하나: 다 지은 공업 구역 수 × 시간당(꺼 두면 0) */
+export function processPerHour(s: GameState, r: Res): number {
+  return processOn(s.economy, r) ? builtDistricts(s).filter((x) => x.d.id === 'industry').length * COMPOSITE_PER_INDUSTRY : 0;
+}
+/** 복합소재: 다 지은 공업 구역 수 × 시간당 */
+export const compositePerHour = (s: GameState) => processPerHour(s, '복합소재');
 
 /** 이웃 보너스 개수 */
 export function adjCount(cityId: string, tile: string, id: DistrictId, cc: CityCiv): number {
@@ -1047,7 +1057,7 @@ export function civAccrue(s: GameState, ms: number): GameState {
   for (const id of myIslands(tmp)) {
     const p = PIONEER_ISLANDS.find((x) => x.id === id)!;
     if (p.res !== '항구') {
-      stock[p.res] += ISLAND_RES_PER_HOUR * h;
+      stock[p.res] = (stock[p.res] ?? 0) + ISLAND_RES_PER_HOUR * h;
       stockChanged = true;
     }
   }
@@ -1057,17 +1067,18 @@ export function civAccrue(s: GameState, ms: number): GameState {
     const cc = c.cities[city.id];
     for (const m of cc?.mines ?? []) {
       if (m.doneMs > s.worldMs) continue;
-      stock[m.res] += MINE_PER_HOUR * (city.home === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
+      stock[m.res] = (stock[m.res] ?? 0) + MINE_PER_HOUR * (city.home === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
       stockChanged = true;
     }
   }
-  if (ns.economy.composite !== false) {
-    const n = builtDistricts(tmp).filter((x) => x.d.id === 'industry').length;
-    let make = n * COMPOSITE_PER_INDUSTRY * h;
-    for (const [r, v] of Object.entries(COMPOSITE_INPUT)) make = Math.min(make, Math.max(0, stock[r as Res]) / v!);
+  const nInd = builtDistricts(tmp).filter((x) => x.d.id === 'industry').length;
+  for (const pr of PROCESSED) {
+    if (!nInd || !processOn(ns.economy, pr.res)) continue;
+    let make = nInd * COMPOSITE_PER_INDUSTRY * h;
+    for (const [r, v] of Object.entries(pr.input)) make = Math.min(make, Math.max(0, stock[r as Res] ?? 0) / v!);
     if (make > 0) {
-      for (const [r, v] of Object.entries(COMPOSITE_INPUT)) stock[r as Res] -= v! * make;
-      stock.복합소재 += make;
+      for (const [r, v] of Object.entries(pr.input)) stock[r as Res] -= v! * make;
+      stock[pr.res] = (stock[pr.res] ?? 0) + make;
       stockChanged = true;
     }
   }
@@ -1208,10 +1219,11 @@ export function extraResPerHour(s: GameState): Partial<Record<Res, number>> {
     const p = PIONEER_ISLANDS.find((x) => x.id === id)!;
     if (p.res !== '항구') out[p.res] = (out[p.res] ?? 0) + ISLAND_RES_PER_HOUR;
   }
-  const comp = compositePerHour(s);
-  if (comp > 0) {
-    out.복합소재 = (out.복합소재 ?? 0) + comp;
-    for (const [r, v] of Object.entries(COMPOSITE_INPUT)) out[r as Res] = (out[r as Res] ?? 0) - v! * comp;
+  for (const pr of PROCESSED) {
+    const n = processPerHour(s, pr.res);
+    if (n <= 0) continue;
+    out[pr.res] = (out[pr.res] ?? 0) + n;
+    for (const [r, v] of Object.entries(pr.input)) out[r as Res] = (out[r as Res] ?? 0) - v! * n;
   }
   return out;
 }

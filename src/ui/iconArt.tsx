@@ -104,6 +104,7 @@ export function IslandIcon({ id, badge }: { id: string; badge?: ReactNode }): Re
 export const RES_KEY: Record<Res, string> = {
   강철: 'steel', 석유: 'oil', 알루미늄: 'aluminum', 티타늄: 'titanium', 희토류: 'rare-earth', 리튬: 'lithium', 반도체: 'chip',
   구리: 'copper', 우라늄: 'uranium', 복합소재: 'composite', 갈륨: 'gallium', 향신료: 'spice', 진주: 'pearl', 차잎: 'tea', 산호: 'coral',
+  니켈: 'nickel', 텅스텐: 'tungsten', 코발트: 'cobalt', 특수강: 'special-steel', 정밀부품: 'precision-parts', 게르마늄: 'germanium', 헬륨: 'helium', 커피: 'coffee', 비단: 'silk',
 };
 export const resArtUrl = (r: Res): string | null => iconArt(`icon-res-${RES_KEY[r]}`);
 /** 자원 아이콘. inline = 글 사이에 끼는 작은 크기 */
@@ -153,6 +154,10 @@ export const CARD_KEY: Record<string, string> = {
   '경-상회': 'eco-port', '경-학자': 'eco-scholar', '경-복지': 'eco-ration', '경-연방': 'eco-invest',
   '외-사절': 'dip-envoy', '외-친선': 'dip-goodwill', '외-정보': 'dip-intel', '외-불가침': 'dip-border',
   '외-방위': 'dip-alliance', '외-회의': 'dip-lobby', '외-방송': 'dip-broadcast', '외-연방': 'dip-friendship',
+  // 11-23 새 카드 12장
+  '군-첩보': 'mil-spy', '군-예비': 'mil-reserve', '군-보훈': 'mil-veterans', '군-기동': 'mil-rapid',
+  '경-조세': 'eco-taxreform', '경-관세': 'eco-tariff', '경-채굴': 'eco-mining', '경-산업': 'eco-industry',
+  '외-문화': 'dip-culture', '외-동맹': 'dip-pact', '외-원조': 'dip-aid', '외-중재': 'dip-mediate',
 };
 export const cardArtKey = (id: string) => `icon-card-${CARD_KEY[id] ?? id}`;
 
