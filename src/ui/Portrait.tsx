@@ -78,12 +78,13 @@ export function PortraitList() {
 
 /**
  * 인물 얼굴(11-23): 이름 대신 "생김새 묶음" 그림을 나눠 씀.
- * 파일 이름 face-{생김새}-{성별}-{나이대}-{번호}. 예: face-ea-m-mid-1.webp (ea 동아시아·sa 남아시아·we 서양·ee 동유럽·me 중동·tr 튀르크 / m·f / mid 45~59·old 60+)
- * 같은 묶음 그림이 여러 장이면 인물 번호로 하나를 고정해서 골라요.
+ * 파일 이름 face-{생김새}-{성별}-{나이대}-{번호}. 예: face-ea-m-60-03.png
+ * (생김새 ea 동아시아·sa 남아시아·we 서양·ee 동유럽·me 중동·tr 튀르크 / 성별 m·f / 나이대 50 = 59세까지, 60 = 60세부터)
+ * 같은 묶음 그림이 여러 장이면 인물 번호로 하나를 고정해서 골라요. 명령문: guides/face-art-prompts.md
  */
 export function personFaceUrl(look: string, sex: 'm' | 'f', age: number, id: number): string | null {
-  const band = age >= 60 ? 'old' : 'mid';
-  const tries = [`face-${look}-${sex}-${band}-`, `face-${look}-${sex}-${band === 'old' ? 'mid' : 'old'}-`];
+  const band = age >= 60 ? '60' : '50';
+  const tries = [`face-${look}-${sex}-${band}-`, `face-${look}-${sex}-${band === '60' ? '50' : '60'}-`];
   for (const pre of tries) {
     const list = Object.keys(URLS).filter((k) => k.startsWith(pre)).sort();
     if (list.length) return URLS[list[id % list.length]];
