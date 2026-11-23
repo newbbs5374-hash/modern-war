@@ -23,7 +23,8 @@ export type Count =
   | 'capture' // 도시 차지
   | 'rank' // 등급 오르기
   | 'island' // 분쟁 섬 차지
-  | 'event'; // 돌발 사건 고르기
+  | 'event' // 돌발 사건 고르기
+  | 'spy'; // 첩보 작전 성공
 
 export interface DailyTask {
   id: Count;
@@ -59,6 +60,7 @@ export const DAILY_POOL: Array<{ id: Count; name: string; icon: string; need: nu
   { id: 'pact', name: '협정·무역 계약 맺기', icon: '🤝', need: 1 },
   { id: 'vote', name: '국제 회의 투표', icon: '🏛️', need: 1 },
   { id: 'event', name: '돌발 사건 해결', icon: '⚡', need: 1 },
+  { id: 'spy', name: '첩보 작전 성공', icon: '🕵️', need: 1 },
 ];
 export const dailyInfo = (id: Count) => DAILY_POOL.find((d) => d.id === id)!;
 
@@ -89,6 +91,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   ACH('rank5', '존경받는 길', '⭐', `${RANKS[5].name} 되기`, 50, (s) => [s.player.rankIndex, 5]),
   ACH('rankMax', '전설', '👑', `${RANKS[RANKS.length - 1].name} 되기`, 200, (s) => [s.player.rankIndex, RANKS.length - 1]),
   ACH('event5', '위기 해결사', '⚡', '돌발 사건 5번 직접 해결', 40, (_, g) => [t(g, 'event'), 5]),
+  ACH('spy5', '그림자 사령관', '🕵️', '첩보 작전 5번 성공', 50, (_, g) => [t(g, 'spy'), 5]),
   ACH('streak3', '성실한 지도자', '📅', '매일 할 일 3일 연속 다 하기', 60, (_, g) => [g.streak, 3]),
 ];
 
@@ -145,6 +148,7 @@ export function countDiff(b: GameState, a: GameState): Partial<Record<Count, num
     add('capture', CITIES.filter((c) => c.home !== me && a.world.owner[c.id] === me && b.world.owner[c.id] !== me).length);
   add('rank', a.player.rankIndex - b.player.rankIndex);
   add('event', (a.crisis?.solved ?? 0) - (b.crisis?.solved ?? 0));
+  add('spy', (a.spy?.ok ?? 0) - (b.spy?.ok ?? 0));
   return out;
 }
 

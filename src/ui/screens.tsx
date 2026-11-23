@@ -24,6 +24,8 @@ import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
 import { OrdersModal } from './OrdersModal';
+import { SpyPanel } from './SpyPanel';
+import { spyOf } from '../game/spy';
 import { ORDER_INFO, ordersOf } from '../game/orders';
 import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
 import { goalsOf } from '../game/goals';
@@ -288,7 +290,7 @@ function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string
 }
 
 /* ───────── 작전: 임무 · 대전투 · 지도 · 전황 (탭) ───────── */
-type OpsTab = 'mission' | 'grand' | 'map' | 'news';
+type OpsTab = 'mission' | 'grand' | 'spy' | 'map' | 'news';
 export function OpsScreen(props: ScreenProps) {
   const { state } = props;
   const rank = state.player.rankIndex;
@@ -302,6 +304,7 @@ export function OpsScreen(props: ScreenProps) {
         tabs={[
           { id: 'mission', label: '임무', icon: '🎯', badge: ready ? '!' : null },
           { id: 'grand', label: '대전투', icon: '🏙️', locked: rank < OPERATION_RANK },
+          { id: 'spy', label: '첩보', icon: '🕵️', badge: spyOf(state).active.length || null },
           { id: 'map', label: '지도', icon: '🗺️' },
           { id: 'news', label: '전황', icon: '📰' },
         ]}
@@ -321,6 +324,7 @@ export function OpsScreen(props: ScreenProps) {
             {rank >= 8 && <VictoryCard {...props} />}
           </>
         ))}
+      {tab === 'spy' && <SpyPanel {...props} />}
       {tab === 'map' && <MapPanel {...props} />}
       {tab === 'news' && (
         <Card title="최근 전황" icon="📰">
