@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "sim": "vitest run --config sim/vitest.config.ts --silent=false",
-    "hexmap": "OUT=docs/hexmap.svg vitest run --config sim/vitest.config.ts sim/hex.test.ts"
+    "hexmap": "OUT=docs/hexmap.svg vitest run --config sim/vitest.config.ts sim/hex.test.ts",
+    "worldart": "vitest run --config sim/vitest.config.ts sim/worldart.test.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

@@ -315,6 +315,13 @@ export const PIONEER_ISLANDS: PioneerIsland[] = BUILT.pioneers;
 export const HOLY_HEX = BUILT.holy;
 /** 지도 그림 범위(픽셀) */
 export const MAP_BOUNDS = BUILT.bounds;
+/** 실사 세계지도 그림(3:2, 1536×1024)을 까는 자리: 지도 범위를 가운데 두고 옆으로 넓힘 */
+export const WORLD_ART = (() => {
+  const b = BUILT.bounds;
+  const w = Math.max(b.w, (b.h * 3) / 2);
+  const h = (w * 2) / 3;
+  return { x: b.x - (w - b.w) / 2, y: b.y - (h - b.h) / 2, w, h };
+})();
 export const TILE_AT = new Map(TILES.map((t) => [hexKey(t.q, t.r), t]));
 
 /** 수도 앞바다: 수도에서 가장 가까운, 땅에서 2칸 떨어진 바다 칸 */
