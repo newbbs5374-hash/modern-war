@@ -69,7 +69,6 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid 
   const y1 = Math.max(...ys);
   // 위쪽은 세운 건물 높이만큼 여유
   const vb = `${x0} ${(y0 - S * 1.6) * K - S * 2.6} ${x1 - x0} ${(y1 - y0 + S * 3.2) * K + S * 3.6}`;
-  const depth = (y: number) => 0.86 + (0.28 * (y - y0)) / Math.max(1, y1 - y0);
   const things = useMemo(() => cells.filter((c) => c.thing).sort((a, b) => a.y - b.y || a.x - b.x), [cells]);
   const grounds = Array.from(new Set(cells.map((c) => c.ground)));
   const paint = (g: CityGround) => (GROUND_ART[g] && cityArt(GROUND_ART[g]!) ? `url(#cg-${uid}-${g})` : GROUND[g]);
@@ -140,8 +139,8 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid 
       {/* 세운 것들: 뒤(위)부터 앞(아래)으로 */}
       <g pointerEvents="none">
         {things.map((c) => {
-          const k = depth(c.y);
-          const w = S * SIZE[c.thing!] * k;
+          // 땅을 원근 없이(멀고 가까워도 같은 크기) 눕혀 그리므로 건물도 같은 크기로 세운다
+          const w = S * SIZE[c.thing!];
           const gx = c.x;
           const gy = c.y * K;
           const url = cityArt(`city-${c.thing}`);
