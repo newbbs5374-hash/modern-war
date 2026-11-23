@@ -1,4 +1,5 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { salaryPerDay } from '../game/state';
 import { originFits, originOf } from '../game/origin';
 import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
@@ -98,7 +99,7 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
         <>
           <p>임무를 고르면 실제 시간으로 이동해요(게임을 꺼 두어도 돼요).</p>
           <p>도착하면 ⚔️ 직접 싸우거나 🤖 스탯으로 자동 계산해요. 직접 싸워 별을 많이 받으면 공훈이 더 커요(★★★ ×1.4).</p>
-          <p>실무 지도자부터는 세 번째 칸에 2~3판을 이어 싸우는 🗺️ 작전이 나와요.</p>
+          <p>{RANKS[OPERATION_RANK].name}부터는 세 번째 칸에 2~3판을 이어 싸우는 🗺️ 작전이 나와요.</p>
         </>
       }
     >
@@ -321,7 +322,7 @@ export function LeaderCard(props: ScreenProps) {
           </span>
           <div className="lc-name">{state.player.name}</div>
           <div className="lc-sub">
-            {FLAG[state.player.countryId]} {countryById(state.player.countryId).name} · 지휘 {RANKS[r].unit}
+            {FLAG[state.player.countryId]} {countryById(state.player.countryId).name} · 봉급 시간당 {Math.round(salaryPerDay(state))}
           </div>
           {og && (
             <div className="lc-sub lc-origin">

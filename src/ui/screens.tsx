@@ -2,45 +2,39 @@
 import { BriefingModal } from './BriefingUI';
 import { todos } from '../game/briefing';
 import { useState } from 'react';
-import { RANKS } from '../data/ranks';
 import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { pendingCap, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
-import { Card, CountryInfo, EventList, HOUR, fmt } from './common';
+import { Card, CountryInfo, EventList, fmt } from './common';
 import type { Screen } from './nav';
 import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, timeLeft } from './officerScreens';
-import { DRILL_MAX, debugAddAide, drillsNow } from '../game/officer';
-import { debugTitleUp, nextTitle, titleOf, titleScore } from '../game/title';
+import { DRILL_MAX, drillsNow } from '../game/officer';
+import { nextTitle, titleOf, titleScore } from '../game/title';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
 import { Chip, Modal, Tile, useTab } from './kit';
 import { FLAG } from './flag';
-import { grantTestResources } from '../game/testgrant';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
 import { cityById } from '../data/cities';
 import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
-import { boostsOf } from '../game/boost';
-import { OPERATION_RANK } from '../data/officers';
+import { GRAND_RANK, OPERATION_RANK } from '../data/officers';
+import { RANKS } from '../data/ranks';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
 import { OrdersModal } from './OrdersModal';
 import { FleetWatchCard } from './FleetWatch';
 import { ORDER_INFO, ordersOf } from '../game/orders';
-import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
-import { goalsOf, goalsReady } from '../game/goals';
+import { crisisById, crisisOf } from '../game/crisis';
+import { goalsReady } from '../game/goals';
 import { GUIDE, claimGuide, guideOf, guideStep, hideGuide, rewardText } from '../game/guide';
 import { DiplomacyScreen } from './DiplomacyScreen';
 import { DefenseScreen, EconomyScreen, PersonalScreen, SocietyScreen } from './MainScreens';
 import { routeTo } from './nav';
+import { SettingsScreen } from './SettingsScreen';
 import { PresModal } from './PresUI';
 import { moodLabel, presOf } from '../game/approval';
-import { debugTalk } from '../game/talk';
-import { PortraitList } from './Portrait';
-import { FieldArtList, IconArtList } from './FieldArtList';
-import { TECHS } from '../data/civ';
-import { civOf, debugAllResearch, debugCouncil, debugFinishDistricts, debugFinishResearch, setCouncilOn } from '../game/civ';
 
 export interface GameActions {
   claim: () => void;
@@ -268,7 +262,7 @@ export function HomeScreen(props: ScreenProps) {
           <button
             key={sp.label}
             className={`bld ${sp.main ? 'main' : ''} ${sp.locked ? 'locked' : ''}`}
-            onClick={sp.locked ? undefined : sp.on}
+            onClick={sp.on}
             aria-label={sp.label}
           >
             <span className="bld-ico">{sp.locked ? '🔒' : sp.icon}</span>
@@ -358,7 +352,7 @@ export function OpsScreen(props: ScreenProps) {
       )}
       {tab === 'grand' &&
         (rank < OPERATION_RANK ? (
-          <p className="empty">🔒 실무 지도자부터 작전, 존경받는 지도자부터 대전투(도시 점령)가 열려요.</p>
+          <p className="empty">🔒 {RANKS[OPERATION_RANK].name}부터 작전, {RANKS[GRAND_RANK].name}부터 대전투(도시 점령)가 열려요.</p>
         ) : (
           <>
             <GrandCard {...props} />
@@ -527,141 +521,6 @@ export function CodexScreen({ state }: ScreenProps) {
 }
 
 /* ───────── 설정: 저장/불러오기 + 시험 버튼 ───────── */
-export function SettingsScreen({ state, speed, actions }: ScreenProps) {
-  const [code, setCode] = useState('');
-  const [msg, setMsg] = useState('');
-  return (
-    <>
-      <Card title="저장 / 불러오기">
-        <p className="small muted">5초마다, 그리고 창을 닫을 때 이 브라우저에 자동 저장돼요.</p>
-        <div className="buttons">
-          <button onClick={() => (actions.save(), setMsg('저장했어요.'))}>지금 저장</button>
-          <button onClick={() => (actions.load(), setMsg('마지막 저장을 불러왔어요.'))}>마지막 저장 불러오기</button>
-          <button onClick={() => (setCode(actions.exportCode()), setMsg('아래 저장 코드를 복사해 두면 다른 기기에서도 이어할 수 있어요.'))}>
-            저장 코드 만들기
-          </button>
-          <button onClick={() => setMsg(actions.importCode(code) ?? '저장 코드로 불러왔어요.')}>저장 코드로 불러오기</button>
-        </div>
-        <textarea value={code} onChange={(e) => setCode(e.target.value)} placeholder="저장 코드" />
-        {msg && <p className="small">{msg}</p>}
-        <button
-          className="danger"
-          onClick={() => {
-            if (window.confirm('처음부터 다시 시작할까요? 지금 저장은 지워집니다.')) actions.reset();
-          }}
-        >
-          새로 시작
-        </button>
-      </Card>
-
-      <Card title="🏛️ 국제 회의">
-        <div className="row">
-          <small className="muted">고대 성지에서 실제 하루마다 열리는 투표(외교 → 국제 회의)</small>
-          <button className={civOf(state).council.on ? 'on' : ''} onClick={() => actions.apply((s) => setCouncilOn(s, !civOf(s).council.on))}>
-            {civOf(state).council.on ? '켜짐' : '꺼짐'}
-          </button>
-        </div>
-      </Card>
-
-      <Card title="시험용 버튼" right={<small className="muted">정식판에서는 빠짐</small>}>
-        <small>문명식 운영 시험</small>
-        <div className="buttons">
-          <button className="gold" onClick={() => (actions.apply(debugFinishResearch), setMsg('하던 연구(없으면 고를 수 있는 첫 연구)를 바로 끝냈어요.'))}>🔬 연구 바로 끝내기</button>
-          <button onClick={() => (actions.apply(debugAllResearch), setMsg(`연구 ${TECHS.length}개를 모두 끝냈어요.`))}>🔬 모든 연구 끝</button>
-          <button onClick={() => (actions.apply(debugFinishDistricts), setMsg('짓던 구역을 모두 완공했어요.'))}>🏗️ 구역 바로 완공</button>
-          <button onClick={() => (actions.apply(debugCouncil), setMsg(civOf(state).council.open ? '회의를 바로 마감했어요. 외교 → 국제 회의에서 결과를 보세요.' : '회의를 바로 열었어요. 외교 → 국제 회의에서 투표하세요.'))}>
-            🏛️ 회의 {civOf(state).council.open ? '바로 마감' : '바로 열기'}
-          </button>
-        </div>
-        <small>시간 건너뛰기</small>
-        <div className="buttons">
-          <button className="gold" onClick={() => (actions.apply(grantTestResources), setMsg('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))}>🎁 시험 자원 넉넉히</button>
-          <button className="gold" onClick={() => (actions.apply(debugTalk), setMsg('대화가 하나 왔어요. 본부의 💬 대화를 눌러 보세요.'))}>💬 대화 바로 받기</button>
-          <button className="gold" disabled={!nextTitle(state)} onClick={() => (actions.apply(debugTitleUp), setMsg('명성(모자라면 신뢰도)을 채워 다음 호칭으로 올렸어요.'))}>
-            🎖️ 다음 호칭으로
-          </button>
-        </div>
-        <div className="buttons">
-          <button onClick={() => actions.skip(HOUR)}>+1시간 (1일)</button>
-          <button onClick={() => actions.skip(12 * HOUR)}>+12시간</button>
-          <button onClick={() => actions.skip(24 * HOUR)}>+실제 1일</button>
-          <button onClick={() => actions.skip(7 * 24 * HOUR)}>+실제 1주</button>
-        </div>
-        <small>시계 빠르기</small>
-        <div className="buttons">
-          {[1, 60, 3600].map((x) => (
-            <button key={x} className={speed === x ? 'on' : ''} onClick={() => actions.setSpeed(x)}>
-              ×{x}
-              {x === 60 ? ' (1분=하루)' : x === 3600 ? ' (1초=하루)' : ''}
-            </button>
-          ))}
-        </div>
-        <small>시험용</small>
-        <div className="buttons">
-          <button
-            onClick={() =>
-              actions.apply((s) => {
-                const o = structuredClone(s.officer);
-                o.drills = DRILL_MAX;
-                o.drillAnchorMs = s.worldMs;
-                return { ...s, officer: o };
-              })
-            }
-          >
-            훈련 일정 채우기
-          </button>
-          <button
-            onClick={() =>
-              actions.apply((s) => {
-                const me = s.player.countryId;
-                const stock = { ...s.economy.stock };
-                for (const k of Object.keys(stock) as Array<keyof typeof stock>) stock[k] += 50;
-                return {
-                  ...s,
-                  nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 50000 } },
-                  economy: {
-                    ...s.economy,
-                    stock,
-                    facilities: Object.fromEntries(
-                      Object.entries(s.economy.facilities).map(([k, f]) => [k, { ...f, exp: f.exp + 500 }]),
-                    ) as typeof s.economy.facilities,
-                  },
-                };
-              })
-            }
-          >
-            내정 시험(예산·자원·경험치 채우기)
-          </button>
-          <button onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, boosts: boostsOf(s) + 100 } }))}>🎫 가속권 +100</button>
-          <button onClick={() => actions.apply(debugCrisis)}>⚡ 돌발 사건 바로 열기</button>
-          <button onClick={() => actions.apply((s) => hideGuide(s, !guideOf(s).hidden))}>📘 첫 판 안내 {guideOf(state).hidden ? '다시 보기' : '숨기기'}</button>
-          <button onClick={() => actions.apply((s) => ({ ...s, goals: { ...goalsOf(s), ruby: goalsOf(s).ruby + 200 } }))}>💎 루비 +200</button>
-          <button onClick={() => actions.apply((s) => debugAddAide({ ...s, player: { ...s.player, salary: s.player.salary + 5000 } }))}>
-            부관 데려오기 + 봉급 5000
-          </button>
-        </div>
-        <small>호칭 단계 바로 바꾸기(신뢰도·명성을 맞춰 줌)</small>
-        <select value={state.player.rankIndex} onChange={(e) => actions.setRank(Number(e.target.value))}>
-          {RANKS.map((r, i) => (
-            <option key={r.name} value={i}>
-              {r.name} · 봉급 시간당 {r.salaryPerDay}
-            </option>
-          ))}
-        </select>
-        <p className="small muted">지금까지 건너뛴 시간: {fmt(state.debugSkippedMs / HOUR)}시간</p>
-      </Card>
-      <Card title="🖼️ 인물 사진 칸">
-        <PortraitList />
-      </Card>
-      <Card title="🗺️ 지도 전투 그림 칸">
-        <FieldArtList />
-      </Card>
-      <Card title="🎖️ 부대·훈련·자원·분쟁 섬 아이콘 칸">
-        <IconArtList />
-      </Card>
-    </>
-  );
-}
 
 export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   home: HomeScreen,

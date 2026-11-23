@@ -5,7 +5,7 @@ import { planForMission, planOutcome, nextDifficulty, trainingPlan } from '../sr
 import { TRAININGS } from '../src/data/catalog';
 import { advance, claimSalary, newGame, type GameState } from '../src/game/state';
 import { COMMAND_TOP, canDiplo, diploChance, diploReady, doDiplo } from '../src/game/command';
-import { boardNow, canGrand, canTrain, claimMission, finishTraining, grandTargets, missionChance, perkBonus, promotionCheck, startExam, startGrand, startMission, startTraining } from '../src/game/officer';
+import { boardNow, canGrand, canTrain, claimMission, finishTraining, grandTargets, missionChance, perkBonus, startGrand, startMission, startTraining } from '../src/game/officer';
 import { canChore, claimChore, startChore, produce, canProduce } from '../src/game/economy';
 import { UNITS } from '../src/data/catalog';
 import { CITIES } from '../src/data/cities';
@@ -65,10 +65,9 @@ function session(s: GameState, log: string[]): GameState {
       log.push(`d${Math.floor(s.worldMs / 86400e3)} ${r.text}`);
     }
   }
-  // 진급 심사 > 대전투 > 임무
+  // 대전투 > 임무(11-23 승급 제도는 빠짐 → 호칭은 신뢰도+명성)
   if (!s.officer.active) {
-    if (promotionCheck(s).ready) s = startExam(s);
-    else if (!canGrand(s)) s = startGrand(s, grandTargets(s)[0]);
+    if (!canGrand(s)) s = startGrand(s, grandTargets(s)[0]);
     else {
       const b = boardNow(s);
       s = b.state;
@@ -99,7 +98,7 @@ test('한 판 시뮬', () => {
     const me = s.player.countryId;
     const mine = CITIES.filter((c) => s.world.owner[c.id] === me).length;
     const allied = CITIES.filter((c) => { const o = s.world.owner[c.id]; return o === me || relationOf(s.world, me, o) === '연합'; }).length;
-    console.log(country, 'WIN', won, 'rank by day', rankDay.join(','), 'final rank', s.player.rankIndex, 'cities', mine, 'allied', allied, '/', CITIES.length, 'power', s.economy.power, 'stars?', s.officer.stars, 'merit', Math.round(s.officer.merit), 'trust', Math.round(s.officer.trust));
+    console.log(country, 'WIN', won, 'rank by day', rankDay.join(','), 'final rank', s.player.rankIndex, 'cities', mine, 'allied', allied, '/', CITIES.length, 'power', s.economy.power, 'stars?', s.officer.stars, 'merit', Math.round(s.officer.merit), 'trust', Math.round(s.officer.trust), 'fame', Math.round(s.officer.fame ?? 0), 'title', s.player.title);
     console.log(log.filter((l) => l.includes('점령')).length, 'captures;', log.slice(-6).join('\n'));
   }
 }, 600_000);
