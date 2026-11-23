@@ -10,16 +10,15 @@ import {
   generalDefense,
   missionChance,
   officerTick,
-  promoteAide,
   promotionCheck,
   recruitGeneral,
-  rivalRank,
   startExam,
   startMission,
   finishTraining,
   startTraining,
 } from './officer';
 import { parseSave } from './save';
+import { appointGeneral } from './loyal';
 
 const H = 3600e3;
 
@@ -103,18 +102,13 @@ describe('장교', () => {
       ...s,
       officer: { ...s.officer, aides: [{ id: 99, name: '테스트', specialty: '저격', level: 3, exp: 0, bond: 50 }] },
     };
-    s = promoteAide(s, 99);
+    s = { ...s, officer: { ...s.officer, aides: [{ ...s.officer.aides[0], schooled: true }] } };
+    s = appointGeneral(s, 99, '해군');
     expect(s.officer.generals.length).toBe(2);
+    expect(s.officer.generals[1].field).toBe('해군');
     expect(s.officer.aides.length).toBe(0);
     expect(recruitGeneral(s).officer.generals.length).toBe(2); // 칸이 꽉 참
     expect(generalDefense(s.officer)).toBeGreaterThan(1);
-  });
-  it('라이벌은 시간이 지나면 승급', () => {
-    const s = newGame('t', 'kr', 0, { seed: 6 });
-    const rv = s.officer.rivals[0];
-    expect(rivalRank(rv, 0)).toBe(0);
-    expect(rivalRank(rv, 30 * 24 * H)).toBeGreaterThan(2);
-    expect(rivalRank(rv, 365 * 24 * H)).toBe(PROMOTION.length - 1);
   });
   it('불신임: 준장 이상에서 신뢰도가 낮으면 경고, 3일 안에 못 돌리면 한 계급 내려감', () => {
     let s = setRank(newGame('t', 'kr', 0, { seed: 7 }), 6);

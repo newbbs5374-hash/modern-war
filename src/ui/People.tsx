@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AIDE_EFFECT } from '../battle/grid';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
-import { STAT_IDS, generalSlots, statCap, statExpNeed } from '../data/officers';
+import { STAT_IDS, statCap, statExpNeed } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
 import { favorName, favorOf, favorReasons } from '../game/civ';
@@ -20,9 +20,6 @@ import {
   giftAide,
   giftCost,
   myRenown,
-  promoteAide,
-  rivalRenown,
-  rivalRank,
   sendAide,
   trainAide,
   type ErrandKind,
@@ -32,12 +29,15 @@ import { budgetPerDay, troopsPerDay, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
 import { fmt } from './common';
 import { Flag } from './flag';
-import { AIDE_ICON, RANK_ICON } from './icons';
+import { AIDE_ICON } from './icons';
 import { Meter } from './kit';
 import type { Screen } from './nav';
 import { timeLeft } from './officerScreens';
 import { Face, aideKeys } from './Portrait';
 import type { GameActions } from './screens';
+import { AideCareer, BondLoyalty } from './AideCareer';
+import { bondStage, generalEffectText, loyaltyMood, loyaltyOf } from '../game/loyal';
+import { BLOCK_AT, PLOT_MIN, ROLE_INFO, influenceOf, roleOf, watching, wooChance } from '../game/rivals';
 
 /* ───────── 어디서든 인물 열기 ───────── */
 const PeopleCtx = createContext<(p: PersonRef) => void>(() => {});
@@ -127,8 +127,8 @@ export function personCard(s: GameState, p: PersonRef): Card {
         title: `${a.specialty} 부관 · Lv.${a.level}`,
         keys: aideKeys(a),
         fallback: AIDE_ICON[a.specialty],
-        tags: [`💗 인연 ${a.bond}`, busy ? `${ERRANDS[a.errand!.kind].icon} ${a.errand!.kind} 중` : '대기 중'],
-        intro: `전투에 함께 나가는 ${a.specialty} 부관. 인연이 깊어지면 이야기를 들려주고 전투에서 더 힘을 내요.`,
+        tags: [`💗 ${bondStage(a.bond).name} ${Math.round(a.bond)}`, `🫡 ${loyaltyMood(loyaltyOf(a)).name} ${Math.round(loyaltyOf(a))}`, a.school ? '🎓 장군 교육 중' : a.schooled ? '🎓 임명 대기' : busy ? `${ERRANDS[a.errand!.kind].icon} ${a.errand!.kind} 중` : '대기 중'],
+        intro: `전투에 함께 나가는 ${a.specialty} 부관. 인연이 깊어지면 이야기를 들려주고 충성이 올라요. 장군 교육을 마치면 장군으로 임명할 수 있어요.`,
       };
     }
     case 'general': {
@@ -139,19 +139,20 @@ export function personCard(s: GameState, p: PersonRef): Card {
         keys: [`aide-${g.name}`],
         fallback: '⭐',
         tags: [`능력 ${g.skill}/10`, `충성 ${Math.round(g.loyalty)}`, g.from],
-        intro: `우리 도시를 자동으로 지키는 장군. 능력이 높을수록 방어가 단단하고, 충성이 낮으면 떠날 수도 있어요.`,
+        intro: `${g.field}을(를) 맡은 장군. ${generalEffectText(g)}. 충성이 높으면 효과가 커지고, 낮으면 절반이 돼요.`,
       };
     }
     case 'rival': {
-      const rv = o.rivals.find((x) => x.name === p.name)!;
-      const rk = rivalRank(rv, s.worldMs);
+      const i = o.rivals.indexOf(o.rivals.find((x) => x.name === p.name)!);
+      const rv = o.rivals[i];
+      const role = roleOf(rv, i);
       return {
         name: rv.name,
-        title: `라이벌 · ${RANKS[rk].name}`,
-        keys: [`aide-${rv.name}`],
-        fallback: RANK_ICON[rk],
-        tags: [`평판 ${fmt(rivalRenown(rv, s.worldMs))}`, o.chiefRival === rv.name ? '👑 1순위 후보' : '경쟁 중'],
-        intro: '같은 나라에서 지도자 자리를 노리는 경쟁자. 평판(공훈 + 명성 + 신뢰)이 나보다 높으면 위험해요.',
+        title: `정적 · ${role}`,
+        keys: [`aide-${rv.name}`, `rival-${rv.name}`],
+        fallback: ROLE_INFO[role].icon,
+        tags: rv.ally ? ['🤝 내 편'] : [`영향력 ${Math.round(influenceOf(rv))}`, o.chiefRival === rv.name ? '⚠️ 승급을 막는 중' : watching(rv, s.worldMs) ? '🕵️ 지켜보는 중' : '적대'],
+        intro: `${ROLE_INFO[role].text} ${rv.ally ? ROLE_INFO[role].ally : ROLE_INFO[role].plot}`,
       };
     }
     case 'leader': {
@@ -320,6 +321,8 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
               <Row k="레벨" v={`Lv.${a.level} / 10`} />
               <Row k="상태" v={a.errand ? (state.worldMs < a.errand.endMs ? `${a.errand.kind} · ${timeLeft(a.errand.endMs - state.worldMs)}` : `${a.errand.kind} 끝(보상 대기)`) : '대기 중'} />
               <Row k="인연 이야기" v={`${a.stories ?? 0} / 3`} />
+              <Row k="인연 단계" v={`${bondStage(a.bond).icon} ${bondStage(a.bond).name}`} />
+              <Row k="충성" v={`${loyaltyMood(loyaltyOf(a)).icon} ${loyaltyMood(loyaltyOf(a)).name}`} />
               <div className="pw-wide">
                 <small>⚔️ 전투 효과</small>
                 <p className="small">{AIDE_EFFECT[a.specialty]}</p>
@@ -336,19 +339,28 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
               <Row k="성향" v={g.style} />
               <Row k="들어온 길" v={g.from} />
               <Row k="도시 방어" v={`+${(g.skill * 1.5).toFixed(1)}%`} />
+              <div className="pw-wide">
+                <small>📈 병과 효율</small>
+                <p className="small">{generalEffectText(g)}</p>
+              </div>
             </div>
           );
         })()}
       {who.kind === 'rival' &&
         (() => {
-          const rv = o.rivals.find((x) => x.name === who.name)!;
-          const rk = rivalRank(rv, state.worldMs);
+          const i = o.rivals.findIndex((x) => x.name === who.name);
+          const rv = o.rivals[i];
+          const role = roleOf(rv, i);
           return (
             <div className="pw-grid">
-              <Row k="계급" v={RANKS[rk].name} />
-              <Row k="평판" v={fmt(rivalRenown(rv, state.worldMs))} />
-              <Row k="내 평판" v={fmt(myRenown(o))} />
-              <Row k="나와 비교" v={rk > state.player.rankIndex ? '⚠️ 나보다 앞섬' : rk === state.player.rankIndex ? '같은 등급' : '내가 앞섬'} />
+              <Row k="역할" v={`${ROLE_INFO[role].icon} ${role}`} />
+              <Row k="영향력" v={rv.ally ? '내 편' : Math.round(influenceOf(rv))} />
+              <Row k="회유" v={`${rv.woo ?? 0} / 3`} />
+              <Row k="회유 성공" v={rv.ally ? '-' : `${Math.round(wooChance(state, rv) * 100)}%`} />
+              <div className="pw-wide">
+                <small>{rv.ally ? '🤝 협력' : '⚠️ 방해 공작'}</small>
+                <p className="small">{rv.ally ? ROLE_INFO[role].ally : `${ROLE_INFO[role].plot} 영향력 ${PLOT_MIN}부터 움직이고, ${BLOCK_AT}을 넘으면 전설의 지도자 승급을 막아요.`}</p>
+              </div>
             </div>
           );
         })()}
@@ -424,8 +436,9 @@ function StatsTab({ state, who }: WinProps) {
       <div className="pw-bars">
         <Bar label="⬆️ 레벨" v={a.level} max={10} tone="gold" />
         <Bar label="📘 경험" v={a.exp} max={a.level * 100} tone="blue" />
-        <Bar label="💗 인연" v={a.bond} max={100} tone="red" />
-        <p className="small muted">레벨만큼 전투에서 강해요. 인연 60: 전투 공격 +1 · 인연 90: 임무 성공 +5% · Lv.3부터 장군 승격 가능.</p>
+        <Bar label="💗 인연" v={Math.round(a.bond)} max={100} tone="red" />
+        <Bar label="🫡 충성" v={Math.round(loyaltyOf(a))} max={100} tone="green" />
+        <p className="small muted">레벨만큼 전투에서 강해요. 인연 60: 전투 공격 +1 · 인연 90: 임무 성공 +5% · 충성 80: 임무 +3%·심부름 보상 ×1.2 · Lv.5·인연 50·충성 60이면 장군 교육.</p>
       </div>
     );
   }
@@ -440,12 +453,11 @@ function StatsTab({ state, who }: WinProps) {
   }
   if (who.kind === 'rival') {
     const rv = o.rivals.find((x) => x.name === who.name)!;
-    const top = Math.max(myRenown(o), rivalRenown(rv, state.worldMs));
     return (
       <div className="pw-bars">
-        <Bar label={`🏁 ${rv.name}`} v={rivalRenown(rv, state.worldMs)} max={top} tone="red" />
-        <Bar label="🏁 나" v={myRenown(o)} max={top} tone="green" />
-        <Bar label="🎖️ 계급" v={rivalRank(rv, state.worldMs) + 1} max={RANKS.length} tone="gold" />
+        <Bar label="📢 영향력" v={rv.ally ? 0 : Math.round(influenceOf(rv))} max={100} tone="red" />
+        <Bar label="🤝 회유" v={rv.woo ?? 0} max={3} tone="green" />
+        <Bar label="🤝 의회 신뢰(나)" v={Math.round(o.trust)} max={100} tone="gold" />
       </div>
     );
   }
@@ -513,9 +525,9 @@ function RelTab({ state, who, onOpen }: WinProps) {
         {o.generals.map((g) => (
           <Person key={g.id} state={state} who={{ kind: 'general', id: g.id }} onOpen={onOpen} right={<Meter value={g.loyalty} max={100} tone="green" />} />
         ))}
-        <small className="muted">🏁 라이벌</small>
+        <small className="muted">🏁 정적</small>
         {o.rivals.map((r) => (
-          <Person key={r.name} state={state} who={{ kind: 'rival', name: r.name }} onOpen={onOpen} right={<small>{fmt(rivalRenown(r, state.worldMs))}</small>} />
+          <Person key={r.name} state={state} who={{ kind: 'rival', name: r.name }} onOpen={onOpen} right={<small>{r.ally ? '🤝' : `📢${Math.round(influenceOf(r))}`}</small>} />
         ))}
         <small className="muted">🌐 다른 나라 지도자(호감 순)</small>
         {others.map((x) => (
@@ -529,7 +541,7 @@ function RelTab({ state, who, onOpen }: WinProps) {
     const told = a.stories ?? 0;
     return (
       <>
-        <Bar label="💗 나와의 인연" v={a.bond} max={100} tone="red" />
+        <BondLoyalty a={a} />
         <div className="stories">
           <small className="muted">💬 인연 이야기 {told}/3</small>
           {AIDE_STORIES[a.specialty].map((t, i) => (
@@ -560,10 +572,10 @@ function RelTab({ state, who, onOpen }: WinProps) {
     const others = o.rivals.filter((r) => r.name !== who.name);
     return (
       <>
-        <p className="small muted">나와는 지도자 자리를 두고 경쟁하는 사이예요.</p>
-        <small className="muted">다른 라이벌</small>
+        <p className="small muted">{o.rivals.find((r) => r.name === who.name)?.ally ? '회유에 성공해 손잡은 사이예요.' : '지도자 자리를 흔드는 정적이에요. 견제하거나 회유해 내 편으로 만들 수 있어요.'}</p>
+        <small className="muted">다른 정적</small>
         {others.map((r) => (
-          <Person key={r.name} state={state} who={{ kind: 'rival', name: r.name }} onOpen={onOpen} right={<small>{fmt(rivalRenown(r, state.worldMs))}</small>} />
+          <Person key={r.name} state={state} who={{ kind: 'rival', name: r.name }} onOpen={onOpen} right={<small>{r.ally ? '🤝' : `📢${Math.round(influenceOf(r))}`}</small>} />
         ))}
       </>
     );
@@ -671,15 +683,14 @@ function AideActs({ state, actions, id, setMsg }: { state: GameState; actions: G
   const done = a.errand && state.worldMs >= a.errand.endMs;
   const gWhy = canGift(state, a.id);
   const tWhy = canTrainAide(state, a.id);
-  const canPromote = generalSlots(r) > state.officer.generals.length && a.level >= 3;
   return (
     <>
       <div className="pw-acts">
-        <button className="pw-act" disabled={!!gWhy} onClick={() => (actions.apply((s) => giftAide(s, a.id)), setMsg(`🎁 ${a.name}에게 선물했어요. 인연 +8`))}>
+        <button className="pw-act" disabled={!!gWhy} onClick={() => (actions.apply((s) => giftAide(s, a.id)), setMsg(`🎁 ${a.name}에게 선물했어요. 인연 +8 · 충성 +3`))}>
           <span className="pw-act-ico">🎁</span>
           <span className="li-main">
             <b>선물</b>
-            <small>인연 +8</small>
+            <small>인연 +8 · 충성 +3</small>
             <small className={gWhy ? 'warn' : 'muted'}>{gWhy ?? `💵 ${fmt(giftCost(r))}`}</small>
           </span>
         </button>
@@ -731,11 +742,7 @@ function AideActs({ state, actions, id, setMsg }: { state: GameState; actions: G
           </div>
         </>
       )}
-      {canPromote && (
-        <button className="wide" onClick={() => (actions.apply((s) => promoteAide(s, a.id)), setMsg(`⭐ ${a.name}이(가) 장군이 되었어요.`))}>
-          ⭐ 장군으로 승격
-        </button>
-      )}
+      <AideCareer state={state} a={a} apply={actions.apply} onDone={setMsg} />
     </>
   );
 }
