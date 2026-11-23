@@ -63,7 +63,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /* ───────── 작은 부품 ───────── */
 
-/** 부처 건물 그림(src/assets/icons/icon-min-<id>.png), 없으면 이모지 */
+/** 부처 건물 그림(src/assets/icons/icon-min-<id>.webp, 11/23 9장 들어감), 없으면 이모지 */
 export function MinIcon({ id, size = 30 }: { id: MinistryId; size?: number }) {
   const url = iconArt(`icon-min-${id}`);
   return url ? <img className="cab-min-art" src={url} alt="" draggable={false} style={{ width: size, height: size }} /> : <>{ministryById(id).icon}</>;
