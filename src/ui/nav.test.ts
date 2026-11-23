@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { NAV, legacyRoute } from './nav';
 
 describe('대통령식 메뉴(본부 + 5칸)', () => {
-  it('아래 메뉴는 본부·개인·국방·외교·사회·경제 6칸', () => {
-    expect(NAV.map((n) => n.label)).toEqual(['본부', '개인', '국방', '외교', '사회', '경제']);
+  it('아래 메뉴는 본부·개인·국방·외교·사회·경제 7칸(상점 포함)', () => {
+    expect(NAV.map((n) => n.label)).toEqual(['본부', '개인', '국방', '외교', '사회', '경제', '상점']);
   });
   it('옛 화면·탭 이름은 새 자리로 옮겨 감(기능 빠짐 없음)', () => {
     expect(legacyRoute('ops', 'mission')).toEqual({ screen: 'defense', set: [['defense', 'ops'], ['ops', 'mission']] });
@@ -19,6 +19,6 @@ describe('대통령식 메뉴(본부 + 5칸)', () => {
     expect(legacyRoute('nation', 'fac').set).toContainEqual(['economy', 'facall']);
     expect(legacyRoute('diplo', 'trade').set).toContainEqual(['economy', 'trade']);
     expect(legacyRoute('diplo', 'council').set).toContainEqual(['diplo', 'council']);
-    expect(legacyRoute('shop', 'daily').set).toContainEqual(['shop', 'daily']);
+    expect(legacyRoute('shop', 'daily')).toEqual({ screen: 'shop', set: [['shop', 'daily']] });
   });
 });
