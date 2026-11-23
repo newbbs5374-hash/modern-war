@@ -22,7 +22,8 @@ import {
   project,
 } from "../data/realmap";
 import { isAlive, relationOf, type WorldState } from "../game/world";
-import { Carrier, Escort, Jet } from "./units";
+import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./units";
+import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
 
 export type MapMode = "나라" | "관계" | "묶음";
 /** 나라마다 한눈에 구분되는 색(국경선 대신 색으로 영토를 보여 줌). 이웃끼리 겹치지 않게 고름 */
@@ -59,6 +60,10 @@ interface Props {
   mode?: MapMode;
   /** 본부 화면의 작은 지도 */
   mini?: boolean;
+  /** 내가 만든 부대(지도에 우리 병과로 그림) */
+  army?: Record<string, number>;
+  /** 해외 파병(지도 표시) */
+  deploys?: MapDeploy[];
 }
 
 /** 실사 세계지도 그림: src/assets/world/world-map.(png|webp) 를 넣으면 바다·땅 바탕으로 깔림(명령문 /mnt/project-files/guides/world-art-prompts.md) */
@@ -128,30 +133,141 @@ const SEA = Object.fromEntries(
   }),
 );
 
-/** 함대: 평시엔 앞바다 순찰, 전쟁이면 적 쪽으로 전진하고 전투기가 출격 */
+/** 병과 이름 → 지도 그림 */
+function UnitIcon({ name, s, color }: { name: string; s: number; color: string }) {
+  switch (name) {
+    case "항공모함":
+      return <Carrier s={0.7 * s} color={color} />;
+    case "강습상륙함":
+      return <Carrier s={0.55 * s} color={color} />;
+    case "잠수함":
+    case "원자력 잠수함":
+      return <Sub s={0.7 * s} color={color} />;
+    case "구축함":
+    case "레이저 방공함":
+      return <Escort s={0.8 * s} color={color} />;
+    case "폭격기":
+      return <Bomber s={0.6 * s} color={color} />;
+    case "무인드론":
+      return <Drone s={0.7 * s} color={color} />;
+    case "공격헬기":
+      return <Heli s={0.8 * s} color={color} />;
+    case "전투기":
+      return <Jet s={0.65 * s} color={color} />;
+    case "미사일":
+    case "방공부대":
+      return <Truck s={0.7 * s} color={color} missile />;
+    case "보병":
+    case "특수부대":
+    case "기갑병":
+      return <Truck s={0.7 * s} color={color} />;
+    default:
+      return <Tank s={0.7 * s} color={color} />;
+  }
+}
+
+/** path를 따라 계속 움직이는 그림 하나 */
+function Mover({
+  path,
+  dur,
+  begin,
+  children,
+}: {
+  path: string;
+  dur: number;
+  begin: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <g>
+      {children}
+      <animateMotion
+        dur={`${dur}s`}
+        begin={`${begin}s`}
+        repeatCount="indefinite"
+        rotate="auto"
+        path={path}
+      />
+    </g>
+  );
+}
+
+const loopAt = (x: number, y: number, rx: number, ry: number) =>
+  `M${(x - rx).toFixed(1)},${y.toFixed(1)} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
+const capOf = (id: string) =>
+  CITIES.find((x) => x.home === id && x.capital) ?? CITIES.find((x) => x.home === id)!;
+
+/** 파병(지도 표시용): 가는 중·머무는 중·오는 중 */
+export interface MapDeploy {
+  from: string;
+  to: string;
+  units: string[];
+  phase: "go" | "stay" | "back";
+}
+
+/** 땅 길: 두 도시 사이가 거의 땅이면 */
+function landRoad(a: { x: number; y: number }, b: { x: number; y: number }) {
+  let land = 0;
+  for (let i = 1; i < 8; i++)
+    if (isLand(a.x + ((b.x - a.x) * i) / 8, a.y + ((b.y - a.y) * i) / 8))
+      land++;
+  return land >= 6;
+}
+
+/** 나라마다 가진 병과가 움직임: 바다(앞바다 순찰·전쟁 땐 전진), 하늘(순찰·전쟁 땐 적 도시 출격), 땅(도시 사이 길·전선). 파병지에서도 움직임 */
 function Fleets({
   world,
   colorOf,
   zr = 1,
+  playerCountryId,
+  army,
+  deploys = [],
 }: {
   world: WorldState;
   colorOf: (id: string) => string;
   /** 확대 배율에 맞춘 크기 비율(확대해도 배·전투기가 커지지 않게) */
   zr?: number;
+  playerCountryId: string;
+  army?: Record<string, number>;
+  deploys?: MapDeploy[];
 }) {
+  // AI 강대국은 전쟁 중인 연합국에 전투기를 보냄(보이는 것만)
+  const aiDeploys: MapDeploy[] = [];
+  for (const big of ["us", "cn", "ru", "uk"]) {
+    if (big === playerCountryId || !isAlive(world, big)) continue;
+    const host = COUNTRIES.find(
+      (a) =>
+        a.id !== big &&
+        isAlive(world, a.id) &&
+        relationOf(world, big, a.id) === "연합" &&
+        COUNTRIES.some(
+          (e) => e.id !== a.id && relationOf(world, a.id, e.id) === "전쟁",
+        ),
+    );
+    if (host) {
+      const f = mapForces(big);
+      aiDeploys.push({
+        from: big,
+        to: host.id,
+        units: [...f.air.slice(0, 1), ...f.sea.slice(0, 1)],
+        phase: "stay",
+      });
+    }
+  }
   return (
     <g className="fleets" pointerEvents="none">
       {COUNTRIES.filter((c) => isAlive(world, c.id)).map((c) => {
+        const f = mapForces(c.id, c.id === playerCountryId ? army : undefined);
         const p = SEA[c.id];
-        const carrier = c.military >= 45;
+        const color = colorOf(c.id);
+        const h = hash(c.id);
         const enemy = COUNTRIES.find(
           (e) =>
             e.id !== c.id &&
             isAlive(world, e.id) &&
             relationOf(world, c.id, e.id) === "전쟁",
         );
-        const color = colorOf(c.id);
-        // 전쟁: 적 앞바다 쪽으로 30% 나아간 곳(땅이면 제자리)
+        // 바다: 전쟁이면 적 앞바다 쪽으로 30% 나아간 곳(땅이면 제자리)
         let fx = p.x;
         let fy = p.y;
         if (enemy) {
@@ -163,40 +279,59 @@ function Fleets({
             fy = ny;
           }
         }
-        const rx = p.vertical ? 4 : 10;
-        const ry = p.vertical ? 10 : 4;
-        const loop = `M${fx - rx},${fy} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
-        const dur = 34 + (hash(c.id) % 14);
-        // 전투기: 평시 = 큰 원 순찰, 전쟁 = 적 수도까지 갔다가 돌아옴
-        let jetPath: string;
-        let target: { x: number; y: number } | null = null;
-        if (enemy) {
-          target =
-            CITIES.find(
+        const loop = loopAt(fx, fy, 10, 4);
+        const dur = 34 + (h % 14);
+        // 하늘: 평시 = 수도 둘레 순찰, 전쟁 = 적 도시까지 갔다가 돌아옴
+        const home = capOf(c.id);
+        const target = enemy
+          ? (CITIES.find(
               (x) =>
                 x.home === enemy.id &&
                 x.capital &&
                 world.owner[x.id] === enemy.id,
             ) ??
             CITIES.find((x) => world.owner[x.id] === enemy.id) ??
-            null;
-        }
+            null)
+          : null;
+        let jetPath: string;
         if (target) {
-          const dx = target.x - fx;
-          const dy = target.y - fy;
-          const c1 = `${(fx + dx / 2 - dy * 0.25).toFixed(1)},${(fy + dy / 2 + dx * 0.25).toFixed(1)}`;
-          const c2 = `${(fx + dx / 2 + dy * 0.25).toFixed(1)},${(fy + dy / 2 - dx * 0.25).toFixed(1)}`;
-          jetPath = `M${fx},${fy} Q${c1} ${target.x},${target.y} Q${c2} ${fx},${fy}`;
-        } else {
-          const R = 16;
-          jetPath = `M${fx - R},${fy} a${R},${R * 0.7} 0 1,1 ${R * 2},0 a${R},${R * 0.7} 0 1,1 ${-R * 2},0`;
-        }
+          const dx = target.x - home.x;
+          const dy = target.y - home.y;
+          const c1 = `${(home.x + dx / 2 - dy * 0.25).toFixed(1)},${(home.y + dy / 2 + dx * 0.25).toFixed(1)}`;
+          const c2 = `${(home.x + dx / 2 + dy * 0.25).toFixed(1)},${(home.y + dy / 2 - dx * 0.25).toFixed(1)}`;
+          jetPath = `M${home.x},${home.y} Q${c1} ${target.x},${target.y} Q${c2} ${home.x},${home.y}`;
+        } else jetPath = loopAt(home.x, home.y, 16, 11);
         const jdur = target ? 9 : 12;
-        const jets = c.military >= 25 ? 2 : 1;
+        // 땅: 전쟁이면 가장 가까운 전선(땅으로 이어진 적 도시)까지, 평시엔 수도 ↔ 가까운 우리 도시
+        const mine = CITIES.filter((x) => world.owner[x.id] === c.id);
+        let road: string | null = null;
+        let front = false;
+        if (enemy) {
+          let best = Infinity;
+          for (const a of mine)
+            for (const b of CITIES.filter((x) => world.owner[x.id] === enemy.id)) {
+              const d = Math.hypot(a.x - b.x, a.y - b.y);
+              if (d < best && d < 30 * GEO.PX && landRoad(a, b)) {
+                best = d;
+                const mx = a.x + (b.x - a.x) * 0.8;
+                const my = a.y + (b.y - a.y) * 0.8;
+                road = `M${a.x},${a.y} L${mx.toFixed(1)},${my.toFixed(1)} L${a.x},${a.y}`;
+                front = true;
+              }
+            }
+        }
+        if (!road) {
+          const near = mine
+            .filter((x) => x.id !== home.id)
+            .map((x) => ({ x, d: Math.hypot(x.x - home.x, x.y - home.y) }))
+            .filter((o) => o.d < 18 * GEO.PX && landRoad(home, o.x))
+            .sort((a, b) => a.d - b.d)[0]?.x;
+          if (near) road = `M${home.x},${home.y} L${near.x},${near.y} L${home.x},${home.y}`;
+          else if (isLand(home.x, home.y)) road = loopAt(home.x, home.y, 4, 3);
+        }
+        const rdur = front ? 14 : 26 + (h % 9);
         return (
           <g key={c.id}>
-            <path id={`fl-${c.id}`} d={loop} fill="none" />
-            <path id={`fj-${c.id}`} d={jetPath} fill="none" />
             {target && (
               <path
                 d={jetPath}
@@ -207,40 +342,23 @@ function Fleets({
                 strokeDasharray="3 3"
               />
             )}
-            {[0, 1, 2].map((j) => (
-              <g key={j}>
-                {j === 0 ? (
-                  carrier ? (
-                    <Carrier s={0.7 * zr} color={color} />
-                  ) : (
-                    <Escort s={0.8 * zr} color={color} />
-                  )
-                ) : (
-                  <Escort s={0.55 * zr} color={color} />
-                )}
-                <animateMotion
-                  dur={`${dur}s`}
-                  begin={`${-j * 2.2 - (hash(c.id) % 9)}s`}
-                  repeatCount="indefinite"
-                  rotate="auto"
-                >
-                  <mpath href={`#fl-${c.id}`} />
-                </animateMotion>
-              </g>
+            {f.sea.length > 0 &&
+              [0, 1, 2].map((j) => (
+                <Mover key={`s${j}`} path={loop} dur={dur} begin={-j * 2.2 - (h % 9)}>
+                  <UnitIcon name={f.sea[j % f.sea.length]} s={(j ? 0.75 : 1) * zr} color={color} />
+                </Mover>
+              ))}
+            {f.air.slice(0, 2).map((n, j) => (
+              <Mover key={`a${j}`} path={jetPath} dur={jdur} begin={-j * 0.6 - (h % 7)}>
+                <UnitIcon name={n} s={zr} color={color} />
+              </Mover>
             ))}
-            {Array.from({ length: jets }, (_, j) => (
-              <g key={`j${j}`}>
-                <Jet s={0.65 * zr} color={color} />
-                <animateMotion
-                  dur={`${jdur}s`}
-                  begin={`${-j * 0.35 - (hash(c.id) % 7)}s`}
-                  repeatCount="indefinite"
-                  rotate="auto"
-                >
-                  <mpath href={`#fj-${c.id}`} />
-                </animateMotion>
-              </g>
-            ))}
+            {road &&
+              f.land.slice(0, 2).map((n, j) => (
+                <Mover key={`l${j}`} path={road} dur={rdur} begin={-j * 1.4 - (h % 5)}>
+                  <UnitIcon name={n} s={0.8 * zr} color={color} />
+                </Mover>
+              ))}
             {target && (
               <circle cx={target.x} cy={target.y} r="5" fill="#f97316">
                 <animate
@@ -248,7 +366,7 @@ function Fleets({
                   values="0;0;0.9;0;0"
                   keyTimes="0;0.42;0.5;0.62;1"
                   dur={`${jdur}s`}
-                  begin={`${-(hash(c.id) % 7)}s`}
+                  begin={`${-(h % 7)}s`}
                   repeatCount="indefinite"
                 />
                 <animate
@@ -256,11 +374,51 @@ function Fleets({
                   values="2;2;8;11;2"
                   keyTimes="0;0.42;0.5;0.62;1"
                   dur={`${jdur}s`}
-                  begin={`${-(hash(c.id) % 7)}s`}
+                  begin={`${-(h % 7)}s`}
                   repeatCount="indefinite"
                 />
               </circle>
             )}
+          </g>
+        );
+      })}
+      {/* 해외 파병: 가는 길(점선) + 파병지 둘레에서 움직임 */}
+      {[...deploys, ...aiDeploys].map((d, i) => {
+        if (!isAlive(world, d.to)) return null;
+        const color = colorOf(d.from);
+        const a = capOf(d.from);
+        const b = capOf(d.to);
+        if (d.phase !== "stay") {
+          const [s0, s1] = d.phase === "go" ? [a, b] : [b, a];
+          const line = `M${s0.x},${s0.y} L${s1.x},${s1.y}`;
+          return (
+            <g key={`d${i}`}>
+              <path d={line} fill="none" stroke={color} strokeOpacity="0.5" strokeWidth={0.8 * zr} strokeDasharray="4 3" />
+              {d.units.slice(0, 2).map((n, j) => (
+                <Mover key={j} path={line} dur={8} begin={-j * 1.5}>
+                  <UnitIcon name={n} s={zr} color={color} />
+                </Mover>
+              ))}
+            </g>
+          );
+        }
+        const sea = SEA[d.to];
+        return (
+          <g key={`d${i}`}>
+            {d.units.slice(0, 3).map((n, j) => {
+              const dom = MAP_DOMAIN[baseUnit(n)] ?? "land";
+              const path =
+                dom === "sea"
+                  ? loopAt(sea.x + 5, sea.y + 4, 8, 3)
+                  : dom === "air"
+                    ? loopAt(b.x, b.y, 12, 8)
+                    : loopAt(b.x + 2, b.y + 2, 4, 3);
+              return (
+                <Mover key={j} path={path} dur={dom === "air" ? 10 : 24} begin={-j * 3 - i}>
+                  <UnitIcon name={baseUnit(n)} s={zr} color={color} />
+                </Mover>
+              );
+            })}
           </g>
         );
       })}
@@ -286,6 +444,8 @@ export function WorldMap({
   onSelect,
   mode = "나라",
   mini,
+  army,
+  deploys,
 }: Props) {
   const colorOf = (id: string) =>
     mode === "나라"
@@ -737,7 +897,16 @@ export function WorldMap({
           {HOLY_CITY.name}
         </text>
       )}
-      {!mini && <Fleets world={world} colorOf={colorOf} zr={zr} />}
+      {!mini && (
+        <Fleets
+          world={world}
+          colorOf={colorOf}
+          zr={zr}
+          playerCountryId={playerCountryId}
+          army={army}
+          deploys={deploys}
+        />
+      )}
     </svg>
   );
 

@@ -941,3 +941,5 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #8b5
 .cul-meter { flex: 1; display: flex; flex-direction: column; gap: 1px; }
 .cul-meter small { font-size: 10.5px; color: var(--muted); }
 button.mini { padding: 3px 7px; font-size: 13px; }
+.fleets .rotor { animation: rotor-spin 0.25s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes rotor-spin { to { transform: rotate(360deg); } }

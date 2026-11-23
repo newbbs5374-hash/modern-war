@@ -41,3 +41,70 @@ export function Jet({ s = 1, color = '#cbd5e1', trail = true }: { s?: number; co
     </g>
   );
 }
+
+/** 잠수함: 길쭉한 선체 + 함교탑(반쯤 잠김) */
+export function Sub({ s = 1, color = '#9ca3af' }: { s?: number; color?: string }) {
+  return (
+    <g transform={`scale(${s})`} opacity="0.85">
+      <path d="M-7,0 L-12,-1.5 M-7,0 L-12,1.5" stroke="#e0f2fe" strokeWidth="0.5" opacity="0.5" />
+      <ellipse cx="0" cy="0" rx="7" ry="1.3" fill="#1f2937" stroke="#0f172a" strokeWidth="0.3" />
+      <rect x="0" y="-0.7" width="2" height="1.4" rx="0.4" fill={color} />
+    </g>
+  );
+}
+
+/** 폭격기: 넓은 후퇴익 */
+export function Bomber({ s = 1, color = '#cbd5e1' }: { s?: number; color?: string }) {
+  return (
+    <g transform={`scale(${s})`}>
+      <path d="M-5,-0.6 L-22,-0.6 M-5,0.6 L-22,0.6" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="0.6" />
+      <path d="M6,0 L1,-1 L-2,-7 L-4,-7 L-3,-1 L-6,-1 L-7,-3 L-8,-3 L-7.4,0 L-8,3 L-7,3 L-6,1 L-3,1 L-4,7 L-2,7 L1,1 Z" fill={color} stroke="#0f172a" strokeWidth="0.3" />
+    </g>
+  );
+}
+
+/** 무인 드론: 긴 날개 + 가는 몸통 */
+export function Drone({ s = 1, color = '#cbd5e1' }: { s?: number; color?: string }) {
+  return (
+    <g transform={`scale(${s})`}>
+      <path d="M3,0 L-4,0" stroke={color} strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M0,-5 L-1,0 L0,5" fill="none" stroke={color} strokeWidth="0.9" />
+      <path d="M-4,-1.6 L-3.4,0 L-4,1.6" fill="none" stroke={color} strokeWidth="0.6" />
+    </g>
+  );
+}
+
+/** 공격헬기: 몸통 + 도는 회전날개 */
+export function Heli({ s = 1, color = '#cbd5e1' }: { s?: number; color?: string }) {
+  return (
+    <g transform={`scale(${s})`}>
+      <ellipse cx="0.5" cy="0" rx="2.6" ry="1.1" fill={color} stroke="#0f172a" strokeWidth="0.3" />
+      <path d="M-2,0 L-6,0" stroke={color} strokeWidth="0.6" />
+      <g className="rotor">
+        <path d="M-4,-0.3 L5,0.3 M0.5,-4.5 L0.5,4.5" stroke="#e5e7eb" strokeOpacity="0.8" strokeWidth="0.4" />
+      </g>
+    </g>
+  );
+}
+
+/** 전차: 차체 + 포탑 + 긴 포신 */
+export function Tank({ s = 1, color = '#9ca3af' }: { s?: number; color?: string }) {
+  return (
+    <g transform={`scale(${s})`}>
+      <rect x="-3.5" y="-2.2" width="7" height="4.4" rx="0.6" fill="#374151" stroke="#111827" strokeWidth="0.3" />
+      <circle cx="0" cy="0" r="1.5" fill={color} stroke="#111827" strokeWidth="0.3" />
+      <path d="M1.2,0 L6,0" stroke="#111827" strokeWidth="0.7" />
+    </g>
+  );
+}
+
+/** 군용 트럭·미사일 발사차 */
+export function Truck({ s = 1, color = '#9ca3af', missile = false }: { s?: number; color?: string; missile?: boolean }) {
+  return (
+    <g transform={`scale(${s})`}>
+      <rect x="-4" y="-1.6" width="6" height="3.2" fill="#4b5563" stroke="#111827" strokeWidth="0.3" />
+      <rect x="2.2" y="-1.4" width="2" height="2.8" fill={color} stroke="#111827" strokeWidth="0.3" />
+      {missile && <path d="M-3.6,0 L1.6,0" stroke="#e5e7eb" strokeWidth="1" strokeLinecap="round" />}
+    </g>
+  );
+}
