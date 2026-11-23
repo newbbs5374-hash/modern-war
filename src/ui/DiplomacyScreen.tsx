@@ -1,7 +1,8 @@
 // 외교 화면: 무역(한 번 사고팔기 · 정기 수입/수출 계약) · 국가정보(나라 카드) · 외교관계(관계도 + 목록)
+import { ResIcon } from './iconArt';
 import { useState } from 'react';
 import { LEADERS } from '../data/leaders';
-import { RESOURCES, RES_ICON, SELL_RATE, type Res } from '../data/economy';
+import { RESOURCES, SELL_RATE, type Res } from '../data/economy';
 import { BLOCS, COUNTRIES, countryById, type Relation } from '../data/world';
 import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
 import {
@@ -106,7 +107,7 @@ function TradePanel({ state, actions }: ScreenProps) {
               return (
                 <div key={c.id} className={`contract ${paused ? 'paused' : ''}`}>
                   <span>
-                    {FLAG[c.country]} {c.buy ? '📥 수입' : '📤 수출'} {RES_ICON[c.res]}
+                    {FLAG[c.country]} {c.buy ? '📥 수입' : '📤 수출'} <ResIcon res={c.res} inline />
                     {c.res} {c.qty}/시간
                   </span>
                   <small className={paused ? 'warn' : m >= 0 ? 'ok' : 'muted'}>{paused ?? `${m >= 0 ? '+' : ''}${fmt(m)}💰/시간`}</small>
@@ -136,7 +137,9 @@ function TradePanel({ state, actions }: ScreenProps) {
           <div className="res-grid">
             {RESOURCES.map((r) => (
               <button key={r} className={`res-card ${has.includes(r) ? 'can' : ''}`} onClick={() => (setMsg(''), setPick(r))}>
-                <span className="res-ico">{RES_ICON[r]}</span>
+                <span className="res-ico">
+                  <ResIcon res={r} />
+                </span>
                 <b>{r}</b>
                 <strong>💰{tradePrice(state, cur, r)}</strong>
                 <small className="muted">{has.includes(r) ? `보유 ${fmt(state.economy.stock[r])}` : '수출만'}</small>
@@ -147,7 +150,7 @@ function TradePanel({ state, actions }: ScreenProps) {
         </>
       )}
       {pick && cur && (
-        <Modal title={`${pick} 무역`} icon={RES_ICON[pick]} onClose={() => setPick(null)}>
+        <Modal title={`${pick} 무역`} icon={<ResIcon res={pick} />} onClose={() => setPick(null)}>
           <p className="small">
             {FLAG[cur]} {countryById(cur).name} · 1개 💰{tradePrice(state, cur, pick)} · 보유 {fmt(state.economy.stock[pick])}
           </p>

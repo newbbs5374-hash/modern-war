@@ -1,14 +1,14 @@
 // 병과 팝업(부대 화면)과 공용 비용 표시. 내정 화면은 InteriorScreen, 무역은 DiplomacyScreen.
 import { useState } from 'react';
 import { UNITS } from '../data/catalog';
-import { RES_ICON, type Res, type UnitCost } from '../data/economy';
+import { type Res, type UnitCost } from '../data/economy';
 import { exclusiveByName, specialById } from '../data/specials';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
 import { buildMs, canProduce, costOf, crystalReady, produce } from '../game/economy';
 import { fmt } from './common';
 import { timeLeft } from './officerScreens';
-import { UNIT_ICON } from './icons';
+import { ResIcon, UnitIcon } from './iconArt';
 import { Modal } from './kit';
 import type { ScreenProps } from './screens';
 
@@ -18,7 +18,7 @@ export function Cost({ c, stock, money }: { c: UnitCost; stock: Record<Res, numb
       <span className={money < c.money ? 'lack' : ''}>💰{fmt(c.money)}</span>
       {Object.entries(c.res).map(([k, v]) => (
         <span key={k} className={(stock[k as Res] ?? 0) < v! ? 'lack' : ''}>
-          {RES_ICON[k as Res]}
+          <ResIcon res={k as Res} inline />
           {v}
         </span>
       ))}
@@ -31,7 +31,6 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
   const me = countryById(state.player.countryId);
   const [name, spId] = unit.split('|');
   const sp = spId ? specialById(spId) : undefined;
-  const special = !!sp;
   const ex = exclusiveByName(name);
   const info = UNITS.find((u) => u.name === name)!;
   const c = costOf(state, name, spId);
@@ -40,7 +39,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
   return (
     <Modal
       title={sp ? sp.name : name}
-      icon={special ? '🌟' : ex ? '👑' : UNIT_ICON[name]}
+      icon={<UnitIcon unit={name} sp={spId} />}
       onClose={onClose}
       footer={
         <>

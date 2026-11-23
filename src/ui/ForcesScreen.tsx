@@ -8,7 +8,7 @@ import { exclusiveByName, exclusiveLock, specialsFor, specialsOf, type SpecialDe
 import { unitTechLock } from '../game/civ';
 import { boostsOf, boostsToFinish, useBoost } from '../game/boost';
 import { fmt } from './common';
-import { UNIT_ICON } from './icons';
+import { UnitIcon } from './iconArt';
 import { Chip, Help, Meter, useTab } from './kit';
 import { UnitModal } from './economyScreens';
 import { BoostBar } from './BoostBar';
@@ -47,7 +47,7 @@ export function ForcesScreen(props: ScreenProps) {
     return (
       <div key={label} className={`frow ${lock ? 'locked' : ''} ${special || (ex && !exLock) ? 't-gold' : ''}`}>
         <button className="frow-main" onClick={() => setPick(sp ? `${unit}|${sp.id}` : unit)}>
-          <span className="frow-ico">{lock ? '🔒' : special ? '🌟' : ex ? '👑' : UNIT_ICON[unit]}</span>
+          <span className="frow-ico"><UnitIcon unit={unit} sp={sp?.id} lock={lock} /></span>
           <span className="frow-text">
             <b>
               {label}
@@ -137,7 +137,9 @@ export function ForcesScreen(props: ScreenProps) {
               const run = state.worldMs >= q.startMs;
               return (
                 <div key={q.id} className="queue-item">
-                  <span>{q.special || q.sp ? '🌟' : UNIT_ICON[q.unit]}</span>
+                  <span className="queue-ico">
+                    <UnitIcon unit={q.unit} sp={q.sp} fallback={q.special || q.sp ? '🌟' : undefined} />
+                  </span>
                   <small>{name}</small>
                   <Meter value={run ? state.worldMs - q.startMs : 0} max={q.endMs - q.startMs} tone="blue" />
                   <small className="muted">{run ? timeLeft(q.endMs - state.worldMs) : `대기 ${i}`}</small>

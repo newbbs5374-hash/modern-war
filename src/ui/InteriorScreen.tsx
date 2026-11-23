@@ -1,4 +1,5 @@
 // 내정 화면: 금고(나라 살림 한눈에) · 자원(설명·사용처·획득처) · 시설(분야별 3개 + 내정 업무)
+import { ResIcon } from './iconArt';
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { CITIES } from '../data/cities';
@@ -310,7 +311,9 @@ function ResourcePanel(props: ScreenProps) {
               const have = e.stock[r] ?? 0;
               return (
                 <button key={r} className={`res-card ${k === '생활' && have >= 1 ? 'on' : ''}`} onClick={() => setPick(r)}>
-                  <span className="res-ico">{RES_ICON[r]}</span>
+                  <span className="res-ico">
+                    <ResIcon res={r} />
+                  </span>
                   <b>{r}</b>
                   <strong>{fmt(have)}</strong>
                   <small className={net > 0 ? 'ok' : net < 0 ? 'warn' : 'muted'}>{net ? `${net > 0 ? '+' : ''}${r1(net)}/시간` : k === '생활' && have >= 1 ? `민심 +${LUXURY_LOYALTY}` : '안 남'}</small>
@@ -344,7 +347,7 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
   const mineSpots = CITIES.filter((c) => w.owner[c.id] === me && deposits(c.id).some((d) => d.res === res));
   const islands = PIONEER_ISLANDS.filter((p) => p.res === res);
   return (
-    <Modal title={res} icon={RES_ICON[res]} onClose={onClose}>
+    <Modal title={res} icon={<ResIcon res={res} />} onClose={onClose}>
       <p>{RES_DESC[res]}</p>
       <div className="kv2">
         <span>보유</span>

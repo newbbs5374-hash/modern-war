@@ -58,6 +58,7 @@ import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendi
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
 import { PersonFace } from './People';
+import { TrainIcon } from './iconArt';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
 import { Chip, Help, Meter, Modal, Tabs, Tile, stars, useTab } from './kit';
@@ -719,7 +720,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
           const perk = (o.perfect[tr.name] ?? 0) >= PERK_AT;
           return (
             <button key={tr.name} className={`trow ${lock ? 'locked' : ''} ${hot ? 't-gold' : perk ? 't-green' : ''}`} onClick={() => setPick(tr.name)}>
-              <span className="trow-ico">{lock ? '🔒' : TRAINING_ICON[tr.name]}</span>
+              <span className="trow-ico"><TrainIcon name={tr.name} lock={lock} /></span>
               <span className="trow-main">
                 <b>
                   {tr.name}
@@ -785,7 +786,7 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
   return (
     <Modal
       title={`${name} 훈련`}
-      icon={TRAINING_ICON[name]}
+      icon={<TrainIcon name={name} />}
       onClose={onClose}
       footer={
         <>
