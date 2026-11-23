@@ -180,6 +180,8 @@ interface Ctx {
   playerDefense: number;
   /** 내가 점령한 도시 지키기: 반란 확률 배율 · 방어 배율 */
   playerHold: { rebel: number; defense: number };
+  /** 파병 부대가 지켜 주는 나라(도시 방어 배율) */
+  deployHelp: Record<string, number>;
 }
 
 function log(ctx: Ctx, kind: EventKind, text: string, ...who: string[]) {
@@ -344,7 +346,7 @@ function invasions(ctx: Ctx) {
       const ap = power(ctx, att, commit, false, overseas);
       let dp = power(ctx, def, garrison + allyHelp, true, false);
       if (city.capital) dp *= CAPITAL_DEFENSE;
-      dp *= instDefense(city.name);
+      dp *= instDefense(city.name) * (ctx.deployHelp[def] ?? 1);
       if (city.home === def) dp *= HOMELAND_DEFENSE;
       if (targets.length === 1) dp *= LAST_STAND_DEFENSE;
       if (def === ctx.player && city.home === def) dp *= PLAYER_HOME_DEFENSE * ctx.playerDefense;
@@ -422,8 +424,9 @@ export function aiTick(
   /** 내 나라 도시 방어 추가 배율(장군) */
   playerDefense = 1,
   playerHold: { rebel: number; defense: number } = { rebel: 1, defense: 1 },
+  deployHelp: Record<string, number> = {},
 ): void {
-  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense, playerHold };
+  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense, playerHold, deployHelp };
   diplomacy(ctx);
   invasions(ctx);
   rebellions(ctx);

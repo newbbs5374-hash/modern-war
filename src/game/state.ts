@@ -1,5 +1,6 @@
 // 게임 상태와 시간 흐름. 화면과 떨어진 순수 계산이라 시험(테스트)하기 쉽다.
 
+import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { applyOrigin, type OriginId } from './origin';
 import { COUNTRIES, countryById } from '../data/world';
@@ -115,6 +116,8 @@ export interface GameState {
   culture?: CultureState;
   /** 예산 나누기·세금(없으면 기본 40/20/20/20 · 보통) */
   policy?: PolicyState;
+  /** 해외 파병(11-24). 없으면 파병 없음 */
+  deploy?: DeployState;
 }
 
 export interface NewGameOptions {
@@ -258,11 +261,11 @@ export function advance(s: GameState, ms: number): GameState {
     for (const [id, n] of Object.entries(cur.nations)) nations[id] = { ...n };
     const ownerBefore = { ...world.owner };
     const pairsBefore = Object.fromEntries(Object.entries(world.pairs).map(([k, p]) => [k, { tension: p.tension }]));
-    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer) * defenseMult(cur) * ordersDefense(cur), occupyHold(cur));
+    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer) * defenseMult(cur) * ordersDefense(cur), occupyHold(cur), deployHelp(cur));
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = civTick(cur, pairsBefore);
+    cur = deployTick(civTick(cur, pairsBefore));
     cur = remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))));
     world = cur.world;
   }

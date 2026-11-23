@@ -421,9 +421,24 @@ function MapPanel({ state }: ScreenProps) {
             ))}
           </span>
         }
-        help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 점선은 도(주·성) 경계예요. 주요 도시를 점령하면 공격을 시작한 도시부터 그 도시까지 길목의 땅도 함께 차지하고, 빼앗긴 땅은 점령한 나라 색에 빗금으로 보여요. 🚢 항모 전단은 평소 앞바다를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. ✈️ 전투기는 평시엔 순찰, 전쟁 땐 적 수도로 출격해요.</p>}
+        help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 점선은 도(주·성) 경계예요. 주요 도시를 점령하면 공격을 시작한 도시부터 그 도시까지 길목의 땅도 함께 차지하고, 빼앗긴 땅은 점령한 나라 색에 빗금으로 보여요. 🚢✈️🛡️ 배·비행기·전차는 그 나라가 가진 병과예요(우리나라는 직접 만든 부대). 평소엔 자기 나라 둘레를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. 해외 파병(외교 → 파병) 부대는 파병 간 나라 둘레에서 움직여요.</p>}
       >
-        <WorldMap world={w} playerCountryId={me} selectedId={sel ?? me} onSelect={setSel} mode={mode} />
+        <WorldMap
+          world={w}
+          playerCountryId={me}
+          selectedId={sel ?? me}
+          onSelect={setSel}
+          mode={mode}
+          army={{ ...state.economy.army }}
+          deploys={(state.deploy?.list ?? []).map((d) => ({
+            from: me,
+            to: d.to,
+            units: Object.entries(d.units)
+              .sort((a, b) => b[1] - a[1])
+              .map(([n]) => n),
+            phase: d.returnMs ? 'back' : state.worldMs < d.arriveMs ? 'go' : 'stay',
+          }))}
+        />
         <div className="legend small">
           {mode === '나라'
             ? COUNTRIES.filter((c) => isAlive(w, c.id)).map((c) => (

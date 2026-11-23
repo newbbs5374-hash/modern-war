@@ -32,11 +32,12 @@ import { REL_COLORS } from './WorldMap';
 import { PersonFace } from './People';
 import { ForeignPeople, MinistryCards } from './CabinetUI';
 import { SummitPanel } from './MediaUI';
+import { DeployPanel } from './DeployPanel';
 
-type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
+type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
   const [raw, setTab] = useTab<Tab>('diplo', 'nations');
-  const tab: Tab = (['mofa', 'nations', 'rel', 'agree', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
+  const tab: Tab = (['mofa', 'nations', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
   const [sel, setSel] = useState<string | null>(null);
   const civ = civOf(props.state);
   return (
@@ -50,6 +51,7 @@ export function DiplomacyScreen(props: ScreenProps) {
           { id: 'nations', label: '국가정보', icon: '🗂️' },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
           { id: 'agree', label: '호감·협정', icon: '🤝' },
+          { id: 'deploy', label: '파병', icon: '🪖', badge: props.state.deploy?.list.length ? String(props.state.deploy.list.length) : null },
           { id: 'isle', label: '분쟁 섬', icon: '🏝️' },
           { id: 'council', label: '국제 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
         ]}
@@ -62,6 +64,7 @@ export function DiplomacyScreen(props: ScreenProps) {
         </>
       )}
       {tab === 'agree' && <AgreePanel {...props} />}
+      {tab === 'deploy' && <DeployPanel {...props} />}
       {tab === 'isle' && <IslandPanel {...props} />}
       {tab === 'council' && <CouncilPanel {...props} />}
       {tab === 'nations' && <NationsPanel {...props} onPick={setSel} />}
