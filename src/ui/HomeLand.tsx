@@ -10,7 +10,7 @@ import { CITY_DEFENSE_MAX } from '../game/balance';
 import { FLAG_DEF } from './flag';
 import { LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
-import { HOME_CAP, homeTerrain } from './homeTerrain';
+import { homeTerrain } from './homeTerrain';
 // 바닥 그림(11-23 대장 결정 "코드 실사화"): 이음새 없는 풀·들판·모래·바다 그림을 깔고 햇빛·그림자를 코드로 더함.
 // 새 바닥 그림(home-ground-*.png, 명령문 guides/home-real-art-prompts.md)이 오면 이 줄만 바꾸면 됨.
 import groundGrass from '../assets/city/city-ground-grass.webp';
@@ -36,14 +36,6 @@ function rng(seed: number) {
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-/** 도시 자리(땅 안쪽, 나라 안 순서대로) */
-const SPOTS: Array<[number, number]> = [
-  [240, 250],
-  [262, 405],
-  [205, 500],
-  [222, 330],
-];
 
 export type DayMode = '자동' | '낮' | '밤';
 /** 실제 시각(이 기기)으로 낮·밤: 0 = 한낮, 1 = 한밤 */
@@ -92,18 +84,21 @@ export function HomeLand(props: {
   const land = terrain.land;
   const flag = FLAG_DEF[countryId];
   const mine = flag?.color ?? '#3b82f6';
-  // 본부 지도 = 수도 하나를 크게(11/22 대장 지시). 다른 도시는 세계 지도에서 봄
-  const homeCities = CITIES.filter((c) => c.home === countryId && c.capital);
-  const CAP: [number, number] = HOME_CAP;
-  const pos = (i: number): [number, number] => (i === 0 ? CAP : SPOTS[i % SPOTS.length]);
-  // 산·숲: 땅 위, 수도 시가지 밖에만
-  const freeLand = (x: number, y: number) => terrain.onLand(x, y) && ((x - CAP[0]) / 135) ** 2 + ((y - CAP[1]) / 90) ** 2 > 1;
-  const mountains = Array.from({ length: 16 }, () => [20 + r() * (W - 40), 60 + r() * (H - 90), 14 + r() * 12] as const)
+  // 본부 지도 = 우리나라 전체(11/24 대장 결정 2안). 내 도시 모두 실제 위치, 수도가 맨 앞
+  const homeCities = CITIES.filter((c) => c.home === countryId).sort((a, b) => Number(b.capital) - Number(a.capital));
+  const pos = (i: number): [number, number] => terrain.cityPos[homeCities[i].id];
+  const CAP: [number, number] = pos(0);
+  /** 도시 크기(건물 무리 배율): 수도 0.5, 다른 도시 0.34 */
+  const citySc = (i: number) => (homeCities[i].capital ? 0.5 : 0.34);
+  // 산·숲: 땅 위, 도시 시가지 밖에만
+  const freeLand = (x: number, y: number) =>
+    terrain.onLand(x, y) && homeCities.every((c, i) => terrain.far.includes(c.id) || ((x - pos(i)[0]) / (130 * citySc(i))) ** 2 + ((y - pos(i)[1]) / (90 * citySc(i))) ** 2 > 1);
+  const mountains = Array.from({ length: 30 }, () => [15 + r() * (W - 30), 40 + r() * (H - 60), 10 + r() * 8] as const)
     .filter(([x, y]) => freeLand(x, y))
-    .slice(0, 7);
-  const forests = Array.from({ length: 30 }, () => [15 + r() * (W - 30), 50 + r() * (H - 70)] as const)
+    .slice(0, 9);
+  const forests = Array.from({ length: 50 }, () => [15 + r() * (W - 30), 40 + r() * (H - 60)] as const)
     .filter(([x, y]) => freeLand(x, y))
-    .slice(0, 12);
+    .slice(0, 16);
   const riverY = 260 + r() * 120;
   // 도시마다 건물 무리(가운데가 높음)
   const blocks = homeCities.map((_c, i) => {
@@ -127,17 +122,13 @@ export function HomeLand(props: {
     const my = (y1 + y2) / 2 - (x2 - x1) * 0.18;
     roads.push({ id: `road-${countryId}-${a}-${b}`, d: `M${x1},${y1} Q${mx.toFixed(1)},${my.toFixed(1)} ${x2},${y2}`, a, b });
   };
-  // 수도 길: 순환 도로 두 겹 + 바깥으로 뻗는 큰길 4개
+  // 수도 순환 도로 + 수도 ↔ 다른 도시 고속도로
   const [ccx, ccy] = CAP;
   const ring = (rx: number, ry: number) => `M${ccx - rx},${ccy} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
-  roads.push({ id: `road-${countryId}-ring1`, d: ring(52, 32), a: 0, b: 0 });
-  if (terrain.outerRing) roads.push({ id: `road-${countryId}-ring2`, d: ring(104, 64), a: 0, b: 0 });
-  terrain.roadEnds.forEach(([x, y], k) => {
-    const mx = (ccx + x) / 2 + (k % 2 ? 18 : -18);
-    const my = (ccy + y) / 2;
-    roads.push({ id: `road-${countryId}-out${k}`, d: `M${ccx},${ccy} Q${mx},${my} ${x},${y}`, a: 0, b: 0 });
+  roads.push({ id: `road-${countryId}-ring1`, d: ring(58, 36), a: 0, b: 0 });
+  homeCities.forEach((_c, i) => {
+    if (i && !terrain.far.includes(homeCities[i].id)) road(0, i);
   });
-  void road;
 
   // 대장이 만든 꾸밈 그림(있을 때만). 없으면 아래 도형 그대로
   const art = {
@@ -368,8 +359,27 @@ export function HomeLand(props: {
           {homeCities.map((c, i) => {
             const [x, y] = pos(i);
             const st = status[i];
+            if (terrain.far.includes(c.id)) {
+              // 먼 도시: 화면 가장자리 표지판(누르면 도시 정보)
+              const [qx, qy] = CAP;
+              const ang = (Math.atan2(y - qy, x - qx) * 180) / Math.PI;
+              return (
+                <g key={c.id} className="city" onClick={() => tapCity(c.id, x, y)}>
+                  <g transform={`translate(${x},${y}) rotate(${ang})`}>
+                    <path d="M4,-6 L14,0 L4,6Z" fill="#f8fafc" stroke="#3b4855" strokeWidth="1" />
+                  </g>
+                  <circle cx={x} cy={y} r="5" fill={st === '점령당함' ? '#ef4444' : mine} stroke="#f8fafc" strokeWidth="1.4" />
+                  <text x={x} y={y + 16} textAnchor="middle" className="homeland-city small">
+                    {c.name}
+                    {st === '공격받음' ? ' 🔥' : st === '점령당함' ? ' (빼앗김)' : ''}
+                  </text>
+                  <circle cx={x} cy={y} r="16" fill="transparent" />
+                </g>
+              );
+            }
             return (
               <g key={c.id} className="city" onClick={() => tapCity(c.id, x, y)}>
+                <g transform={`translate(${x},${y}) scale(${citySc(i)}) translate(${-x},${-y})`}>
                 <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="#9a978c" opacity="0.35" filter="url(#g-soft)" />
                 {c.capital && art.factory && <image href={art.factory} x={x - 118} y={y - 6} width="44" height="44" />}
                 {c.capital && art.base && <image href={art.base} x={x - 96} y={y + 34} width="48" height="48" />}
@@ -427,16 +437,26 @@ export function HomeLand(props: {
                     <circle className="fire" cx={x + 4} cy={y - 4} r="2.4" fill="#facc15" style={{ animationDelay: '-.3s' }} />
                   </g>
                 )}
-                <text x={x} y={y + (c.capital ? 28 : 22)} textAnchor="middle" className="homeland-city">
+                </g>
+                <text x={x} y={y + (c.capital ? 20 : 12)} textAnchor="middle" className={c.capital ? 'homeland-city' : 'homeland-city small'}>
                   {c.capital ? '★ ' : ''}
                   {c.name}
                   {st === '공격받음' ? ' 🔥' : st === '점령당함' ? ' (빼앗김)' : ''}
                 </text>
-                <circle cx={x} cy={y - 6} r={c.capital ? 30 : 22} fill="transparent" />
+                <circle cx={x} cy={y - 4} r={c.capital ? 22 : 14} fill="transparent" />
               </g>
             );
           })}
 
+          {/* 표기만 하는 지명(여수 등): 도시 기능 없음 */}
+          {terrain.marks.map((m) => (
+            <g key={m.name} pointerEvents="none">
+              <circle cx={m.x} cy={m.y} r="2.2" fill="#f8fafc" stroke="#3b4855" strokeWidth="1" />
+              <text x={m.x} y={m.y + 11} textAnchor="middle" className="homeland-mark">
+                {m.name}
+              </text>
+            </g>
+          ))}
           {/* 바다: 배 · 여객선 */}
           {terrain.seaLoop && [0, 1, 2].map((j) => (
             <g key={`boat${j}`}>

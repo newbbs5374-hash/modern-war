@@ -1,17 +1,24 @@
-// 본부 지도 땅: 수도 둘레의 실제 해안선(11/23 대장 결정 "1안. 수도 둘레 실제 땅")
-// - 세계지도와 같은 자료(realGeo, 대한민국은 시·도 자료)를 수도 둘레 가로 2.4도만큼 잘라 본부 화면(390×640)에 맞춤
-// - 각진 선은 부드러운 곡선으로, 산·숲·도로·배 길은 실제 땅/바다에 맞춰 고름
+// 본부 지도 땅: 우리나라 전체 실제 모양(11/24 대장 결정 "2안. 나라 전체 실제 모양")
+// - 세계지도와 같은 자료(realGeo, 대한민국은 시·도 자료)에서 우리나라가 화면(390×640)에 들어오게 잘라 맞춤
+//   큰 나라(러시아·미국·중국 등)는 나라 전체 대신 우리 도시들이 있는 곳 위주로
+// - 내 도시는 모두 실제 위치. 각진 선은 부드러운 곡선으로, 산·숲·배 길은 실제 땅/바다에 맞춰 고름
 import { CITIES } from '../data/cities';
 import { GEO_PATH } from '../data/realGeo';
 import { KR_INNER, KR_OUTLINE } from '../data/krProvinces';
 import { CITY_LONLAT, project } from '../data/realmap';
 
+function ringArea(r: number[][]): number {
+  let a = 0;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += r[j][0] * r[i][1] - r[i][0] * r[j][1];
+  return Math.abs(a) / 2;
+}
+
 export const HOME_W = 390;
 export const HOME_H = 640;
-/** 수도가 놓이는 자리(왼쪽 임무 칸을 피해 오른쪽 아래) */
-export const HOME_CAP: [number, number] = [262, 420];
-/** 본부 화면 가로에 들어가는 경도 폭 */
-export const HOME_SPAN_DEG = 2.4;
+/** 표기만 하는 지명(도시 기능 없음): 경도·위도 */
+export const HOME_MARKS: Record<string, Array<{ name: string; lonlat: [number, number] }>> = {
+  kr: [{ name: '여수', lonlat: [127.66, 34.76] }],
+};
 
 type Ring = number[][];
 
@@ -69,10 +76,14 @@ export interface HomeTerrain {
   onLand: (x: number, y: number) => boolean;
   /** 배가 도는 바다 길(화면 안에 바다가 없으면 null) */
   seaLoop: string | null;
-  /** 수도에서 밖으로 뻗는 큰길 끝점(땅 위) */
-  roadEnds: Array<[number, number]>;
-  /** 둘째 순환 도로가 땅 위에 들어가는지 */
-  outerRing: boolean;
+  /** 도시 자리(도시 id → 본부 좌표) */
+  cityPos: Record<string, [number, number]>;
+  /** 너무 멀어 가장자리 표지판으로 그리는 도시 id */
+  far: string[];
+  /** 표기만 하는 지명 */
+  marks: Array<{ name: string; x: number; y: number }>;
+  /** 1도 = 몇 칸(본부 좌표) */
+  scale: number;
 }
 
 const CACHE = new Map<string, HomeTerrain>();
@@ -82,50 +93,64 @@ export function homeTerrain(countryId: string): HomeTerrain {
   if (hit) return hit;
   const W = HOME_W;
   const H = HOME_H;
-  const cap = CITIES.find((c) => c.home === countryId && c.capital) ?? CITIES.find((c) => c.home === countryId)!;
-  const cp = project(...CITY_LONLAT[cap.name]);
-  const s = W / (HOME_SPAN_DEG * 6);
-  let tx = cp.x - HOME_CAP[0] / s;
-  let ty = cp.y - HOME_CAP[1] / s;
-  // 바닷가 수도(텔아비브 등): 시가지가 바다에 걸치지 않게 땅 쪽으로 조금 옮김(최대 0.5도)
-  {
-    const near = allRings().filter((r) => r.some(([x, y]) => Math.abs(x - cp.x) < 12 && Math.abs(y - cp.y) < 12));
-    const landW = (x: number, y: number) => near.some((r) => inRing(x, y, r));
-    const fits = (dx: number, dy: number) => {
-      for (let i = 0; i < 20; i++) {
-        const a = (i / 20) * Math.PI * 2;
-        if (!landW(cp.x + (dx + Math.cos(a) * 120) / s, cp.y + (dy + Math.sin(a) * 75) / s)) return false;
-      }
-      return true;
-    };
-    if (!fits(0, 0)) {
-      let best: [number, number] | null = null;
-      for (let dy = -150; dy <= 150; dy += 10)
-        for (let dx = -150; dx <= 150; dx += 10)
-          if ((!best || Math.hypot(dx, dy) < Math.hypot(...best)) && fits(dx, dy)) best = [dx, dy];
-      if (best) {
-        tx += best[0] / s;
-        ty += best[1] / s;
-      }
+  const mine = CITIES.filter((c) => c.home === countryId);
+  const cityW = mine.map((c) => project(...CITY_LONLAT[c.name]));
+  // 수도에서 50도 넘게 먼 도시(호놀룰루·블라디보스토크 등)는 화면 범위에서 빼고 가장자리 표지판으로
+  const capW = cityW[mine.findIndex((c) => c.capital)] ?? cityW[0];
+  const isFar = mine.map((_c, i) => Math.hypot(cityW[i].x - capW.x, cityW[i].y - capW.y) / 6 > 50);
+  const nearW = cityW.filter((_p, i) => !isFar[i]);
+  // 화면에 넣을 범위(세계 좌표): 나라 본토(+큰 섬) 또는 도시들
+  const own = parseRings(countryId === 'kr' ? KR_OUTLINE : (GEO_PATH[countryId] ?? ''));
+  const maxA = Math.max(0, ...own.map(ringArea));
+  const body = own.filter((r) => ringArea(r) >= maxA * 0.05);
+  let x0 = Math.min(...nearW.map((p) => p.x));
+  let x1 = Math.max(...nearW.map((p) => p.x));
+  let y0 = Math.min(...nearW.map((p) => p.y));
+  let y1 = Math.max(...nearW.map((p) => p.y));
+  if (body.length) {
+    const xs = body.flat().map((p) => p[0]);
+    const ys = body.flat().map((p) => p[1]);
+    const bx0 = Math.min(...xs);
+    const bx1 = Math.max(...xs);
+    const by0 = Math.min(...ys);
+    const by1 = Math.max(...ys);
+    // 나라가 너무 크면(가로 20도·세로 16도 넘음) 도시들 둘레만
+    if (bx1 - bx0 <= 20 * 6 && by1 - by0 <= 16 * 6) {
+      x0 = Math.min(x0, bx0);
+      x1 = Math.max(x1, bx1);
+      y0 = Math.min(y0, by0);
+      y1 = Math.max(y1, by1);
     }
   }
-  const T = (x: number, y: number) => [(x - tx) * s, (y - ty) * s];
+  // 여유(가장자리 0.5도 이상) + 화면 위·왼쪽 메뉴를 피해 가운데를 조금 오른쪽 아래로
+  const padX = Math.max(3, (x1 - x0) * 0.1);
+  const padY = Math.max(3, (y1 - y0) * 0.1);
+  const bw = x1 - x0 + padX * 2;
+  const bh = y1 - y0 + padY * 2;
+  const s = Math.min((W * 0.8) / bw, (H * 0.74) / bh, W / (1.6 * 6));
+  const cxW = (x0 + x1) / 2;
+  const cyW = (y0 + y1) / 2;
+  const tx = cxW - (W * 0.6) / s;
+  const ty = cyW - (H * 0.56) / s;
+  const T = (x: number, y: number): [number, number] => [(x - tx) * s, (y - ty) * s];
   // 화면 둘레(여유 포함)와 겹치는 땅만
   const M = 200;
   const rings: Ring[] = [];
   for (const r of allRings()) {
     const t = r.map(([x, y]) => T(x, y));
-    let x0 = Infinity;
-    let y0 = Infinity;
-    let x1 = -Infinity;
-    let y1 = -Infinity;
+    let a0 = Infinity;
+    let b0 = Infinity;
+    let a1 = -Infinity;
+    let b1 = -Infinity;
     for (const [x, y] of t) {
-      if (x < x0) x0 = x;
-      if (x > x1) x1 = x;
-      if (y < y0) y0 = y;
-      if (y > y1) y1 = y;
+      if (x < a0) a0 = x;
+      if (x > a1) a1 = x;
+      if (y < b0) b0 = y;
+      if (y > b1) b1 = y;
     }
-    if (x1 < -M || x0 > W + M || y1 < -M || y0 > H + M) continue;
+    if (a1 < -M || a0 > W + M || b1 < -M || b0 > H + M) continue;
+    // 화면에서 너무 작은 섬은 뺌
+    if ((a1 - a0) * (b1 - b0) < 4) continue;
     rings.push(t);
   }
   const onLand = (x: number, y: number) => rings.some((r) => inRing(x, y, r));
@@ -137,35 +162,31 @@ export function homeTerrain(countryId: string): HomeTerrain {
           return `${x.toFixed(1)},${y.toFixed(1)}`;
         })
       : '';
-
-  // 큰길: 네 방향(왼위·오른위·왼아래·오른아래)으로 땅이 끝나기 전까지
-  const [cx, cy] = HOME_CAP;
-  const roadEnds: Array<[number, number]> = [];
-  for (const [ax, ay] of [
-    [-0.55, -1],
-    [0.7, -0.9],
-    [-0.6, 1],
-    [0.5, 1],
-  ]) {
-    const len = Math.hypot(ax, ay);
-    let last: [number, number] | null = null;
-    for (let t = 20; t < 420; t += 8) {
-      const x = cx + (ax / len) * t;
-      const y = cy + (ay / len) * t;
-      if (!onLand(x, y)) break;
-      last = [Math.round(x), Math.round(y)];
+  const cityPos: Record<string, [number, number]> = {};
+  const far: string[] = [];
+  mine.forEach((c, i) => {
+    let [x, y] = T(cityW[i].x, cityW[i].y);
+    if (isFar[i]) {
+      // 화면 가장자리 표지판: 수도에서 그 도시 쪽으로 화면 끝(여백 40)
+      far.push(c.id);
+      const [qx, qy] = T(capW.x, capW.y);
+      const dx = x - qx;
+      const dy = y - qy;
+      const k = Math.min(dx ? (dx > 0 ? W - 40 - qx : 40 - qx) / dx : Infinity, dy ? (dy > 0 ? H - 60 - qy : 60 - qy) / dy : Infinity);
+      x = qx + dx * k;
+      y = qy + dy * k;
     }
-    if (last && Math.hypot(last[0] - cx, last[1] - cy) > 110) roadEnds.push(last);
-  }
-  // 둘째 순환 도로(104×64): 거의 다 땅이면 그림
-  let onCnt = 0;
-  for (let i = 0; i < 24; i++) {
-    const a = (i / 24) * Math.PI * 2;
-    if (onLand(cx + Math.cos(a) * 104, cy + Math.sin(a) * 64)) onCnt++;
-  }
-  const outerRing = onCnt >= 21;
+    cityPos[c.id] = [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  });
+  const marks = (HOME_MARKS[countryId] ?? []).map((m) => {
+    const p = project(...m.lonlat);
+    const [x, y] = T(p.x, p.y);
+    return { name: m.name, x, y };
+  });
 
-  // 배 길: 수도에서 가까운 넓은 바다에 타원(화면 안)
+  // 배 길: 수도 가까운 넓은 바다에 타원(화면 안)
+  const cap = mine.find((c) => c.capital) ?? mine[0];
+  const [cx, cy] = cityPos[cap.id];
   const openSea = (x: number, y: number, rx: number, ry: number) => {
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2;
@@ -176,16 +197,16 @@ export function homeTerrain(countryId: string): HomeTerrain {
     return !onLand(x, y);
   };
   let seaLoop: string | null = null;
-  search: for (const [rx, ry] of [
-    [110, 60],
-    [80, 44],
-    [56, 32],
-    [38, 22],
+  for (const [rx, ry] of [
+    [90, 50],
+    [64, 36],
+    [44, 26],
+    [30, 18],
   ]) {
     let best: [number, number] | null = null;
     let bd = Infinity;
-    for (let y = ry + 12; y < H - ry - 12; y += 14)
-      for (let x = rx + 12; x < W - rx - 12; x += 14) {
+    for (let y = ry + 12; y < H - ry - 12; y += 12)
+      for (let x = rx + 12; x < W - rx - 12; x += 12) {
         const d = Math.hypot(x - cx, y - cy);
         if (d < bd && openSea(x, y, rx, ry)) {
           bd = d;
@@ -195,10 +216,10 @@ export function homeTerrain(countryId: string): HomeTerrain {
     if (best) {
       const [x, y] = best;
       seaLoop = `M${x - rx},${y} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
-      break search;
+      break;
     }
   }
-  const out = { land, inner, onLand, seaLoop, roadEnds, outerRing };
+  const out = { land, inner, onLand, seaLoop, cityPos, far, marks, scale: s * 6 };
   CACHE.set(countryId, out);
   return out;
 }
