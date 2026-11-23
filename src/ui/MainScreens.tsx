@@ -19,6 +19,9 @@ import { PolicyPanel } from './PolicyPanel';
 import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
 import { GeneralCandidates, MinistryCards, TalentPanel } from './CabinetUI';
 import { SchedulePanel } from './ScheduleUI';
+import { AssemblyPanel } from './AssemblyUI';
+import { assemblyOf } from '../game/assembly';
+import { liveLaws } from '../game/laws';
 import { scheduleOf } from '../game/schedule';
 import { cabinetOf } from '../game/cabinet';
 
@@ -124,7 +127,7 @@ export function SocietyScreen(props: ScreenProps) {
     { id: 'city', label: '도시', icon: '🏘️' },
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
     { id: 'tech', label: '사회 연구', icon: '📜', badge: !civ.cur.soc && needPick(state) ? '!' : null },
-    { id: 'politics', label: '정계', icon: '🗳️', badge: o.chiefRival || o.dismissDeadlineMs !== null ? '!' : null },
+    { id: 'politics', label: '정계', icon: '🗳️', badge: o.chiefRival || o.dismissDeadlineMs !== null || (!assemblyOf(state).vote && !liveLaws(state).length) ? '!' : null },
     { id: 'fac', label: '복지·과학', icon: '🏥', badge: choreIn(props, SOCIETY_BUILDINGS) ? '!' : null },
   ];
   const tab = pickTab(tabs, raw);
@@ -136,7 +139,12 @@ export function SocietyScreen(props: ScreenProps) {
       {tab === 'city' && <CityPanel {...props} />}
       {tab === 'gov' && <GovPanel {...props} />}
       {tab === 'tech' && <ResearchPanel {...props} fixed="soc" />}
-      {tab === 'politics' && <RivalsPanel {...props} />}
+      {tab === 'politics' && (
+        <>
+          <AssemblyPanel {...props} />
+          <RivalsPanel {...props} />
+        </>
+      )}
       {tab === 'fac' && <FacilityPanel {...props} only={SOCIETY_BUILDINGS} />}
     </>
   );
