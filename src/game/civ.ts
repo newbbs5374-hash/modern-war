@@ -64,6 +64,7 @@ import {
 import { BASIC_RES, CITY_RES, COMPOSITE_INPUT, COMPOSITE_PER_INDUSTRY, LUXURIES, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
 import { HEX_DIRS, PIONEER_ISLANDS, TILES, TILE_AT, hexKey, type Tile } from '../data/hexmap';
 import { COUNTRIES, countryById } from '../data/world';
+import { facBonus } from './facility';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { isAlive, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
@@ -275,6 +276,8 @@ export function researchBreakdown(s: GameState): Array<[string, number]> {
   if (pacts) rows.push(['🔬 연구 협력 협정', pacts * RESEARCH_PER_SCIENCE_PACT]);
   const eff = effSum(s, 'research');
   if (eff) rows.push(['연구·체제·카드', eff]);
+  const labB = facBonus(s, '국방과학연구소');
+  if (labB) rows.push(['🧬 국방과학연구소', labB]);
   if (countryById(me).ability.effect.includes('연구 속도 +25%')) rows.push([`🌟 ${countryById(me).ability.name}`, 0.25]);
   return rows;
 }
@@ -970,10 +973,10 @@ export function civBuildSpeed(s: GameState, unit: string): number {
   return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom)) * (chaos(s) ? 1 - GOV_CHAOS : 1);
 }
 export function civPowerMult(s: GameState, unit: string): number {
-  return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)));
+  return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)) + facBonus(s, '우주기지'));
 }
 export function civMission(s: GameState): number {
-  return effSum(s, 'mission');
+  return effSum(s, 'mission') + facBonus(s, '정보본부');
 }
 
 /** 병과가 열렸는지: 지도자 등급 + 연구 둘 다(11-22 결정). 등급은 economy가 먼저 봄 */

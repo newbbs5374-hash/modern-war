@@ -9,7 +9,7 @@ import { firstTestGrant } from './testgrant';
 import { TEST_BOOSTS } from './boost';
 import { SAVE_VERSION, type GameState } from './state';
 import { newBuildings, newEconomy } from './economy';
-import { RESOURCES } from '../data/economy';
+import { BUILDING_IDS, FACILITIES, RESOURCES } from '../data/economy';
 import { newWorld } from './world';
 import { newOfficer } from './officer';
 import { newCiv } from './civ';
@@ -79,6 +79,12 @@ export function parseSave(text: string): GameState | null {
     if (!e || !e.facilities || !e.stock || !Array.isArray(e.queue)) return null;
     // 내정 시설 9개(옛 저장): 분야 단계를 그대로 물려받음
     if (!e.buildings) e.buildings = newBuildings(e.facilities);
+    // 시설 15개(11-23): 새 분야(과학·국방)와 새 시설 6개는 빈 땅부터
+    for (const f of FACILITIES) if (!e.facilities[f]) e.facilities[f] = { level: 1, exp: 0, buildEndMs: 0 };
+    {
+      const nb = newBuildings(e.facilities);
+      for (const id of BUILDING_IDS) if (!e.buildings[id]) e.buildings[id] = nb[id];
+    }
     // 자원 3안(11-23): 새 자원 8종은 0부터
     for (const r of RESOURCES) if (typeof e.stock[r] !== 'number') e.stock[r] = 0;
     if (typeof o.grandReadyMs !== 'number') o.grandReadyMs = 0;

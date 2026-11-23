@@ -4,7 +4,8 @@
 import type { ReactNode } from 'react';
 import { EXCLUSIVES, specialById } from '../data/specials';
 import { PIONEER_ISLANDS } from '../data/hexmap';
-import { RESOURCES, RES_ICON, type Res } from '../data/economy';
+import { BUILDINGS, RESOURCES, RES_ICON, type Res } from '../data/economy';
+import { CARDS, ERAS, GOVS, TECHS } from '../data/civ';
 import { fieldArt } from './fieldArt';
 import { TRAINING_ICON, UNIT_ICON } from './icons';
 
@@ -119,5 +120,76 @@ export function iconSlots(): Array<{ key: string; who: string; url: string | nul
     ...Object.entries(TRAIN_KEY).map(([n, k]) => row(`icon-train-${k}`, `훈련 · ${n}`, iconArt(`icon-train-${k}`))),
     ...RESOURCES.map((r) => row(`icon-res-${RES_KEY[r]}`, `자원 · ${r}`, resArtUrl(r))),
     ...PIONEER_ISLANDS.map((p) => row(`island-${p.id.replace(/^p-/, '')}`, `분쟁 섬 · ${p.name}`, islandArtUrl(p.id))),
+    ...moreSlots().map((x) => row(x.key, x.who, iconArt(x.key))),
+  ];
+}
+
+/* ───────── 금고·연구·체제·시설 그림 칸 (11/23) ───────── */
+
+/** 그림이 있으면 그림, 없으면 이모지. 아무 이름표에나 씀 */
+export function ArtIcon({ k, emoji, alt = '', cls = '' }: { k: string; emoji: ReactNode; alt?: string; cls?: string }): ReactNode {
+  const url = iconArt(k);
+  return url ? <Img url={url} alt={alt} cls={cls} /> : <>{emoji}</>;
+}
+
+/** 금고 칸 10개 → icon-vault-<key> */
+export const VAULT_KEY = {
+  국방예산: 'budget', 병력: 'troops', 봉급: 'salary', 도시: 'cities', 전투력: 'power',
+  외교: 'diplo', '자원 값어치': 'stock', '무역 계약': 'trade', 시설: 'facility', '정보 · 신뢰': 'intel',
+} as const;
+export type VaultName = keyof typeof VAULT_KEY;
+export const vaultArtUrl = (n: VaultName): string | null => iconArt(`icon-vault-${VAULT_KEY[n]}`);
+
+/** 연구 → icon-tech-<연구 id>(예: icon-tech-m-drone), 시대 → icon-era-<1~4> */
+export const techArtKey = (id: string) => `icon-tech-${id}`;
+export const eraArtKey = (era: number) => `icon-era-${era}`;
+
+/** 체제 → icon-gov-<id>, 정책 카드 → icon-card-<key> */
+export const govArtKey = (id: string) => `icon-gov-${id}`;
+export const CARD_KEY: Record<string, string> = {
+  '군-훈련': 'mil-drill', '군-보급': 'mil-supply', '군-징집': 'mil-conscript', '군-해병': 'mil-marine',
+  '군-조종': 'mil-pilot', '군-방위': 'mil-defense', '군-동원': 'mil-mobilize', '군-정예': 'mil-elite',
+  '경-세금': 'eco-tax', '경-광산': 'eco-mine', '경-개척': 'eco-develop', '경-도시': 'eco-urban',
+  '경-상회': 'eco-port', '경-학자': 'eco-scholar', '경-복지': 'eco-ration', '경-연방': 'eco-invest',
+  '외-사절': 'dip-envoy', '외-친선': 'dip-goodwill', '외-정보': 'dip-intel', '외-불가침': 'dip-border',
+  '외-방위': 'dip-alliance', '외-회의': 'dip-lobby', '외-방송': 'dip-broadcast', '외-연방': 'dip-friendship',
+};
+export const cardArtKey = (id: string) => `icon-card-${CARD_KEY[id] ?? id}`;
+
+/** 시설 → fac-<key>-<단계>.webp (단계마다 다른 그림) */
+export const BUILDING_KEY: Record<string, string> = {
+  군수공장: 'arms', 제련소: 'smelter', 첨단공단: 'hitech',
+  철도망: 'rail', 군항: 'port', 공군기지: 'airbase',
+  징병소: 'draft', 군병원: 'hospital', 치안청: 'police',
+  국방과학연구소: 'lab', 정보본부: 'intel', 우주기지: 'space',
+  방공포대: 'airdef', 훈련소: 'camp', 비축창고: 'depot',
+};
+/** 그 단계 그림 → 없으면 아래 단계 그림 → 없으면 위 단계 그림 → 없으면 null */
+export function facilityArtUrl(id: string, level: number, max = 5): string | null {
+  const k = BUILDING_KEY[id];
+  if (!k) return null;
+  const lv = Math.max(1, level);
+  for (let l = lv; l >= 1; l--) {
+    const u = iconArt(`fac-${k}-${l}`);
+    if (u) return u;
+  }
+  for (let l = lv + 1; l <= max; l++) {
+    const u = iconArt(`fac-${k}-${l}`);
+    if (u) return u;
+  }
+  return null;
+}
+/** 시설 그림만 정확히 그 단계(설정 화면·단계 미리보기용) */
+export const facilityArtExact = (id: string, level: number): string | null => iconArt(`fac-${BUILDING_KEY[id]}-${level}`);
+
+/** 금고·연구·시대·체제·카드·시설(단계별) 칸 목록 */
+function moreSlots(): Array<{ key: string; who: string }> {
+  return [
+    ...(Object.keys(VAULT_KEY) as VaultName[]).map((n) => ({ key: `icon-vault-${VAULT_KEY[n]}`, who: `금고 · ${n}` })),
+    ...TECHS.map((t) => ({ key: techArtKey(t.id), who: `연구 · ${t.name}` })),
+    ...[1, 2, 3, 4].map((e) => ({ key: eraArtKey(e), who: `시대 · ${ERAS[e as 1].name}` })),
+    ...GOVS.map((g) => ({ key: govArtKey(g.id), who: `체제 · ${g.name}` })),
+    ...CARDS.map((c) => ({ key: cardArtKey(c.id), who: `정책 카드 · ${c.name}` })),
+    ...BUILDINGS.flatMap((b) => [1, 2, 3, 4, 5].map((lv) => ({ key: `fac-${BUILDING_KEY[b.id]}-${lv}`, who: `시설 · ${b.id} ${lv}단계` }))),
   ];
 }
