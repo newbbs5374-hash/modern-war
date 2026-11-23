@@ -1,6 +1,7 @@
 // 3단계: 장교의 성장(스탯·공훈·승급), 임무, 간이 훈련, 부관·장군, 라이벌, 불신임.
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
+import { originEff } from './origin';
 import { TEST_BOOSTS } from './boost';
 import { CITIES, cityById } from '../data/cities';
 import {
@@ -445,7 +446,7 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
     const featured = featuredTraining(ns.worldMs, ns.player.rankIndex) === name;
     const record = stars > (best[name] ?? 0);
     if (record) best[name] = stars;
-    const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1) * (1 + facBonus(ns, '훈련소'));
+    const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1) * (1 + facBonus(ns, '훈련소')) * (1 + originEff(ns, 'train'));
     const gains: Partial<Record<StatId, number>> = {};
     const exp: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
@@ -733,7 +734,7 @@ export function missionChance(s: GameState, m: Mission): number {
   const cap = statCap(s.player.rankIndex);
   const level = info.stats.reduce((a, id) => a + o.stats[id], 0) / info.stats.length / cap;
   const aide = readyAides(o, s.worldMs).reduce((a, x) => a + ((x.specialty === info.aideFit ? 0.06 : 0.02) + x.level * 0.005 + (x.bond >= 90 ? 0.05 : 0)) * loyaltyMissionMult(x) + loyaltyMissionBonus(x), 0);
-  return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4 + civMission(s) + generalMissionBonus(s), 0.1, 0.95);
+  return clamp(0.3 + level * 0.6 + aide - (m.difficulty - 1) * 0.4 + civMission(s) + generalMissionBonus(s) + originEff(s, 'mission'), 0.1, 0.95);
 }
 
 export function startMission(s: GameState, missionId: number): GameState {

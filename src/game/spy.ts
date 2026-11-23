@@ -1,6 +1,7 @@
 // 첩보·특수 작전: 정보 점수와 국방예산을 써서 다른 나라에 공작원을 보냄.
 // 작전마다 걸리는 시간이 있고, 끝나면 성공/실패가 정해짐. 실패하면 들킨 나라 호감↓·긴장↑.
 // 공작 팀 수 = 1 + 지도자 등급 4마다 1(최대 3). 성공률 = 기본 + (은밀+정보) 스탯.
+import { originEff } from './origin';
 import { COUNTRIES, countryById } from '../data/world';
 import { CITIES } from '../data/cities';
 import { addFavorNote, civOf } from './civ';
@@ -69,7 +70,7 @@ export function spyChance(s: GameState, op: SpyOpId, target: string): number {
   const skill = ((st['은밀'] ?? 8) + (st['정보'] ?? 8)) / 2;
   const watch = relationOf(s.world, s.player.countryId, target) === '전쟁' ? -0.05 : 0; // 전쟁 중엔 경계가 심함
   const scout = scouted(s, target) ? 0.05 : 0;
-  return Math.max(0.1, Math.min(0.95, d.base + skill * 0.004 + watch + scout));
+  return Math.max(0.1, Math.min(0.95, d.base + skill * 0.004 + watch + scout + originEff(s, 'spy')));
 }
 
 export function canSpy(s: GameState, op: SpyOpId, target: string): string | null {
