@@ -100,6 +100,10 @@ export function HomeScreen(props: ScreenProps) {
     go(screen);
   };
   const missionReady = !!a && state.worldMs >= a.endMs;
+  // 레이더 아래 숫자: 우리나라와 다른 나라 사이 가장 높은 긴장(전쟁 아닌 쌍)
+  const tension = Math.round(
+    Object.entries(state.world.pairs).reduce((m, [k, p]) => (k.split('|').includes(me.id) && p.rel !== '전쟁' ? Math.max(m, p.tension) : m), 0),
+  );
 
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
   const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
@@ -127,9 +131,17 @@ export function HomeScreen(props: ScreenProps) {
       </div>
 
       <div className="home-side">
-        <button className="home-mini" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 지도">
-          <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
-          <small>🌍 세계 지도</small>
+        <button className="home-mini radar" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 레이더(세계 지도)">
+          <span className="radar-scope">
+            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
+            <i className="ring r1" />
+            <i className="ring r2" />
+            <i className="cross" />
+            <i className="sweep" />
+          </span>
+          <small className={`radar-label ${wars.length > 0 || tension >= 60 ? 'hot' : ''}`}>
+            ◤ 세계 레이더 · {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
+          </small>
         </button>
 
         <div className="home-quests">

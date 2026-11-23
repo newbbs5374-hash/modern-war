@@ -308,23 +308,23 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
     >
       <defs>
         <radialGradient id="wm-sea" cx="50%" cy="50%" r="75%">
-          <stop offset="0%" stopColor="#0f3a5c" />
-          <stop offset="100%" stopColor="#071a2c" />
+          <stop offset="0%" stopColor="#0b2a1c" />
+          <stop offset="100%" stopColor="#030a06" />
         </radialGradient>
         {/* 바다 육각 칸(뾰족한 위). 가로 √3·S, 세로 3·S마다 되풀이 */}
         <pattern id="wm-hexsea" width={HEX_SIZE * Math.sqrt(3)} height={HEX_SIZE * 3} patternUnits="userSpaceOnUse">
-          <path d={HEX_PATTERN} fill="none" stroke="#7cc4f0" strokeOpacity="0.09" strokeWidth="0.5" />
+          <path d={HEX_PATTERN} fill="none" stroke="#45f59a" strokeOpacity="0.09" strokeWidth="0.5" />
         </pattern>
         <pattern id="wm-wave" width="26" height="14" patternUnits="userSpaceOnUse">
-          <path d="M2,8 q4,-4 8,0 t8,0" fill="none" stroke="#5fa8d3" strokeOpacity="0.12" strokeWidth="0.8" />
+          <path d="M2,8 q4,-4 8,0 t8,0" fill="none" stroke="#45f59a" strokeOpacity="0.12" strokeWidth="0.8" />
         </pattern>
       </defs>
       <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
       {!mini && <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-hexsea)" />}
       {!mini && <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-wave)" className="wm-waves" />}
       {/* 얕은 바다 → 모래 해안 → 땅 */}
-      <path d={COAST} fill="none" stroke="#1d5c80" strokeOpacity="0.6" strokeWidth="7" strokeLinecap="round" />
-      <path d={COAST} fill="none" stroke="#cdb77a" strokeWidth="1.6" strokeLinecap="round" />
+      <path d={COAST} fill="none" stroke="#1d6b44" strokeOpacity="0.6" strokeWidth="7" strokeLinecap="round" />
+      <path d={COAST} fill="none" stroke="#45f59a" strokeWidth="1.6" strokeLinecap="round" />
       {CITY_PLACES.map((id) => {
         const home = id.split('-')[0];
         const o = owner[id];
