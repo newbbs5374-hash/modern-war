@@ -4,6 +4,7 @@ import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from '../data/world';
 import { EDGE_DIR, HEX_DIRS, HEX_SIZE, HOLY_HEX, MAP_BOUNDS, PIONEER_ISLANDS, TILES, TILE_AT, disk, hexCorners, hexKey, pixelToHex, seaNear } from '../data/hexmap';
 import { isAlive, relationOf, type WorldState } from '../game/world';
 import { Carrier, Escort, Jet } from './units';
+import { smoothPath, type Seg } from './smoothHex';
 
 export type MapMode = '관계' | '묶음';
 
@@ -48,34 +49,30 @@ const polyPath = (x: number, y: number) =>
 const PLACE_PATH: Record<string, string> = {};
 for (const t of TILES) PLACE_PATH[t.place] = (PLACE_PATH[t.place] ?? '') + polyPath(t.x, t.y);
 const CITY_PLACES = CITIES.map((c) => c.id);
-/** 바다 무늬 한 칸(가로 √3·S × 세로 3·S)에 들어가는 육각형 테두리 */
-const HEX_PATTERN = (() => {
-  const w = HEX_SIZE * Math.sqrt(3);
-  const h = HEX_SIZE * 3;
-  return [
-    [0, 0],
-    [w, 0],
-    [w / 2, h / 2],
-    [0, h],
-    [w, h],
-  ]
-    .map(([x, y]) => polyPath(x, y))
-    .join('');
-})();
-/** 해안선: 땅 칸의 변 중 바다와 닿은 변 */
-const COAST = (() => {
-  let d = '';
-  for (const t of TILES)
-    hexCorners(t.x, t.y).forEach((p, i) => {
-      // 꼭짓점 i와 i+1 사이 변의 이웃 방향
-      const dir = HEX_DIRS[EDGE_DIR[i]];
-      if (!TILE_AT.has(hexKey(t.q + dir.q, t.r + dir.r))) {
-        const q2 = hexCorners(t.x, t.y)[(i + 1) % 6];
-        d += `M${p[0].toFixed(1)},${p[1].toFixed(1)}L${q2[0].toFixed(1)},${q2[1].toFixed(1)}`;
-      }
-    });
-  return d;
-})();
+/** 해안선: 땅 칸의 변 중 바다와 닿은 변(육각 그대로) */
+const COAST_SEGS: Seg[] = [];
+/** 장소마다 바다와 닿은 변(곡선 해안까지 색을 채우는 굵은 선) */
+const PLACE_COAST: Record<string, string> = {};
+for (const t of TILES) {
+  const cs = hexCorners(t.x, t.y);
+  cs.forEach((p, i) => {
+    const dir = HEX_DIRS[EDGE_DIR[i]];
+    if (!TILE_AT.has(hexKey(t.q + dir.q, t.r + dir.r))) {
+      const q2 = cs[(i + 1) % 6];
+      COAST_SEGS.push([p, q2]);
+      PLACE_COAST[t.place] = (PLACE_COAST[t.place] ?? '') + `M${p[0].toFixed(1)},${p[1].toFixed(1)}L${q2[0].toFixed(1)},${q2[1].toFixed(1)}`;
+    }
+  });
+}
+/** 화면에 그리는 해안선: 육각 계단 대신 둥근 곡선 */
+const COAST = smoothPath(COAST_SEGS, { relax: 14, wiggle: HEX_SIZE * 0.9 });
+const LAND_BASE = '#06140d';
+/** 땅 색을 바탕색과 미리 섞어 불투명하게(겹쳐도 진해지지 않게) */
+function mixColor(hex: string, a: number): string {
+  const n = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  const c = (i: number) => Math.round(n(hex, i) * a + n(LAND_BASE, i) * (1 - a));
+  return `rgb(${c(0)},${c(1)},${c(2)})`;
+}
 /** 나라 이름 자리(그 나라 땅 한가운데) */
 const COUNTRY_LABEL = Object.fromEntries(
   COUNTRIES.map((c) => {
@@ -275,7 +272,7 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
   const owner = world.owner;
   // 나라 경계: 옆 칸 주인이 다르면 선
   const borders = useMemo(() => {
-    let d = '';
+    const segs: Seg[] = [];
     const own = (t: { kind: string; place: string; home: string }) => (t.kind === 'city' ? owner[t.place] : t.place);
     for (const t of TILES) {
       const o = own(t);
@@ -284,13 +281,11 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
         const dir = HEX_DIRS[EDGE_DIR[i]];
         const n = TILE_AT.get(hexKey(t.q + dir.q, t.r + dir.r));
         if (n && own(n) !== o && (t.kind === 'city' || n.kind === 'city') && (EDGE_DIR[i] < 3)) {
-          const a = cs[i];
-          const b = cs[(i + 1) % 6];
-          d += `M${a[0].toFixed(1)},${a[1].toFixed(1)}L${b[0].toFixed(1)},${b[1].toFixed(1)}`;
+          segs.push([cs[i], cs[(i + 1) % 6]]);
         }
       }
     }
-    return d;
+    return smoothPath(segs, { relax: 6 });
   }, [owner]);
 
   const svg = (
@@ -311,58 +306,60 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
           <stop offset="0%" stopColor="#0b2a1c" />
           <stop offset="100%" stopColor="#030a06" />
         </radialGradient>
-        {/* 바다 육각 칸(뾰족한 위). 가로 √3·S, 세로 3·S마다 되풀이 */}
-        <pattern id="wm-hexsea" width={HEX_SIZE * Math.sqrt(3)} height={HEX_SIZE * 3} patternUnits="userSpaceOnUse">
-          <path d={HEX_PATTERN} fill="none" stroke="#45f59a" strokeOpacity="0.09" strokeWidth="0.5" />
-        </pattern>
+        {/* 땅 모양(곡선 해안) 안쪽만 칠하기 */}
+        <clipPath id="wm-land">
+          <path d={COAST} clipRule="evenodd" />
+        </clipPath>
         <pattern id="wm-wave" width="26" height="14" patternUnits="userSpaceOnUse">
           <path d="M2,8 q4,-4 8,0 t8,0" fill="none" stroke="#45f59a" strokeOpacity="0.12" strokeWidth="0.8" />
         </pattern>
       </defs>
       <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
-      {!mini && <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-hexsea)" />}
       {!mini && <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-wave)" className="wm-waves" />}
-      {/* 얕은 바다 → 모래 해안 → 땅 */}
-      <path d={COAST} fill="none" stroke="#1d6b44" strokeOpacity="0.6" strokeWidth="7" strokeLinecap="round" />
-      <path d={COAST} fill="none" stroke="#45f59a" strokeWidth="1.6" strokeLinecap="round" />
-      {CITY_PLACES.map((id) => {
-        const home = id.split('-')[0];
-        const o = owner[id];
-        const sel = home === selectedId;
-        const alive = isAlive(world, home);
-        return (
-          <path
-            key={id}
-            d={PLACE_PATH[id]}
-            className="map-country"
-            fill={colorOf(o)}
-            fillOpacity={sel ? 0.75 : o === playerCountryId ? 0.62 : alive ? 0.48 : 0.25}
-            stroke="#0c1a2b"
-            strokeOpacity="0.35"
-            strokeWidth="0.4"
-            onClick={() => pick(home)}
-          />
-        );
-      })}
-      {PIONEER_ISLANDS.map((p) => (
-        <g key={p.id}>
-          <path d={PLACE_PATH[p.id]} fill="#cdb77a" fillOpacity="0.7" stroke="#0c1a2b" strokeOpacity="0.3" strokeWidth="0.4">
-            <title>
-              {p.name} · 주인 없는 개척 섬 · {p.res}
-            </title>
-          </path>
-          {!mini && (
-            <text x={p.x} y={p.y + HEX_SIZE * 5.6} textAnchor="middle" className="map-island">
-              {p.name}
-            </text>
-          )}
+      {/* 얕은 바다 → 곡선 해안 → 땅 */}
+      <path d={COAST} fill="none" stroke="#1d6b44" strokeOpacity="0.6" strokeWidth="7" strokeLinejoin="round" />
+      <path d={COAST} fill={LAND_BASE} fillRule="evenodd" />
+      <g clipPath="url(#wm-land)">
+        {CITY_PLACES.map((id) => {
+          const home = id.split('-')[0];
+          const o = owner[id];
+          const sel = home === selectedId;
+          const alive = isAlive(world, home);
+          const c = mixColor(colorOf(o), sel ? 0.75 : o === playerCountryId ? 0.62 : alive ? 0.48 : 0.25);
+          return (
+            <g key={id} className="map-country" onClick={() => pick(home)}>
+              <path d={PLACE_PATH[id]} fill={c} stroke={c} strokeWidth={0.8} />
+              {PLACE_COAST[id] && <path d={PLACE_COAST[id]} fill="none" stroke={c} strokeWidth={HEX_SIZE * 2.4} strokeLinecap="round" />}
+            </g>
+          );
+        })}
+        {PIONEER_ISLANDS.map((p) => {
+          const c = mixColor('#cdb77a', 0.7);
+          return (
+            <g key={p.id}>
+              <title>
+                {p.name} · 주인 없는 개척 섬 · {p.res}
+              </title>
+              <path d={PLACE_PATH[p.id]} fill={c} />
+              {PLACE_COAST[p.id] && <path d={PLACE_COAST[p.id]} fill="none" stroke={c} strokeWidth={HEX_SIZE * 2.4} strokeLinecap="round" />}
+            </g>
+          );
+        })}
+        <g>
+          <title>{HOLY_CITY.name}</title>
+          <path d={PLACE_PATH.holy} fill={mixColor('#fbbf24', 0.85)} />
+          {PLACE_COAST.holy && <path d={PLACE_COAST.holy} fill="none" stroke={mixColor('#fbbf24', 0.85)} strokeWidth={HEX_SIZE * 2.4} strokeLinecap="round" />}
         </g>
-      ))}
-      <path d={PLACE_PATH.holy} fill="#fbbf24" fillOpacity="0.85">
-        <title>{HOLY_CITY.name}</title>
-      </path>
-      {/* 나라 경계(지금 주인 기준) */}
-      <path d={borders} fill="none" stroke="#f8fafc" strokeOpacity="0.85" strokeWidth="1.1" strokeLinecap="round" pointerEvents="none" />
+        {/* 나라 경계(지금 주인 기준, 곡선) */}
+        <path d={borders} fill="none" stroke="#f8fafc" strokeOpacity="0.85" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />
+      </g>
+      <path d={COAST} fill="none" stroke="#45f59a" strokeOpacity="0.8" strokeWidth="1.2" strokeLinejoin="round" pointerEvents="none" />
+      {!mini &&
+        PIONEER_ISLANDS.map((p) => (
+          <text key={p.id} x={p.x} y={p.y + HEX_SIZE * 5.6} textAnchor="middle" className="map-island">
+            {p.name}
+          </text>
+        ))}
       {COUNTRIES.map((c) => (
         <text
           key={c.id}

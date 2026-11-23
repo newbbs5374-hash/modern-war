@@ -326,9 +326,14 @@ export function FieldView(props: FrameProps) {
               </feMerge>
             </filter>
           ))}
-          <filter id="fog-soft" x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation={FIELD_HEX * 0.3} />
+          <filter id="fog-soft" filterUnits="userSpaceOnUse" x={-5000} y={-5000} width={10000} height={10000}>
+            <feGaussianBlur stdDeviation={FIELD_HEX * 0.5} />
           </filter>
+          {/* 안개: 보이는 칸만 뚫고 나머지(전장 바깥 포함)는 어둡게 */}
+          <mask id="fog-mask" maskUnits="userSpaceOnUse" x={-5000} y={-5000} width={10000} height={10000}>
+            <rect x={-5000} y={-5000} width={10000} height={10000} fill="#fff" />
+            <g filter="url(#fog-soft)">{f.cells.map((_, i) => (vis.has(i) ? <polygon key={i} points={polysFull[i]} fill="#000" /> : null))}</g>
+          </mask>
           <filter id="fo-hit">
             <feColorMatrix type="matrix" values="1 0 0 0 0.6  0 1 0 0 0.6  0 0 1 0 0.6  0 0 0 1 0" />
           </filter>
@@ -338,9 +343,7 @@ export function FieldView(props: FrameProps) {
           <polygon key={i} points={polys[i]} fill="transparent" onClick={() => tapCell(i)} />
         ))}
         {/* 안개: 경계선 없이 */}
-        <g opacity={0.45} filter="url(#fog-soft)" pointerEvents="none">
-          {f.cells.map((_, i) => (vis.has(i) ? null : <polygon key={`f${i}`} points={polysFull[i]} fill="#020617" />))}
-        </g>
+        <rect x={-5000} y={-5000} width={10000} height={10000} fill="#020617" opacity={0.4} mask="url(#fog-mask)" pointerEvents="none" />
         {/* 칸 표시는 부대를 골랐을 때만: 범위 칸과 도심 */}
         {rangeCells &&
           f.cells.map((_, i) =>
@@ -590,18 +593,38 @@ function Sprite({ x, y, art, emoji, size, flip, opacity, filter }: { x: number; 
 
 /** 지형을 그리는 바닥 층: 칸 경계선 없이, 지형이 바뀌는 곳은 흐리게 번져 옆 칸과 섞임. 보는 범위가 바뀔 때만 다시 그림 */
 const BLEND_ORDER: FTerrain[] = ['바다', '해협', '해안', '평지', '숲', '산', '시가지', '도심'];
+/** 바다 쪽 지형(이 위에 땅이 얹힘) */
+const SEA_T: FTerrain[] = ['바다', '해협'];
 const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox }: { field: FieldBattle['field']; viewBox: string }) {
   const minX = Math.min(...f.cells.map((c) => c.x)) - FIELD_HEX * 2;
   const minY = Math.min(...f.cells.map((c) => c.y)) - FIELD_HEX * 2;
   const W = f.w + FIELD_HEX * 4;
   const H = f.h + FIELD_HEX * 4;
+  // 화면 밖까지 넉넉히(확대·흔들림에도 바깥 테두리가 안 보이게)
+  const big = { x: minX - W, y: minY - H, width: W * 3, height: H * 3 };
   const polys = useMemo(() => f.cells.map((c) => hexCorners(c.x, c.y, FIELD_HEX + 0.35).map((p) => p.join(',')).join(' ')), [f]);
   const used = BLEND_ORDER.filter((t) => f.cells.some((c) => c.terrain === t));
+  const usedSea = used.filter((t) => SEA_T.includes(t) && t !== '바다');
+  const usedLand = used.filter((t) => !SEA_T.includes(t));
+  const pats = Array.from(new Set<FTerrain>(['바다', ...used]));
   const paint = (t: FTerrain) => (fieldArt(TILE_ART[t]) ? `url(#tp-${TILE_ART[t]})` : TERRAIN_INFO[t].color);
+  // 해안선을 칸 모양이 아니라 굽이진 자연 해안처럼: 흐리게 한 뒤 잡음으로 밀어냄
+  const noise = (
+    <>
+      <feTurbulence type="fractalNoise" baseFrequency={1 / (FIELD_HEX * 2.6)} numOctaves={3} seed={7} result="n" />
+      <feDisplacementMap in="b" in2="n" scale={FIELD_HEX * 1.5} xChannelSelector="R" yChannelSelector="G" />
+    </>
+  );
+  const region = { filterUnits: 'userSpaceOnUse' as const, x: minX - FIELD_HEX * 2, y: minY - FIELD_HEX * 2, width: W + FIELD_HEX * 4, height: H + FIELD_HEX * 4 };
+  const maskOf = (id: string, filter: string, cells: (t: FTerrain) => boolean) => (
+    <mask key={id} id={id} maskUnits="userSpaceOnUse" x={region.x} y={region.y} width={region.width} height={region.height}>
+      <g filter={`url(#${filter})`}>{f.cells.map((c, i) => (cells(c.terrain) ? <polygon key={i} points={polys[i]} fill="#fff" /> : null))}</g>
+    </mask>
+  );
   return (
     <svg className="field-ground" viewBox={viewBox} aria-hidden="true">
       <defs>
-        {used.map((t) => {
+        {pats.map((t) => {
           const url = fieldArt(TILE_ART[t]);
           return url ? (
             <pattern key={t} id={`tp-${TILE_ART[t]}`} patternUnits="userSpaceOnUse" width={FIELD_HEX * 4} height={FIELD_HEX * 4}>
@@ -609,25 +632,37 @@ const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox }: { field: 
             </pattern>
           ) : null;
         })}
-        <filter id="tb-soft" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation={FIELD_HEX * 0.38} />
+        <filter id="tb-soft" {...region}>
+          <feGaussianBlur in="SourceGraphic" stdDeviation={FIELD_HEX * 0.38} result="b" />
+          {noise}
         </filter>
-        {used.map((t) => (
-          <mask key={t} id={`tm-${TILE_ART[t]}`} maskUnits="userSpaceOnUse" x={minX} y={minY} width={W} height={H}>
-            <g filter="url(#tb-soft)">
-              {f.cells.map((c, i) => (c.terrain === t ? <polygon key={i} points={polys[i]} fill="#fff" /> : null))}
-            </g>
-          </mask>
-        ))}
+        <filter id="tb-coast" {...region}>
+          <feGaussianBlur in="SourceGraphic" stdDeviation={FIELD_HEX * 0.45} result="b0" />
+          {/* 흐린 가장자리를 좁혀 또렷한 해안선으로 */}
+          <feComponentTransfer in="b0" result="b">
+            <feFuncR type="linear" slope={3} intercept={-1} />
+            <feFuncG type="linear" slope={3} intercept={-1} />
+            <feFuncB type="linear" slope={3} intercept={-1} />
+          </feComponentTransfer>
+          {noise}
+        </filter>
+        {maskOf('tm-land', 'tb-coast', (t) => !SEA_T.includes(t))}
+        {[...usedSea, ...usedLand].map((t) => maskOf(`tm-${TILE_ART[t]}`, 'tb-soft', (x) => x === t))}
       </defs>
-      {/* 바닥: 빈틈 없게 칸마다 칠함(경계선 없음) */}
-      {f.cells.map((c, i) => (
-        <polygon key={i} points={polys[i]} fill={paint(c.terrain)} />
+      {/* 바다를 화면 끝까지 깔고, 그 위에 땅을 굽이진 해안선 모양으로 얹음(칸 경계선 없음) */}
+      <rect {...big} fill={paint('바다')} />
+      {usedSea.map((t) => (
+        <rect key={t} {...big} fill={paint(t)} mask={`url(#tm-${TILE_ART[t]})`} />
       ))}
-      {/* 지형마다 가장자리가 흐린 층을 차례로 덮어 옆 칸과 자연스럽게 섞음 */}
-      {used.map((t) => (
-        <rect key={t} x={minX} y={minY} width={W} height={H} fill={paint(t)} mask={`url(#tm-${TILE_ART[t]})`} />
-      ))}
+      {usedLand.length > 0 && (
+        <g mask="url(#tm-land)">
+          <rect {...big} fill={paint(usedLand.includes('평지') ? '평지' : usedLand[0])} />
+          {/* 땅 지형끼리도 가장자리가 흐린 층을 차례로 덮어 자연스럽게 섞음 */}
+          {usedLand.map((t) => (
+            <rect key={t} {...big} fill={paint(t)} mask={`url(#tm-${TILE_ART[t]})`} />
+          ))}
+        </g>
+      )}
       {f.cells.map((c, i) => ((c.terrain === '숲' || c.terrain === '산') && !fieldArt(TILE_ART[c.terrain]) ? <TerrainMark key={`m${i}`} x={c.x} y={c.y} t={c.terrain} /> : null))}
     </svg>
   );
