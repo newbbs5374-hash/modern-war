@@ -302,7 +302,7 @@ function ResourcePanel(props: ScreenProps) {
       {RES_KINDS.map((k) => (
         <div key={k} className="fgroup">
           <small className="stat-group-name">
-            {k === '전략' ? '⚙️' : k === '가공' ? '🏭' : k === '판타지' ? '💎' : '🎁'} {k} 자원 <span className="muted">· {RES_KIND_TEXT[k]}</span>
+            {k === '전략' ? '⚙️' : k === '가공' ? '🏭' : k === '첨단' ? '🧪' : '🎁'} {k} 자원 <span className="muted">· {RES_KIND_TEXT[k]}</span>
           </small>
           <div className="res-grid">
             {RESOURCES.filter((r) => RES_KIND[r] === k).map((r) => {
@@ -378,7 +378,7 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
           ⛏️ 매장지: {mineSpots.map((c) => c.name).join(', ')} <span className="muted">(도시를 열고 매장지 칸에 채굴장을 지어요)</span>
         </p>
       )}
-      {islands.length > 0 && <p className="small">🏝️ 개척 섬: {islands.map((p) => `${p.name}${myIslands(state).includes(p.id) ? '(우리 영향력 1등)' : ''}`).join(', ')}</p>}
+      {islands.length > 0 && <p className="small">🏝️ 분쟁 섬: {islands.map((p) => `${p.name}${myIslands(state).includes(p.id) ? '(우리 영향력 1등)' : ''}`).join(', ')}</p>}
       {res === '복합소재' && <p className="small">🏭 공업 구역 1곳마다 시간당 1개(알루미늄 2 + 석유 1을 씀)</p>}
       {RES_KIND[res] === '생활' && <p className="small good">🎁 1개만 있어도 모든 도시 민심 +{LUXURY_LOYALTY}. 여러 개는 효과가 같아서 남는 건 팔면 좋아요.</p>}
       {RES_BUILDING[res] && (

@@ -92,7 +92,7 @@ describe('대화', () => {
     expect(r.state.officer.fame).toBe(40);
   });
 
-  it('세계 흐름은 처음엔 평화 개척, 시험 버튼으로 대화를 바로 받음', () => {
+  it('세계 흐름은 처음엔 평화, 시험 버튼으로 대화를 바로 받음', () => {
     const s = newGame('t', 'kr', 0, { seed: 3 });
     expect(worldMood(s.world)).toBeLessThan(30);
     expect(debugTalk(s).officer.talks?.length).toBe(1);

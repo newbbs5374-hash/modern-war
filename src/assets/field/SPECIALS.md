@@ -244,7 +244,7 @@ The attached screenshot shows the game map where this sprite will appear as a sm
 Use exactly the same art style as the previous images in this chat. This is a rare top-tier warship only a few nations can build: make it look large, advanced and impressive while staying a believable near-future military design. A very long nuclear submarine with a tall sail and a faint glow near the stern, surfacing. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-ex-ssn.png
 ```
 
-### 20. 청광 방벽함 · 파일 이름 `unit-ex-ward.png` · 창 3 · 해군 특화·독점 병과
+### 20. 레이저 방공함 · 파일 이름 `unit-ex-ward.png` · 창 3 · 해군 특화·독점 병과
 
 - 누구: 👑 독점 · 미국·이스라엘·튀르키예·이란 전용
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄

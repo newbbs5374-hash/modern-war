@@ -1,4 +1,4 @@
-// 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 개척 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
+// 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
 import { CITIES, cityById, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -344,7 +344,7 @@ export function chaos(s: GameState): boolean {
 export function canSetGov(s: GameState, id: GovId): string | null {
   const c = civOf(s);
   if (c.gov === id) return '지금 체제예요';
-  if (c.gov && !hasTech(s, 's-charter')) return '개척 헌장 연구 뒤 바꿀 수 있어요';
+  if (c.gov && !hasTech(s, 's-charter')) return '국가 헌장 연구 뒤 바꿀 수 있어요';
   if (c.gov && s.nations[s.player.countryId].treasury < GOV_CHANGE_COST) return `국방예산 ${GOV_CHANGE_COST.toLocaleString()} 필요`;
   return null;
 }
@@ -523,7 +523,7 @@ export function defenseMult(s: GameState): number {
   return 1 + 0.05 * Math.min(3, activeAgreements(s).filter((a) => a.kind === 'defense').length);
 }
 
-// ── 개척 섬 영향력 ──
+// ── 분쟁 섬 영향력 ──
 
 export function islandLeader(s: GameState, island: string): { id: string | null; v: number } {
   const inf = civOf(s).influence[island] ?? {};
@@ -1198,7 +1198,7 @@ export function debugCouncil(s: GameState): GameState {
 
 export { AGREES, GOVS, DISTRICTS, AGENDAS };
 
-/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 개척 섬 · 채굴장 · 복합소재(재료는 −) */
+/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 분쟁 섬 · 채굴장 · 복합소재(재료는 −) */
 export function extraResPerHour(s: GameState): Partial<Record<Res, number>> {
   const out: Partial<Record<Res, number>> = { ...minePerHour(s) };
   for (const id of myIslands(s)) {

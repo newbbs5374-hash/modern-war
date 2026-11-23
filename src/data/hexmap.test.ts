@@ -20,7 +20,7 @@ describe('육각 타일 지도', () => {
     expect(new Set(TILES.map((t) => `${t.q},${t.r}`)).size).toBe(TILES.length);
     for (const [id, h] of Object.entries(CITY_HEX)) expect(TILES.filter((t) => t.place === id)).toHaveLength(SIZE_TILES[h.size]);
   });
-  it('개척 섬 12개(19칸), 다른 땅과 떨어져 있음', () => {
+  it('분쟁 섬 12개(19칸), 다른 땅과 떨어져 있음', () => {
     expect(PIONEER_ISLANDS).toHaveLength(12);
     for (const p of PIONEER_ISLANDS) {
       expect(TILES.filter((t) => t.place === p.id)).toHaveLength(19);

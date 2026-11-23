@@ -28,7 +28,7 @@ export const AI_TICK_MS = 15 * 60 * 1000;
 export const TENSION_MAX = 100;
 /** 한 번 판단할 때 오르는 긴장도(휴전 / 중립) */
 export const TENSION_TRUCE = 0.7;
-/** 새 세계관: 평화로 시작해 맞수끼리 개척·항로 다툼으로 긴장이 쌓임(첫 전쟁은 보통 2~4주 뒤) */
+/** 새 세계관: 평화로 시작해 맞수끼리 자원·항로 다툼으로 긴장이 쌓임(첫 전쟁은 보통 2~4주 뒤) */
 export const TENSION_NEUTRAL = 0.45;
 /** 신앙이 부딪히는 사이(빛의 언약 ↔ 성검 교단)에 더 오름 */
 export const TENSION_FAITH = 0.2;

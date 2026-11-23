@@ -338,7 +338,7 @@ export function WorldMap({ world, playerCountryId, selectedId, onSelect, mode = 
           return (
             <g key={p.id}>
               <title>
-                {p.name} · 주인 없는 개척 섬 · {p.res}
+                {p.name} · 주인 없는 분쟁 섬 · {p.res}
               </title>
               <path d={PLACE_PATH[p.id]} fill={c} />
               {PLACE_COAST[p.id] && <path d={PLACE_COAST[p.id]} fill="none" stroke={c} strokeWidth={HEX_SIZE * 2.4} strokeLinecap="round" />}

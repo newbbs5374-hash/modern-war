@@ -18,7 +18,7 @@ function talkFaceKeys(state: GameState, t: Talk): (string | undefined)[] {
   return [t.face];
 }
 
-/** 세계 흐름 막대(평화 개척 → 냉전 → 국지전 → 대전쟁) */
+/** 세계 흐름 막대(평화 → 냉전 → 국지전 → 대전쟁) */
 export function MoodBar({ state }: { state: GameState }) {
   const m = worldMood(state.world);
   const n = moodName(m);

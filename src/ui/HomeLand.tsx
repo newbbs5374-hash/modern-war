@@ -105,7 +105,7 @@ export function HomeLand(props: {
   const r = rng(hash(countryId));
   const land = landPath(r, 235, 380, 160, 250);
   const flag = FLAG_DEF[countryId];
-  const mine = flag?.bands[flag.bands.length > 2 ? 1 : 0] ?? '#3b82f6';
+  const mine = flag?.color ?? '#3b82f6';
   // 본부 지도 = 수도 하나를 크게(11/22 대장 지시). 다른 도시는 세계 지도에서 봄
   const homeCities = CITIES.filter((c) => c.home === countryId && c.capital);
   const CAP: [number, number] = [262, 420];

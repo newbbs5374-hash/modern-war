@@ -47,7 +47,7 @@ export function portraitSlots(): { key: string; who: string }[] {
     ...NAME_POOL.map((n) => ({ key: `aide-${n}`, who: `부관·라이벌 ${n}(선택)` })),
     { key: 'envoy', who: '다른 나라 특사' },
     { key: 'coastguard', who: '해안 경비대장' },
-    { key: 'settler', who: '개척민 대표' },
+    { key: 'settler', who: '섬 주민 대표' },
   ];
 }
 
