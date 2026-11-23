@@ -32,7 +32,8 @@ import {
 } from '../data/civ';
 import { RES_ICON } from '../data/economy';
 import { specialsFor } from '../data/specials';
-import { EDGE_DIR, HEX_DIRS, HEX_SIZE, PIONEER_ISLANDS, hexCorners, hexKey } from '../data/hexmap';
+import { EDGE_DIR, HEX_DIRS, HEX_SIZE, PIONEER_ISLANDS, hexCorners, hexDist, hexKey } from '../data/hexmap';
+import { CityView, type CityCell, type CityThing } from './CityView';
 import { smoothPath, type Seg } from './smoothHex';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
@@ -449,10 +450,6 @@ export function CityPanel(props: ScreenProps) {
   );
 }
 
-const hexPts = (x: number, y: number, r: number) =>
-  hexCorners(x, y, r)
-    .map((p) => p.map((v) => v.toFixed(2)).join(','))
-    .join(' ');
 /** 도시 칸 바깥 테두리 → 굽이진 해안선 */
 function cityCoast(tiles: Array<{ q: number; r: number; x: number; y: number }>): string {
   const has = new Set(tiles.map((t) => hexKey(t.q, t.r)));
@@ -468,7 +465,6 @@ function cityCoast(tiles: Array<{ q: number; r: number; x: number; y: number }>)
 }
 
 const TERRAIN_COLOR: Record<C.Terrain, string> = { 평지: '#4d7c3a', 산: '#78716c', 유적: '#a78b4f', 바닷가: '#c2a86b' };
-const TERRAIN_ICON: Record<C.Terrain, string> = { 평지: '', 산: '⛰️', 유적: '🏺', 바닷가: '' };
 
 function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; onClose: () => void }) {
   const city = cityById(id);
@@ -476,16 +472,50 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
   const tiles = C.cityTiles(id);
   const [sel, setSel] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
-  const xs = tiles.map((t) => t.x);
-  const ys = tiles.map((t) => t.y);
-  const pad = HEX_SIZE * 1.2;
-  const vb = `${Math.min(...xs) - pad} ${Math.min(...ys) - pad} ${Math.max(...xs) - Math.min(...xs) + pad * 2} ${Math.max(...ys) - Math.min(...ys) + pad * 2}`;
   const distAt = (k: string) => cc.districts.find((d) => d.tile === k);
   const mineAt = (k: string) => (cc.mines ?? []).find((m) => m.tile === k);
   const selTile = sel ? tiles.find((t) => hexKey(t.q, t.r) === sel) : null;
   const dep = sel ? C.depositAt(id, sel) : null;
   const target = C.loyaltyTarget(state, id);
   const coast = useMemo(() => cityCoast(tiles), [id]);
+  const now = state.worldMs;
+  const cells = useMemo((): CityCell[] => {
+    const center = tiles.find((t) => t.center) ?? tiles[0];
+    const base = tiles.map((t) => {
+      const k = hexKey(t.q, t.r);
+      const ground = C.terrainOf(t.q, t.r);
+      const d = cc.districts.find((x) => x.tile === k);
+      const m = (cc.mines ?? []).find((x) => x.tile === k);
+      const dp = C.depositAt(id, k);
+      let thing = null as CityThing | null;
+      if (t.center) thing = 'center';
+      else if (d) thing = d.id;
+      else if (m) thing = 'mine';
+      else if (dp) thing = null;
+      else if (ground === '산') thing = 'mountain';
+      else if (ground === '유적') thing = 'ruins';
+      return {
+        key: k,
+        x: t.x,
+        y: t.y,
+        ground,
+        thing,
+        building: (d && d.doneMs > now) || (m && m.doneMs > now) || false,
+        deposit: dp && !d ? RES_ICON[dp] : null,
+        mined: !!m,
+        dist: hexDist(t, center),
+      };
+    });
+    // 빈 땅: 도심 가까이엔 인구만큼 마을, 멀리엔 군데군데 숲
+    const empty = base.filter((c) => !c.thing && !c.deposit).sort((a, b) => a.dist - b.dist);
+    empty.slice(0, cc.pop).forEach((c) => (c.thing = 'suburb'));
+    empty.slice(cc.pop).forEach((c) => {
+      const h = (Math.abs(Math.round(c.x * 7 + c.y * 13)) * 2654435761) % 97;
+      if (c.dist >= 2 && h % 3 === 0) c.thing = 'forest';
+    });
+    return base;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, cc.districts, cc.mines, cc.pop, Math.floor(now / 60000)]);
   return (
     <Modal title={city.name} icon={city.capital ? '👑' : '🏙️'} onClose={onClose}>
       <div className="row">
@@ -498,46 +528,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         <Tip label="이유" title="민심 목표" rows={C.loyaltyReasons(state, id).map(([k, v]) => [k, signed(Math.round(v))])} total={`${Math.round(target)}`} />
       </div>
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
-      <svg className="civ-hexmap" viewBox={vb}>
-        <defs>
-          <clipPath id={`cm-land-${id}`}>
-            <path d={coast} />
-          </clipPath>
-          <filter id="cm-soft" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation={HEX_SIZE * 0.32} />
-          </filter>
-        </defs>
-        {/* 섬 모양: 칸 계단 없이 굽이진 해안 + 얕은 바다 */}
-        <path d={coast} fill="none" stroke="#38bdf8" strokeOpacity={0.25} strokeWidth={HEX_SIZE * 0.9} strokeLinejoin="round" />
-        <path d={coast} fill={TERRAIN_COLOR.바닷가} />
-        <g clipPath={`url(#cm-land-${id})`}>
-          {/* 지형은 칸 테두리 없이 옆 칸과 흐리게 섞임 */}
-          <g filter="url(#cm-soft)">
-            {tiles.map((t) => {
-              const ter = C.terrainOf(t.q, t.r);
-              return <polygon key={hexKey(t.q, t.r)} points={hexPts(t.x, t.y, HEX_SIZE * 1.08)} fill={t.center ? '#94a3b8' : TERRAIN_COLOR[ter]} />;
-            })}
-          </g>
-        </g>
-        <path d={coast} fill="none" stroke="#f1e3b5" strokeOpacity={0.55} strokeWidth={0.5} />
-        {tiles.map((t) => {
-          const k = hexKey(t.q, t.r);
-          const ter = C.terrainOf(t.q, t.r);
-          const d = distAt(k);
-          const m = mineAt(k);
-          const dp = C.depositAt(id, k);
-          return (
-            <g key={k} onClick={() => (setSel(k), setMsg(''))} style={{ cursor: 'pointer' }}>
-              {/* 누르는 자리(보이지 않음). 고른 칸만 테두리 */}
-              <polygon points={hexPts(t.x, t.y, HEX_SIZE)} fill="transparent" stroke={sel === k ? '#fde047' : 'none'} strokeWidth={0.9} strokeLinejoin="round" />
-              <text x={t.x} y={t.y + 1.8} fontSize={d || t.center || dp ? 5.4 : 4} textAnchor="middle" opacity={(d && d.doneMs > state.worldMs) || (m && m.doneMs > state.worldMs) ? 0.5 : 1}>
-                {t.center ? '🏛️' : d ? districtById(d.id).icon : m ? '⛏️' : dp ? RES_ICON[dp] : TERRAIN_ICON[ter]}
-              </text>
-              {dp && !d && <circle cx={t.x} cy={t.y} r={HEX_SIZE * 0.78} fill="none" stroke={m ? '#facc15' : '#fde68a'} strokeWidth={0.5} strokeDasharray={m ? undefined : '1 0.8'} />}
-            </g>
-          );
-        })}
-      </svg>
+      <CityView cells={cells} coast={coast} sel={sel} onPick={(k) => (setSel(k), setMsg(''))} uid={id} />
       <div className="legend small muted">
         <span>
           <i style={{ background: TERRAIN_COLOR.평지 }} /> 평지
