@@ -61,10 +61,10 @@ export type AideSpecialty = (typeof AIDE_SPECIALTIES)[number];
 
 /** 부관 칸: 중위 1 · 소령 2 · 대령 3 */
 export const aideSlots = (rank: number) => (rank >= 5 ? 3 : rank >= 3 ? 2 : rank >= 1 ? 1 : 0);
-/** 장군 칸: 준장 1 · 소장 2 · 중장 3 · 대장 4 · 지도자 5 */
-export const generalSlots = (rank: number) => Math.max(0, rank - 5);
+/** 장군 칸(11-23): 지도자 등급 5부터 1칸씩, 최대 6칸(병과마다 한 명 + 합참의장) */
+export const generalSlots = (rank: number) => Math.max(0, Math.min(6, rank - 4));
 
-export const GENERAL_FIELDS = ['육군', '해군', '공군', '정보', '군수'] as const;
+export const GENERAL_FIELDS = ['합참', '육군', '해군', '공군', '정보', '군수'] as const;
 export const GENERAL_STYLES = ['공격적', '신중함', '기동형'] as const;
 
 /** 가상 이름 묶음(나라 상관없이 쓰는 시험용 이름) */

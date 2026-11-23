@@ -13,6 +13,7 @@ import { note } from './officer';
 import { incomeShare, isAlive, pairKey, relationOf } from './world';
 import type { GameState } from './state';
 import { originEff, originOf, type OriginEffKey } from './origin';
+import { cabApprovalRows, cabFieldRows, cabTaxSoft, cabTrust } from './cabinet';
 import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
@@ -186,6 +187,7 @@ export function fieldRows(s: GameState, f: FieldId): Rows {
   const rows = baseRows(s, f);
   const o = originEff(s, ORIGIN_FIELD[f]);
   if (o) rows.push([`🎓 출신(${originOf(s)!.name})`, o]);
+  if (f !== 'personal') rows.push(...cabFieldRows(s, f));
   return rows;
 }
 /** 분야 점수(계산용, 반올림 안 함) */
@@ -208,8 +210,9 @@ export function fieldScores(s: GameState): Record<FieldId, number> {
 export function approvalRows(s: GameState, sc: Record<FieldId, number> = fieldValues(s)): Rows {
   const rows: Rows = FIELDS.filter((f) => APPROVAL_W[f.id] > 0).map((f) => [`${f.icon} ${f.name} ${r0(sc[f.id])} × ${Math.round(APPROVAL_W[f.id] * 100)}%`, sc[f.id] * APPROVAL_W[f.id]]);
   const tx0 = taxApproval(s);
-  const tx = tx0 < 0 ? tx0 * (1 - originEff(s, 'taxSoft')) : tx0;
+  const tx = tx0 < 0 ? tx0 * (1 - originEff(s, 'taxSoft')) * (1 - cabTaxSoft(s)) : tx0;
   if (tx) rows.push([`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, tx]);
+  rows.push(...cabApprovalRows(s));
   for (const m of presOf(s).mods) if (m.untilMs > s.worldMs && m.v) rows.push([m.why, m.v]);
   return rows;
 }
@@ -217,7 +220,7 @@ export function approvalTarget(s: GameState, sc?: Record<FieldId, number>): numb
   return clamp(sum(approvalRows(s, sc)));
 }
 export function trustTarget(s: GameState, sc: Record<FieldId, number> = fieldValues(s)): number {
-  return clamp(FIELDS.reduce((a, f) => a + sc[f.id] * TRUST_W[f.id], 0));
+  return clamp(FIELDS.reduce((a, f) => a + sc[f.id] * TRUST_W[f.id], 0) + cabTrust(s));
 }
 export const approvalOf = (s: GameState) => presOf(s).approval;
 export const trustOf = (s: GameState) => s.officer.trust;

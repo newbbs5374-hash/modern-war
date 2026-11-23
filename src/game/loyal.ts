@@ -149,6 +149,13 @@ export function schoolTick(ns: GameState, o: OfficerState) {
   }
 }
 
+/** 장군 자리가 남았는지(사람 임명에도 씀) */
+export function canAppointGeneralSlot(s: GameState): string | null {
+  const slots = generalSlots(s.player.rankIndex);
+  if (slots === 0) return '지도자 등급 5부터 장군을 둘 수 있어요';
+  if (s.officer.generals.length >= slots) return `장군 자리가 다 찼어요(${slots}자리)`;
+  return null;
+}
 export function canAppoint(s: GameState, id: number): string | null {
   const a = s.officer.aides.find((x) => x.id === id);
   if (!a) return '없는 부관';
@@ -158,6 +165,9 @@ export function canAppoint(s: GameState, id: number): string | null {
   if (s.officer.generals.length >= slots) return `장군 자리가 다 찼어요(${slots}자리)`;
   return null;
 }
+/** 병과마다 장군은 한 명(11-23) */
+export const fieldTaken = (s: GameState, field: GeneralField) => s.officer.generals.some((g) => g.field === field);
+export const freeFields = (s: GameState) => GENERAL_FIELDS.filter((f) => !fieldTaken(s, f));
 
 /** 임명할 때 능력: 레벨 + 인연·충성 덤 */
 export function appointSkill(a: Aide): number {
@@ -166,7 +176,7 @@ export function appointSkill(a: Aide): number {
 
 /** 장군 임명: 맡길 병과를 지도자가 고름 */
 export function appointGeneral(s: GameState, id: number, field: GeneralField): GameState {
-  if (canAppoint(s, id)) return s;
+  if (canAppoint(s, id) || fieldTaken(s, field)) return s;
   return withOfficer(s, (o, rng, ns) => {
     const a = o.aides.find((x) => x.id === id)!;
     o.aides = o.aides.filter((x) => x.id !== id);
@@ -189,8 +199,9 @@ export function appointGeneral(s: GameState, id: number, field: GeneralField): G
 
 // ── 장군이 맡은 병과 효율 ──
 
-export const FIELD_ICON: Record<GeneralField, string> = { 육군: '🪖', 해군: '⚓', 공군: '✈️', 정보: '🔐', 군수: '📦' };
+export const FIELD_ICON: Record<GeneralField, string> = { 합참: '🎖️', 육군: '🪖', 해군: '⚓', 공군: '✈️', 정보: '🔐', 군수: '📦' };
 export const FIELD_TEXT: Record<GeneralField, string> = {
+  합참: '합참의장: 모든 부대 전투력·모집 속도가 조금씩 올라요.',
   육군: '육군 부대 전투력·모집 속도가 올라요.',
   해군: '해군 함정 전투력·건조 속도가 올라요.',
   공군: '공군 전투력·모집 속도가 올라요.',
@@ -212,11 +223,13 @@ function domOfUnit(unit: string): '육' | '해' | '공' {
 }
 /** 맡은 장군이 있는 병과의 전투력 배율 */
 export function generalPowerMult(s: GameState, unit: string): number {
-  return 1 + fieldSkill(s.officer, DOM_FIELD[domOfUnit(unit)]) * BRANCH_POWER_PER_SKILL;
+  return 1 + fieldSkill(s.officer, DOM_FIELD[domOfUnit(unit)]) * BRANCH_POWER_PER_SKILL + fieldSkill(s.officer, '합참') * JCS_PER_SKILL;
 }
+/** 합참의장: 모든 병과 힘·모집 +(능력 1당 0.8%) */
+export const JCS_PER_SKILL = 0.008;
 /** 맡은 장군이 있는 병과의 모집 속도 배율 */
 export function generalBuildMult(s: GameState, unit: string): number {
-  return 1 + fieldSkill(s.officer, DOM_FIELD[domOfUnit(unit)]) * BRANCH_BUILD_PER_SKILL;
+  return 1 + fieldSkill(s.officer, DOM_FIELD[domOfUnit(unit)]) * BRANCH_BUILD_PER_SKILL + fieldSkill(s.officer, '합참') * JCS_PER_SKILL;
 }
 export function generalMissionBonus(s: GameState): number {
   return fieldSkill(s.officer, '정보') * INTEL_MISSION_PER_SKILL;
@@ -228,6 +241,7 @@ export function generalResMult(s: GameState): number {
 export function generalEffectText(g: General): string {
   const k = g.skill * generalLoyalMult(g);
   const f = g.field as GeneralField;
+  if (f === '합참') return `모든 부대 힘·모집 +${(k * JCS_PER_SKILL * 100).toFixed(1)}%`;
   if (f === '정보') return `임무 성공 +${(k * INTEL_MISSION_PER_SKILL * 100).toFixed(1)}%`;
   if (f === '군수') return `전략 자원 +${(k * SUPPLY_RES_PER_SKILL * 100).toFixed(1)}%`;
   return `${f} 전투력 +${(k * BRANCH_POWER_PER_SKILL * 100).toFixed(1)}% · 모집 속도 +${(k * BRANCH_BUILD_PER_SKILL * 100).toFixed(1)}%`;
@@ -237,7 +251,7 @@ export function branchSummary(s: GameState): Array<{ field: GeneralField; text: 
   return GENERAL_FIELDS.map((f) => {
     const k = fieldSkill(s.officer, f);
     const text =
-      f === '정보' ? `임무 +${(k * INTEL_MISSION_PER_SKILL * 100).toFixed(0)}%` : f === '군수' ? `자원 +${(k * SUPPLY_RES_PER_SKILL * 100).toFixed(0)}%` : `힘 +${(k * BRANCH_POWER_PER_SKILL * 100).toFixed(0)}%`;
+      f === '합참' ? `전군 +${(k * JCS_PER_SKILL * 100).toFixed(0)}%` : f === '정보' ? `임무 +${(k * INTEL_MISSION_PER_SKILL * 100).toFixed(0)}%` : f === '군수' ? `자원 +${(k * SUPPLY_RES_PER_SKILL * 100).toFixed(0)}%` : `힘 +${(k * BRANCH_POWER_PER_SKILL * 100).toFixed(0)}%`;
     return { field: f, text, on: k > 0 };
   });
 }

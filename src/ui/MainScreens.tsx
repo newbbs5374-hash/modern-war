@@ -17,6 +17,8 @@ import { Tabs, useTab, type TabDef } from './kit';
 import { FieldBar } from './PresUI';
 import { PolicyPanel } from './PolicyPanel';
 import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
+import { GeneralCandidates, MinistryCards, TalentPanel } from './CabinetUI';
+import { cabinetOf } from '../game/cabinet';
 
 /** 시설 15개를 효과가 닿는 분야로 나눔 */
 export const DEFENSE_BUILDINGS: readonly BuildingId[] = ['철도망', '군항', '공군기지', '방공포대', '훈련소', '비축창고', '정보본부', '우주기지'];
@@ -48,6 +50,7 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'profile', label: '프로필', icon: '🪪' },
     { id: 'train', label: '훈련', icon: '🎯' },
     { id: 'aides', label: `참모 ${o.aides.length}/${aideSlots(r)}`, icon: '🧑‍✈️', badge: errandsDone || null },
+    { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'ach', label: '업적·상점', icon: '🏅', badge: goalsReady(state) || null },
   ];
   const tab = pickTab(tabs, raw);
@@ -63,6 +66,7 @@ export function PersonalScreen(props: ScreenProps) {
       )}
       {tab === 'train' && <TrainingScreen {...props} />}
       {tab === 'aides' && <AidesPanel {...props} />}
+      {tab === 'talent' && <TalentPanel {...props} />}
       {tab === 'ach' && <ShopScreen {...props} />}
     </>
   );
@@ -91,8 +95,13 @@ export function DefenseScreen(props: ScreenProps) {
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'ops' && <OpsScreen {...props} />}
       {tab === 'forces' && <ForcesScreen {...props} />}
-      {tab === 'command' &&
-        (generalSlots(r) === 0 ? <p className="empty">🔒 장군 자리는 지도자 등급이 오르면 열려요. 부관을 키워 두세요.</p> : <GeneralsPanel {...props} />)}
+      {tab === 'command' && (
+        <>
+          <MinistryCards state={state} actions={props.actions} ids={['mnd', 'nis']} title="국방 부처" />
+          {generalSlots(r) === 0 ? <p className="empty">🔒 장군 자리는 지도자 등급 5부터 열려요(최대 6자리: 합참의장 + 병과 5).</p> : <GeneralsPanel {...props} />}
+          {generalSlots(r) > o.generals.length && <GeneralCandidates state={state} actions={props.actions} />}
+        </>
+      )}
       {tab === 'spy' && <SpyPanel {...props} />}
       {tab === 'tech' && <ResearchPanel {...props} fixed="mil" />}
       {tab === 'fac' && <FacilityPanel {...props} only={DEFENSE_BUILDINGS} />}
@@ -107,6 +116,7 @@ export function SocietyScreen(props: ScreenProps) {
   const civ = civOf(state);
   const [raw, setTab] = useTab<SocietyTab | 'fac'>('society', 'city');
   const tabs: TabDef<SocietyTab | 'fac'>[] = [
+    { id: 'mins', label: '부처', icon: '🏛️' },
     { id: 'city', label: '도시', icon: '🏘️' },
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
     { id: 'tech', label: '사회 연구', icon: '📜', badge: !civ.cur.soc && needPick(state) ? '!' : null },
@@ -118,6 +128,7 @@ export function SocietyScreen(props: ScreenProps) {
     <>
       <FieldBar state={state} field="society" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      {tab === 'mins' && <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis']} title="사회 부처" />}
       {tab === 'city' && <CityPanel {...props} />}
       {tab === 'gov' && <GovPanel {...props} />}
       {tab === 'tech' && <ResearchPanel {...props} fixed="soc" />}
@@ -144,9 +155,19 @@ export function EconomyScreen(props: ScreenProps) {
       <FieldBar state={props.state} field="economy" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'vault' && <TreasuryPanel {...props} />}
-      {tab === 'tax' && <PolicyPanel {...props} />}
+      {tab === 'tax' && (
+        <>
+          <MinistryCards state={props.state} actions={props.actions} ids={['mof']} title="기획재정부" />
+          <PolicyPanel {...props} />
+        </>
+      )}
       {tab === 'res' && <ResourcePanel {...props} />}
-      {tab === 'ind' && <FacilityPanel {...props} only={ECONOMY_BUILDINGS} />}
+      {tab === 'ind' && (
+        <>
+          <MinistryCards state={props.state} actions={props.actions} ids={['moti']} title="산업자원부" />
+          <FacilityPanel {...props} only={ECONOMY_BUILDINGS} />
+        </>
+      )}
       {tab === 'trade' && <TradePanel {...props} />}
       {tab === 'facall' && <FacilityPanel {...props} />}
     </>

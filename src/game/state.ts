@@ -17,6 +17,8 @@ import { spyTick, type SpyState } from './spy';
 import type { FleetState } from './fleet';
 import type { GuideState } from './guide';
 import { splitEco, splitTroop, taxBudget, TAX_INFO, taxOf, splitOf, type PolicyState } from './policy';
+import { cabBudget, cabTroop, newCabinet, addBuddy, type CabinetState } from './cabinet';
+import { cabinetTick } from './cabinetOps';
 import { approvalBudgetMult, approvalTroopMult, presTick, type PresState } from './approval';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
@@ -89,6 +91,8 @@ export interface GameState {
   guide?: GuideState;
   /** 대통령식 내정: 지지도·탄핵 위기·기록(없으면 처음 쓸 때 채움) */
   pres?: PresState;
+  /** 인물·부처(11-23) */
+  cabinet?: CabinetState;
   /** 예산 나누기·세금(없으면 기본 40/20/20/20 · 보통) */
   policy?: PolicyState;
 }
@@ -126,7 +130,8 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     civ: newCiv({ world, worldMs: 0 }),
     crisis: newCrisis(0),
   };
-  return opt.origin ? applyOrigin(s, opt.origin) : s;
+  s.cabinet = newCabinet(s);
+  return opt.origin ? addBuddy(applyOrigin(s, opt.origin), opt.origin, null) : s;
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
@@ -141,7 +146,7 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) : sanctionMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) : sanctionMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -151,7 +156,7 @@ export function troopsPerDay(s: GameState, countryId: string): number {
     TROOPS_PER_DAY_PER_POINT *
     (TROOP_BONUS[countryId] ?? 1) *
     incomeShare(s.world, countryId) *
-    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) : 1)
+    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) : 1)
   );
 }
 
@@ -170,6 +175,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
     ['🙂 지지도', x(approvalBudgetMult(s))],
     [`💰 경제 예산 ${splitOf(s).eco}%`, x(splitEco(s))],
     [`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, x(taxBudget(s))],
+    ['💰 기획재정부', x(cabBudget(s))],
     ...(ordersBudget(s) !== 1 ? [['🛡️ 방어 태세(미리 명령)', x(ordersBudget(s))] as [string, string]] : []),
     ['무역 계약(시간당)', `${Math.round(contractMoneyPerHour(s)).toLocaleString('ko-KR')}`],
   ];
@@ -189,6 +195,7 @@ export function troopsBreakdown(s: GameState): Array<[string, string]> {
     ['📝 징병소', x(welfareMult(s))],
     ['🙂 지지도(징병)', x(approvalTroopMult(s))],
     [`🛡️ 국방 예산 ${splitOf(s).def}%`, x(splitTroop(s))],
+    ['🎖️ 국방부', x(cabTroop(s))],
     ['자연 감소(전역·부상)', `-${Math.round(loss).toLocaleString('ko-KR')}`],
     ['🏥 군병원(감소 줄임)', x(attritionMult(s))],
   ];
@@ -234,7 +241,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = civTick(cur, pairsBefore);
-    cur = presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS);
+    cur = cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS);
     world = cur.world;
   }
   return spyTick(ordersTick(crisisTick(checkVictory(accrue(cur, left)))));
