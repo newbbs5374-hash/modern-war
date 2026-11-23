@@ -263,12 +263,14 @@ export function FieldView(props: FrameProps) {
           const air = FUNIT[u.kind].layer === 'air';
           const big = u.kind === 'carrier' || u.kind === 'cruiser' || u.kind === 'hq';
           const r = air ? 5.5 : big ? 8.5 : 7.5;
+          const artKey = u.sp && fieldArt(spArt(u.sp)) ? spArt(u.sp) : UNIT_ART[u.kind];
+          const pic = !!fieldArt(artKey);
           const x = p.x + (air ? 6 : 0);
           const y = p.y + (air ? -6 : 0);
           return (
             <g key={u.id} transform={`translate(${x},${y})`} pointerEvents="none" className={u.side === 'me' && u.supply < 0.95 ? 'low-supply' : ''}>
-              <circle r={r} fill={SIDE_COLOR[u.side]} fillOpacity={0.85} stroke={u.id === sel ? '#fde047' : '#fff'} strokeWidth={u.id === sel ? 1.8 : 0.7} />
-              <Sprite x={0} y={-1} art={u.sp && fieldArt(spArt(u.sp)) ? spArt(u.sp) : UNIT_ART[u.kind]} emoji={FUNIT[u.kind].icon} size={air ? 10 : big ? 16 : 13} flip={u.face < 0} />
+              <circle r={r} fill={SIDE_COLOR[u.side]} fillOpacity={pic ? 0.55 : 0.85} stroke={u.id === sel ? '#fde047' : u.side === 'me' ? '#bfdbfe' : '#fecaca'} strokeWidth={u.id === sel ? 1.8 : pic ? 1.1 : 0.7} />
+              <Sprite x={0} y={-1} art={artKey} emoji={FUNIT[u.kind].icon} size={pic ? (air ? 14 : big ? 22 : 18) : air ? 10 : big ? 16 : 13} flip={u.face < 0} />
               {u.sp && (
                 <text x={-r + 1} y={-r + 3} fontSize={5.5}>
                   🌟
