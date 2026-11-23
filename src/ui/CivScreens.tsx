@@ -45,7 +45,7 @@ import { Help, Meter, Modal, Tile } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 import { Tip } from './InteriorScreen';
-import { IslandIcon, ResIcon } from './iconArt';
+import { IslandIcon, ResIcon, islandArtUrl } from './iconArt';
 
 const H = 3600e3;
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -802,17 +802,25 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
   const fu = C.canFulfill(state, id);
   const [msg, setMsg] = useState('');
   return (
-    <Modal title={p.name} icon={<IslandIcon id={p.id} />} onClose={onClose}>
-      <p className="small">
-        나는 자원:{' '}
-        {p.res === '항구' ? (
-          '⚓ 큰 항구(국방예산 +3%)'
-        ) : (
-          <>
-            <ResIcon res={p.res} inline /> {p.res} 시간당 {ISLAND_RES_PER_HOUR}개
-          </>
-        )} · 1등이 되려면 {ISLAND_LEAD_MIN} 이상
-      </p>
+    <Modal title={p.name} icon={islandArtUrl(p.id) ? undefined : '🏝️'} onClose={onClose}>
+      <div className={islandArtUrl(p.id) ? 'unit-hero' : ''}>
+        {islandArtUrl(p.id) && (
+          <div className="unit-photo island-photo">
+            <IslandIcon id={p.id} />
+          </div>
+        )}
+        <p className="small">
+          나는 자원:{' '}
+          {p.res === '항구' ? (
+            '⚓ 큰 항구(국방예산 +3%)'
+          ) : (
+            <>
+              <ResIcon res={p.res} inline /> {p.res} 시간당 {ISLAND_RES_PER_HOUR}개
+            </>
+          )}
+          <br />1등이 되려면 영향력 {ISLAND_LEAD_MIN} 이상
+        </p>
+      </div>
       <small className="stat-group-name">📊 영향력</small>
       {top.length === 0 && <p className="small muted">아직 아무도 사절을 보내지 않았어요.</p>}
       {top.map(([who, v]) => (
