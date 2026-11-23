@@ -14,7 +14,10 @@ import {
   bossName,
   canSeeUnit,
   createField,
+  defOf,
   fDist,
+  moveNeed,
+  unitName,
   finishField,
   gameTime,
   orderMove,
@@ -28,9 +31,10 @@ import {
 } from '../../battle/field';
 import { hexCorners } from '../../data/hexmap';
 import { cityById } from '../../data/cities';
-import { FX_ART, TILE_ART, UNIT_ART, fieldArt } from '../fieldArt';
+import { FX_ART, TILE_ART, UNIT_ART, fieldArt, spArt } from '../fieldArt';
 import { Modal } from '../kit';
 import { BattleBar, type FrameProps } from './BattleScreen';
+import { fieldArmy } from '../../battle/auto';
 import { SideView } from './SideView';
 import { GridView } from './GridView';
 
@@ -42,7 +46,7 @@ const RATE = 1;
 export function FieldView(props: FrameProps) {
   const { spec, stats, rank, onEnd } = props;
   const bRef = useRef<FieldBattle | null>(null);
-  if (!bRef.current) bRef.current = createField({ city: spec.city, difficulty: spec.difficulty, rank, stats, seed: spec.seed, enemy: spec.enemy, defense: spec.defense });
+  if (!bRef.current) bRef.current = createField({ city: spec.city, difficulty: spec.difficulty, rank, stats, seed: spec.seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) });
   const b = bRef.current;
   const [, setFrame] = useState(0);
   const redraw = () => setFrame((x) => x + 1);
@@ -144,7 +148,7 @@ export function FieldView(props: FrameProps) {
       return;
     }
     const foe = seen.find((u) => u.at === i && u.side === 'foe');
-    if (foe) setToast(`${FUNIT[foe.kind].name} · 체력 ${Math.ceil(foe.hp)}/${foe.maxHp} · ${FUNIT[foe.kind].does}`);
+    if (foe) setToast(`${foe.sp ? '🌟' : ''}${unitName(foe)} · 체력 ${Math.ceil(foe.hp)}/${foe.maxHp} · ${defOf(foe).does}`);
     else setToast(`${f.cells[i].terrain}: ${TERRAIN_INFO[f.cells[i].terrain].text}`);
   };
 
@@ -153,7 +157,7 @@ export function FieldView(props: FrameProps) {
     const a = f.cells[u.at];
     if (!u.path.length) return { x: a.x, y: a.y };
     const n = f.cells[u.path[0]];
-    const need = FUNIT[u.kind].move * (FUNIT[u.kind].layer === 'air' ? 1 : TERRAIN_INFO[n.terrain].cost);
+    const need = moveNeed(u, n.terrain);
     const k = Math.min(0.85, need ? u.mv / need : 0);
     return { x: a.x + (n.x - a.x) * k, y: a.y + (n.y - a.y) * k };
   };
@@ -264,12 +268,17 @@ export function FieldView(props: FrameProps) {
           return (
             <g key={u.id} transform={`translate(${x},${y})`} pointerEvents="none" className={u.side === 'me' && u.supply < 0.95 ? 'low-supply' : ''}>
               <circle r={r} fill={SIDE_COLOR[u.side]} fillOpacity={0.85} stroke={u.id === sel ? '#fde047' : '#fff'} strokeWidth={u.id === sel ? 1.8 : 0.7} />
-              <Sprite x={0} y={-1} art={UNIT_ART[u.kind]} emoji={FUNIT[u.kind].icon} size={air ? 10 : big ? 16 : 13} flip={u.face < 0} />
+              <Sprite x={0} y={-1} art={u.sp && fieldArt(spArt(u.sp)) ? spArt(u.sp) : UNIT_ART[u.kind]} emoji={FUNIT[u.kind].icon} size={air ? 10 : big ? 16 : 13} flip={u.face < 0} />
+              {u.sp && (
+                <text x={-r + 1} y={-r + 3} fontSize={5.5}>
+                  🌟
+                </text>
+              )}
               <rect x={-7} y={r - 1} width={14} height={2.2} fill="#0009" />
               <rect x={-7} y={r - 1} width={(14 * Math.max(0, u.hp)) / u.maxHp} height={2.2} fill={u.hp / u.maxHp > 0.5 ? '#22c55e' : u.hp / u.maxHp > 0.25 ? '#f59e0b' : '#ef4444'} />
-              {u.side === 'me' && u.supply < 0.95 && (
+              {u.side === 'me' && (u.supply < 0.95 || u.ammo <= 0 || (FUNIT[u.kind].layer !== 'land' && u.fuel <= 0)) && (
                 <text x={r - 1} y={-r + 3} fontSize={6}>
-                  🔌
+                  {u.ammo <= 0 ? '🎯' : FUNIT[u.kind].layer !== 'land' && u.fuel <= 0 ? '⛽' : '🔌'}
                 </text>
               )}
             </g>
@@ -309,14 +318,16 @@ export function FieldView(props: FrameProps) {
       {selU ? (
         <div className="field-info">
           <b>
-            {FUNIT[selU.kind].icon} {FUNIT[selU.kind].name}
+            {FUNIT[selU.kind].icon} {selU.sp ? '🌟' : ''}
+            {unitName(selU)}
           </b>
           <small>
-            체력 {Math.ceil(selU.hp)}/{selU.maxHp} · 사거리 {FUNIT[selU.kind].range}칸
-            {FUNIT[selU.kind].layer === 'land' ? ` · 보급 ${Math.round(selU.supply * 100)}%` : ''}
+            체력 {Math.ceil(selU.hp)}/{selU.maxHp} · 사거리 {defOf(selU).range}칸
+            {FUNIT[selU.kind].layer === 'land' ? ` · 보급 ${Math.round(selU.supply * 100)}%` : ''} · 🎯탄약 {Math.round(selU.ammo * 100)}%
+            {FUNIT[selU.kind].layer !== 'land' ? ` · ⛽연료 ${Math.round(selU.fuel * 100)}%` : ''}
             {rangeCells ? ` · 노란·초록 칸 = ${rangeCells.label}` : ''}
           </small>
-          <small className="muted">{FUNIT[selU.kind].does}</small>
+          <small className="muted">{defOf(selU).does}</small>
           <div className="buttons">
             <button
               onClick={() => {
@@ -335,8 +346,8 @@ export function FieldView(props: FrameProps) {
       )}
       <div className="field-roster">
         {mine.map((u) => (
-          <button key={u.id} className={u.id === sel ? 'on' : ''} onClick={() => setSel(u.id === sel ? null : u.id)}>
-            {FUNIT[u.kind].icon}
+          <button key={u.id} className={`${u.id === sel ? 'on' : ''} ${u.sp ? 'sp' : ''}`} title={unitName(u)} onClick={() => setSel(u.id === sel ? null : u.id)}>
+            {u.sp ? '🌟' : FUNIT[u.kind].icon}
             <i style={{ width: `${(u.hp / u.maxHp) * 100}%` }} />
           </button>
         ))}
@@ -386,6 +397,8 @@ export function FieldView(props: FrameProps) {
           <p>🟦 내 부대를 누르고 갈 칸을 누르면 실시간으로 움직여요. 적 옆 칸(포병·구축함은 3칸)에 닿으면 알아서 싸워요.</p>
           <p>✈️ 전투기는 항모에서 4칸 안만 날아요. 항모를 움직이면 범위도 따라가요. 항모가 지면 상륙 거점(🚩)으로 기지를 옮겨요.</p>
           <p>🔌 육군은 상륙 거점 5칸·항모 3칸 안에서 보급을 받아요. 벗어나면 점점 약해져요.</p>
+          <p>🎯 쏠 때마다 탄약, ✈️🚢 비행기·배는 움직일 때마다 연료를 써요. 보급 범위(비행기는 기지 옆)에 있으면 다시 차요. 탄약이 떨어지면 공격 ×0.35, 연료가 떨어지면 2.5배 느려요. 대전투는 출발할 때 창고의 🛢️석유 6·🟠구리 4를 쓰고, 모자라면 그만큼 덜 채우고 출발해요.</p>
+          <p>🌟 특화 유닛: 우리 연방 특화 유닛을 만들어 두면 종류마다 2부대까지 바꿔 나가요. 적 연방도 자기 특화 유닛을 내보내요. 말을 누르면 능력이 보여요.</p>
           <p>🌫️ 내 부대 주변만 보여요. 🛸 드론은 4칸까지 봐요. 🫧 잠수함은 가까이 가거나 구축함이 있어야 보여요.</p>
           <p>⛰️ 산·숲·시가지는 방어에 좋고 느려요. 해협은 배가 느려요.</p>
           <p>🏯 적 사령부·⚓ 적 기함에 닿으면 "직접 지휘"로 큰 싸움을 직접 할 수 있어요.</p>

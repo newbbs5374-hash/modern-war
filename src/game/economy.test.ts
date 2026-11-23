@@ -88,10 +88,20 @@ describe('내정', () => {
     expect(s.economy.army.전차).toBe(1);
     expect(s.economy.power).toBe(14); // 9 + 2, 연구(청광석 +10% · 통합 전장망 육군 +15%)로 ×1.25
     expect(s.nations.kr.troops).toBeGreaterThan(base.nations.kr.troops + 2000);
-    // 특별 병과(한국: 자주포 포병대)
+    // 특화 유닛(가람: ① 자주포 포병대 · ② 별가람 수출 전차). 바탕 병과도 계속 만들 수 있음
+    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 80, 석유: 30, 구리: 10 } } };
+    expect(canProduce(s, '포병', 'kr-1')).toBeNull();
+    expect(canProduce(s, '포병', 'us-1')).toMatch(/특화/);
+    expect(canProduce(s, '전차', 'kr-2')).toBeNull();
     s = produce(s, '포병', true);
-    s = advance(s, 5 * H);
+    s = produce(s, '전차', 'kr-2');
+    s = produce(s, '포병');
+    s = advance(s, 12 * H);
     expect(s.economy.army['자주포 포병대']).toBe(1);
+    expect(s.economy.army['별가람 수출 전차']).toBe(1);
+    expect(s.economy.army.포병).toBe(1);
+    // 독점 병과: 가람은 강습상륙함 O, 원자력 잠수함 X
+    expect(canProduce(s, '원자력 잠수함')).toMatch(/전용/);
   });
   it('무역: 전쟁 중이 아닌 나라와 사고팔기, 성향에 따라 값이 다름', () => {
     let s = rich(setRank(war(newGame('t', 'kr', 0, { seed: 4 }), 'kr', 'kp'), 6));

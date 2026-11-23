@@ -18,6 +18,12 @@ export interface AutoInput {
 
 export const rangeAim = (stats: Record<string, number>, rank: number) => 0.5 + 0.4 * Math.min(1, (stats['사격'] ?? 8) / (20 + rank * 10));
 
+/** 전투 묶음의 부대 정보 → 지도 위 전투 입력 */
+export function fieldArmy(spec: BattleSpec) {
+  const a = spec.army;
+  return a ? { roster: a.roster, enemyId: a.enemyId, fuel: a.fuel, ammo: a.ammo } : {};
+}
+
 export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: boolean; stars: number; text: string } {
   const d = spec.difficulty;
   const seed = spec.seed;
@@ -37,6 +43,6 @@ export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: bool
     case 'range':
       return finishRange(createRange({ rank, stats, seed }), rangeAim(stats, rank)).result!;
     case 'field':
-      return finishField(createField({ city: spec.city, difficulty: d, rank, stats, seed, enemy: spec.enemy, defense: spec.defense })).result!;
+      return finishField(createField({ city: spec.city, difficulty: d, rank, stats, seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) })).result!;
   }
 }

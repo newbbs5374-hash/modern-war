@@ -23,6 +23,8 @@ export interface BattleSpec {
   /** 지도 위 전투: 대상 도시 id · 도시 방어도 */
   city?: string;
   defense?: number;
+  /** 지도 위 전투: 우리 특화 유닛·독점 병과 · 적 연방 · 연료·탄약 */
+  army?: { roster: Record<string, number>; enemyId?: string; fuel?: number; ammo?: number };
 }
 
 /** 한 번에 치르는 전투 묶음(훈련·임무는 1판, 작전 2~3판, 대전투 5판) */

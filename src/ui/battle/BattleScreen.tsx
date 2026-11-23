@@ -1,4 +1,5 @@
 // 전투 화면: 훈련·임무·작전(여러 판)·대전투·승급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
+import { fieldRoster } from '../../game/economy';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { autoResult } from '../../battle/auto';
@@ -99,7 +100,10 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     const me = state.player.countryId;
     const owner = state.world.owner[a.city];
     const foeId = owner !== me ? owner : COUNTRIES.find((c) => c.id !== me && relationOf(state.world, me, c.id) === '전쟁')?.id;
-    return planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined, state.world.defense[a.city]);
+    const p = planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined, state.world.defense[a.city]);
+    // 지도 위 전투: 우리 특화 유닛·독점 병과, 적 연방 특화 유닛, 출발 연료·탄약
+    const army = { roster: fieldRoster(state), enemyId: foeId, fuel: a.fuel, ammo: a.ammo };
+    return { ...p, stages: p.stages.map((st) => (st.frame === 'field' ? { ...st, army } : st)) };
   });
   const [results, setResults] = useState<Array<Outcome & { auto: boolean }>>([]);
   const [current, setCurrent] = useState<(Outcome & { auto: boolean }) | null>(null);

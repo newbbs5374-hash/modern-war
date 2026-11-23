@@ -49,6 +49,10 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
   { name: '잠수함', domain: '해', role: '숨어서 기습', rank: 7 },
   { name: '미사일', domain: '공', role: '한 번 쓰고 사라짐, 아주 멀리', rank: 8 },
   { name: '항공모함', domain: '해', role: '바다 위 비행장, 함재기 출격', rank: 9 },
+  // 독점 병과(몇 연방만, data/specials.ts EXCLUSIVES)
+  { name: '강습상륙함', domain: '해', role: '보병을 싣고 섬에 바로 상륙, 바다 위 보급 기지', rank: 6 },
+  { name: '원자력 잠수함', domain: '해', role: '우라늄 원자로라 멀리 가도 지치지 않음, 더 깊이 숨음', rank: 8 },
+  { name: '청광 방벽함', domain: '해', role: '청광석 보호막으로 둘레 2칸 우리 편 피해 −30%', rank: 8 },
 ];
 
 export const TRAININGS: Array<{ name: string; frame: string; raises: string; rank: number }> = [
@@ -75,7 +79,7 @@ export const CURRENCIES = [
   { id: 'ruby', name: '루비', icon: '💎', where: '시간 줄이기 (나중에 정함)' },
 ] as const;
 
-/** 부대 화면 분류: 1차 육·해·공 → 2차 세부(병과 15개 + 나라 특별 병과 = 16개) */
+/** 부대 화면 분류: 1차 육·해·공 → 2차 세부(병과 15개 + 독점 병과 3개). 특화 유닛은 바탕 병과 밑에 붙음 */
 export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; icon: string; groups: Array<{ name: string; icon: string; units: string[] }> }> = [
   {
     id: '육',
@@ -94,6 +98,7 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     groups: [
       { name: '수상함', icon: '🚢', units: ['구축함', '항공모함'] },
       { name: '잠수함', icon: '🫧', units: ['잠수함'] },
+      { name: '독점 병과', icon: '👑', units: ['강습상륙함', '원자력 잠수함', '청광 방벽함'] },
     ],
   },
   {

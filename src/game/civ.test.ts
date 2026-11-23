@@ -182,3 +182,40 @@ describe('도시', () => {
     expect(back.civ?.council.on).toBe(true);
   });
 });
+
+describe('자원 3안: 매장지·채굴장 · 생활 자원 · 복합소재', () => {
+  it('도시마다 크기만큼 매장지가 있고, 채굴장을 지으면 시간마다 그 자원이 쌓임', () => {
+    let s = rich(newGame('t', 'kr', 0, { seed: 4 }));
+    const city = 'kr-0';
+    const dep = C.deposits(city);
+    expect(dep.length).toBeGreaterThan(0);
+    expect(C.deposits(city)).toEqual(dep); // 늘 같음
+    const d = dep[0];
+    expect(C.canMine(s, city, d.tile)).toBeNull();
+    s = C.buildMine(s, city, d.tile);
+    expect(C.canMine(s, city, d.tile)).toMatch(/이미/);
+    expect(C.canDistrict(C.debugAllResearch(s), city, d.tile, 'housing')).toMatch(/채굴장/);
+    s = advance(s, (C.MINE_HOURS + 0.01) * H);
+    const before = s.economy.stock[d.res];
+    expect(C.minePerHour(s)[d.res]).toBeGreaterThan(0);
+    s = advance(s, 2 * H);
+    expect(s.economy.stock[d.res] - before).toBeGreaterThan(1.5);
+  });
+  it('생활 자원은 종류마다 민심 +3, 기본 자원 7종이 없을 때만 자원 부족', () => {
+    const s = rich(newGame('t', 'kr', 0, { seed: 4 }));
+    const none = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 향신료: 0, 진주: 0, 차잎: 0, 산호: 0 } } };
+    const two = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 향신료: 1, 진주: 5, 차잎: 0, 산호: 0 } } };
+    expect(C.loyaltyTarget(two, 'kr-0') - C.loyaltyTarget(none, 'kr-0')).toBe(6);
+    const noUranium = { ...none, economy: { ...none.economy, stock: { ...none.economy.stock, 우라늄: 0 } } };
+    expect(C.loyaltyReasons(noUranium, 'kr-0').some(([k]) => k === '자원 부족')).toBe(false);
+  });
+  it('옛 저장에 새 자원이 없으면 0으로 채움', () => {
+    const s = newGame('t', 'kr', 0, { seed: 4 });
+    const old = JSON.parse(JSON.stringify(s));
+    delete old.economy.stock.구리;
+    delete old.economy.stock.청광석;
+    const back = parseSave(JSON.stringify(old))!;
+    expect(typeof back.economy.stock.구리).toBe('number');
+    expect(typeof back.economy.stock.청광석).toBe('number');
+  });
+});

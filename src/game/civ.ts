@@ -61,7 +61,7 @@ import {
   type GovId,
   type Tech,
 } from '../data/civ';
-import { CITY_RES, RESOURCES, type Res } from '../data/economy';
+import { BASIC_RES, CITY_RES, COMPOSITE_INPUT, COMPOSITE_PER_INDUSTRY, LUXURIES, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
 import { HEX_DIRS, PIONEER_ISLANDS, TILES, TILE_AT, hexKey, type Tile } from '../data/hexmap';
 import { COUNTRIES, countryById } from '../data/world';
 import { Rng } from './rng';
@@ -98,6 +98,13 @@ export interface CityCiv {
   pop: number;
   grow: number;
   districts: DistrictState[];
+  /** 채굴장(지도 칸 매장지 위, 자원 3안) */
+  mines?: MineState[];
+}
+export interface MineState {
+  tile: string;
+  res: Res;
+  doneMs: number;
 }
 export interface CouncilOpen {
   id: number;
@@ -285,7 +292,7 @@ function finishTech(ns: GameState, c: CivState, t: Tech): GameState {
   c.done.push(t.id);
   c.cur[t.line] = null;
   delete c.progress[t.id];
-  const what = [t.units?.length ? `병과 ${t.units.map((u) => (u === '★특별' ? countryById(ns.player.countryId).specialUnit.name : u)).join('·')}` : '', t.cards?.length ? `카드 ${t.cards.length}장` : '', t.districts?.length ? `구역 ${t.districts.map((d) => districtById(d).name).join('·')}` : '', t.agree?.length ? `협정 ${t.agree.map((a) => agreeById(a).name).join('·')}` : ''].filter(Boolean).join(' · ');
+  const what = [t.units?.length ? `병과 ${t.units.join('·')}` : '', t.cards?.length ? `카드 ${t.cards.length}장` : '', t.districts?.length ? `구역 ${t.districts.map((d) => districtById(d).name).join('·')}` : '', t.agree?.length ? `협정 ${t.agree.map((a) => agreeById(a).name).join('·')}` : ''].filter(Boolean).join(' · ');
   clog(c, `${t.icon} ${t.name} 연구 완료${what ? ` → ${what}` : ''}`);
   const era = eraOf(c);
   if (era > c.era) {
@@ -738,6 +745,7 @@ export function canDistrict(s: GameState, cityId: string, tile: string, id: Dist
   if (!t) return '이 도시 칸이 아니에요';
   if (t.center) return '도심 칸에는 못 지어요';
   if (cc.districts.some((x) => x.tile === tile)) return '이미 구역이 있어요';
+  if ((cc.mines ?? []).some((x) => x.tile === tile)) return '채굴장이 있는 칸이에요';
   if (cc.districts.some((x) => x.id === id) && id !== 'housing' && id !== 'industry') return `${d.name}은 도시마다 1개`;
   const ter = terrainOf(t.q, t.r);
   if (d.where === '바닷가 칸' && ter !== '바닷가') return '바닷가 칸에만 지어요';
@@ -763,6 +771,77 @@ export function buildDistrict(s: GameState, cityId: string, tile: string, id: Di
     clog(c, `${d.icon} ${cityById(cityId).name}에 ${d.name} 공사 시작(${Math.round(districtHours(s, id) * 10) / 10}시간)`);
   });
 }
+// ── 지도 칸 매장지 · 채굴장(자원 3안) ──
+
+/** 채굴장 1곳이 실제 1시간에 캐는 양 */
+export const MINE_PER_HOUR = 1;
+export const MINE_COST = 1500;
+export const MINE_RES: Partial<Record<Res, number>> = { 강철: 2 };
+export const MINE_HOURS = 2;
+const MINE_COUNT: Record<number, number> = { 2: 1, 3: 2, 4: 3 };
+const FALLBACK_DEPOSITS: Res[] = ['강철', '구리', '석유', '알루미늄'];
+const depositCache = new Map<string, Array<{ tile: string; res: Res }>>();
+/** 도시 칸 위 매장지(정해진 규칙이라 늘 같음). 도시에서 나는 자원이 먼저, 없으면 흔한 자원 */
+export function deposits(cityId: string): Array<{ tile: string; res: Res }> {
+  const hit = depositCache.get(cityId);
+  if (hit) return hit;
+  const city = cityById(cityId);
+  const n = MINE_COUNT[city.size] ?? 1;
+  const own = Object.keys(CITY_RES[city.name] ?? {}) as Res[];
+  const cand = cityTiles(cityId)
+    .filter((t) => !t.center)
+    .map((t) => ({ t, h: hash(t.q * 7 + 3, t.r * 13 + 5) + (terrainOf(t.q, t.r) === '산' ? -0.3 : 0) + (terrainOf(t.q, t.r) === '바닷가' ? 0.4 : 0) }))
+    .sort((a, b) => a.h - b.h)
+    .slice(0, n);
+  const out = cand.map(({ t }, i) => ({
+    tile: hexKey(t.q, t.r),
+    res: own[i] ?? FALLBACK_DEPOSITS[Math.floor(hash(t.q, t.r * 3) * FALLBACK_DEPOSITS.length)],
+  }));
+  depositCache.set(cityId, out);
+  return out;
+}
+export function depositAt(cityId: string, tile: string): Res | null {
+  return deposits(cityId).find((d) => d.tile === tile)?.res ?? null;
+}
+export function canMine(s: GameState, cityId: string, tile: string): string | null {
+  if (s.world.owner[cityId] !== s.player.countryId) return '우리 도시가 아니에요';
+  if (!depositAt(cityId, tile)) return '매장지가 아니에요';
+  const cc = cityCiv(s, cityId);
+  if ((cc.mines ?? []).some((m) => m.tile === tile)) return '이미 채굴장이 있어요';
+  if (cc.districts.some((d) => d.tile === tile)) return '구역이 있는 칸이에요';
+  if (s.nations[s.player.countryId].treasury < MINE_COST) return `국방예산 ${MINE_COST.toLocaleString()} 필요`;
+  for (const [r, v] of Object.entries(MINE_RES)) if (s.economy.stock[r as Res] < v!) return `${r} ${v}개 필요`;
+  return null;
+}
+export function buildMine(s: GameState, cityId: string, tile: string): GameState {
+  if (canMine(s, cityId, tile)) return s;
+  const res = depositAt(cityId, tile)!;
+  const me = s.player.countryId;
+  const stock = { ...s.economy.stock };
+  for (const [r, v] of Object.entries(MINE_RES)) stock[r as Res] -= v!;
+  const ns: GameState = { ...s, economy: { ...s.economy, stock }, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - MINE_COST } } };
+  return withCiv(ns, (c) => {
+    const cc = (c.cities[cityId] ??= defaultCity(s, cityById(cityId)));
+    cc.mines = [...(cc.mines ?? []), { tile, res, doneMs: s.worldMs + MINE_HOURS * H }];
+    clog(c, `⛏️ ${cityById(cityId).name} ${res} 채굴장 공사 시작(${MINE_HOURS}시간)`);
+  });
+}
+/** 내 채굴장이 실제 1시간에 캐는 자원(다 지은 것만) */
+export function minePerHour(s: GameState): Partial<Record<Res, number>> {
+  const me = s.player.countryId;
+  const out: Partial<Record<Res, number>> = {};
+  for (const city of CITIES) {
+    if (s.world.owner[city.id] !== me) continue;
+    const cc = civOf(s).cities[city.id];
+    for (const m of cc?.mines ?? []) if (m.doneMs <= s.worldMs) out[m.res] = (out[m.res] ?? 0) + MINE_PER_HOUR * (city.home === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc!.loyalty);
+  }
+  return out;
+}
+/** 복합소재: 다 지은 공업 구역 수 × 시간당 */
+export function compositePerHour(s: GameState): number {
+  return s.economy.composite === false ? 0 : builtDistricts(s).filter((x) => x.d.id === 'industry').length * COMPOSITE_PER_INDUSTRY;
+}
+
 /** 이웃 보너스 개수 */
 export function adjCount(cityId: string, tile: string, id: DistrictId, cc: CityCiv): number {
   const [q, r] = parse(tile);
@@ -835,7 +914,9 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
     }
   }
   if (wars) rows.push([`전쟁 피로(${wars}곳)`, -Math.min(30, wars * 4 + tired)]);
-  if (RESOURCES.some((r) => s.economy.stock[r] < 1)) rows.push(['자원 부족', -5]);
+  const lux = LUXURIES.filter((r) => (s.economy.stock[r] ?? 0) >= 1);
+  if (lux.length) rows.push([`생활 자원 ${lux.map((r) => RES_ICON[r]).join('')}`, lux.length * LUXURY_LOYALTY]);
+  if (BASIC_RES.some((r) => (s.economy.stock[r] ?? 0) < 1)) rows.push(['자원 부족', -5]);
   if (chaos(s)) rows.push(['체제 혼란', -10]);
   return rows;
 }
@@ -896,8 +977,9 @@ export function civMission(s: GameState): number {
 }
 
 /** 병과가 열렸는지: 지도자 등급 + 연구 둘 다(11-22 결정). 등급은 economy가 먼저 봄 */
-export function unitTechLock(s: GameState, unit: string, special: boolean): string | null {
-  if (special && !hasTech(s, 'm-secret')) return '국가 비밀 병기 연구 필요';
+/** 특화 유닛도 바탕 병과와 같은 조건(11-23 결정). variant는 예전 호출과 맞추려고 남김 */
+export function unitTechLock(s: GameState, unit: string, variant?: unknown): string | null {
+  void variant;
   const t = techForUnit(unit);
   if (t && !hasTech(s, t.id)) return `${t.name} 연구 필요`;
   const dom = UNITS.find((u) => u.name === unit)?.domain;
@@ -963,6 +1045,26 @@ export function civAccrue(s: GameState, ms: number): GameState {
     const p = PIONEER_ISLANDS.find((x) => x.id === id)!;
     if (p.res !== '항구') {
       stock[p.res] += ISLAND_RES_PER_HOUR * h;
+      stockChanged = true;
+    }
+  }
+  // 채굴장(지도 칸 매장지) · 복합소재(공업 구역)
+  for (const city of CITIES) {
+    if (s.world.owner[city.id] !== me) continue;
+    const cc = c.cities[city.id];
+    for (const m of cc?.mines ?? []) {
+      if (m.doneMs > s.worldMs) continue;
+      stock[m.res] += MINE_PER_HOUR * (city.home === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
+      stockChanged = true;
+    }
+  }
+  if (ns.economy.composite !== false) {
+    const n = builtDistricts(tmp).filter((x) => x.d.id === 'industry').length;
+    let make = n * COMPOSITE_PER_INDUSTRY * h;
+    for (const [r, v] of Object.entries(COMPOSITE_INPUT)) make = Math.min(make, Math.max(0, stock[r as Res]) / v!);
+    if (make > 0) {
+      for (const [r, v] of Object.entries(COMPOSITE_INPUT)) stock[r as Res] -= v! * make;
+      stock.복합소재 += make;
       stockChanged = true;
     }
   }
@@ -1095,3 +1197,18 @@ export function debugCouncil(s: GameState): GameState {
 }
 
 export { AGREES, GOVS, DISTRICTS, AGENDAS };
+
+/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 개척 섬 · 채굴장 · 복합소재(재료는 −) */
+export function extraResPerHour(s: GameState): Partial<Record<Res, number>> {
+  const out: Partial<Record<Res, number>> = { ...minePerHour(s) };
+  for (const id of myIslands(s)) {
+    const p = PIONEER_ISLANDS.find((x) => x.id === id)!;
+    if (p.res !== '항구') out[p.res] = (out[p.res] ?? 0) + ISLAND_RES_PER_HOUR;
+  }
+  const comp = compositePerHour(s);
+  if (comp > 0) {
+    out.복합소재 = (out.복합소재 ?? 0) + comp;
+    for (const [r, v] of Object.entries(COMPOSITE_INPUT)) out[r as Res] = (out[r as Res] ?? 0) - v! * comp;
+  }
+  return out;
+}

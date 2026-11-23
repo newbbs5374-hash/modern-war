@@ -4,9 +4,13 @@
 // - 보급: 상륙 거점·항모에서 멀어지면 힘이 줄어듦
 // - 안개: 내 부대 주변만 보임(드론·잠수함이 멀리 봄). 잠수함은 가까이 가거나 구축함이 있어야 보임
 // - 큰 싸움(적 사령부·적 기함)에 닿으면 "직접 지휘"로 기존 전투 틀에 들어갈 수 있음
+// - 특화 유닛(11-23): 우리·적 연방의 특화 유닛·독점 병과가 고유 능력을 갖고 나옴(data/specials.ts)
+// - 연료·탄약(자원 3안): 쏠 때 탄약, 비행기·배는 움직일 때 연료를 씀. 보급 범위에서 다시 채움. 떨어지면 약하고 느려짐
 // 계산은 이 파일에서만 하고(같은 입력·같은 조작이면 같은 결과), 화면은 보여 주기만 한다.
 import { CITY_HEX, HEX_DIRS, TILE_AT, disk, hexDist, hexKey, type Hex } from '../data/hexmap';
 import { CITIES, cityById } from '../data/cities';
+import { exclusiveByName, specialById, specialsByKind, type FieldMod } from '../data/specials';
+import { UNITS } from '../data/catalog';
 import { Rng } from '../game/rng';
 
 export type FTerrain = '평지' | '숲' | '산' | '시가지' | '도심' | '바다' | '해협' | '해안';
@@ -126,6 +130,50 @@ export interface FUnit {
   reveal?: number;
   /** 우리 편에 막혀 기다린 시간 */
   wait?: number;
+  /** 특화 유닛 이름표(us-2) 또는 독점 병과 이름 */
+  sp?: string;
+  /** 한 번이라도 쐈는지(기습 첫 공격) */
+  fired?: boolean;
+  /** 탄약·연료(0~1) */
+  ammo: number;
+  fuel: number;
+}
+
+/** 탄약 1발 = 이만큼(쏠 때마다) · 연료 1칸 = 이만큼(비행기·배가 움직일 때) */
+export const AMMO_PER_SHOT = 0.04;
+export const FUEL_PER_STEP = 0.035;
+/** 보급 범위 안에서 1초에 다시 차는 양 */
+const REFILL = 0.005;
+/** 떨어지면: 공격 ×0.35 · 움직임 2.5배 느림 */
+export const NO_AMMO_ATK = 0.35;
+export const NO_FUEL_MOVE = 2.5;
+
+/** 그 부대의 특화 능력(없으면 undefined) */
+export function modOf(u: { sp?: string }): FieldMod | undefined {
+  if (!u.sp) return undefined;
+  return specialById(u.sp)?.field ?? exclusiveByName(u.sp)?.field;
+}
+/** 화면에 보일 이름 */
+export function unitName(u: { kind: FKind; sp?: string }): string {
+  if (!u.sp) return FUNIT[u.kind].name;
+  return specialById(u.sp)?.name ?? u.sp;
+}
+/** 특화 능력을 더한 수치 */
+export function defOf(u: { kind: FKind; sp?: string }): FUnitDef {
+  const d = FUNIT[u.kind];
+  const m = modOf(u);
+  if (!m) return d;
+  return {
+    ...d,
+    name: unitName(u),
+    hp: Math.round(d.hp * (m.hp ?? 1)),
+    atk: d.atk * (m.atk ?? 1),
+    def: d.def * (m.def ?? 1),
+    range: d.range + (m.range ?? 0),
+    sight: d.sight + (m.sight ?? 0),
+    move: d.move * (m.move ?? 1),
+    does: specialById(u.sp!)?.effect ?? UNITS.find((x) => x.name === u.sp)?.role ?? d.does,
+  };
 }
 
 export interface FFx {
@@ -145,6 +193,13 @@ export interface FieldInput {
   enemy?: string;
   /** 도시 방어도(0~100) */
   defense?: number;
+  /** 우리가 가진 특화 유닛·독점 병과(이름표 → 부대 수) */
+  roster?: Record<string, number>;
+  /** 적 연방 id(적 특화 유닛) */
+  enemyId?: string;
+  /** 출발 때 연료·탄약(0~1, 나라 창고의 석유·구리만큼) */
+  fuel?: number;
+  ammo?: number;
 }
 
 export interface FieldBattle {
@@ -333,13 +388,26 @@ export function createField(inp: FieldInput): FieldBattle {
   };
   const used = new Set<string>();
   const layerKey = (i: number, k: FKind) => `${i}:${FUNIT[k].layer === 'air' ? 'a' : 's'}`;
+  const startFuel = Math.max(0.3, Math.min(1, inp.fuel ?? 1));
+  const startAmmo = Math.max(0.3, Math.min(1, inp.ammo ?? 1));
   const add = (kind: FKind, side: Side, at: number, extra: Partial<FUnit> = {}) => {
-    const def = FUNIT[kind];
+    const def = defOf({ kind, sp: extra.sp });
     const hp = Math.round(def.hp * (side === 'foe' ? 0.7 + 0.25 * d : 1));
     used.add(layerKey(at, kind));
-    const u: FUnit = { id: b.nextId++, kind, side, at, hp, maxHp: hp, cd: rng.range(0, def.cd), mv: 0, path: [], goal: null, face: side === 'me' ? 1 : -1, supply: 1, home: at, ...extra };
+    const u: FUnit = {
+      id: b.nextId++, kind, side, at, hp, maxHp: hp, cd: rng.range(0, def.cd), mv: 0, path: [], goal: null, face: side === 'me' ? 1 : -1, supply: 1, home: at,
+      ammo: side === 'me' ? startAmmo : 1, fuel: side === 'me' ? startFuel : 1, ...extra,
+    };
     b.units.push(u);
     return u;
+  };
+  /** 이미 놓인 부대를 특화 유닛으로 바꿈(체력도 다시) */
+  const promote = (u: FUnit, sp: string) => {
+    const was = u.maxHp;
+    u.sp = sp;
+    const k = u.side === 'foe' ? 0.7 + 0.25 * d : 1;
+    u.maxHp = Math.round(defOf(u).hp * k);
+    u.hp = Math.round((u.hp / was) * u.maxHp);
   };
   const D = (a: number, c: number) => fDist(f, a, c);
   const C = f.center;
@@ -424,6 +492,44 @@ export function createField(inp: FieldInput): FieldBattle {
       if (at !== null) add('fighter', 'me', at, { base: -1 });
     }
   }
+  // 특화 유닛: 가진 만큼(종류마다 2개까지) 우리 부대를 바꿈 · 독점 병과는 새로 데려옴
+  const roster = inp.roster ?? {};
+  const free = (kind: FKind, side: Side) => b.units.filter((u) => u.side === side && u.kind === kind && !u.sp);
+  const ssn = roster['원자력 잠수함'] ?? 0;
+  for (const u of free('submarine', 'me').slice(0, Math.min(2, ssn))) promote(u, '원자력 잠수함');
+  for (const [id, n] of Object.entries(roster)) {
+    const sd = specialById(id);
+    if (!sd) continue;
+    for (const u of free(sd.field.kind, 'me').slice(0, Math.min(2, n))) promote(u, id);
+  }
+  const cvU = b.units.find((u) => u.side === 'me' && u.kind === 'carrier');
+  if (f.hasSea && cvU) {
+    for (const name of ['강습상륙함', '청광 방벽함']) {
+      if (!(roster[name] > 0)) continue;
+      const at = pick('destroyer', (i) => D(i, cvU.at) <= 3 && D(i, C) >= 3, (i) => D(i, cvU.at) + D(i, C) * 0.1);
+      if (at !== null) add('destroyer', 'me', at, { sp: name });
+      const ex = exclusiveByName(name)!;
+      for (let k = 0; k < (ex.field.extraInfantry ?? 0); k++) {
+        const ia = pick('infantry', (i) => D(i, L) <= 3, (i) => D(i, L));
+        if (ia !== null) add('infantry', 'me', ia);
+      }
+    }
+  }
+  // 적 연방 특화 유닛: 종류마다 하나씩
+  if (inp.enemyId) {
+    for (const kind of [...new Set(b.units.filter((u) => u.side === 'foe').map((u) => u.kind))]) {
+      const list = specialsByKind(inp.enemyId, kind);
+      const us = free(kind, 'foe');
+      list.forEach((sd, i) => us[i] && promote(us[i], sd.id));
+    }
+  }
+  if (Object.keys(roster).length) {
+    const names = b.units.filter((u) => u.side === 'me' && u.sp).map((u) => unitName(u));
+    if (names.length) b.log.unshift(`🌟 특화 유닛 출전: ${[...new Set(names)].join(' · ')}`);
+  }
+  const foeSp = b.units.filter((u) => u.side === 'foe' && u.sp).map((u) => unitName(u));
+  if (foeSp.length) b.log.unshift(`⚠️ 적 특화 유닛: ${[...new Set(foeSp)].join(' · ')}`);
+  if (startFuel < 1 || startAmmo < 1) b.log.unshift(`⛽ 창고의 석유·구리가 모자라 연료 ${Math.round(startFuel * 100)}% · 탄약 ${Math.round(startAmmo * 100)}%로 출발해요.`);
   b.startCount = b.units.filter((u) => u.side === 'me').length;
   // 모이는 곳: 상륙 거점에서 도심 쪽으로, 도심에서 4칸 떨어진 땅
   b.rally =
@@ -444,8 +550,9 @@ export function canEnter(kind: FKind, t: FTerrain): boolean {
   if (layer === 'land') return isLand(t);
   return !isLand(t);
 }
-function stepCost(kind: FKind, t: FTerrain): number {
+function stepCost(kind: FKind, t: FTerrain, u?: { sp?: string }): number {
   if (FUNIT[kind].layer === 'air') return 1;
+  if (u && modOf(u)?.terrain?.at.includes(t)) return 1;
   return TERRAIN_INFO[t].cost;
 }
 const group = (k: FKind) => (FUNIT[k].layer === 'air' ? 'a' : 's');
@@ -489,7 +596,11 @@ export function baseOf(b: FieldBattle, u: FUnit): number | null {
 export function visibleSet(b: FieldBattle, side: Side): Set<number> {
   const f = b.field;
   const out = new Set<number>();
-  const srcs: Array<[number, number]> = b.units.filter((u) => u.side === side).map((u) => [u.at, FUNIT[u.kind].sight + (side === 'me' ? b.mods.sight : 0)]);
+  if (b.units.some((u) => u.side === side && modOf(u)?.reveal)) {
+    for (let i = 0; i < f.n; i++) out.add(i);
+    return out;
+  }
+  const srcs: Array<[number, number]> = b.units.filter((u) => u.side === side).map((u) => [u.at, defOf(u).sight + (side === 'me' ? b.mods.sight : 0)]);
   if (side === 'me') srcs.push([f.landing, 2]);
   else srcs.push([f.center, 4]);
   for (const [at, s] of srcs) for (let i = 0; i < f.n; i++) if (f.dist[at * f.n + i] <= s) out.add(i);
@@ -500,9 +611,12 @@ export function canSeeUnit(b: FieldBattle, side: Side, u: FUnit, vis?: Set<numbe
   if (u.side === side) return true;
   const v = vis ?? visibleSet(b, side);
   if (!v.has(u.at)) return false;
-  if (u.kind !== 'submarine') return true;
+  const hidden = modOf(u)?.hidden;
+  if (u.kind !== 'submarine' && !hidden) return true;
   if ((u.reveal ?? -1) > b.t) return true;
-  return b.units.some((x) => x.side === side && (fDist(b.field, x.at, u.at) <= 1 || (x.kind === 'destroyer' && fDist(b.field, x.at, u.at) <= 2)));
+  if (b.units.some((x) => x.side === side && modOf(x)?.reveal)) return true;
+  // 숨는 부대: 잠수함은 1칸(구축함 2칸), 숨는 특화 유닛은 1칸(잠수함이면 구축함도 1칸)
+  return b.units.some((x) => x.side === side && (fDist(b.field, x.at, u.at) <= 1 || (!hidden && x.kind === 'destroyer' && fDist(b.field, x.at, u.at) <= 2)));
 }
 
 function occupied(b: FieldBattle, i: number, g: 'a' | 's'): FUnit | undefined {
@@ -533,7 +647,7 @@ export function findPath(b: FieldBattle, u: FUnit, goal: number, limit?: { cente
       if (!canEnter(u.kind, f.cells[c].terrain)) continue;
       if (limit && f.dist[c * f.n + limit.center] > limit.r) continue;
       if (blocked.has(c) && c !== goal) continue;
-      const nd = distArr[a] + stepCost(u.kind, f.cells[c].terrain);
+      const nd = distArr[a] + stepCost(u.kind, f.cells[c].terrain, u);
       if (nd < distArr[c]) {
         distArr[c] = nd;
         prev[c] = a;
@@ -583,6 +697,12 @@ function airLimit(b: FieldBattle, u: FUnit) {
   return base === null ? undefined : { center: base, r: FUNIT[u.kind].op ?? 4 };
 }
 
+/** 한 칸 가는 데 걸리는 시간(특화 능력 · 연료 떨어짐 포함) */
+export function moveNeed(u: FUnit, t: FTerrain): number {
+  const def = defOf(u);
+  return def.move * stepCost(u.kind, t, u) * (u.side === 'me' && def.layer !== 'land' && u.fuel <= 0 ? NO_FUEL_MOVE : 1);
+}
+
 // ── 한 걸음 ──
 
 function rngOf(b: FieldBattle) {
@@ -596,16 +716,42 @@ function rngOf(b: FieldBattle) {
 }
 
 function damage(b: FieldBattle, a: FUnit, t: FUnit, roll: number): number {
-  const A = FUNIT[a.kind];
-  const T = FUNIT[t.kind];
-  let atk = A.atk * fMult(a.kind, t.kind) * a.supply;
+  const A = defOf(a);
+  const T = defOf(t);
+  const ma = modOf(a);
+  const mt = modOf(t);
+  const f = b.field;
+  let mult = fMult(a.kind, t.kind);
+  if (ma?.seaStrike && T.layer === 'sea') mult = Math.max(mult, 0.8 * ma.seaStrike);
+  let atk = A.atk * mult * a.supply;
+  if (a.ammo <= 0) atk *= NO_AMMO_ATK;
+  if (ma) {
+    if (ma.ambush && !a.fired) atk *= ma.ambush;
+    if (ma.terrain && ma.terrain.at.includes(f.cells[a.at].terrain)) atk *= ma.terrain.atk;
+    if (ma.vs && ma.vs.kinds.includes(t.kind)) atk *= ma.vs.v;
+    if (ma.buddy && b.units.some((x) => x !== a && x.side === a.side && x.kind === ma.buddy!.kind && fDist(f, x.at, a.at) <= 1)) atk *= ma.buddy.v;
+  }
+  let taken = 1;
+  if (mt) {
+    if (mt.evadeAA && (a.kind === 'aa' || a.kind === 'destroyer' || a.kind === 'cruiser')) taken *= mt.evadeAA;
+    if (mt.taken) taken *= mt.taken;
+    if (mt.pack && b.units.some((x) => x !== t && x.side === t.side && x.kind === t.kind && fDist(f, x.at, t.at) <= 1)) taken *= mt.pack;
+  }
+  for (const w of b.units) {
+    const sh = w.side === t.side ? modOf(w)?.shield : undefined;
+    if (sh && fDist(f, w.at, t.at) <= sh.r) {
+      taken *= sh.v;
+      break;
+    }
+  }
+  atk *= taken;
   if (a.side === 'me') {
     atk *= b.mods.atk;
     if (A.range >= 2 && A.layer !== 'air') atk *= b.mods.ranged;
   } else atk *= 0.75 + 0.2 * b.difficulty;
   let cover = 1;
   if (T.layer === 'land') {
-    const ter = b.field.cells[t.at].terrain;
+    const ter = f.cells[t.at].terrain;
     cover = TERRAIN_INFO[ter].cover;
     if (t.side === 'foe' && (ter === '시가지' || ter === '도심')) cover += b.defense / 400;
   }
@@ -643,7 +789,7 @@ function foeThink(b: FieldBattle, vis: Set<number>) {
   const mine = b.units.filter((u) => u.side === 'me' && canSeeUnit(b, 'foe', u, vis));
   for (const u of b.units) {
     if (u.side !== 'foe' || !FUNIT[u.kind].move) continue;
-    const def = FUNIT[u.kind];
+    const def = defOf(u);
     if (def.layer === 'land') {
       if (u.kind === 'artillery' || u.kind === 'aa') {
         if (u.at !== u.home && !u.path.length) setGoal(b, u, u.home);
@@ -685,8 +831,16 @@ function meThink(b: FieldBattle, vis: Set<number>) {
   const aaFoes = foes.filter((e) => e.kind === 'aa' || e.kind === 'destroyer' || e.kind === 'cruiser');
   for (const u of b.units) {
     if (u.side !== 'me') continue;
-    const def = FUNIT[u.kind];
+    const def = defOf(u);
     const inRange = foes.some((e) => fDist(f, u.at, e.at) <= def.range && fMult(u.kind, e.kind) > 0);
+    // 강습상륙함은 항모 곁, 청광 방벽함은 우리 함대 한가운데(보호막)
+    if (u.sp === '강습상륙함' || u.sp === '청광 방벽함') {
+      const fleet = b.units.filter((x) => x.side === 'me' && x !== u && FUNIT[x.kind].layer === 'sea' && (u.sp === '강습상륙함' ? x.kind === 'carrier' : x.kind !== 'carrier'));
+      const buddy = nearest(b, u.at, fleet.length ? fleet : b.units.filter((x) => x.side === 'me' && x !== u && FUNIT[x.kind].layer === 'sea'));
+      if (buddy && fDist(f, buddy.at, u.at) > 1) setGoal(b, u, buddy.at);
+      else setGoal(b, u, null);
+      continue;
+    }
     switch (u.kind) {
       case 'tank':
       case 'infantry': {
@@ -775,12 +929,28 @@ function tick(b: FieldBattle, ask: boolean) {
   const think = Math.floor(b.t) !== Math.floor(before);
   const visMe = visibleSet(b, 'me');
   const visFoe = visibleSet(b, 'foe');
-  // 보급
-  const carriers = b.units.filter((u) => u.side === 'me' && u.kind === 'carrier');
+  // 보급(상륙 거점 · 항모 · 강습상륙함). 보급 안에서는 탄약·연료도 다시 참
+  const carriers = b.units.filter((u) => u.side === 'me' && (u.kind === 'carrier' || modOf(u)?.supply));
   for (const u of b.units) {
-    if (u.side !== 'me' || FUNIT[u.kind].layer !== 'land') continue;
-    const ok = fDist(f, u.at, f.landing) <= SUPPLY_RANGE || carriers.some((c) => fDist(f, c.at, u.at) <= SUPPLY_CARRIER);
-    u.supply = ok ? Math.min(1, u.supply + 0.05 * DT) : Math.max(0.5, u.supply - 0.02 * b.mods.decay * DT);
+    if (u.side !== 'me') continue;
+    const layer = FUNIT[u.kind].layer;
+    const ok =
+      layer === 'air'
+        ? (() => {
+            const base = baseOf(b, u);
+            return base !== null && fDist(f, base, u.at) <= 1;
+          })()
+        : fDist(f, u.at, f.landing) <= (layer === 'sea' ? 2 : SUPPLY_RANGE) || carriers.some((c) => c !== u && fDist(f, c.at, u.at) <= SUPPLY_CARRIER) || (layer === 'sea' && !!modOf(u)?.supply) || u.kind === 'carrier';
+    if (layer === 'land') u.supply = ok ? Math.min(1, u.supply + 0.05 * DT) : Math.max(0.5, u.supply - 0.02 * b.mods.decay * DT);
+    if (ok) {
+      u.ammo = Math.min(1, u.ammo + REFILL * DT);
+      u.fuel = Math.min(1, u.fuel + REFILL * DT);
+    }
+  }
+  // 회복(특화 능력)
+  for (const u of b.units) {
+    const rg = modOf(u)?.regen;
+    if (rg) u.hp = Math.min(u.maxHp, u.hp + u.maxHp * rg * DT);
   }
   if (think) {
     foeThink(b, visFoe);
@@ -800,9 +970,9 @@ function tick(b: FieldBattle, ask: boolean) {
   // 이동
   for (const u of b.units) {
     if (!u.path.length) continue;
-    const def = FUNIT[u.kind];
+    const def = defOf(u);
     const next = u.path[0];
-    const need = def.move * stepCost(u.kind, f.cells[next].terrain);
+    const need = moveNeed(u, f.cells[next].terrain);
     u.mv += DT;
     if (u.mv < need) continue;
     const occ = occupied(b, next, group(u.kind));
@@ -822,6 +992,7 @@ function tick(b: FieldBattle, ask: boolean) {
     u.at = next;
     u.path.shift();
     u.mv = 0;
+    if (u.side === 'me' && def.layer !== 'land') u.fuel = Math.max(0, u.fuel - FUEL_PER_STEP * (modOf(u)?.thrift ?? 1) * (u.sp === '원자력 잠수함' || u.kind === 'carrier' ? 0 : 1));
     if (!u.path.length && u.goal === u.at) u.goal = null;
   }
   // 공격
@@ -829,7 +1000,7 @@ function tick(b: FieldBattle, ask: boolean) {
   for (const u of b.units) {
     u.cd -= DT;
     if (u.cd > 0) continue;
-    const def = FUNIT[u.kind];
+    const def = defOf(u);
     const vis = u.side === 'me' ? visMe : visFoe;
     let tgt: FUnit | null = null;
     let ts = Infinity;
@@ -850,9 +1021,12 @@ function tick(b: FieldBattle, ask: boolean) {
       u.cd = 0;
       continue;
     }
-    u.cd = def.cd;
+    u.cd = def.cd * (u.ammo <= 0 ? 1.5 : 1);
     const dmg = damage(b, u, tgt, r.next());
     tgt.hp -= dmg;
+    u.fired = true;
+    if (u.side === 'me') u.ammo = Math.max(0, u.ammo - AMMO_PER_SHOT * (modOf(u)?.thrift ?? 1));
+    if (modOf(u)?.hidden) u.reveal = b.t + 3;
     if (u.kind === 'submarine') u.reveal = b.t + 3;
     if (u.side === 'me' || visMe.has(u.at) || visMe.has(tgt.at)) b.fx.push({ kind: 'shot', from: u.at, to: tgt.at, t: b.t, side: u.side });
     if (tgt.hp <= 0) dead.add(tgt.id);
@@ -864,14 +1038,14 @@ function tick(b: FieldBattle, ask: boolean) {
       const name = FUNIT[u.kind].name;
       if (u.side === 'me') {
         b.lost++;
-        b.log.unshift(`💀 우리 ${name}을(를) 잃었어요.`);
+        b.log.unshift(`💀 우리 ${unitName(u)}을(를) 잃었어요.`);
       } else {
         b.killed++;
         if (u.kind === 'hq') {
           b.hqDown = true;
           b.log.unshift('🏯 적 사령부가 무너졌어요! 육군을 도심으로 보내 점령하세요.');
         } else if (u.kind === 'cruiser') b.log.unshift('⚓ 적 기함을 격침했어요! 바다는 우리 차지예요.');
-        else if (visMe.has(u.at)) b.log.unshift(`🎯 적 ${name} 격파.`);
+        else if (visMe.has(u.at)) b.log.unshift(`🎯 적 ${u.sp ? `🌟${unitName(u)}` : name} 격파.`);
       }
       if (u.kind === 'carrier') {
         for (const w of b.units) if (w.base === u.id) w.base = -1;

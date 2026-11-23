@@ -13,10 +13,15 @@ import {
   FACILITY_EFF,
   FACILITY_TEXT,
   OCCUPIED_RES,
+  COMPOSITE_INPUT,
+  LUXURY_LOYALTY,
   RESOURCES,
   RES_BUILDING,
   RES_DESC,
   RES_ICON,
+  RES_KIND,
+  RES_KINDS,
+  RES_KIND_TEXT,
   RES_PRICE,
   UNIT_COST,
   buildingInfo,
@@ -52,7 +57,8 @@ import { FACILITY_ICON, UNIT_ICON } from './icons';
 import { Fold, Meter, Modal, Tabs, useTab } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
-import { canResearch, civOf } from '../game/civ';
+import { canResearch, civOf, compositePerHour, deposits, extraResPerHour, myIslands } from '../game/civ';
+import { PIONEER_ISLANDS } from '../data/hexmap';
 import { TECHS } from '../data/civ';
 
 /** 고를 수 있는 연구가 있는데 비어 있는 줄이 있으면 */
@@ -132,7 +138,7 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
   const occupied = mine.filter((id) => CITIES.find((c) => c.id === id)!.home !== me.id).length;
   const others = COUNTRIES.filter((c) => c.id !== me.id && isAlive(w, c.id));
   const relCount = (r: string) => others.filter((c) => relationOf(w, me.id, c.id) === r).length;
-  const stockValue = RESOURCES.reduce((a, r) => a + e.stock[r] * RES_PRICE[r], 0);
+  const stockValue = RESOURCES.reduce((a, r) => a + (e.stock[r] ?? 0) * RES_PRICE[r], 0);
   const units = Object.values(e.army).reduce((a, v) => a + v, 0);
   const contracts = e.contracts ?? [];
   const cm = contractMoneyPerHour(state);
@@ -249,23 +255,39 @@ function ResourcePanel(props: ScreenProps) {
   const { state } = props;
   const e = state.economy;
   const per = resPerDay(state);
+  const extra = extraResPerHour(state);
   const [pick, setPick] = useState<Res | null>(null);
+  const comp = compositePerHour(state);
   return (
     <>
-      <p className="small muted center">자원을 누르면 설명 · 쓰는 곳 · 얻는 곳이 나와요.</p>
-      <div className="res-grid">
-        {RESOURCES.map((r) => {
-          const net = per[r] + contractResPerHour(state, r);
-          return (
-            <button key={r} className="res-card" onClick={() => setPick(r)}>
-              <span className="res-ico">{RES_ICON[r]}</span>
-              <b>{r}</b>
-              <strong>{fmt(e.stock[r])}</strong>
-              <small className={net > 0 ? 'ok' : net < 0 ? 'warn' : 'muted'}>{net ? `${net > 0 ? '+' : ''}${r1(net)}/시간` : '안 남'}</small>
-            </button>
-          );
-        })}
-      </div>
+      <p className="small muted center">자원을 누르면 설명 · 쓰는 곳 · 얻는 곳이 나와요. 도시 칸의 ⛏️ 매장지에 채굴장을 지으면 더 나요.</p>
+      {RES_KINDS.map((k) => (
+        <div key={k} className="fgroup">
+          <small className="stat-group-name">
+            {k === '전략' ? '⚙️' : k === '가공' ? '🏭' : k === '판타지' ? '💎' : '🎁'} {k} 자원 <span className="muted">· {RES_KIND_TEXT[k]}</span>
+          </small>
+          <div className="res-grid">
+            {RESOURCES.filter((r) => RES_KIND[r] === k).map((r) => {
+              const net = per[r] + (extra[r] ?? 0) + contractResPerHour(state, r);
+              const have = e.stock[r] ?? 0;
+              return (
+                <button key={r} className={`res-card ${k === '생활' && have >= 1 ? 'on' : ''}`} onClick={() => setPick(r)}>
+                  <span className="res-ico">{RES_ICON[r]}</span>
+                  <b>{r}</b>
+                  <strong>{fmt(have)}</strong>
+                  <small className={net > 0 ? 'ok' : net < 0 ? 'warn' : 'muted'}>{net ? `${net > 0 ? '+' : ''}${r1(net)}/시간` : k === '생활' && have >= 1 ? `민심 +${LUXURY_LOYALTY}` : '안 남'}</small>
+                </button>
+              );
+            })}
+          </div>
+          {k === '가공' && (
+            <label className="small row-check">
+              <input type="checkbox" checked={e.composite !== false} onChange={(ev) => props.actions.apply((s) => ({ ...s, economy: { ...s.economy, composite: ev.target.checked } }))} /> 공업 구역에서 복합소재 만들기
+              {comp ? ` (시간당 ${comp}개 · 재료 ${Object.entries(COMPOSITE_INPUT).map(([r, v]) => `${RES_ICON[r as Res]}${v! * comp}`).join(' ')})` : ' (공업 구역이 아직 없어요)'}
+            </label>
+          )}
+        </div>
+      ))}
       {pick && <ResourceModal {...props} res={pick} onClose={() => setPick(null)} />}
     </>
   );
@@ -281,12 +303,14 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
   const perCountry = (id: string) =>
     CITIES.filter((c) => w.owner[c.id] === id).reduce((a, c) => a + (CITY_RES[c.name]?.[res] ?? 0) * (c.home === id ? 1 : OCCUPIED_RES), 0);
   const contracts = (state.economy.contracts ?? []).filter((c) => c.res === res);
+  const mineSpots = CITIES.filter((c) => w.owner[c.id] === me && deposits(c.id).some((d) => d.res === res));
+  const islands = PIONEER_ISLANDS.filter((p) => p.res === res);
   return (
     <Modal title={res} icon={RES_ICON[res]} onClose={onClose}>
       <p>{RES_DESC[res]}</p>
       <div className="kv2">
         <span>보유</span>
-        <b>{fmt(state.economy.stock[res])}개</b>
+        <b>{fmt(state.economy.stock[res] ?? 0)}개</b>
         <span>기본 값</span>
         <b>💰{RES_PRICE[res]}</b>
       </div>
@@ -311,9 +335,19 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
       ) : (
         <p className="small muted">우리 도시에서는 안 나요. 수입하거나 나는 도시를 점령하세요.</p>
       )}
-      <p className="small muted">
-        {buildingInfo(RES_BUILDING[res]).icon} {RES_BUILDING[res]} 효과 ×{(Math.round(mult * 100) / 100).toFixed(2)}
-      </p>
+      {mineSpots.length > 0 && (
+        <p className="small">
+          ⛏️ 매장지: {mineSpots.map((c) => c.name).join(', ')} <span className="muted">(도시를 열고 매장지 칸에 채굴장을 지어요)</span>
+        </p>
+      )}
+      {islands.length > 0 && <p className="small">🏝️ 개척 섬: {islands.map((p) => `${p.name}${myIslands(state).includes(p.id) ? '(우리 영향력 1등)' : ''}`).join(', ')}</p>}
+      {res === '복합소재' && <p className="small">🏭 공업 구역 1곳마다 시간당 1개(알루미늄 2 + 석유 1을 씀)</p>}
+      {RES_KIND[res] === '생활' && <p className="small good">🎁 1개만 있어도 모든 도시 민심 +{LUXURY_LOYALTY}. 여러 개는 효과가 같아서 남는 건 팔면 좋아요.</p>}
+      {RES_BUILDING[res] && (
+        <p className="small muted">
+          {buildingInfo(RES_BUILDING[res]!).icon} {RES_BUILDING[res]} 효과 ×{(Math.round(mult * 100) / 100).toFixed(2)}
+        </p>
+      )}
       <h4 className="mini-h">🚢 수입할 수 있는 나라</h4>
       {sellers.length ? (
         sellers.map((c) => {

@@ -1,4 +1,5 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
 import { STAT_GROUPS, TRAININGS } from '../data/catalog';
@@ -750,7 +751,9 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
                 icon={FRAME_ICON[x.frame]}
                 label={x.label}
                 onClick={() => {
-                  setPendingPlan(practicePlan(i, (Date.now() & 0xffff) + i));
+                  const pp = practicePlan(i, (Date.now() & 0xffff) + i);
+                  // 연습장 지도 위 전투에도 우리 특화 유닛이 나옴(연료·탄약은 가득)
+                  setPendingPlan({ ...pp, stages: pp.stages.map((st) => (st.frame === 'field' ? { ...st, army: { roster: fieldRoster(state) } } : st)) });
                   go('battle');
                 }}
               />

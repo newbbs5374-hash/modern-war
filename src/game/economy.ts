@@ -40,7 +40,8 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { isAlive, relationOf } from './world';
-import { civBuildSpeed, civPowerMult, civResMult, extraContracts, tradeEdge, unitTechLock } from './civ';
+import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, tradeEdge, unitTechLock } from './civ';
+import { EXCLUSIVES, exclusiveLock, specialById, specialsOf, type SpecialDef } from '../data/specials';
 
 const HOUR = 3600e3;
 
@@ -62,8 +63,14 @@ export interface BuildingState {
 
 export interface QueueItem {
   id: number;
+  /** 바탕 병과 */
   unit: string;
+  /** 예전 저장: true = 1번 특화 유닛 */
   special: boolean;
+  /** 특화 유닛 이름표(us-2 등) */
+  sp?: string;
+  /** 청광 개량형(청광석 1을 더 씀) */
+  crystal?: boolean;
   startMs: number;
   endMs: number;
 }
@@ -85,6 +92,8 @@ export interface EconomyState {
   log: string[];
   /** 정기 무역 계약(매시간 자동으로 사고팖) */
   contracts?: Contract[];
+  /** 복합소재 만들기(공업 구역). 없으면 켜짐 */
+  composite?: boolean;
 }
 
 export interface Contract {
@@ -120,6 +129,7 @@ function cloneEco(e: EconomyState): EconomyState {
     nextId: e.nextId,
     log: [...e.log],
     contracts: (e.contracts ?? []).map((c) => ({ ...c })),
+    composite: e.composite,
   };
 }
 
@@ -138,7 +148,10 @@ export const buffActive = (s: GameState, id: BuildingId) => (s.economy.buildings
 /** 군수공장: 국방예산 배율 */
 export const budgetMult = (s: GameState) => 1 + buildingEff(s, '군수공장');
 /** 제련소·첨단공단: 자원 배율 */
-export const resMult = (s: GameState, r: Res) => 1 + buildingEff(s, RES_BUILDING[r]);
+export const resMult = (s: GameState, r: Res) => {
+  const b = RES_BUILDING[r];
+  return b ? 1 + buildingEff(s, b) : 1;
+};
 /** 징병소: 모병 배율 */
 export const welfareMult = (s: GameState) => 1 + buildingEff(s, '징병소');
 /** 군병원: 병력이 줄어드는 정도(1 = 그대로, 0.5 = 절반) */
@@ -194,12 +207,14 @@ export function economyTick(s: GameState): GameState {
   let troops = s.nations[me].troops;
   e.queue = e.queue.filter((q) => {
     if (s.worldMs < q.endMs) return true;
-    const c = costOf(s, q.unit, q.special);
-    const name = q.special ? countryById(me).specialUnit.name : q.unit;
+    const v = variantOf(s, q.sp ?? q.special);
+    const c = costOf(s, q.unit, v?.id);
+    const name = queueName(s, q);
+    const power = Math.round(c.power * civPowerMult(s, q.unit) * (v ? specialPowerMult(s) : 1) * (q.crystal ? CRYSTAL_POWER : 1));
     e.army[name] = (e.army[name] ?? 0) + 1;
-    e.power += Math.round(c.power * civPowerMult(s, q.unit));
+    e.power += power;
     troops += c.troops;
-    log(e, `${name} 1부대 완성(전투력 +${c.power}).`);
+    log(e, `${name}${q.crystal ? '(청광 개량형)' : ''} 1부대 완성(전투력 +${power}).`);
     return false;
   });
   return { ...s, economy: e, nations: { ...s.nations, [me]: { ...s.nations[me], troops } } };
@@ -268,34 +283,75 @@ export function upgradeFacility(s: GameState, id: BuildingId): GameState {
 
 // ── 병과 모집·생산(병과마다 열리는 계급부터) ──
 
-export function costOf(s: GameState, unit: string, special: boolean): UnitCost {
-  return special ? specialCost(countryById(s.player.countryId).specialUnit.base) : UNIT_COST[unit];
+/** 특화 유닛 고르기: 이름표('us-2') 또는 예전 저장의 true(= 1번) */
+export function variantOf(s: GameState, v: string | boolean | undefined | null): SpecialDef | undefined {
+  if (!v) return undefined;
+  if (v === true) return specialsOf(s.player.countryId)[0];
+  return specialById(v);
+}
+/** 줄에 선 부대 이름(특화 유닛이면 그 이름) */
+export function queueName(s: GameState, q: QueueItem): string {
+  return variantOf(s, q.sp ?? q.special)?.name ?? q.unit;
+}
+/** 국가 비밀 병기 연구: 특화 유닛 전투력 +15% */
+export const SECRET_POWER = 1.15;
+/** 청광 개량형: 청광석 1을 더 써서 전투력 +15% */
+export const CRYSTAL_POWER = 1.15;
+export const specialPowerMult = (s: GameState) => (hasTech(s, 'm-secret') ? SECRET_POWER : 1);
+/** 청광석 동력 연구 뒤 청광석이 있으면 특화 유닛은 청광 개량형으로 만듦 */
+export const crystalReady = (s: GameState) => hasTech(s, 'm-crystal') && (s.economy.stock.청광석 ?? 0) >= 1;
+
+export function costOf(s: GameState, unit: string, variant?: string | boolean): UnitCost {
+  const v = variantOf(s, variant);
+  return v ? specialCost(v.base, v.cost) : UNIT_COST[unit];
 }
 /** 인프라만큼 빨라진 실제 생산 시간(ms) */
-export function buildMs(s: GameState, unit: string, special: boolean): number {
-  return (costOf(s, unit, special).hours * HOUR) / infraMult(s, unit) / civBuildSpeed(s, unit);
+export function buildMs(s: GameState, unit: string, variant?: string | boolean): number {
+  return (costOf(s, unit, variant).hours * HOUR) / infraMult(s, unit) / civBuildSpeed(s, unit);
 }
 export const QUEUE_MAX = 5;
-export function canProduce(s: GameState, unit: string, special = false): string | null {
+export function canProduce(s: GameState, unit: string, variant?: string | boolean): string | null {
   if (!UNIT_COST[unit]) return '없는 병과';
+  const me = s.player.countryId;
+  const ex = exclusiveLock(me, unit);
+  if (ex) return ex;
+  const v = variantOf(s, variant);
+  if (variant && (!v || v.country !== me || v.base !== unit)) return '우리 연방 특화 유닛이 아니에요';
   if (s.player.rankIndex < unitRank(unit)) return `${RANKS[unitRank(unit)].name}부터`;
-  const tech = unitTechLock(s, unit, special);
+  const tech = unitTechLock(s, unit);
   if (tech) return tech;
   if (s.economy.queue.length >= QUEUE_MAX) return `생산 줄은 ${QUEUE_MAX}개까지`;
-  const c = costOf(s, unit, special);
-  if (s.nations[s.player.countryId].treasury < c.money) return '국방예산이 모자라요';
-  for (const [r, v] of Object.entries(c.res)) if (s.economy.stock[r as Res] < v!) return `${r}이(가) 모자라요`;
+  const c = costOf(s, unit, variant);
+  if (s.nations[me].treasury < c.money) return '국방예산이 모자라요';
+  for (const [r, n] of Object.entries(c.res)) if ((s.economy.stock[r as Res] ?? 0) < n!) return `${r}이(가) 모자라요`;
   return null;
 }
-export function produce(s: GameState, unit: string, special = false): GameState {
-  if (canProduce(s, unit, special)) return s;
+export function produce(s: GameState, unit: string, variant?: string | boolean): GameState {
+  if (canProduce(s, unit, variant)) return s;
   const e = cloneEco(s.economy);
-  const c = costOf(s, unit, special);
-  for (const [r, v] of Object.entries(c.res)) e.stock[r as Res] -= v!;
+  const v = variantOf(s, variant);
+  const c = costOf(s, unit, v?.id);
+  for (const [r, n] of Object.entries(c.res)) e.stock[r as Res] -= n!;
+  const crystal = !!v && crystalReady(s);
+  if (crystal) e.stock.청광석 -= 1;
   const startMs = Math.max(s.worldMs, ...e.queue.map((q) => q.endMs));
-  e.queue.push({ id: e.nextId++, unit, special, startMs, endMs: startMs + buildMs(s, unit, special) });
+  e.queue.push({ id: e.nextId++, unit, special: !!v, sp: v?.id, crystal: crystal || undefined, startMs, endMs: startMs + buildMs(s, unit, v?.id) });
   const me = s.player.countryId;
   return { ...s, economy: e, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - c.money } } };
+}
+
+/** 지도 위 전투에 데려갈 우리 특화 유닛·독점 병과(가진 것만, 이름표 → 부대 수) */
+export function fieldRoster(s: GameState): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const d of specialsOf(s.player.countryId)) if ((s.economy.army[d.name] ?? 0) > 0) out[d.id] = s.economy.army[d.name];
+  for (const x of EXCLUSIVES) if ((s.economy.army[x.name] ?? 0) > 0) out[x.name] = s.economy.army[x.name];
+  return out;
+}
+/** 우리 땅을 지킬 때 힘(특화 유닛 homeDef): 부대 하나마다 +2%, 최대 +30% */
+export function homeDefBonus(s: GameState): number {
+  let v = 0;
+  for (const d of specialsOf(s.player.countryId)) if (d.field.homeDef) v += (s.economy.army[d.name] ?? 0) * 0.05 * d.field.homeDef;
+  return Math.min(0.3, v);
 }
 
 /** 만든 부대 전투력 합(대전투가 쉬워짐) */
@@ -309,7 +365,7 @@ export function armyPower(s: GameState): number {
  */
 export const PLAYER_REBEL_MULT = 0.25;
 export function occupyHold(s: GameState): { rebel: number; defense: number } {
-  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * buildingEff(s, '치안청')), defense: 1 + Math.min(1, s.economy.power / 1500) };
+  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * buildingEff(s, '치안청')), defense: (1 + Math.min(1, s.economy.power / 1500)) * (1 + homeDefBonus(s)) };
 }
 
 // ── 무역(준장부터, 전쟁 중이 아닌 나라와) ──
@@ -343,7 +399,7 @@ export function canTrade(s: GameState, id: string, r: Res, qty: number, buy: boo
   if (buy) {
     if (!producesOf(s, id).includes(r)) return `${countryById(id).name}에는 ${r}이(가) 없어요`;
     if (s.nations[s.player.countryId].treasury < tradePrice(s, id, r) * qty) return '국방예산이 모자라요';
-  } else if (s.economy.stock[r] < qty) return `${r}이(가) 모자라요`;
+  } else if ((s.economy.stock[r] ?? 0) < qty) return `${r}이(가) 모자라요`;
   return null;
 }
 export function trade(s: GameState, id: string, r: Res, qty: number, buy: boolean): GameState {

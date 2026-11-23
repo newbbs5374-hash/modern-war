@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { FORCE_BRANCHES, UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
-import { canProduce, produce, buildMs, QUEUE_MAX } from '../game/economy';
+import { canProduce, produce, buildMs, QUEUE_MAX, queueName, crystalReady } from '../game/economy';
+import { exclusiveByName, exclusiveLock, specialsFor, specialsOf, type SpecialDef } from '../data/specials';
 import { unitTechLock } from '../game/civ';
 import { boostsOf, boostsToFinish, useBoost } from '../game/boost';
 import { fmt } from './common';
@@ -25,28 +26,36 @@ export function ForcesScreen(props: ScreenProps) {
   const [pick, setPick] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const branch = FORCE_BRANCHES.find((b) => b.id === tab)!;
-  const specialBase = me.specialUnit.base;
+  const mySp = specialsOf(me.id);
   const count = (b: (typeof FORCE_BRANCHES)[number]) =>
-    b.groups.flatMap((g) => g.units).reduce((a, u) => a + (e.army[u] ?? 0) + (u === specialBase ? (e.army[me.specialUnit.name] ?? 0) : 0), 0);
+    b.groups.flatMap((g) => g.units).reduce((a, u) => a + (e.army[u] ?? 0) + specialsFor(me.id, u).reduce((x, d) => x + (e.army[d.name] ?? 0), 0), 0);
 
-  const row = (unit: string, special: boolean) => {
+  const row = (unit: string, sp?: SpecialDef) => {
     const info = UNITS.find((u) => u.name === unit)!;
-    const label = special ? me.specialUnit.name : unit;
-    const lock = rank < info.rank;
-    const techLock = !lock ? unitTechLock(state, unit, special) : null;
+    const special = !!sp;
+    const label = sp ? sp.name : unit;
+    const exLock = exclusiveLock(me.id, unit);
+    const ex = exclusiveByName(unit);
+    const lock = rank < info.rank || !!exLock;
+    const techLock = !lock ? unitTechLock(state, unit) : null;
     const have = e.army[label] ?? 0;
-    const mine = e.queue.filter((q) => q.unit === unit && q.special === special);
+    const mine = e.queue.filter((q) => q.unit === unit && queueName(state, q) === label);
     const first = mine[0];
     const running = first && state.worldMs >= first.startMs;
-    const why = canProduce(state, unit, special);
+    const why = canProduce(state, unit, sp?.id);
     const need = first ? boostsToFinish(state, { kind: 'queue', id: first.id }) : 0;
     return (
-      <div key={label} className={`frow ${lock ? 'locked' : ''} ${special ? 't-gold' : ''}`}>
-        <button className="frow-main" onClick={() => setPick(special ? '★' : unit)}>
-          <span className="frow-ico">{lock ? '🔒' : special ? '🌟' : UNIT_ICON[unit]}</span>
+      <div key={label} className={`frow ${lock ? 'locked' : ''} ${special || (ex && !exLock) ? 't-gold' : ''}`}>
+        <button className="frow-main" onClick={() => setPick(sp ? `${unit}|${sp.id}` : unit)}>
+          <span className="frow-ico">{lock ? '🔒' : special ? '🌟' : ex ? '👑' : UNIT_ICON[unit]}</span>
           <span className="frow-text">
-            <b>{label}</b>
-            {lock ? (
+            <b>
+              {label}
+              {sp && <small className="muted"> · {unit} 특화</small>}
+            </b>
+            {exLock ? (
+              <small className="muted">👑 {exLock}</small>
+            ) : lock ? (
               <small className="muted">{RANKS[info.rank].name}부터</small>
             ) : techLock && !first ? (
               <small className="muted">🔬 {techLock}</small>
@@ -59,7 +68,10 @@ export function ForcesScreen(props: ScreenProps) {
                 </small>
               </span>
             ) : (
-              <small className="muted">{special ? me.specialUnit.effect : info.role}</small>
+              <small className="muted">
+                {sp ? sp.effect : info.role}
+                {sp && crystalReady(state) ? ' · 💎청광 개량형으로 만듦' : ''}
+              </small>
             )}
           </span>
           <span className="frow-have">
@@ -72,10 +84,10 @@ export function ForcesScreen(props: ScreenProps) {
             <button
               className="primary"
               disabled={!!why}
-              title={why ?? `모집 ${timeLeft(buildMs(state, unit, special))}`}
+              title={why ?? `모집 ${timeLeft(buildMs(state, unit, sp?.id))}`}
               onClick={() => {
-                actions.apply((s) => produce(s, unit, special));
-                setMsg(`${label} 모집 시작! ${timeLeft(buildMs(state, unit, special))} 뒤 완료`);
+                actions.apply((s) => produce(s, unit, sp?.id));
+                setMsg(`${label} 모집 시작! ${timeLeft(buildMs(state, unit, sp?.id))} 뒤 완료`);
               }}
             >
               모집
@@ -104,7 +116,10 @@ export function ForcesScreen(props: ScreenProps) {
             <Chip icon="🔨" value={`${e.queue.length}/${QUEUE_MAX}`} label="모집 줄" />
           </div>
           <Help title="부대">
-            <p>병과 15개와 우리 나라 특별 병과(🌟)를 육군·해군·공군으로 나눴어요. 병과는 등급이 오르면 하나씩 열려요.</p>
+            <p>병과 15개와 우리 연방 특화 유닛 2개(🌟), 몇 연방만 만드는 독점 병과(👑)를 육군·해군·공군으로 나눴어요. 병과는 등급과 연구가 다 되면 열려요.</p>
+            <p>
+              <b>🌟 특화 유닛</b>: 바탕 병과와 같은 때 열리고, 바탕 병과도 계속 만들 수 있어요. 조금 비싸지만 더 세고 고유 능력이 지도 위 전투에서 실제로 작동해요. 🔬국가 비밀 병기 연구 = 특화 유닛 +15%, 💎청광석 동력 연구 뒤엔 청광석 1을 더 써서 청광 개량형(+15%)이 돼요.
+            </p>
             <p>
               <b>모집</b>: 국방예산과 전략 자원을 써서 1부대를 모아요. 한 번에 {QUEUE_MAX}개까지 줄을 세울 수 있고, 차례대로 완성돼요.
             </p>
@@ -118,11 +133,11 @@ export function ForcesScreen(props: ScreenProps) {
         {e.queue.length > 0 && (
           <div className="queue-strip">
             {e.queue.map((q, i) => {
-              const name = q.special ? me.specialUnit.name : q.unit;
+              const name = queueName(state, q);
               const run = state.worldMs >= q.startMs;
               return (
                 <div key={q.id} className="queue-item">
-                  <span>{q.special ? '🌟' : UNIT_ICON[q.unit]}</span>
+                  <span>{q.special || q.sp ? '🌟' : UNIT_ICON[q.unit]}</span>
                   <small>{name}</small>
                   <Meter value={run ? state.worldMs - q.startMs : 0} max={q.endMs - q.startMs} tone="blue" />
                   <small className="muted">{run ? timeLeft(q.endMs - state.worldMs) : `대기 ${i}`}</small>
@@ -146,7 +161,7 @@ export function ForcesScreen(props: ScreenProps) {
           <small className="stat-group-name">
             {g.icon} {g.name}
           </small>
-          {g.units.flatMap((u) => (u === specialBase ? [row(u, false), row(u, true)] : [row(u, false)]))}
+          {g.units.flatMap((u) => [row(u), ...mySp.filter((d) => d.base === u).map((d) => row(u, d))])}
         </div>
       ))}
       {pick && <UnitModal {...props} unit={pick} onClose={() => setPick(null)} />}

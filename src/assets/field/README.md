@@ -73,3 +73,7 @@ Seamless tileable game terrain texture, straight top-down view, stylized hand-pa
 - 저장소 폴더: `src/assets/field/`
 - 파일 이름: 위 표의 이름 + `.png` 또는 `.webp` (예: `unit-tank.webp`)
 - 게임 안 ⚙️ 설정 → 🖼️ 그림 칸에서 어떤 칸이 채워졌는지 볼 수 있어요.
+
+## 특화 유닛·독점 병과 그림 (29장)
+
+연방마다 2개인 🌟특화 유닛과 👑독점 병과 그림 칸(`unit-sp-us-2`, `unit-ex-lhd` …)의 반실사 명령문은 같은 폴더의 `SPECIALS.md`에 있어요. 그림이 없으면 바탕 병과 그림이 대신 나와요.
