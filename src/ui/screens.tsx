@@ -1,4 +1,5 @@
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
+import { CITY_INST, instById } from '../data/institutions';
 import { CultureScreen } from './CultureScreen';
 import { BriefingModal } from './BriefingUI';
 import { todos } from '../game/briefing';
@@ -310,6 +311,12 @@ function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string
         <Tile icon="🛡️" label={`방어도 ${def}`} sub={`최대 ${CITY_DEFENSE_MAX}`} tone={def < CITY_DEFENSE_MAX - 2 ? 'red' : 'green'} />
         <Tile icon="⛏️" label="자원" sub={res.map(([r, n]) => `${RES_ICON[r]}${n}`).join(' ') || '없음'} />
       </div>
+      <p className="small" style={{ marginTop: 6 }}>
+        🏛️ 기관:{' '}
+        {(CITY_INST[c.name] ?? []).length
+          ? (CITY_INST[c.name] ?? []).map((i) => `${instById(i).icon} ${instById(i).name}(${instById(i).does})`).join(' · ')
+          : '없음'}
+      </p>
       {st === '점령당함' && (
         <button className="primary wide-btn" onClick={() => go(routeTo('ops', 'ops', 'mission'))}>
           🏙️ 국방 → 작전에서 되찾기

@@ -6,6 +6,8 @@ import {
   type WheelEvent as RWheelEvent,
 } from "react";
 import { CITIES } from "../data/cities";
+import { CITY_RES, RES_ICON, type Res } from "../data/economy";
+import { CITY_INST, instById } from "../data/institutions";
 import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from "../data/world";
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
 import { KR_INNER, KR_OUTLINE } from "../data/krProvinces";
@@ -696,11 +698,31 @@ export function WorldMap({
                 {city.name}
               </text>
             )}
+            {!mini && cv.k >= 3 && (
+              <text
+                x={city.x}
+                y={city.y + 8 * zr}
+                textAnchor="middle"
+                className="map-cityres"
+              >
+                {(Object.keys(CITY_RES[city.name] ?? {}) as Res[])
+                  .map((r) => RES_ICON[r])
+                  .join("")}
+                {(CITY_INST[city.name] ?? []).length ? " " : ""}
+                {(CITY_INST[city.name] ?? []).map((i) => instById(i).icon).join("")}
+              </text>
+            )}
             <title>
               {city.name}
               {city.capital ? "(수도)" : ""} ·{" "}
               {COUNTRIES.find((c) => c.id === o)!.name}
               {occupied ? " 점령 중" : ""}
+              {"\n자원: "}
+              {(Object.entries(CITY_RES[city.name] ?? {}) as Array<[Res, number]>)
+                .map(([r, n]) => `${RES_ICON[r]}${r} ${n}`)
+                .join(" · ") || "없음"}
+              {"\n기관: "}
+              {(CITY_INST[city.name] ?? []).map((i) => `${instById(i).icon}${instById(i).name}`).join(" · ") || "없음"}
             </title>
           </g>
         );

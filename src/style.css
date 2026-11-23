@@ -582,6 +582,7 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #8b5
 .map-island.holy { fill: #ffd27a; }
 .map-cityname { fill: #f8fafc; font-size: calc(5.2px * var(--z, 1)); paint-order: stroke; stroke: #435260; stroke-width: calc(1.4px * var(--z, 1)); pointer-events: none; }
 .map-label { paint-order: stroke; stroke: #435260; stroke-width: calc(2.4px * var(--z, 1)); font-weight: 700; }
+.map-cityres { font-size: calc(4.2px * var(--z, 1)); pointer-events: none; }
 .map-prov { fill: #e2e8f0; fill-opacity: 0.75; font-size: calc(5px * var(--z, 1)); paint-order: stroke; stroke: #1e293b; stroke-opacity: 0.6; stroke-width: calc(1.2px * var(--z, 1)); pointer-events: none; }
 
 /* ── 스탯 숫자 카드 ── */
