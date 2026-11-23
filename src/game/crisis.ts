@@ -57,7 +57,7 @@ export const CRISES: CrisisDef[] = [
     auto: 1,
     options: [
       { label: '비축 석유를 풀어요', fx: [{ k: 'res', r: '석유', v: -80 }, { k: 'trust', v: 5 }], say: '비축유를 풀자 국민들이 한숨 돌렸습니다.' },
-      { label: '비싸도 더 수입해요', fx: [{ k: 'money', v: -15000 }, { k: 'res', r: '석유', v: 40 }], say: '값은 비쌌지만 석유를 확보했습니다.' },
+      { label: '비싸도 더 수입해요', fx: [{ k: 'money', v: -3000 }, { k: 'res', r: '석유', v: 40 }], say: '값은 비쌌지만 석유를 확보했습니다.' },
       { label: '그냥 버텨요', fx: [{ k: 'trust', v: -6 }], say: '불만의 목소리가 높습니다, 지도자님.' },
     ],
   },
@@ -69,8 +69,8 @@ export const CRISES: CrisisDef[] = [
     auto: 2,
     options: [
       { label: '군을 투입해 구조해요', fx: [{ k: 'troops', v: -0.02 }, { k: 'fame', v: 8 }, { k: 'trust', v: 5 }], say: '장병들이 밤새 구조에 나섰습니다. 국민들이 감동했어요.' },
-      { label: '국제 사회에 도움을 청해요', fx: [{ k: 'money', v: 10000 }, { k: 'favor', who: 'all', v: 4 }, { k: 'fame', v: -3 }], say: '여러 나라가 구호품을 보냈습니다.' },
-      { label: '예산으로 빨리 복구해요', fx: [{ k: 'money', v: -20000 }, { k: 'trust', v: 6 }], say: '복구 공사가 시작됐습니다.' },
+      { label: '국제 사회에 도움을 청해요', fx: [{ k: 'money', v: 2500 }, { k: 'favor', who: 'all', v: 4 }, { k: 'fame', v: -3 }], say: '여러 나라가 구호품을 보냈습니다.' },
+      { label: '예산으로 빨리 복구해요', fx: [{ k: 'money', v: -4000 }, { k: 'trust', v: 6 }], say: '복구 공사가 시작됐습니다.' },
     ],
   },
   {
@@ -82,8 +82,8 @@ export const CRISES: CrisisDef[] = [
     auto: 1,
     options: [
       { label: '똑같이 반격해요', fx: [{ k: 'intel', v: 15 }, { k: 'favor', who: 'target', v: -15 }, { k: 'tension', v: 10 }], say: '반격에 성공했습니다. {X}이(가) 화가 났어요.' },
-      { label: '방어벽을 강화해요', fx: [{ k: 'money', v: -8000 }, { k: 'res', r: '반도체', v: -10 }, { k: 'research', v: 3 }], say: '보안 체계를 새로 짰습니다.' },
-      { label: '조용히 넘어가요', fx: [{ k: 'money', v: -12000 }, { k: 'trust', v: -4 }], say: '피해 복구에 돈이 꽤 들었습니다.' },
+      { label: '방어벽을 강화해요', fx: [{ k: 'money', v: -2000 }, { k: 'res', r: '반도체', v: -10 }, { k: 'research', v: 3 }], say: '보안 체계를 새로 짰습니다.' },
+      { label: '조용히 넘어가요', fx: [{ k: 'money', v: -2500 }, { k: 'trust', v: -4 }], say: '피해 복구에 돈이 꽤 들었습니다.' },
     ],
   },
   {
@@ -105,9 +105,9 @@ export const CRISES: CrisisDef[] = [
     text: '수출이 잘돼 세금이 예상보다 많이 걷혔어요.',
     auto: 0,
     options: [
-      { label: '국방예산에 넣어요', fx: [{ k: 'money', v: 20000 }], say: '국방예산이 넉넉해졌습니다.' },
+      { label: '국방예산에 넣어요', fx: [{ k: 'money', v: 4000 }], say: '국방예산이 넉넉해졌습니다.' },
       { label: '국민에게 나눠요', fx: [{ k: 'trust', v: 8 }, { k: 'fame', v: 6 }], say: '국민들이 지도자님을 칭찬합니다.' },
-      { label: '연구에 투자해요', fx: [{ k: 'research', v: 6 }, { k: 'money', v: 5000 }], say: '연구소마다 활기가 돕니다.' },
+      { label: '연구에 투자해요', fx: [{ k: 'research', v: 6 }, { k: 'money', v: 1000 }], say: '연구소마다 활기가 돕니다.' },
     ],
   },
   {
@@ -130,7 +130,7 @@ export const CRISES: CrisisDef[] = [
     target: 'any',
     auto: 1,
     options: [
-      { label: '팔아요', fx: [{ k: 'money', v: 18000 }, { k: 'res', r: '강철', v: -50 }, { k: 'favor', who: 'target', v: 10 }, { k: 'favor', who: 'rivals', v: -6 }], say: '계약이 끝났습니다. 맞수들은 곱지 않게 봐요.' },
+      { label: '팔아요', fx: [{ k: 'money', v: 3500 }, { k: 'res', r: '강철', v: -50 }, { k: 'favor', who: 'target', v: 10 }, { k: 'favor', who: 'rivals', v: -6 }], say: '계약이 끝났습니다. 맞수들은 곱지 않게 봐요.' },
       { label: '거절해요', fx: [{ k: 'favor', who: 'target', v: -4 }], say: '정중히 거절했습니다.' },
     ],
   },
@@ -141,7 +141,7 @@ export const CRISES: CrisisDef[] = [
     text: '군수공장 노동자들이 임금을 올려 달라며 일손을 놓았어요.',
     auto: 0,
     options: [
-      { label: '임금을 올려 줘요', fx: [{ k: 'money', v: -12000 }, { k: 'trust', v: 5 }], say: '공장이 다시 돌아갑니다.' },
+      { label: '임금을 올려 줘요', fx: [{ k: 'money', v: -2500 }, { k: 'trust', v: 5 }], say: '공장이 다시 돌아갑니다.' },
       { label: '버티며 협상해요', fx: [{ k: 'res', r: '강철', v: -40 }, { k: 'res', r: '알루미늄', v: -30 }], say: '협상은 됐지만 생산이 며칠 멈췄습니다.' },
       { label: '강제로 해산해요', fx: [{ k: 'trust', v: -8 }, { k: 'fame', v: -4 }], say: '공장은 돌지만 민심이 나빠졌습니다.' },
     ],
@@ -166,7 +166,7 @@ export const CRISES: CrisisDef[] = [
     auto: 1,
     options: [
       { label: '특수부대를 보내요', fx: [{ k: 'troops', v: -0.005 }, { k: 'fame', v: 10 }, { k: 'merit', v: 25 }, { k: 'favor', who: 'target', v: -8 }], say: '작전 성공! 교민 모두 무사히 돌아왔습니다.' },
-      { label: '외교로 협상해요', fx: [{ k: 'money', v: -6000 }, { k: 'favor', who: 'target', v: 5 }, { k: 'fame', v: 2 }], say: '시간은 걸렸지만 모두 풀려났습니다.' },
+      { label: '외교로 협상해요', fx: [{ k: 'money', v: -1500 }, { k: 'favor', who: 'target', v: 5 }, { k: 'fame', v: 2 }], say: '시간은 걸렸지만 모두 풀려났습니다.' },
     ],
   },
   {
@@ -199,8 +199,8 @@ export const CRISES: CrisisDef[] = [
     text: '신문에 국방부 장비 구매 비리가 크게 났어요.',
     auto: 0,
     options: [
-      { label: '철저히 조사해요', fx: [{ k: 'money', v: -5000 }, { k: 'trust', v: 6 }], say: '관련자를 모두 찾아냈습니다.' },
-      { label: '덮어요', fx: [{ k: 'trust', v: -10 }, { k: 'money', v: 8000 }], say: '조용히 넘어갔지만 소문이 돕니다.' },
+      { label: '철저히 조사해요', fx: [{ k: 'money', v: -1000 }, { k: 'trust', v: 6 }], say: '관련자를 모두 찾아냈습니다.' },
+      { label: '덮어요', fx: [{ k: 'trust', v: -10 }, { k: 'money', v: 1500 }], say: '조용히 넘어갔지만 소문이 돕니다.' },
     ],
   },
   {

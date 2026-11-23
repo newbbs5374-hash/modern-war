@@ -11,6 +11,11 @@ import { AideReport } from './ui/AideReport';
 import { PeopleProvider } from './ui/People';
 import { addReports as addReports0, dismissReport } from './game/report';
 import { trackGoals } from './game/goals';
+import { summarizeAway, type AwaySummary } from './game/orders';
+import { AwayModal, OrdersModal } from './ui/OrdersModal';
+
+/** 이만큼 넘게 비웠다 오면 '자리 비운 동안' 보고 창 */
+const AWAY_REPORT_MS = 20 * 60e3;
 
 /** 바뀌기 전·후 비교: 부관 보고 + 매일 할 일·업적 */
 const addReports = (b: G.GameState | null, a: G.GameState) => trackGoals(b, addReports0(b, a));
@@ -35,11 +40,12 @@ function writeSeen(t: number) {
 }
 
 /** 꺼 둔 사이 흐른 시간을 반영하고, 알림 글을 만든다 */
-function resume(saved: G.GameState, now: number): { state: G.GameState; notice: string } {
+function resume(saved: G.GameState, now: number): { state: G.GameState; notice: string; away?: AwaySummary } {
   const away = now - saved.lastRealTime;
   const before = saved.player.pendingSalary;
   const state = addReports(saved, G.catchUp(saved, now));
   if (away < 60 * 1000) return { state, notice: '' };
+  const sum = away >= AWAY_REPORT_MS ? summarizeAway(saved, state, away) : undefined;
   const hours = away / (60 * 60 * 1000);
   const got = Math.floor(state.player.pendingSalary - before);
   const capped = state.player.pendingSalary >= G.pendingCap(state) - 0.001;
@@ -49,15 +55,18 @@ function resume(saved: G.GameState, now: number): { state: G.GameState; notice: 
       `자리를 비운 ${hours < 1 ? `${Math.round(hours * 60)}분` : `${hours.toFixed(1)}시간`} 동안 ` +
       `세계가 ${hours.toFixed(1)}일 흘렀어요. 봉급 +${got.toLocaleString('ko-KR')}` +
       (capped ? ' (12시간 한도까지 찼어요)' : ''),
+    away: sum,
   };
 }
 
 export function App() {
   const [init] = useState(() => {
     const saved = loadGame();
-    return saved ? resume(saved, Date.now()) : { state: null, notice: '' };
+    return saved ? resume(saved, Date.now()) : { state: null, notice: '', away: undefined };
   });
   const [state, setState] = useState<G.GameState | null>(init.state);
+  const [away, setAway] = useState<AwaySummary | null>(init.away ?? null);
+  const [ordersOpen, setOrdersOpen] = useState(false);
   const [notices, setNotices] = useState<string[]>(init.notice ? [init.notice] : []);
   const setNotice = (t: string) => {
     if (t) setNotices((l) => [t, ...l].slice(0, 20));
@@ -107,6 +116,28 @@ export function App() {
     return () => clearInterval(t);
   }, []);
 
+  // 창을 오래 숨겼다가 돌아오면(휴대폰 화면 끄기 등) '자리 비운 동안' 보고
+  useEffect(() => {
+    let snap: { s: G.GameState; t: number } | null = null;
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        if (stateRef.current) snap = { s: stateRef.current, t: Date.now() };
+        return;
+      }
+      if (!snap || !stateRef.current) return;
+      const ms = Date.now() - snap.t;
+      const b = snap.s;
+      snap = null;
+      if (ms < AWAY_REPORT_MS) return;
+      const now = addReports(stateRef.current, G.catchUp(stateRef.current, Date.now(), speedRef.current));
+      stateRef.current = now;
+      setState(now);
+      setAway(summarizeAway(b, now, ms));
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   // 자동 저장
   useEffect(() => {
     const save = () => {
@@ -129,6 +160,7 @@ export function App() {
     const r = resume(s, Date.now());
     setState(r.state);
     setNotice(r.notice);
+    setAway(r.away ?? null);
     saveGame(r.state);
     return null;
   }, []);
@@ -165,6 +197,7 @@ export function App() {
         const r = resume(saved, Date.now());
         setState(r.state);
         setNotice(r.notice);
+        setAway(r.away ?? null);
       }
     },
     exportCode: () => exportCode(G.catchUp(state, Date.now(), speedRef.current)),
@@ -210,7 +243,15 @@ export function App() {
       speed={speed}
       go={go}
       back={back}
-      overlay={screen !== 'battle' && <AideReport state={state} onNext={() => update(dismissReport)} />}
+      overlay={
+        screen !== 'battle' && (
+          <>
+            <AideReport state={state} onNext={() => update(dismissReport)} />
+            {away && <AwayModal sum={away} onClose={() => setAway(null)} onOrders={() => (setAway(null), setOrdersOpen(true))} />}
+            {ordersOpen && <OrdersModal state={state} apply={update} onClose={() => setOrdersOpen(false)} />}
+          </>
+        )
+      }
     >
       <View
         state={state}

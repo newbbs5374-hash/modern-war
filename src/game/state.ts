@@ -11,6 +11,7 @@ import type { Report } from './report';
 import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
+import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
@@ -70,6 +71,8 @@ export interface GameState {
   goals?: GoalsState;
   /** 돌발 사건 카드 */
   crisis?: CrisisState;
+  /** 미리 명령(자리 비운 동안 부관이 지키는 규칙) */
+  orders?: OrdersState;
 }
 
 export interface NewGameOptions {
@@ -117,7 +120,7 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) : sanctionMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) : sanctionMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -143,6 +146,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
     ['가진 도시(점령지는 절반)', x(share)],
     ['🏭 군수공장', x(budgetMult(s))],
     ['🏛️ 체제·카드·도시 민심·인구', x(civBudgetMult(s))],
+    ...(ordersBudget(s) !== 1 ? [['🛡️ 방어 태세(미리 명령)', x(ordersBudget(s))] as [string, string]] : []),
     ['무역 계약(시간당)', `${Math.round(contractMoneyPerHour(s)).toLocaleString('ko-KR')}`],
   ];
 }
@@ -199,14 +203,15 @@ export function advance(s: GameState, ms: number): GameState {
     for (const [id, n] of Object.entries(cur.nations)) nations[id] = { ...n };
     const ownerBefore = { ...world.owner };
     const pairsBefore = Object.fromEntries(Object.entries(world.pairs).map(([k, p]) => [k, { tension: p.tension }]));
-    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer) * defenseMult(cur), occupyHold(cur));
+    aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer) * defenseMult(cur) * ordersDefense(cur), occupyHold(cur));
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = civTick(cur, pairsBefore);
+    cur = ordersTick(crisisTick(cur));
     world = cur.world;
   }
-  return crisisTick(checkVictory(accrue(cur, left)));
+  return ordersTick(crisisTick(checkVictory(accrue(cur, left))));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */

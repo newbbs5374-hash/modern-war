@@ -241,11 +241,11 @@ export const SHOP: ShopItem[] = [
     id: 'budget',
     name: '긴급 국방예산',
     icon: '💰',
-    text: '국방예산 +20,000',
+    text: '국방예산 +5,000',
     price: 30,
     give: (s) => {
       const me = s.player.countryId;
-      return { ...s, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 20000 } } };
+      return { ...s, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 5000 } } };
     },
   },
   {

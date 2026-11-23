@@ -23,6 +23,8 @@ import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
+import { OrdersModal } from './OrdersModal';
+import { ORDER_INFO, ordersOf } from '../game/orders';
 import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
 import { goalsOf } from '../game/goals';
 import { ForcesScreen } from './ForcesScreen';
@@ -80,6 +82,7 @@ export function HomeScreen(props: ScreenProps) {
   const [cityPick, setCityPick] = useState<string | null>(null);
   const [talkOpen, setTalkOpen] = useState(false);
   const [crisisOpen, setCrisisOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
   const crisis = crisisOf(state).open;
   const talks = state.officer.talks ?? [];
   const [dayMode, setDayModeState] = useState<DayMode>(() => {
@@ -116,6 +119,7 @@ export function HomeScreen(props: ScreenProps) {
     [
       { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
       { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
+      { icon: '📋', label: '명령', x: 90, y: 52, on: () => setOrdersOpen(true), badge: ORDER_INFO.filter((x) => ordersOf(state)[x.key]).length || null },
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
       { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
       { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
@@ -127,6 +131,7 @@ export function HomeScreen(props: ScreenProps) {
       <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} />
       {talkOpen && <TalkModal state={state} actions={actions} onClose={() => setTalkOpen(false)} />}
       {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
+      {ordersOpen && <OrdersModal state={state} apply={actions.apply} onClose={() => setOrdersOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
 
       <div className="home-res">
