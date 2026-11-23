@@ -10,6 +10,7 @@ import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
 import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
+import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
@@ -67,6 +68,8 @@ export interface GameState {
   peace?: PeaceState;
   /** 루비·매일 할 일·업적. 없으면 불러올 때·처음 쓸 때 채움 */
   goals?: GoalsState;
+  /** 돌발 사건 카드 */
+  crisis?: CrisisState;
 }
 
 export interface NewGameOptions {
@@ -98,6 +101,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     economy: newEconomy(),
     ending: null,
     civ: newCiv({ world, worldMs: 0 }),
+    crisis: newCrisis(0),
   };
 }
 
@@ -202,7 +206,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = civTick(cur, pairsBefore);
     world = cur.world;
   }
-  return checkVictory(accrue(cur, left));
+  return crisisTick(checkVictory(accrue(cur, left)));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */

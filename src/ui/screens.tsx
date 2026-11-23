@@ -22,6 +22,9 @@ import { boostsOf } from '../game/boost';
 import { OPERATION_RANK } from '../data/officers';
 import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
+import { CrisisModal } from './CrisisModal';
+import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
+import { goalsOf } from '../game/goals';
 import { ForcesScreen } from './ForcesScreen';
 import { InteriorScreen } from './InteriorScreen';
 import { DiplomacyScreen } from './DiplomacyScreen';
@@ -76,6 +79,8 @@ export function HomeScreen(props: ScreenProps) {
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
   const [talkOpen, setTalkOpen] = useState(false);
+  const [crisisOpen, setCrisisOpen] = useState(false);
+  const crisis = crisisOf(state).open;
   const talks = state.officer.talks ?? [];
   const [dayMode, setDayModeState] = useState<DayMode>(() => {
     try {
@@ -121,6 +126,7 @@ export function HomeScreen(props: ScreenProps) {
     <div className="home-stage">
       <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} />
       {talkOpen && <TalkModal state={state} actions={actions} onClose={() => setTalkOpen(false)} />}
+      {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
 
       <div className="home-res">
@@ -147,6 +153,15 @@ export function HomeScreen(props: ScreenProps) {
 
         <div className="home-quests">
           <b className="hq-title">📌 주요 임무</b>
+          {crisis && (
+            <button className="hq hot crisis-hq" onClick={() => setCrisisOpen(true)}>
+              <span>{crisisById(crisis.def).icon}</span>
+              <span className="hq-main">
+                <b>⚡ {crisisById(crisis.def).title}</b>
+                <small>결정을 기다려요 · {timeLeft(crisis.untilMs - state.worldMs)}</small>
+              </span>
+            </button>
+          )}
           {talks.length > 0 && (
             <button className="hq hot talk-hq" onClick={() => setTalkOpen(true)}>
               <span>{talks[0].icon}</span>
@@ -580,6 +595,8 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             내정 시험(예산·자원·경험치 채우기)
           </button>
           <button onClick={() => actions.apply((s) => ({ ...s, officer: { ...s.officer, boosts: boostsOf(s) + 100 } }))}>🎫 가속권 +100</button>
+          <button onClick={() => actions.apply(debugCrisis)}>⚡ 돌발 사건 바로 열기</button>
+          <button onClick={() => actions.apply((s) => ({ ...s, goals: { ...goalsOf(s), ruby: goalsOf(s).ruby + 200 } }))}>💎 루비 +200</button>
           <button onClick={() => actions.apply((s) => debugAddAide({ ...s, player: { ...s.player, salary: s.player.salary + 5000 } }))}>
             부관 데려오기 + 봉급 5000
           </button>
