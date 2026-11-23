@@ -77,20 +77,20 @@ describe('내정', () => {
     expect(canProduce(s, '보병')).toMatch(/강철/);
     expect(canProduce({ ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20 } } }, '전차')).toMatch(/연구/); // 등급 + 연구 둘 다
     s = debugAllResearch(s);
-    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20 } } };
+    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 50, 석유: 20, 특수강: 5, 텅스텐: 5 } } };
     expect(canProduce(s, '항공모함')).toMatch(/대장|지도자|부터/);
     const base = advance(s, 4 * H);
     s = produce(s, '전차');
     s = produce(s, '보병');
     expect(s.economy.queue.length).toBe(2);
-    expect(s.economy.stock.강철).toBe(44);
+    expect(s.economy.stock.강철).toBe(45);
     s = advance(s, 4 * H);
     expect(s.economy.queue.length).toBe(0);
     expect(s.economy.army.전차).toBe(1);
-    expect(s.economy.power).toBe(14); // 9 + 2, 연구(갈륨 +10% · 통합 전장망 육군 +15%)로 ×1.25
+    expect(s.economy.power).toBe(21); // 9 + 2, 연구 40개(육군·전체 전투력 강화들)로 ×1.9쯤
     expect(s.nations.kr.troops).toBeGreaterThan(base.nations.kr.troops + 2000);
     // 특화 유닛(한국: ① 자주포 포병대 · ② 흑표 수출 전차). 바탕 병과도 계속 만들 수 있음
-    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 80, 석유: 30, 구리: 10 } } };
+    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 80, 석유: 30, 구리: 10, 텅스텐: 10, 특수강: 10 } } };
     expect(canProduce(s, '포병', 'kr-1')).toBeNull();
     expect(canProduce(s, '포병', 'us-1')).toMatch(/특화/);
     expect(canProduce(s, '전차', 'kr-2')).toBeNull();

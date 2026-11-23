@@ -219,3 +219,31 @@ describe('자원 3안: 매장지·채굴장 · 생활 자원 · 복합소재', (
     expect(typeof back.economy.stock.갈륨).toBe('number');
   });
 });
+
+describe('자원 24종 · 연구 70개 · 체제 8가지(11-23)', () => {
+  it('공업 구역에서 특수강·정밀부품도 만들고, 가공마다 끌 수 있음', () => {
+    let s = rich(C.debugAllResearch(newGame('t', 'kr', 0, { seed: 4 })));
+    const city = 'kr-0';
+    const t = C.cityTiles(city).filter((x) => !x.center).find((x) => !C.canDistrict(s, city, hexKey(x.q, x.r), 'industry'))!;
+    s = C.buildDistrict(s, city, hexKey(t.q, t.r), 'industry');
+    s = advance(s, 2.1 * H);
+    expect(C.processPerHour(s, '특수강')).toBe(1);
+    const before = s.economy.stock.특수강;
+    const nickel = s.economy.stock.니켈;
+    s = advance(s, 2 * H);
+    expect(s.economy.stock.특수강 - before).toBeGreaterThan(1.5);
+    expect(s.economy.stock.니켈).toBeLessThan(nickel + 0.01 + 10);
+    const off = { ...s, economy: { ...s.economy, process: { 특수강: false } } };
+    expect(C.processPerHour(off, '특수강')).toBe(0);
+    expect(C.processPerHour(off, '정밀부품')).toBe(1);
+  });
+  it('새 체제는 사회 제도 연구로 열림', () => {
+    let s = rich(newGame('t', 'kr', 0, { seed: 4 }));
+    expect(C.canSetGov(s, 'technocracy')).toMatch(/의무 교육/);
+    s = C.startResearch(s, 's-school');
+    s = advance(s, 2 * H);
+    expect(C.canSetGov(s, 'technocracy')).toBeNull();
+    s = C.setGov(s, 'technocracy');
+    expect(C.effSum(s, 'research')).toBeGreaterThanOrEqual(0.25);
+  });
+});

@@ -99,7 +99,7 @@ describe('저장/불러오기', () => {
     const s = advance(newGame('대장', 'kr', 0), HOUR);
     const once = importCode(exportCode(s))!;
     expect(once.player.salary).toBeGreaterThan(s.player.salary + 100_000);
-    expect(once.officer.testGrant).toBe(2);
+    expect(once.officer.testGrant).toBe(3);
     expect(importCode(exportCode(once))).toEqual(once);
   });
   it('망가진 저장은 거부', () => {

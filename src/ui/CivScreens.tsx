@@ -88,7 +88,7 @@ export function ResearchPanel(props: ScreenProps) {
       <section className="card">
         <div className="row">
           <span className="civ-era">
-            <ArtIcon k={eraArtKey(c.era)} emoji={ERAS[c.era].icon} cls="inline" /> <b>{ERAS[c.era].name}</b> <small className="muted">· 끝낸 연구 {c.done.length}/35</small>
+            <ArtIcon k={eraArtKey(c.era)} emoji={ERAS[c.era].icon} cls="inline" /> <b>{ERAS[c.era].name}</b> <small className="muted">· 끝낸 연구 {c.done.length}/{MIL_TECHS.length + SOC_TECHS.length}</small>
           </span>
           <Tip label={`🔬 ×${r1(rate)}`} title="연구 속도(실제 1시간에)" rows={C.researchBreakdown(state).map(([k, v]) => [k, `+${r1(v)}`])} total={`${r1(rate)}`} />
           <Help title="연구">
@@ -112,10 +112,10 @@ export function ResearchPanel(props: ScreenProps) {
       </section>
       <div className="seg branch-tabs">
         <button className={line === 'mil' ? 'on' : ''} onClick={() => setLine('mil')}>
-          ⚙️ 군사 기술 <small>{c.done.filter((id) => id.startsWith('m-')).length}/20</small>
+          ⚙️ 군사 기술 <small>{c.done.filter((id) => id.startsWith('m-')).length}/{MIL_TECHS.length}</small>
         </button>
         <button className={line === 'soc' ? 'on' : ''} onClick={() => setLine('soc')}>
-          📜 사회 제도 <small>{c.done.filter((id) => id.startsWith('s-')).length}/15</small>
+          📜 사회 제도 <small>{c.done.filter((id) => id.startsWith('s-')).length}/{SOC_TECHS.length}</small>
         </button>
       </div>
       {([1, 2, 3, 4] as const).map((era) => (
@@ -299,7 +299,7 @@ export function GovPanel(props: ScreenProps) {
               );
             })}
           </div>
-          <p className="small muted">쓸 수 있는 카드 {C.unlockedCards(state).length}/24 · 사회 제도 연구로 더 열려요</p>
+          <p className="small muted">쓸 수 있는 카드 {C.unlockedCards(state).length}/{CARDS.length} · 사회 제도 연구로 더 열려요</p>
         </section>
       )}
       {gov && (
@@ -371,7 +371,8 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
             <small>{g.slots.map((k) => SLOT_ICON[k]).join(' ')}</small>
             <small>{g.text}</small>
             <small className="muted">어울림: {g.play}</small>
-            {why && c.gov && <small className="warn">{why}</small>}
+            {g.needs && !C.hasTech(state, g.needs) && <small className="warn">🔒 {techById(g.needs)?.name} 연구로 열림</small>}
+            {why && c.gov && !(g.needs && !C.hasTech(state, g.needs)) && <small className="warn">{why}</small>}
           </button>
         );
       })}

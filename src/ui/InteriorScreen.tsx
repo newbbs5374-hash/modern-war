@@ -16,7 +16,8 @@ import {
   levelEff,
   FACILITY_TEXT,
   OCCUPIED_RES,
-  COMPOSITE_INPUT,
+  PROCESSED,
+  RES_ORDER,
   LUXURY_LOYALTY,
   RESOURCES,
   RES_BUILDING,
@@ -60,7 +61,7 @@ import { FACILITY_ICON, UNIT_ICON } from './icons';
 import { Fold, Meter, Modal, Tabs, useTab } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
-import { canResearch, civOf, compositePerHour, deposits, extraResPerHour, myIslands } from '../game/civ';
+import { canResearch, civOf, deposits, extraResPerHour, myIslands, processOn, processPerHour } from '../game/civ';
 import { PIONEER_ISLANDS } from '../data/hexmap';
 import { TECHS } from '../data/civ';
 
@@ -321,7 +322,6 @@ function ResourcePanel(props: ScreenProps) {
   const per = resPerDay(state);
   const extra = extraResPerHour(state);
   const [pick, setPick] = useState<Res | null>(null);
-  const comp = compositePerHour(state);
   return (
     <>
       <p className="small muted center">자원을 누르면 설명 · 쓰는 곳 · 얻는 곳이 나와요. 도시 칸의 ⛏️ 매장지에 채굴장을 지으면 더 나요.</p>
@@ -331,7 +331,7 @@ function ResourcePanel(props: ScreenProps) {
             {k === '전략' ? '⚙️' : k === '가공' ? '🏭' : k === '첨단' ? '🧪' : '🎁'} {k} 자원 <span className="muted">· {RES_KIND_TEXT[k]}</span>
           </small>
           <div className="res-grid">
-            {RESOURCES.filter((r) => RES_KIND[r] === k).map((r) => {
+            {RES_ORDER.filter((r) => RES_KIND[r] === k).map((r) => {
               const net = per[r] + (extra[r] ?? 0) + contractResPerHour(state, r);
               const have = e.stock[r] ?? 0;
               return (
@@ -347,10 +347,30 @@ function ResourcePanel(props: ScreenProps) {
             })}
           </div>
           {k === '가공' && (
-            <label className="small row-check">
-              <input type="checkbox" checked={e.composite !== false} onChange={(ev) => props.actions.apply((s) => ({ ...s, economy: { ...s.economy, composite: ev.target.checked } }))} /> 공업 구역에서 복합소재 만들기
-              {comp ? ` (시간당 ${comp}개 · 재료 ${Object.entries(COMPOSITE_INPUT).map(([r, v]) => `${RES_ICON[r as Res]}${v! * comp}`).join(' ')})` : ' (공업 구역이 아직 없어요)'}
-            </label>
+            <div className="proc-list">
+              {PROCESSED.map((pr) => {
+                const n = processPerHour(state, pr.res);
+                const on = processOn(e, pr.res);
+                return (
+                  <label key={pr.res} className="small row-check">
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={(ev) =>
+                        props.actions.apply((s) => ({
+                          ...s,
+                          economy: pr.res === '복합소재' ? { ...s.economy, composite: ev.target.checked } : { ...s.economy, process: { ...s.economy.process, [pr.res]: ev.target.checked } },
+                        }))
+                      }
+                    />{' '}
+                    {RES_ICON[pr.res]} {pr.res} 만들기
+                    <span className="muted">
+                      {n ? ` · 시간당 ${n}개 · 재료 ${Object.entries(pr.input).map(([r, v]) => `${RES_ICON[r as Res]}${r} ${v! * n}`).join(' ')}` : on ? ' · 공업 구역이 아직 없어요' : ` · 재료 ${Object.entries(pr.input).map(([r, v]) => `${r} ${v}`).join('·')}`}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           )}
         </div>
       ))}
@@ -407,7 +427,15 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
         </p>
       )}
       {islands.length > 0 && <p className="small">🏝️ 분쟁 섬: {islands.map((p) => `${p.name}${myIslands(state).includes(p.id) ? '(우리 영향력 1등)' : ''}`).join(', ')}</p>}
-      {res === '복합소재' && <p className="small">🏭 공업 구역 1곳마다 시간당 1개(알루미늄 2 + 석유 1을 씀)</p>}
+      {PROCESSED.filter((p) => p.res === res).map((p) => (
+        <p key={p.res} className="small">
+          🏭 공업 구역 1곳마다 시간당 1개({Object.entries(p.input).map(([r, v]) => `${r} ${v}`).join(' + ')}을 씀)
+        </p>
+      ))}
+      {(() => {
+        const into = PROCESSED.filter((p) => p.input[res]);
+        return into.length ? <p className="small muted">🏭 가공 재료: {into.map((p) => `${p.res}(${res} ${p.input[res]})`).join(', ')}</p> : null;
+      })()}
       {RES_KIND[res] === '생활' && <p className="small good">🎁 1개만 있어도 모든 도시 민심 +{LUXURY_LOYALTY}. 여러 개는 효과가 같아서 남는 건 팔면 좋아요.</p>}
       {RES_BUILDING[res] && (
         <p className="small muted">

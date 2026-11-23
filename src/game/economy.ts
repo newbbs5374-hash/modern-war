@@ -94,6 +94,8 @@ export interface EconomyState {
   contracts?: Contract[];
   /** 복합소재 만들기(공업 구역). 없으면 켜짐 */
   composite?: boolean;
+  /** 특수강·정밀부품 만들기(공업 구역). 없으면 켜짐 */
+  process?: Partial<Record<Res, boolean>>;
 }
 
 export interface Contract {
@@ -121,7 +123,7 @@ function cloneEco(e: EconomyState): EconomyState {
   return {
     facilities: Object.fromEntries(Object.entries(e.facilities).map(([k, v]) => [k, { ...v }])) as EconomyState['facilities'],
     buildings: Object.fromEntries(Object.entries(e.buildings).map(([k, v]) => [k, { ...v }])) as Record<BuildingId, BuildingState>,
-    stock: { ...e.stock },
+    stock: { ...emptyStock(), ...e.stock },
     chore: e.chore ? { ...e.chore } : null,
     queue: e.queue.map((q) => ({ ...q })),
     army: { ...e.army },
@@ -130,6 +132,7 @@ function cloneEco(e: EconomyState): EconomyState {
     log: [...e.log],
     contracts: (e.contracts ?? []).map((c) => ({ ...c })),
     composite: e.composite,
+    process: e.process ? { ...e.process } : undefined,
   };
 }
 
