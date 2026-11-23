@@ -7,7 +7,9 @@ import { Modal } from './kit';
 import { FLAG } from './flag';
 import type { GameActions } from './screens';
 import { timeLeft } from './officerScreens';
-import { Face, aideKeys } from './Portrait';
+import { aideKeys } from './Portrait';
+import { PersonFace } from './People';
+import type { PersonRef } from '../game/people';
 
 /** 대화 상대 사진: 부관이면 이름 → 분야 → 기본 부관 */
 function talkFaceKeys(state: GameState, t: Talk): (string | undefined)[] {
@@ -16,6 +18,16 @@ function talkFaceKeys(state: GameState, t: Talk): (string | undefined)[] {
     return a ? aideKeys(a) : [t.face, 'aide'];
   }
   return [t.face];
+}
+
+/** 대화 상대 → 인물 창 */
+function talkWho(state: GameState, t: Talk): PersonRef {
+  if (t.face?.startsWith('aide')) {
+    const a = state.officer.aides.find((x) => `aide-${x.name}` === t.face);
+    if (a) return { kind: 'aide', id: a.id };
+  }
+  if (t.face === 'envoy' || t.face === 'coastguard' || t.face === 'settler') return { kind: 'npc', role: t.face, country: t.who };
+  return { kind: 'leader', country: t.who };
 }
 
 /** 세계 흐름 막대(평화 → 냉전 → 국지전 → 대전쟁) */
@@ -76,7 +88,7 @@ export function TalkModal({ state, actions, onClose }: { state: GameState; actio
         <div className="talk">
           <div className="talk-who">
             <span className="talk-face">
-              <Face keys={talkFaceKeys(state, t)} fallback={t.icon} />
+              <PersonFace who={talkWho(state, t)} keys={talkFaceKeys(state, t)} fallback={t.icon} />
             </span>
             <span>
               <b>{t.speaker}</b>

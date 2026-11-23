@@ -194,6 +194,8 @@ export interface OfficerState {
   testGrant?: number;
   /** 승급 심사에 떨어지면 6시간 기다리기(시험판 기본은 꺼짐) */
   examPenalty?: boolean;
+  /** 인물 창 교류를 마지막으로 한 게임 날짜("aide:3:chat" → 날짜) */
+  people?: Record<string, number>;
 }
 
 export function newOfficer(seed: number): OfficerState {

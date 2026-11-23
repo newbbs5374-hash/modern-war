@@ -56,7 +56,8 @@ import {
 import { AIDE_EFFECT } from '../battle/grid';
 import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan, trainingScale } from '../battle/spec';
 import { Card, fmt } from './common';
-import { Face, aideKeys } from './Portrait';
+import { aideKeys } from './Portrait';
+import { PersonFace } from './People';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
 import { Chip, Help, Meter, Modal, Tabs, Tile, stars, useTab } from './kit';
@@ -304,7 +305,7 @@ export function OfficerScreen(props: ScreenProps) {
       <section className="card">
         <div className="hero">
           <span className="avatar">
-            <Face keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+            <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
           </span>
           <div className="hero-main">
             <b>
@@ -450,7 +451,7 @@ function AidesPanel({ state, actions }: ScreenProps) {
           return (
             <Tile
               key={a.id}
-              icon={<Face keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="tile-face" />}
+              icon={<PersonFace who={{ kind: 'aide', id: a.id }} keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="tile-face" />}
               label={a.name}
               sub={`${a.specialty} · Lv.${a.level}`}
               badge={done ? '✓' : null}
@@ -504,7 +505,7 @@ function AideModal({
   const gWhy = canGift(state, a.id);
   const tWhy = canTrainAide(state, a.id);
   return (
-    <Modal title={`${a.name} 부관`} icon={<Face keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="modal-face" />} onClose={onClose}>
+    <Modal title={`${a.name} 부관`} icon={<PersonFace who={{ kind: 'aide', id: a.id }} keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="modal-face" />} onClose={onClose}>
       <div className="ichips">
         <Chip icon="🏷️" value={a.specialty} />
         <Chip icon="⬆️" value={`Lv.${a.level}`} />
@@ -594,7 +595,9 @@ function GeneralsPanel({ state, actions }: ScreenProps) {
     <Card title={`장군 ${o.generals.length} / ${slots}`} icon="⭐" right={<Chip icon="🛡️" value={`+${Math.round((generalDefense(o) - 1) * 100)}%`} label="방어" />} help={<p>장군은 내 나라 도시를 자동으로 지켜요(능력이 높을수록 방어 +). 부관 Lv.3을 승격하거나 봉급으로 영입해요.</p>}>
       {o.generals.map((g) => (
         <div key={g.id} className="line-item">
-          <span className="li-ico">{FIELD_ICON[g.field] ?? '⭐'}</span>
+          <span className="li-ico">
+            <PersonFace who={{ kind: 'general', id: g.id }} keys={[`aide-${g.name}`]} fallback={FIELD_ICON[g.field] ?? '⭐'} />
+          </span>
           <span className="li-main">
             <b>
               {g.name} <small className="muted">{g.field} · {g.style}</small>
@@ -622,7 +625,9 @@ function RivalsPanel({ state }: ScreenProps) {
   return (
     <Card title="지도자 경쟁" icon="🏁" help={<p>대장에서 지도자이 되려면 라이벌 세 명보다 평판(공훈 + 명성 + 신뢰도)이 높아야 해요. 라이벌도 시간이 지나면 승급해요.</p>}>
       <div className="line-item">
-        <span className="li-ico">{RANK_ICON[r]}</span>
+        <span className="li-ico">
+          <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+        </span>
         <span className="li-main">
           <b>나 · {RANKS[r].name}</b>
           <Meter value={mine} max={top} tone="green" />
@@ -631,7 +636,9 @@ function RivalsPanel({ state }: ScreenProps) {
       </div>
       {rivals.map((x) => (
         <div key={x.name} className="line-item">
-          <span className="li-ico">{RANK_ICON[x.rank]}</span>
+          <span className="li-ico">
+            <PersonFace who={{ kind: 'rival', name: x.name }} keys={[`aide-${x.name}`]} fallback={RANK_ICON[x.rank]} />
+          </span>
           <span className="li-main">
             <b>
               {x.name} · {RANKS[x.rank].name} {x.rank > r ? '⚠️' : ''}

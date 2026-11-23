@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { Help } from './kit';
+import { PersonFace } from './People';
+import { Flag } from './flag';
 import { CITIES } from '../data/cities';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { BLOCS, FAITHS, countryById } from '../data/world';
@@ -91,7 +93,10 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
         </span>
       </div>
       {!isAlive(w, id) && <p className="small warn">도시를 모두 잃었어요. 반란이 일어나면 되살아나요.</p>}
-      <p className="small">지도자: {leaderText(state, id)}</p>
+      <p className="small leader-line">
+        <PersonFace who={{ kind: 'leader', country: id }} keys={[`leader-${id}`]} fallback={<Flag id={id} />} className="leader-mini" />
+        <span>지도자: {leaderText(state, id)}</span>
+      </p>
       {p && p.rel !== '전쟁' && p.rel !== '연합' && (
         <p className="small">
           우리와 긴장도 {Math.round(p.tension)} / 100 {p.rel === '휴전' ? '(100이 되면 휴전이 깨짐)' : ''}
