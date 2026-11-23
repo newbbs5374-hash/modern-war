@@ -1,0 +1,36 @@
+import { describe, expect, it } from 'vitest';
+import { CITIES } from '../data/cities';
+import { COUNTRIES } from '../data/world';
+import { newWorld } from './world';
+import { inProv, landCount, landOwners, noteCapture, provinces, provincesOf } from './territory';
+
+describe('도(주·성) 땅', () => {
+  it('13개 나라 모두 도가 있고, 도시마다 자기 도가 있음', () => {
+    for (const c of COUNTRIES) expect(provincesOf(c.id).length).toBeGreaterThan(c.id === 'il' ? 3 : 5);
+    for (const city of CITIES) {
+      const own = provinces().filter((p) => p.seat === city.id);
+      expect(own.length, city.name).toBeGreaterThan(0);
+    }
+  });
+  it('처음엔 모든 도가 처음 나라 것', () => {
+    const w = newWorld(1, false, 0);
+    const o = landOwners(w);
+    for (const p of provinces()) expect(o[p.id]).toBe(p.c);
+  });
+  it('부산을 점령하면 서울 쪽은 남고, 출발 도시부터 부산까지 길목 땅이 넘어감', () => {
+    const w = newWorld(1, false, 0);
+    const busan = CITIES.find((c) => c.name === '부산')!;
+    const seoul = CITIES.find((c) => c.name === '서울')!;
+    const before = landCount(w, 'kr');
+    noteCapture(w, busan.id, 'jp');
+    w.owner[busan.id] = 'jp';
+    const o = landOwners(w);
+    expect(landCount(w, 'kr')).toBeLessThan(before - 1);
+    const seoulProv = provinces().find((p) => p.c === 'kr' && inProv(p, seoul.x, seoul.y))!;
+    expect(o[seoulProv.id]).toBe('kr');
+    // 되찾으면 원래대로
+    noteCapture(w, busan.id, 'kr');
+    w.owner[busan.id] = 'kr';
+    expect(landCount(w, 'kr')).toBe(before);
+  });
+});

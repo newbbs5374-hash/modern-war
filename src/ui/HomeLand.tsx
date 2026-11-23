@@ -11,6 +11,8 @@ import { FLAG_DEF } from './flag';
 import { LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
 import { homeTerrain } from './homeTerrain';
+import { landOwners } from '../game/territory';
+import { COUNTRY_COLORS } from './WorldMap';
 // 바닥 그림(11-23 대장 결정 "코드 실사화"): 이음새 없는 풀·들판·모래·바다 그림을 깔고 햇빛·그림자를 코드로 더함.
 // 새 바닥 그림(home-ground-*.png, 명령문 guides/home-real-art-prompts.md)이 오면 이 줄만 바꾸면 됨.
 import groundGrass from '../assets/city/city-ground-grass.webp';
@@ -147,6 +149,7 @@ export function HomeLand(props: {
     const set = d < 34 ? art.towers : d < 62 ? art.offices : art.houses;
     return set.length ? set[j % set.length] : null;
   };
+  const lands = landOwners(world);
   const status = homeCities.map((c) => cityStatus(c, world, countryId, atWar));
   const hot = status.some((s) => s === '공격받음' || s === '점령당함');
   const [night, setNight] = useState(() => nightLevel(dayMode));
@@ -295,6 +298,20 @@ export function HomeLand(props: {
           <path d={land} fill="url(#g-plain)" opacity="0.45" />
           <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.55" />
           <path d={land} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="1 5" />
+          {/* 빼앗긴 도: 점령한 나라 색 + 빗금 */}
+          <defs>
+            <pattern id="home-occ" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="3" height="10" fill="#fff" fillOpacity="0.3" />
+            </pattern>
+          </defs>
+          {terrain.provs
+            .filter((p) => (lands[p.id] ?? countryId) !== countryId)
+            .map((p) => (
+              <g key={p.id} pointerEvents="none">
+                <path d={p.d} fill={COUNTRY_COLORS[lands[p.id]] ?? '#ef4444'} fillOpacity="0.45" />
+                <path d={p.d} fill="url(#home-occ)" />
+              </g>
+            ))}
           {terrain.inner && <path d={terrain.inner} fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.2" strokeDasharray="6 4" pointerEvents="none" />}
           <g clipPath={`url(#home-land-${countryId})`}>
           <path d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#2b7fa3" strokeWidth="4" strokeLinecap="round" />

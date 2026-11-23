@@ -45,6 +45,7 @@ import {
   WEARINESS_SCALE,
 } from './balance';
 import { Rng } from './rng';
+import { noteCapture } from './territory';
 import type { NationState } from './state';
 
 export interface PairState {
@@ -78,6 +79,8 @@ export interface WorldState {
   /** 도시 → 방어도(0~100). 0이 되면 점령 */
   defense: Record<string, number>;
   events: WorldEvent[];
+  /** 점령한 도시 → 공격을 시작한 도시(땅 길목 색칠용, territory.ts). 옛 저장은 없음 */
+  via?: Record<string, string>;
 }
 
 export const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
@@ -354,6 +357,7 @@ function invasions(ctx: Ctx) {
       const won = ap > dp * CAPTURE_MARGIN;
       if (won) w.defense[target] -= SIEGE_DAMAGE * Math.min(2, ratio);
       if (won && w.defense[target] <= 0) {
+        noteCapture(w, target, att);
         w.owner[target] = att;
         w.defense[target] = CAPTURED_DEFENSE;
         p.weariness += 4;
@@ -386,6 +390,7 @@ function rebellions(ctx: Ctx) {
     const hold = occ === ctx.player ? ctx.playerHold.rebel : 1;
     if (!rng.chance(REBEL_CHANCE * (faithDiff ? REBEL_FAITH_MULT : 1) * hold)) continue;
     const revived = !isAlive(w, c.home);
+    noteCapture(w, c.id, c.home);
     w.owner[c.id] = c.home;
     w.defense[c.id] = CAPTURED_DEFENSE;
     if (revived) nations[c.home].troops = Math.max(nations[c.home].troops, REVIVE_TROOPS);

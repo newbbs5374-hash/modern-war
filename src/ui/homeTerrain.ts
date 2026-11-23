@@ -6,6 +6,8 @@ import { CITIES } from '../data/cities';
 import { GEO_PATH } from '../data/realGeo';
 import { KR_INNER, KR_OUTLINE } from '../data/krProvinces';
 import { CITY_LONLAT, project } from '../data/realmap';
+import { GEO_PROV_INNER } from '../data/provinces';
+import { provincesOf } from '../game/territory';
 
 function ringArea(r: number[][]): number {
   let a = 0;
@@ -71,8 +73,10 @@ function smoothPath(r: Ring): string {
 export interface HomeTerrain {
   /** 땅 모양(본부 좌표) */
   land: string;
-  /** 시·도 경계(대한민국만, 없으면 '') */
+  /** 도(시·주·성) 경계(본부 좌표) */
   inner: string;
+  /** 우리나라 도 모양(본부 좌표): 빼앗긴 도를 색칠할 때 씀 */
+  provs: Array<{ id: string; name: string; d: string }>;
   onLand: (x: number, y: number) => boolean;
   /** 배가 도는 바다 길(화면 안에 바다가 없으면 null) */
   seaLoop: string | null;
@@ -155,13 +159,13 @@ export function homeTerrain(countryId: string): HomeTerrain {
   }
   const onLand = (x: number, y: number) => rings.some((r) => inRing(x, y, r));
   const land = rings.map(smoothPath).join('');
-  const inner =
-    countryId === 'kr'
-      ? KR_INNER.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_m, a, b) => {
-          const [x, y] = T(+a, +b);
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        })
-      : '';
+  const toT = (d: string) =>
+    d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_m, a, b) => {
+      const [x, y] = T(+a, +b);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+  const inner = toT(countryId === 'kr' ? KR_INNER : (GEO_PROV_INNER[countryId] ?? ''));
+  const provs = provincesOf(countryId).map((p) => ({ id: p.id, name: p.name, d: toT(p.d) }));
   const cityPos: Record<string, [number, number]> = {};
   const far: string[] = [];
   mine.forEach((c, i) => {
@@ -219,7 +223,7 @@ export function homeTerrain(countryId: string): HomeTerrain {
       break;
     }
   }
-  const out = { land, inner, onLand, seaLoop, cityPos, far, marks, scale: s * 6 };
+  const out = { land, inner, provs, onLand, seaLoop, cityPos, far, marks, scale: s * 6 };
   CACHE.set(countryId, out);
   return out;
 }

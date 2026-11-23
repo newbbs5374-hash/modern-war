@@ -8,14 +8,15 @@ import {
 import { CITIES } from "../data/cities";
 import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from "../data/world";
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
-import { KR_INNER, KR_OUTLINE, KR_PROVINCES } from "../data/krProvinces";
+import { KR_INNER, KR_OUTLINE } from "../data/krProvinces";
+import { GEO_PROV_INNER } from "../data/provinces";
+import { landOwners, provinces } from "../game/territory";
 import { HOME_MARKS } from "./homeTerrain";
 import {
   GEO,
   GEO_PATH,
   isLand,
   seaNearXY,
-  voronoiCells,
   project,
 } from "../data/realmap";
 import { isAlive, relationOf, type WorldState } from "../game/world";
@@ -86,16 +87,10 @@ function mixColor(hex: string, a: number): string {
     Math.round(n(hex, i) * a + n(LAND_BASE, i) * (1 - a));
   return `rgb(${c(0)},${c(1)},${c(2)})`;
 }
-/** 나라마다 도시 영역(실제 나라 모양 안에서 가장 가까운 도시 몫): 도시를 빼앗기면 그 영역 색이 바뀜 */
-const CELL_PATH: Record<string, string> = {};
-for (const c of COUNTRIES) {
-  const cells = voronoiCells(CITIES.filter((x) => x.home === c.id));
-  for (const [id, poly] of Object.entries(cells))
-    CELL_PATH[id] =
-      "M" +
-      poly.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L") +
-      "Z";
-}
+/** 나라마다 도(주·성·현) 영역: 도시를 빼앗기거나 길목을 내주면 그 도 색이 바뀜(game/territory.ts) */
+const PROVS = provinces();
+/** 도시 이름과 같은 도(서울·모스크바 등)는 도 이름을 따로 쓰지 않음 */
+const CITY_NAMES = new Set(CITIES.map((c) => c.name));
 /** 나라 이름 자리: 수도 가까이(멀리 떨어진 섬 도시는 빼고) 도시들의 가운데 */
 const COUNTRY_LABEL = Object.fromEntries(
   COUNTRIES.map((c) => {
@@ -417,6 +412,7 @@ export function WorldMap({
     ? `${(Math.max(0, Math.min(MW - MH, capX - MH / 2)) + X0).toFixed(1)} ${Y0} ${MH} ${MH}`
     : `${(X0 + cv.x).toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
   const owner = world.owner;
+  const land = landOwners(world);
   // 확대해도 글씨·점·선이 같이 커지지 않게(처음 배율 기준으로 화면 크기 유지)
   const z = mini ? 1 : Math.min(1, START_K / cv.k);
   const zr = mini ? 1 : Math.pow(z, 0.75);
@@ -446,6 +442,15 @@ export function WorldMap({
             <path d={COAST[c.id]} />
           </clipPath>
         ))}
+        <pattern
+          id="wm-occ"
+          width="4"
+          height="4"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="1.3" height="4" fill="#fff" fillOpacity="0.35" />
+        </pattern>
         <pattern
           id="wm-wave"
           width="26"
@@ -499,7 +504,7 @@ export function WorldMap({
         strokeWidth="0.4"
         pointerEvents="none"
       />
-      {/* 13개 나라: 도시 영역마다 지금 주인 색 */}
+      {/* 13개 나라: 도(주·성)마다 지금 주인 색 */}
       <g opacity={ART ? (mode === "나라" ? 0.58 : 0.48) : 1}>
         {COUNTRIES.map((c) => (
           <g
@@ -508,8 +513,8 @@ export function WorldMap({
             className="map-country"
             onClick={() => pick(c.id)}
           >
-            {CITIES.filter((x) => x.home === c.id).map((city) => {
-              const o = owner[city.id];
+            {PROVS.filter((p) => p.c === c.id).map((p) => {
+              const o = land[p.id] ?? c.id;
               const sel = c.id === selectedId;
               const alive = isAlive(world, o);
               const col = mixColor(
@@ -528,9 +533,28 @@ export function WorldMap({
                         ? 0.48
                         : 0.25,
               );
-              return <path key={city.id} d={CELL_PATH[city.id]} fill={col} />;
+              return (
+                <path
+                  key={p.id}
+                  d={p.d}
+                  fill={col}
+                  stroke={col}
+                  strokeWidth={0.6}
+                />
+              );
             })}
           </g>
+        ))}
+      </g>
+      {/* 점령당한 땅: 빗금(점령한 나라 색 위에) */}
+      <g pointerEvents="none">
+        {PROVS.filter((p) => (land[p.id] ?? p.c) !== p.c).map((p) => (
+          <path
+            key={p.id}
+            d={p.d}
+            fill="url(#wm-occ)"
+            clipPath={`url(#wm-c-${p.c})`}
+          />
         ))}
       </g>
       {/* 13개 나라 해안선 */}
@@ -545,24 +569,37 @@ export function WorldMap({
           pointerEvents="none"
         />
       ))}
-      {/* 대한민국 시·도 경계 */}
-      {!mini && cv.k >= 2.9 && (
-        <path
-          d={KR_INNER}
+      {/* 도(주·성·현) 경계: 모든 나라(대한민국은 시·도 자료) */}
+      {!mini && cv.k >= 1.6 && (
+        <g
           fill="none"
           stroke="#f8fafc"
-          strokeOpacity="0.65"
+          strokeOpacity={cv.k >= 2.9 ? 0.6 : 0.35}
           strokeWidth={0.45 * z}
           strokeDasharray={`${1.6 * z} ${1 * z}`}
           strokeLinejoin="round"
           pointerEvents="none"
-        />
+        >
+          {COUNTRIES.map((c) => (
+            <path key={c.id} d={c.id === "kr" ? KR_INNER : (GEO_PROV_INNER[c.id] ?? "")} />
+          ))}
+        </g>
       )}
+      {/* 도 이름: 화면에서 이름이 들어갈 만큼 클 때만 */}
       {!mini &&
-        cv.k >= 3.5 &&
-        KR_PROVINCES.filter((p) => !p.metro).map((p) => (
+        cv.k >= 2.5 &&
+        PROVS.filter(
+          (p) =>
+            !CITY_NAMES.has(p.name) &&
+            p.name &&
+            Math.sqrt(p.a) > 5 * z * p.name.length * 0.9 &&
+            p.x > cv.x - 20 &&
+            p.x < cv.x + vw(cv.k) + 20 &&
+            p.y > cv.y - 20 &&
+            p.y < cv.y + vh(cv.k) + 20,
+        ).map((p) => (
           <text
-            key={p.full}
+            key={p.id}
             x={p.x}
             y={p.y}
             textAnchor="middle"
