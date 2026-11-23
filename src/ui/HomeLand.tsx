@@ -1,4 +1,4 @@
-// 본부 배경: 살아 있는 우리나라 지도(임시 그림).
+// 본부 배경: 살아 있는 우리나라 지도. 땅은 수도 둘레 실제 해안선(homeTerrain.ts).
 // - 두 손가락/휠로 확대·축소, 끌어서 이동, 도시를 누르면 가까이 가서 정보 팝업
 // - 평소: 도로에 자동차·버스, 바다에 배, 하늘에 여객기, 구름 그림자, 흐르는 강, 실제 시각에 맞춘 낮·밤과 불빛
 // - 전쟁 때만: 공격받는 도시에 연기·불꽃, 군 차량 행렬, 전투기 / 빼앗긴 도시에는 상대 깃발
@@ -10,6 +10,7 @@ import { CITY_DEFENSE_MAX } from '../game/balance';
 import { FLAG_DEF } from './flag';
 import { LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
+import { HOME_CAP, homeTerrain } from './homeTerrain';
 // 바닥 그림(11-23 대장 결정 "코드 실사화"): 이음새 없는 풀·들판·모래·바다 그림을 깔고 햇빛·그림자를 코드로 더함.
 // 새 바닥 그림(home-ground-*.png, 명령문 guides/home-real-art-prompts.md)이 오면 이 줄만 바꾸면 됨.
 import groundGrass from '../assets/city/city-ground-grass.webp';
@@ -34,29 +35,6 @@ function rng(seed: number) {
     r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/** 땅 모양: 가운데를 둘러싼 울퉁불퉁한 고리 */
-function landPath(r: () => number, cx: number, cy: number, rx: number, ry: number): string {
-  const n = 18;
-  const pts: Array<[number, number]> = [];
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2;
-    const k = 0.78 + r() * 0.3;
-    pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
-  }
-  const mid = (i: number) => {
-    const [x1, y1] = pts[i % n];
-    const [x2, y2] = pts[(i + 1) % n];
-    return [(x1 + x2) / 2, (y1 + y2) / 2];
-  };
-  let d = `M${mid(0)[0].toFixed(1)},${mid(0)[1].toFixed(1)}`;
-  for (let i = 1; i <= n; i++) {
-    const [px, py] = pts[i % n];
-    const [mx, my] = mid(i);
-    d += ` Q${px.toFixed(1)},${py.toFixed(1)} ${mx.toFixed(1)},${my.toFixed(1)}`;
-  }
-  return d + 'Z';
 }
 
 /** 도시 자리(땅 안쪽, 나라 안 순서대로) */
@@ -109,15 +87,23 @@ export function HomeLand(props: {
 }) {
   const { countryId, world, atWar, dayMode, onDayMode, onCity, focus } = props;
   const r = rng(hash(countryId));
-  const land = landPath(r, 235, 380, 160, 250);
+  // 땅 = 수도 둘레 실제 해안선(homeTerrain.ts)
+  const terrain = homeTerrain(countryId);
+  const land = terrain.land;
   const flag = FLAG_DEF[countryId];
   const mine = flag?.color ?? '#3b82f6';
   // 본부 지도 = 수도 하나를 크게(11/22 대장 지시). 다른 도시는 세계 지도에서 봄
   const homeCities = CITIES.filter((c) => c.home === countryId && c.capital);
-  const CAP: [number, number] = [262, 420];
+  const CAP: [number, number] = HOME_CAP;
   const pos = (i: number): [number, number] => (i === 0 ? CAP : SPOTS[i % SPOTS.length]);
-  const mountains = Array.from({ length: 6 }, () => [140 + r() * 200, 200 + r() * 330, 14 + r() * 12] as const);
-  const forests = Array.from({ length: 10 }, () => [130 + r() * 220, 220 + r() * 320] as const);
+  // 산·숲: 땅 위, 수도 시가지 밖에만
+  const freeLand = (x: number, y: number) => terrain.onLand(x, y) && ((x - CAP[0]) / 135) ** 2 + ((y - CAP[1]) / 90) ** 2 > 1;
+  const mountains = Array.from({ length: 16 }, () => [20 + r() * (W - 40), 60 + r() * (H - 90), 14 + r() * 12] as const)
+    .filter(([x, y]) => freeLand(x, y))
+    .slice(0, 7);
+  const forests = Array.from({ length: 30 }, () => [15 + r() * (W - 30), 50 + r() * (H - 70)] as const)
+    .filter(([x, y]) => freeLand(x, y))
+    .slice(0, 12);
   const riverY = 260 + r() * 120;
   // 도시마다 건물 무리(가운데가 높음)
   const blocks = homeCities.map((_c, i) => {
@@ -145,15 +131,8 @@ export function HomeLand(props: {
   const [ccx, ccy] = CAP;
   const ring = (rx: number, ry: number) => `M${ccx - rx},${ccy} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
   roads.push({ id: `road-${countryId}-ring1`, d: ring(52, 32), a: 0, b: 0 });
-  roads.push({ id: `road-${countryId}-ring2`, d: ring(104, 64), a: 0, b: 0 });
-  (
-    [
-      [130, 200],
-      [372, 250],
-      [140, 590],
-      [350, 600],
-    ] as Array<[number, number]>
-  ).forEach(([x, y], k) => {
+  if (terrain.outerRing) roads.push({ id: `road-${countryId}-ring2`, d: ring(104, 64), a: 0, b: 0 });
+  terrain.roadEnds.forEach(([x, y], k) => {
     const mx = (ccx + x) / 2 + (k % 2 ? 18 : -18);
     const my = (ccy + y) / 2;
     roads.push({ id: `road-${countryId}-out${k}`, d: `M${ccx},${ccy} Q${mx},${my} ${x},${y}`, a: 0, b: 0 });
@@ -302,7 +281,11 @@ export function HomeLand(props: {
             <stop offset="0%" stopColor="#1f2937" stopOpacity="0.95" />
             <stop offset="100%" stopColor="#374151" stopOpacity="0" />
           </radialGradient>
-          <path id={`coast-${countryId}`} d="M30,90 C150,20 330,40 370,140 S380,520 300,610 S40,600 20,420 S-10,160 30,90Z" />
+          {/* 배 길: 수도 가까운 실제 바다(바다가 화면에 없으면 배를 안 그림) */}
+          <path id={`coast-${countryId}`} d={terrain.seaLoop ?? 'M0,0'} />
+          <clipPath id={`home-land-${countryId}`}>
+            <path d={land} />
+          </clipPath>
           <path id={`air-${countryId}`} d="M-40,120 L430,40" />
           <path id={`jet-${countryId}`} d="M430,560 C300,420 200,300 -40,200" />
           <path id={`cap-${countryId}`} d="M-60,470 C60,560 250,640 450,560" />
@@ -321,8 +304,11 @@ export function HomeLand(props: {
           <path d={land} fill="url(#g-plain)" opacity="0.45" />
           <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.55" />
           <path d={land} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="1 5" />
+          {terrain.inner && <path d={terrain.inner} fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.2" strokeDasharray="6 4" pointerEvents="none" />}
+          <g clipPath={`url(#home-land-${countryId})`}>
           <path d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#2b7fa3" strokeWidth="4" strokeLinecap="round" />
           <path className="river-flow" d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#e0f2fe" strokeWidth="1.4" strokeDasharray="3 9" strokeLinecap="round" />
+          </g>
           {forests.map(([x, y], i) => (
             <g key={`f${i}`} className="tree" style={{ animationDelay: `${-i * 0.4}s`, transformOrigin: `${x}px ${y + 6}px` }}>
               {art.trees.length ? (
@@ -452,7 +438,7 @@ export function HomeLand(props: {
           })}
 
           {/* 바다: 배 · 여객선 */}
-          {[0, 1, 2].map((j) => (
+          {terrain.seaLoop && [0, 1, 2].map((j) => (
             <g key={`boat${j}`}>
               <path d="M-5,0 L5,0 L3.5,2.4 L-3.5,2.4Z" fill={j === 1 ? '#f8fafc' : '#b45309'} />
               <rect x="-2" y="-3" width={j === 1 ? 5 : 3} height="3" fill={j === 1 ? '#ef4444' : '#f8fafc'} />
@@ -464,7 +450,7 @@ export function HomeLand(props: {
           ))}
 
           {/* 우리 함대: 항모 전단이 앞바다를 천천히 순찰 */}
-          {[0, 1, 2].map((j) => (
+          {terrain.seaLoop && [0, 1, 2].map((j) => (
             <g key={`cv${j}`}>
               {j === 0 ? <Carrier s={2.1} color={mine} /> : <Escort s={1.6} color={mine} />}
               <animateMotion dur="150s" begin={`${-40 - j * 5}s`} repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
