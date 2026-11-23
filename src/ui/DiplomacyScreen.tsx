@@ -203,16 +203,19 @@ function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) =>
         const rel = c.id === me ? '나' : relationOf(state.world, me, c.id);
         return (
           <button key={c.id} className={`ncard ${alive ? '' : 'dead'}`} style={{ borderColor: REL_COLORS[rel as Relation | '나'] }} onClick={() => onPick(c.id)}>
-            <span className="ncard-top">
-              <span className="ncard-flag">
-                <PersonFace who={{ kind: 'leader', country: c.id }} keys={[`leader-${c.id}`]} fallback={FLAG[c.id]} />
+            <span className="ncard-pics">
+              <span className="ncard-flagbig">
+                <Flag id={c.id} />
               </span>
-              <span className="ncard-name">
-                <b>{c.name}</b>
-                <small>
-                  {LEADERS[c.id].title} {LEADERS[c.id].name}
-                </small>
+              <span className="ncard-face">
+                <PersonFace who={{ kind: 'leader', country: c.id }} keys={[`leader-${c.id}`]} fallback="👤" />
               </span>
+            </span>
+            <span className="ncard-name">
+              <b>{c.name}</b>
+              <small>
+                {LEADERS[c.id].title} {LEADERS[c.id].name}
+              </small>
             </span>
             <span className="ncard-tags">
               <RelTag state={state} id={c.id} />

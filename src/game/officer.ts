@@ -767,13 +767,23 @@ export function promotionCheck(s: GameState): PromotionCheck {
   let why: string | null = null;
   if (lines.some((l) => !l.ok)) why = '조건을 채워야 해요';
   else if (o.active) why = '다른 임무를 하는 중이에요';
-  else if (s.worldMs < o.examReadyMs) why = '심사에 떨어져 잠시 기다려야 해요';
   else if (r === PROMOTION.length - 1) {
     why = rivalBlock(s);
   }
   return { ready: why === null, lines, why };
 }
 
+/** 승급(심사 없음): 조건을 채우면 바로 다음 등급으로. 공훈·별은 다시 모음 */
+export function promoteNow(s: GameState): GameState {
+  if (!promotionCheck(s).ready) return s;
+  return withOfficer(s, (o, rng, ns) => {
+    o.trust = Math.min(100, o.trust + 5);
+    promote(ns, o, rng);
+    o.examReadyMs = 0;
+  });
+}
+
+/** 옛 방식(승급 심사 작전). 화면에서는 더 쓰지 않음 */
 export function startExam(s: GameState): GameState {
   if (!promotionCheck(s).ready) return s;
   const r = s.player.rankIndex;
