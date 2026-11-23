@@ -388,7 +388,7 @@ export function canPutCard(s: GameState, slot: number, cardId: string | null): s
   const c = civOf(s);
   if (!c.gov) return '먼저 체제를 골라요';
   const slots = govSlots(govById(c.gov), s.player.rankIndex);
-  if (slot < 0 || slot >= slots.length) return '아직 없는 칸(등급이 오르면 늘어요)';
+  if (slot < 0 || slot >= slots.length) return '아직 없는 칸(호칭이 오르면 늘어요)';
   if (cardId === null) return null;
   const card = cardById(cardId);
   if (!card || !unlockedCards(s).includes(cardId)) return '아직 못 쓰는 카드';

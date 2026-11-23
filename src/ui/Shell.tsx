@@ -2,7 +2,7 @@ import { drillsNow } from '../game/officer';
 import { goalsReady, rubyOf } from '../game/goals';
 import { useState, type ReactNode } from 'react';
 import { CURRENCIES } from '../data/catalog';
-import { RANKS } from '../data/ranks';
+import { titleOf } from '../game/title';
 import { countryById } from '../data/world';
 import { gameClock, type GameState } from '../game/state';
 import { fmt } from './common';
@@ -30,7 +30,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export function Shell({ state, screen, speed, go, back, children, overlay }: Props) {
   const [walletOpen, setWalletOpen] = useState(false);
   const me = countryById(state.player.countryId);
-  const rank = RANKS[state.player.rankIndex];
+  const rank = titleOf(state);
   const clock = gameClock(state.worldMs);
 
   const amount = (id: string) =>

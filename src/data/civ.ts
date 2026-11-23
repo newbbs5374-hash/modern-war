@@ -133,7 +133,7 @@ export const MIL_TECHS: Tech[] = [
 /** 사회 제도 30개 */
 export const SOC_TECHS: Tech[] = [
   // 도약기
-  T({ id: 's-charter', line: 'soc', name: '국가 헌장', icon: '📜', era: 1, hours: 1, needs: [], cards: ['군-징집', '경-개척'], text: '체제 바꾸기 · 카드 2장', eureka: { key: { kind: 'rank', at: 1 }, text: '신임 지도자로 승급' } }),
+  T({ id: 's-charter', line: 'soc', name: '국가 헌장', icon: '📜', era: 1, hours: 1, needs: [], cards: ['군-징집', '경-개척'], text: '체제 바꾸기 · 카드 2장', eureka: { key: { kind: 'rank', at: 1 }, text: '초보 지도자 호칭 얻기' } }),
   T({ id: 's-urban', line: 'soc', name: '도시 계획', icon: '🏘️', era: 1, hours: 1, needs: [], districts: ['industry', 'housing'], cards: ['경-도시'], text: '공업·주거 구역 짓기', eureka: { key: { kind: 'train', name: '보급', stars: 1 }, text: '보급 훈련 성공' } }),
   T({ id: 's-envoy', line: 'soc', name: '사절단', icon: '🕊️', era: 1, hours: 1.5, needs: [], agree: ['route'], cards: ['외-사절'], text: '항로 개방 협정 · 분쟁 섬 사절 효율 ↑', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
   T({ id: 's-guild', line: 'soc', name: '항로 상회', icon: '⚖️', era: 1, hours: 1.5, needs: [], agree: ['swap'], cards: ['경-상회'], text: '자원 교환 계약 협정', eureka: { key: { kind: 'talk', att: '거래' }, text: '대화에서 거래 성공' } }),
@@ -148,7 +148,7 @@ export const SOC_TECHS: Tech[] = [
   T({ id: 's-draft', line: 'soc', name: '국민 개병제', icon: '🪖', era: 3, hours: 5, needs: ['s-charter'], cards: ['군-동원', '군-정예'], text: '군사 카드 2장', eureka: { key: { kind: 'train', name: '모병', stars: 2 }, text: '모병 훈련 별 2개 이상' } }),
   T({ id: 's-council', line: 'soc', name: '국제 회의 제도', icon: '🏛️', era: 3, hours: 6, needs: ['s-envoy'], eff: { votes: 1 }, cards: ['외-회의'], text: '회의 표 +1', eureka: { key: { kind: 'talk' }, text: '성소 회담(대화) 성공' } }),
   // 대양기
-  T({ id: 's-federal', line: 'soc', name: '헌법 개정', icon: '🏛️', era: 4, hours: 10, needs: ['s-charter', 's-welfare'], cards: ['경-연방', '외-연방'], eff: { growth: 0.2 }, text: '도시 성장 +20% · 카드 2장', eureka: { key: { kind: 'rank', at: 6 }, text: '존경받는 지도자로 승급' } }),
+  T({ id: 's-federal', line: 'soc', name: '헌법 개정', icon: '🏛️', era: 4, hours: 10, needs: ['s-charter', 's-welfare'], cards: ['경-연방', '외-연방'], eff: { growth: 0.2 }, text: '도시 성장 +20% · 카드 2장', eureka: { key: { kind: 'rank', at: 6 }, text: '존경받는 지도자 호칭 얻기' } }),
   T({ id: 's-media', line: 'soc', name: '국민 방송', icon: '📺', era: 4, hours: 9, needs: ['s-welfare'], eff: { loyalty: 5, favor: 5 }, cards: ['외-방송'], text: '민심 +5 · 모든 나라 호감 +5', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
   T({ id: 's-peace', line: 'soc', name: '국제 평화 헌장', icon: '☮️', era: 4, hours: 12, needs: ['s-council', 's-defense'], eff: { favor: 10, influence: 0.25 }, cards: ['외-평화'], text: '모든 나라 호감 +10 · 섬 영향력 +25%', eureka: { key: { kind: 'agree', id: 'defense' }, text: '방위 약속 협정 맺기' } }),
   // ── 11-23 더 잘게 나눈 사회 제도 15개(분야: 경제·외교·내정·인구·국방) ──
@@ -156,7 +156,7 @@ export const SOC_TECHS: Tech[] = [
   T({ id: 's-census', line: 'soc', name: '인구 조사', icon: '📊', era: 1, hours: 1, needs: [], eff: { growth: 0.1 }, text: '도시 성장 +10%', eureka: { key: { kind: 'train', name: '통솔', stars: 1 }, text: '통솔 훈련 성공' } }),
   T({ id: 's-tax', line: 'soc', name: '조세 개혁', icon: '🧾', era: 1, hours: 1.5, needs: [], cards: ['경-조세'], eff: { budget: 0.05 }, text: '국방예산 +5% · 카드 1장', eureka: { key: { kind: 'train', name: '보급', stars: 2 }, text: '보급 훈련 별 2개 이상' } }),
   T({ id: 's-press', line: 'soc', name: '언론 자유', icon: '📰', era: 1, hours: 1.5, needs: [], cards: ['외-문화'], eff: { loyalty: 2, favor: 2 }, text: '민심 +2 · 모든 나라 호감 +2 · 카드 1장 · 대통령제', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
-  T({ id: 's-school', line: 'soc', name: '의무 교육', icon: '🏫', era: 1, hours: 1.5, needs: [], eff: { research: 0.05 }, text: '연구 +5% · 기술 관료제', eureka: { key: { kind: 'rank', at: 2 }, text: '지도자 등급 3단계' } }),
+  T({ id: 's-school', line: 'soc', name: '의무 교육', icon: '🏫', era: 1, hours: 1.5, needs: [], eff: { research: 0.05 }, text: '연구 +5% · 기술 관료제', eureka: { key: { kind: 'rank', at: 2 }, text: '믿음직한 지도자 호칭 얻기' } }),
   // 항로기
   T({ id: 's-customs', line: 'soc', name: '관세 협정', icon: '🛃', era: 2, hours: 3, needs: ['s-guild'], cards: ['경-관세'], eff: { trade: 0.05 }, text: '무역 값 5% 이득 · 카드 1장', eureka: { key: { kind: 'agree', id: 'swap' }, text: '자원 교환 계약 맺기' } }),
   T({ id: 's-mining', line: 'soc', name: '광업법', icon: '⛏️', era: 2, hours: 3, needs: ['s-urban'], cards: ['경-채굴'], eff: { res: 0.08 }, text: '자원 +8% · 카드 1장', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
@@ -170,7 +170,7 @@ export const SOC_TECHS: Tech[] = [
   // 대양기
   T({ id: 's-digital', line: 'soc', name: '디지털 정부', icon: '🖥️', era: 4, hours: 9, needs: ['s-school', 's-media'], eff: { research: 0.1, budget: 0.05 }, text: '연구 +10% · 국방예산 +5%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
   T({ id: 's-aid', line: 'soc', name: '국제 원조', icon: '🎁', era: 4, hours: 10, needs: ['s-alliance'], cards: ['외-원조'], eff: { favor: 6, influence: 0.15 }, text: '모든 나라 호감 +6 · 섬 영향력 +15% · 카드 1장', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
-  T({ id: 's-unify', line: 'soc', name: '국민 통합', icon: '🫂', era: 4, hours: 11, needs: ['s-veterans', 's-press'], cards: ['외-중재'], eff: { loyalty: 6, votes: 1 }, text: '민심 +6 · 국제 회의 표 +1 · 카드 1장', eureka: { key: { kind: 'rank', at: 8 }, text: '지도자 등급 9단계' } }),
+  T({ id: 's-unify', line: 'soc', name: '국민 통합', icon: '🫂', era: 4, hours: 11, needs: ['s-veterans', 's-press'], cards: ['외-중재'], eff: { loyalty: 6, votes: 1 }, text: '민심 +6 · 국제 회의 표 +1 · 카드 1장', eureka: { key: { kind: 'rank', at: 8 }, text: '위대한 지도자 호칭 얻기' } }),
 ];
 
 export const TECHS: Tech[] = [...MIL_TECHS, ...SOC_TECHS];

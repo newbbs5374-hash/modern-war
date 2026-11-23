@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newGame, skip } from './state';
+import { newGame, setRank, skip } from './state';
 import { FIELDS, IMPEACH_MS, addPresMod, approvalBudgetMult, approvalTarget, fieldScore, presOf } from './approval';
 
 const H = 3600e3;
@@ -30,12 +30,14 @@ describe('지지도·신뢰도·분야 점수', () => {
     const s = newGame('t', 'kr', 0, { seed: 4 });
     expect(approvalTarget(addPresMod(s, '승리', 10, 5))).toBeGreaterThan(approvalTarget(s));
   });
-  it('탄핵 위기를 넘기지 못하면 한 등급 내려감', () => {
-    let s = newGame('t', 'kr', 0, { seed: 5 });
-    s = { ...s, player: { ...s.player, rankIndex: 3 }, pres: { ...presOf(s), approval: 0, mods: [{ why: '시험', v: -200, untilMs: 1e15 }] } };
+  it('탄핵 위기를 넘기지 못하면 신뢰도·명성 벌점 → 호칭이 내려감', () => {
+    let s = setRank(newGame('t', 'kr', 0, { seed: 5 }), 3);
+    const t0 = s.player.title!;
+    s = { ...s, pres: { ...presOf(s), approval: 0, mods: [{ why: '시험', v: -200, untilMs: 1e15 }] } };
     s = skip(s, H);
     expect(presOf(s).impeachMs).not.toBeNull();
     s = skip(s, IMPEACH_MS + H);
-    expect(s.player.rankIndex).toBe(2);
+    expect(s.player.title!).toBeLessThan(t0);
+    expect(s.world.events.some((e) => e.text.includes('탄핵되었어요'))).toBe(true);
   });
 });

@@ -11,7 +11,6 @@ import {
   GENERAL_STYLES,
   MISSION_KINDS,
   NAME_POOL,
-  PROMOTION,
   START_STAT,
   STAT_IDS,
   GRAND_COOLDOWN_HOURS,
@@ -42,7 +41,7 @@ import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
 import { facBonus } from './facility';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
-import { RIVAL_ROLES, chiefRivalOf, hasAlly, rivalBlock, rivalTick, shiftInfluence, type RivalRole } from './rivals';
+import { RIVAL_ROLES, hasAlly, rivalTick, shiftInfluence, type RivalRole } from './rivals';
 import { addLoyalty, generalMissionBonus, loyaltyMissionBonus, loyaltyMissionMult, loyaltyRewardMult, loyaltyTick, schoolTick, touchAide } from './loyal';
 
 const HOUR = 60 * 60 * 1000;
@@ -280,13 +279,6 @@ export function note(s: GameState, text: string) {
   if (s.world.events.length > 150) s.world.events.length = 150;
 }
 
-/** 받침이 있으면 '으로'(ㄹ 받침은 '로') */
-function ro(word: string): string {
-  const code = word.charCodeAt(word.length - 1) - 0xac00;
-  const jong = code >= 0 && code <= 11171 ? code % 28 : 0;
-  return word + (jong === 0 || jong === 8 ? '로' : '으로');
-}
-
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
 export function rankName(r: number) {
@@ -502,7 +494,7 @@ function pickName(o: OfficerState, rng: Rng): string {
   return free.length ? rng.pick(free) : `${rng.pick(NAME_POOL)} ${o.nextId}`;
 }
 
-function makeAide(o: OfficerState, rng: Rng): Aide {
+export function makeAide(o: OfficerState, rng: Rng): Aide {
   return { id: o.nextId++, name: pickName(o, rng), specialty: rng.pick([...AIDE_SPECIALTIES]), level: 1, exp: 0, bond: 10, stories: 0, errand: null };
 }
 
@@ -750,93 +742,8 @@ export function startMission(s: GameState, missionId: number): GameState {
   });
 }
 
-// ── 승급 ──
-
-export interface PromotionCheck {
-  ready: boolean;
-  lines: Array<{ label: string; have: number; need: number; ok: boolean }>;
-  why: string | null;
-}
-
-export function promotionCheck(s: GameState): PromotionCheck {
-  const r = s.player.rankIndex;
-  const o = s.officer;
-  if (r >= PROMOTION.length) return { ready: false, lines: [], why: '가장 높은 등급이에요' };
-  const rule = PROMOTION[r];
-  const lines = [
-    { label: '공훈', have: Math.floor(o.merit), need: rule.merit, ok: o.merit >= rule.merit },
-    { label: '훈련 별', have: o.stars, need: rule.stars, ok: o.stars >= rule.stars },
-  ];
-  if (rule.trust) lines.push({ label: '의회 신뢰도', have: Math.floor(o.trust), need: rule.trust, ok: o.trust >= rule.trust });
-  let why: string | null = null;
-  if (lines.some((l) => !l.ok)) why = '조건을 채워야 해요';
-  else if (o.active) why = '다른 임무를 하는 중이에요';
-  else if (r === PROMOTION.length - 1) {
-    why = rivalBlock(s);
-  }
-  return { ready: why === null, lines, why };
-}
-
-/** 승급(심사 없음): 조건을 채우면 바로 다음 등급으로. 공훈·별은 다시 모음 */
-export function promoteNow(s: GameState): GameState {
-  if (!promotionCheck(s).ready) return s;
-  return withOfficer(s, (o, rng, ns) => {
-    o.trust = Math.min(100, o.trust + 5);
-    promote(ns, o, rng);
-    o.examReadyMs = 0;
-  });
-}
-
-/** 옛 방식(승급 심사 작전). 화면에서는 더 쓰지 않음 */
-export function startExam(s: GameState): GameState {
-  if (!promotionCheck(s).ready) return s;
-  const r = s.player.rankIndex;
-  return withOfficer(s, (o, _rng, ns) => {
-    const kind: MissionKind = r % 2 === 0 ? '기습' : '방어';
-    const city = citiesOf(ns.world, ns.player.countryId)[0] ?? CITIES[0].id;
-    o.active = {
-      id: o.nextId++,
-      kind,
-      title: `승급 심사: ${PROMOTION[r].exam}`,
-      city,
-      difficulty: 1.1 + r * 0.02,
-      hours: EXAM_HOURS,
-      exam: true,
-      startMs: ns.worldMs,
-      endMs: ns.worldMs + EXAM_HOURS * HOUR,
-    };
-  });
-}
-
-function promote(ns: GameState, o: OfficerState, rng: Rng) {
-  const r = ns.player.rankIndex;
-  const rule = PROMOTION[r];
-  o.merit = Math.max(0, o.merit - rule.merit);
-  o.stars = 0;
-  ns.player = { ...ns.player, rankIndex: r + 1 };
-  ns.civ = eureka(ns, { kind: 'rank', at: r + 1 }).civ;
-  note(ns, `🎖️ ${ro(rankName(r + 1))} 승급했어요! 지휘: ${RANKS[r + 1].unit}`);
-  // 중위가 되면 첫 부관이 이야기로 합류
-  if (r + 1 === 1 && o.aides.length === 0) {
-    const a = makeAide(o, rng);
-    o.aides.push(a);
-    note(ns, `첫 작전에서 함께 살아남은 ${ga(a.name)} 부관이 되었어요(${a.specialty}).`);
-  }
-  // 승급하면 정적들 힘이 빠짐
-  shiftInfluence(o, -10);
-  o.chiefRival = chiefRivalOf(o)?.name ?? null;
-}
-
-/** 시험용: 승급 심사 없이 바로 다음 계급으로(이번 계급 공훈·별 조건은 무시) */
-export function debugPromote(s: GameState): GameState {
-  if (s.player.rankIndex >= PROMOTION.length) return s;
-  return withOfficer(s, (o, rng, ns) => {
-    if (o.active?.exam) o.active = null;
-    o.merit = Math.max(o.merit, PROMOTION[ns.player.rankIndex].merit);
-    promote(ns, o, rng);
-    o.examReadyMs = 0;
-  });
-}
+// ── 승급(11-23에 없앰) ──
+// 호칭은 신뢰도 + 명성 점수로 저절로 정해져요(title.ts). 공훈·훈련 별은 임무·훈련 기록으로만 남아요.
 
 /** 끝난 임무 결과 받기 */
 /** 전투 결과(직접 싸운 경우). 없으면 스탯으로 자동 계산 */
@@ -866,7 +773,6 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
       if (win) {
         o.trust = Math.min(100, o.trust + 5);
         text = `${a.title} 통과!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''}`;
-        promote(ns, o, rng);
       } else {
         // 시험판: 기본은 대기 시간 없음(설정에서 켤 수 있음)
         o.examReadyMs = o.examPenalty ? ns.worldMs + EXAM_COOLDOWN_MS : 0;
@@ -1036,7 +942,7 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
   if (r >= COMMAND_RANK) {
     if (o.dismissDeadlineMs === null && o.trust < TRUST_WARN) {
       o.dismissDeadlineMs = ns.worldMs + DISMISS_DEADLINE_MS;
-      note(ns, `⚠️ 불신임 경고! 실제 3일 안에 의회 신뢰도를 ${TRUST_SAFE} 넘게 되돌리지 못하면 한 등급 내려가요.`);
+      note(ns, `⚠️ 불신임 경고! 실제 3일 안에 의회 신뢰도를 ${TRUST_SAFE} 넘게 되돌리지 못하면 명성이 크게 깎여요.`);
     } else if (o.dismissDeadlineMs !== null && o.trust >= TRUST_SAFE) {
       o.dismissDeadlineMs = null;
       note(ns, '불신임 경고가 풀렸어요.');
@@ -1044,12 +950,10 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
       o.dismissDeadlineMs = null;
       o.merit = 0;
       o.stars = 0;
-      o.trust = TRUST_SAFE;
+      // 11-23: 등급 강등 대신 명성 벌점(신뢰도는 바닥이라 그대로) → 호칭이 내려갈 수 있어요
+      o.fame = Math.max(0, o.fame - 150);
       for (const a of o.aides) addLoyalty(a, -10);
-      ns.player = { ...ns.player, rankIndex: r - 1 };
-      // 장군 칸이 줄면 마지막 장군부터 떠남
-      while (o.generals.length > generalSlots(r - 1)) o.generals.pop();
-      note(ns, `불신임되었어요. ${ro(rankName(r - 1))} 내려가 다시 신뢰를 쌓아요.`);
+      note(ns, '불신임되었어요. 명성 −150. 호칭이 내려갈 수 있어요. 다시 신뢰를 쌓아요.');
     }
   } else {
     o.dismissDeadlineMs = null;

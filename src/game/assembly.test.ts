@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advance, newGame, budgetPerDay, type GameState } from './state';
+import { advance, newGame, budgetPerDay, setRank, type GameState } from './state';
 import { assemblyOf, billChance, confChance, CONF_MS, newAssembly, submitBill } from './assembly';
 import { lawEff, liveLaws } from './laws';
 import { newPres } from './approval';
@@ -25,9 +25,10 @@ describe('국회·재신임', () => {
     expect(lawEff(s, 'budget')).toBeCloseTo(0.08);
     expect(budgetPerDay(s, 'kr')).toBeGreaterThan(b0);
   });
-  it('재신임: 지지도 높으면 통과 보상, 낮으면 등급 내려감', () => {
+  it('재신임: 지지도 높으면 통과 보상, 낮으면 신뢰도·명성 벌점', () => {
     let s: GameState = newGame('t', 'kr', 0, { seed: 13 });
-    s = { ...s, player: { ...s.player, rankIndex: 3 }, assembly: { ...newAssembly(s), confMs: H }, pres: { ...newPres(), approval: 99 } };
+    s = setRank(s, 3);
+    s = { ...s, assembly: { ...newAssembly(s), confMs: H }, pres: { ...newPres(), approval: 99 } };
     expect(confChance(s)).toBe(1);
     const won = advance(s, 2 * H);
     expect(assemblyOf(won).confWins).toBe(1);
@@ -37,6 +38,6 @@ describe('국회·재신임', () => {
     expect(lost.player.rankIndex).toBe(3);
     const lost2 = advance(lost, 1 * H);
     expect(assemblyOf(lost2).confLoss).toBe(1);
-    expect(lost2.player.rankIndex).toBe(2);
+    expect(lost2.player.title!).toBeLessThan(lost.player.title!);
   });
 });

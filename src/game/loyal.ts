@@ -1,6 +1,7 @@
 // 11/23 대장 요청: 부관 인연·충성도, 장군 교육 → 장군 임명, 임명한 장군이 병과 효율을 올림.
 // 인연 = 지도자와 가까운 정도(대화·선물·같이 싸우기). 충성 = 지도자를 따르는 마음(인연·의회 신뢰·승패에 따라 움직임).
 import { GENERAL_FIELDS, GENERAL_STYLES, generalSlots } from '../data/officers';
+import { RANKS } from '../data/ranks';
 import { UNITS } from '../data/catalog';
 import type { GameState } from './state';
 import { note, withOfficer, type Aide, type General, type OfficerState } from './officer';
@@ -152,7 +153,7 @@ export function schoolTick(ns: GameState, o: OfficerState) {
 /** 장군 자리가 남았는지(사람 임명에도 씀) */
 export function canAppointGeneralSlot(s: GameState): string | null {
   const slots = generalSlots(s.player.rankIndex);
-  if (slots === 0) return '지도자 등급 5부터 장군을 둘 수 있어요';
+  if (slots === 0) return `「${RANKS[5].name}」 호칭부터 장군을 둘 수 있어요`;
   if (s.officer.generals.length >= slots) return `장군 자리가 다 찼어요(${slots}자리)`;
   return null;
 }

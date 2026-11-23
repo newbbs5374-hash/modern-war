@@ -4,7 +4,7 @@
 import { COUNTRIES, countryById } from '../data/world';
 import { CITIES } from '../data/cities';
 import { BASIC_RES } from '../data/economy';
-import { generalSlots } from '../data/officers';
+import { titlePenalty } from './title';
 import { RANKS } from '../data/ranks';
 import { budgetMult } from './economy';
 import { activeAgreements, chaos, civBudgetMult, cityTotals, favorOf } from './civ';
@@ -167,7 +167,7 @@ function personalRows(s: GameState): Rows {
   const pol = Math.min(20, Math.floor(o.stats['정치'] ?? 0) * 0.5);
   if (pol) rows.push([`정치 스탯 ${Math.floor(o.stats['정치'] ?? 0)}`, pol]);
   const rk = s.player.rankIndex;
-  if (rk) rows.push([`지도자 등급(${RANKS[rk].name})`, Math.min(10, rk)]);
+  if (rk) rows.push([`호칭 단계(${RANKS[rk].name})`, Math.min(10, rk)]);
   return rows;
 }
 
@@ -280,16 +280,11 @@ export function presTick(s: GameState, tickMs: number): GameState {
   // 기록(실제 1시간마다)
   const last = p.hist[p.hist.length - 1];
   if (!last || s.worldMs - last.t >= H) p.hist = [...p.hist, { t: s.worldMs, a: r0(p.approval), tr: r0(o.trust) }].slice(-HIST_MAX);
-  // 탄핵 위기(신임 지도자부터: 더 내려갈 등급이 있어야 함)
-  const r = s.player.rankIndex;
-  if (r < 1) {
-    p.impeachMs = null;
-    return ns;
-  }
+  // 탄핵 위기(11-23: 등급 대신 신뢰도·명성 벌점 → 호칭이 내려갈 수 있음)
   if (p.impeachMs === null && p.approval < IMPEACH_BELOW) {
     p.impeachMs = s.worldMs + IMPEACH_MS;
     ns = { ...ns, world: { ...ns.world, events: [...ns.world.events] } };
-    note(ns, `⚠️ 탄핵 위기! 지지도가 ${IMPEACH_BELOW} 밑이에요. 실제 3일 안에 ${IMPEACH_SAFE} 넘게 올리지 못하면 한 등급 내려가요.`);
+    note(ns, `⚠️ 탄핵 위기! 지지도가 ${IMPEACH_BELOW} 밑이에요. 실제 3일 안에 ${IMPEACH_SAFE} 넘게 올리지 못하면 신뢰도 −15·명성 −100이에요.`);
   } else if (p.impeachMs !== null && p.approval >= IMPEACH_SAFE) {
     p.impeachMs = null;
     ns = { ...ns, world: { ...ns.world, events: [...ns.world.events] } };
@@ -297,23 +292,16 @@ export function presTick(s: GameState, tickMs: number): GameState {
   } else if (p.impeachMs !== null && s.worldMs >= p.impeachMs) {
     p.impeachMs = null;
     p.approval = 40;
-    ns = demote(ns, `탄핵되었어요. ${RANKS[r - 1].name}(으)로 내려가 다시 민심을 얻어야 해요.`);
+    ns = demote(ns, '탄핵되었어요. 신뢰도 −15 · 명성 −100. 호칭이 내려갈 수 있어요. 다시 민심을 얻어야 해요.');
   }
   return ns;
 }
 
-/** 지도자 등급 한 단계 내리기(탄핵·재신임 실패). 등급 0이면 그대로 */
+/** 탄핵·재신임 실패 벌점(11-23: 등급 강등 대신 신뢰도 −15 · 명성 −100) */
 export function demote(s: GameState, text: string): GameState {
-  const r = s.player.rankIndex;
-  if (r < 1) return s;
   const oo = structuredClone(s.officer);
-  oo.merit = 0;
-  oo.stars = 0;
   for (const a of oo.aides) addLoyalty(a, -10);
-  while (oo.generals.length > generalSlots(r - 1)) oo.generals.pop();
-  const ns: GameState = { ...s, officer: oo, player: { ...s.player, rankIndex: r - 1 }, world: { ...s.world, events: [...s.world.events] } };
-  note(ns, text);
-  return ns;
+  return titlePenalty({ ...s, officer: oo }, text);
 }
 
 /** 본부·보고용 한 줄: 나라 이름과 두 숫자 */

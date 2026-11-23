@@ -1,7 +1,7 @@
 // 부관 보고: 중요한 일이 끝나면 부관이 말해 주는 메시지.
 // 바뀌기 전·후 상태를 비교해서 만든다(실시간·꺼 둔 동안·버튼 모두 같은 함수).
 import { STAT_IDS, GRAND_RANK } from '../data/officers';
-import { RANKS } from '../data/ranks';
+import { TITLES } from '../data/ranks';
 import { countryById } from '../data/world';
 import { BUILDING_IDS } from '../data/economy';
 import type { GameState } from './state';
@@ -76,8 +76,8 @@ export function addReports(b: GameState | null, a: GameState): GameState {
   }
   // 대전투 준비
   if (a.player.rankIndex >= GRAND_RANK && crossed(a.officer.grandReadyMs) && a.officer.grandReadyMs === b.officer.grandReadyMs) out.push({ icon: '⚔️', text: '대전투 준비가 끝났습니다. 언제든 출격할 수 있습니다.' });
-  // 승급
-  if (a.player.rankIndex > b.player.rankIndex) out.push({ icon: '🎖️', text: `${josa(RANKS[a.player.rankIndex].name, '으로', '로')} 승급하셨습니다. 축하드립니다!` });
+  // 호칭(11-23: 승급 대신)
+  if ((a.player.title ?? 0) > (b.player.title ?? 0)) out.push({ icon: '🎖️', text: `${josa(TITLES[a.player.title ?? 0].name, '으로', '로')} 불리게 되셨습니다. 축하드립니다!` });
   // 스탯 상승
   const ups = STAT_IDS.filter((id) => Math.floor(a.officer.stats[id]) > Math.floor(b.officer.stats[id]));
   if (ups.length) out.push({ icon: '📈', text: `${ups.map((id) => `${id} ${Math.floor(a.officer.stats[id])}`).join(', ')}! 능력이 올랐습니다.` });

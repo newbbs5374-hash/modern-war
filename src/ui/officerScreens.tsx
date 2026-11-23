@@ -39,11 +39,9 @@ import {
   grandTargets,
   masteryLevel,
   missionChance,
-  promotionCheck,
   recruitGeneral,
   rivalsView,
   sendAide,
-  promoteNow,
   startGrand,
   startMission,
   startTraining,
@@ -61,9 +59,12 @@ import { AideCareer, BondLoyalty } from './AideCareer';
 import { FIELD_ICON, branchSummary, generalEffectText, loyaltyOf } from '../game/loyal';
 import { BLOCK_AT, PLOT_MIN, ROLE_INFO } from '../game/rivals';
 import { TrainIcon } from './iconArt';
+import { TitleBox } from './TitleUI';
+import { TITLES } from '../data/ranks';
+import { tierNow, titleOf } from '../game/title';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
-import { Chip, Help, Meter, Modal, Tabs, Tile, stars, useTab } from './kit';
+import { Chip, Help, Meter, Modal, Tile, stars } from './kit';
 import type { ScreenProps } from './screens';
 
 const HOUR = 3600e3;
@@ -288,94 +289,18 @@ export function GrandCard({ state, actions }: ScreenProps) {
 }
 
 /* ───────── 장교 ───────── */
-type OfficerTab = 'stats' | 'aides' | 'generals' | 'rivals';
-
-/** 지도자 얼굴·등급·승급 카드(개인 > 프로필 맨 위) */
-export function LeaderHero(props: ScreenProps) {
-  const { state, actions } = props;
-  const o = state.officer;
-  const r = state.player.rankIndex;
-  const pc = promotionCheck(state);
-  return (
-    <>
-      {o.dismissDeadlineMs !== null && (
-        <div className="alert">
-          ⚠️ 불신임 경고: {timeLeft(o.dismissDeadlineMs - state.worldMs)} 안에 의회 신뢰도를 40 넘게 올려야 해요. 임무에 성공하면 올라요.
-        </div>
-      )}
-      <section className="card">
-        <div className="hero">
-          <span className="avatar">
-            <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
-          </span>
-          <div className="hero-main">
-            <b>
-              {RANKS[r].name} {state.player.name}
-            </b>
-            <div className="small muted">지휘: {RANKS[r].unit}</div>
-            {originOf(state) && (
-              <div className="small origin-line" title={`${originOf(state)!.perk} / ${originOf(state)!.weak}`}>
-                🎓 {originOf(state)!.icon} {originOf(state)!.name}
-                {originFits(originOf(state)!, state.player.countryId) ? ' ★' : ''} <span className="muted">· {originOf(state)!.perk}</span>
-              </div>
-            )}
-            <div className="ichips" style={{ marginTop: 4 }}>
-              <Chip icon="📣" value={fmt(o.fame)} label="명성" />
-              <Chip icon="🤝" value={Math.round(o.trust)} label={r >= COMMAND_RANK && o.trust < 40 ? '신뢰 ⚠️' : '신뢰'} />
-              <Chip icon="🔐" value={fmt(o.intel)} label="정보" />
-            </div>
-          </div>
-        </div>
-        <div className="pillrow" style={{ marginTop: 8 }}>
-          {RANKS.map((x, i) => (
-            <span key={x.name} className={i === r ? 'now' : i < r ? 'done' : ''}>
-              {x.name}
-            </span>
-          ))}
-        </div>
-        {r < RANKS.length - 1 && (
-          <div className="promo">
-            <div className="row">
-              <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
-              <Help title="승급">
-                <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급할 수 있어요. 심사는 없어요.</p>
-                <p>승급하면 공훈과 별은 다시 모아요. 마지막 승급(전설의 지도자)은 영향력 70을 넘는 정적이 없어야 해요.</p>
-              </Help>
-            </div>
-            {pc.lines.map((l) => (
-              <div key={l.label} className="promo-line">
-                <small>
-                  {l.ok ? '✅' : '⬜'} {l.label}
-                </small>
-                <Meter value={l.have} max={l.need} tone={l.ok ? 'green' : undefined} />
-                <small className="muted">
-                  {fmt(l.have)}/{fmt(l.need)}
-                </small>
-              </div>
-            ))}
-            <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => actions.apply(promoteNow)}>
-              {pc.ready ? `⏫ ${RANKS[r + 1].name}(으)로 승급` : pc.why}
-            </button>
-          </div>
-        )}
-      </section>
-    </>
-  );
-}
-
-/** 개인 > 프로필: 캐릭터 카드형(11-23 대장 결정). 큰 인물 카드 + 명성·신뢰·정보 칩 + 승급 + 묶음별 색 막대 9줄 */
+/** 개인 > 프로필: 캐릭터 카드형(11-23 대장 결정). 큰 인물 카드 + 명성·신뢰·정보 칩 + 호칭 + 묶음별 색 막대 9줄 */
 const GROUP_TONE = ['g1', 'g2', 'g3'];
 export function LeaderCard(props: ScreenProps) {
-  const { state, actions } = props;
+  const { state } = props;
   const o = state.officer;
   const r = state.player.rankIndex;
-  const pc = promotionCheck(state);
   const og = originOf(state);
+  const tier = tierNow(state);
+  const tt = titleOf(state);
   const cap = statCap(r);
   const [pick, setPick] = useState<StatId | null>(null);
-  const [promo, setPromo] = useState(false);
   const total = STAT_IDS.reduce((a, id) => a + Math.floor(o.stats[id]), 0);
-  const last = r >= RANKS.length - 1;
   return (
     <>
       {o.dismissDeadlineMs !== null && (
@@ -387,10 +312,10 @@ export function LeaderCard(props: ScreenProps) {
         <div className="lc-photo">
           <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
           <span className="lc-rank">
-            Lv.{r + 1} {RANKS[r].name}
+            {tt.icon} {tt.name}
           </span>
           <span className="lc-step">
-            {r + 1}/{RANKS.length}
+            {tier + 1}/{TITLES.length}
           </span>
         </div>
         <div className="lc-name">{state.player.name}</div>
@@ -404,9 +329,9 @@ export function LeaderCard(props: ScreenProps) {
             <>지휘: {RANKS[r].unit}</>
           )}
         </div>
-        <div className="lc-road" aria-label="지도자 등급">
-          {RANKS.map((x, i) => (
-            <i key={x.name} className={i < r ? 'done' : i === r ? 'now' : ''} title={x.name} />
+        <div className="lc-road" aria-label="호칭 단계">
+          {TITLES.map((x, i) => (
+            <i key={x.name} className={i < tier ? 'done' : i === tier ? 'now' : ''} title={x.name} />
           ))}
         </div>
       </div>
@@ -421,17 +346,7 @@ export function LeaderCard(props: ScreenProps) {
           🔐 정보<b>{fmt(o.intel)}</b>
         </span>
       </div>
-      {!last && (
-        <div className={`lc-promo ${pc.ready ? 'ready' : ''}`}>
-          <button className="lc-promo-text" onClick={() => setPromo(true)}>
-            <b>{pc.ready ? '승급할 수 있어요! 🎉' : `다음: ${RANKS[r + 1].name}`}</b>
-            <small>{pc.lines.map((l) => `${l.ok ? '✓' : '·'} ${l.label} ${fmt(l.have)}/${fmt(l.need)}`).join(' · ')}</small>
-          </button>
-          <button className={pc.ready ? 'gold' : ''} disabled={!pc.ready} onClick={() => actions.apply(promoteNow)}>
-            {pc.ready ? '승급 ▶' : '🔒'}
-          </button>
-        </div>
-      )}
+      <TitleBox state={state} />
       <div className="lc-box">
         <div className="lc-head">
           <b>능력치</b>
@@ -441,7 +356,7 @@ export function LeaderCard(props: ScreenProps) {
           <Help title="스탯과 경험치">
             <p>훈련을 하면 그 훈련이 키우는 스탯에 경험치가 쌓여요. 막대 밑 얇은 줄이 다 차면 스탯이 1 올라요.</p>
             <p>별을 많이 받을수록 경험치가 많아요(별 1개당 {TRAIN_EXP_PER_STAR}, 지면 {TRAIN_EXP_LOSE}). 오늘의 훈련은 2배, 숙련 단계가 오르면 +10%씩 더 받아요.</p>
-            <p>스탯 상한은 등급이 오르면 +10. 줄을 누르면 자세히 볼 수 있어요.</p>
+            <p>스탯 상한은 호칭 단계가 오르면 +10. 줄을 누르면 자세히 볼 수 있어요.</p>
           </Help>
         </div>
         {STAT_GROUPS.map((g, gi) => (
@@ -478,114 +393,6 @@ export function LeaderCard(props: ScreenProps) {
           <p className="small muted">임무에 성공해도 그 임무가 쓰는 스탯에 경험치가 들어와요.</p>
         </Modal>
       )}
-      {promo && !last && (
-        <Modal title={`다음: ${RANKS[r + 1].name}`} icon="⏫" onClose={() => setPromo(false)}>
-          <div className="pillrow">
-            {RANKS.map((x, i) => (
-              <span key={x.name} className={i === r ? 'now' : i < r ? 'done' : ''}>
-                {x.name}
-              </span>
-            ))}
-          </div>
-          {pc.lines.map((l) => (
-            <div key={l.label} className="promo-line">
-              <small>
-                {l.ok ? '✅' : '⬜'} {l.label}
-              </small>
-              <Meter value={l.have} max={l.need} tone={l.ok ? 'green' : undefined} />
-              <small className="muted">
-                {fmt(l.have)}/{fmt(l.need)}
-              </small>
-            </div>
-          ))}
-          <p className="small muted">공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급해요. 승급하면 공훈과 별은 다시 모아요. 마지막 승급은 영향력 70을 넘는 정적이 없어야 해요.</p>
-          <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => (actions.apply(promoteNow), setPromo(false))}>
-            {pc.ready ? `⏫ ${RANKS[r + 1].name}(으)로 승급` : pc.why}
-          </button>
-        </Modal>
-      )}
-    </>
-  );
-}
-
-export function OfficerScreen(props: ScreenProps) {
-  const { state, actions } = props;
-  const o = state.officer;
-  const r = state.player.rankIndex;
-  const pc = promotionCheck(state);
-  const [tab, setTab] = useTab<OfficerTab>('officer', 'stats');
-  const errandsDone = o.aides.filter((a) => a.errand && state.worldMs >= a.errand.endMs).length;
-  return (
-    <>
-      {o.dismissDeadlineMs !== null && (
-        <div className="alert">
-          ⚠️ 불신임 경고: {timeLeft(o.dismissDeadlineMs - state.worldMs)} 안에 의회 신뢰도를 40 넘게 올려야 해요. 임무에 성공하면 올라요.
-        </div>
-      )}
-      <section className="card">
-        <div className="hero">
-          <span className="avatar">
-            <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
-          </span>
-          <div className="hero-main">
-            <b>
-              {RANKS[r].name} {state.player.name}
-            </b>
-            <div className="small muted">지휘: {RANKS[r].unit}</div>
-            <div className="ichips" style={{ marginTop: 4 }}>
-              <Chip icon="📣" value={fmt(o.fame)} label="명성" />
-              <Chip icon="🤝" value={Math.round(o.trust)} label={r >= COMMAND_RANK && o.trust < 40 ? '신뢰 ⚠️' : '신뢰'} />
-              <Chip icon="🔐" value={fmt(o.intel)} label="정보" />
-            </div>
-          </div>
-        </div>
-        <div className="pillrow" style={{ marginTop: 8 }}>
-          {RANKS.map((x, i) => (
-            <span key={x.name} className={i === r ? 'now' : i < r ? 'done' : ''}>
-              {x.name}
-            </span>
-          ))}
-        </div>
-        {r < RANKS.length - 1 && (
-          <div className="promo">
-            <div className="row">
-              <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
-              <Help title="승급">
-                <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급할 수 있어요. 심사는 없어요.</p>
-                <p>승급하면 공훈과 별은 다시 모아요. 마지막 승급(전설의 지도자)은 영향력 70을 넘는 정적이 없어야 해요.</p>
-              </Help>
-            </div>
-            {pc.lines.map((l) => (
-              <div key={l.label} className="promo-line">
-                <small>
-                  {l.ok ? '✅' : '⬜'} {l.label}
-                </small>
-                <Meter value={l.have} max={l.need} tone={l.ok ? 'green' : undefined} />
-                <small className="muted">
-                  {fmt(l.have)}/{fmt(l.need)}
-                </small>
-              </div>
-            ))}
-            <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => actions.apply(promoteNow)}>
-              {pc.ready ? `⏫ ${RANKS[r + 1].name}(으)로 승급` : pc.why}
-            </button>
-          </div>
-        )}
-      </section>
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'stats', label: '스탯', icon: '📈' },
-          { id: 'aides', label: `부관 ${o.aides.length}/${aideSlots(r)}`, icon: '🧑‍✈️', badge: errandsDone || null },
-          { id: 'generals', label: `장군 ${o.generals.length}/${generalSlots(r)}`, icon: '⭐', locked: generalSlots(r) === 0 },
-          { id: 'rivals', label: '정적', icon: '🏁', badge: o.chiefRival ? '!' : null },
-        ]}
-      />
-      {tab === 'stats' && <StatsPanel {...props} />}
-      {tab === 'aides' && <AidesPanel {...props} />}
-      {tab === 'generals' && <GeneralsPanel {...props} />}
-      {tab === 'rivals' && <RivalsPanel {...props} />}
     </>
   );
 }
@@ -604,7 +411,7 @@ export function StatsPanel({ state }: ScreenProps) {
         <span>
           종합 <b>{total}</b>
         </span>
-        <span className="muted small">스탯 상한 {cap} · 등급이 오르면 +10</span>
+        <span className="muted small">스탯 상한 {cap} · 호칭이 오르면 +10</span>
         <Help title="스탯과 경험치">
           <p>훈련을 하면 그 훈련이 키우는 스탯에 경험치가 쌓여요. 초록 막대가 다 차면 스탯이 1 올라요.</p>
           <p>별을 많이 받을수록 경험치가 많아요(별 1개당 {TRAIN_EXP_PER_STAR}, 지면 {TRAIN_EXP_LOSE}). 오늘의 훈련은 2배, 숙련 단계가 오르면 +10%씩 더 받아요.</p>
@@ -843,7 +650,7 @@ export function RivalsPanel({ state }: ScreenProps) {
       icon="🏁"
       help={
         <p>
-          지도자 자리를 흔드는 정적 3명이에요. 영향력이 {PLOT_MIN}을 넘으면 몇 시간마다 방해 공작을 해요(야당 대표 = 의회 신뢰 −, 군부 실력자 = 장군·부관 충성 −, 재벌 = 봉급 −). 영향력이 {BLOCK_AT}을 넘으면 전설의 지도자 승급을 막아요. 사진을 눌러 🕵️동향 살피기(공작을 미리 막음)·🗞️견제(영향력 −)·🤝회유(3번 성공하면 내 편)를 하세요. 승급·연설은 영향력을 낮추고, 도시를 잃으면 올라가요.
+          지도자 자리를 흔드는 정적 3명이에요. 영향력이 {PLOT_MIN}을 넘으면 몇 시간마다 방해 공작을 해요(야당 대표 = 의회 신뢰 −, 군부 실력자 = 장군·부관 충성 −, 재벌 = 봉급 −). 영향력이 {BLOCK_AT}을 넘으면 전설의 지도자 호칭을 막아요. 사진을 눌러 🕵️동향 살피기(공작을 미리 막음)·🗞️견제(영향력 −)·🤝회유(3번 성공하면 내 편)를 하세요. 연설은 영향력을 낮추고, 도시를 잃으면 올라가요.
         </p>
       }
     >

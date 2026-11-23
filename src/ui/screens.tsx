@@ -10,19 +10,19 @@ import { Card, CountryInfo, EventList, HOUR, fmt } from './common';
 import type { Screen } from './nav';
 import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
 import { GrandCard, MissionCard, timeLeft } from './officerScreens';
-import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
+import { DRILL_MAX, debugAddAide, drillsNow } from '../game/officer';
+import { debugTitleUp, nextTitle, titleOf, titleScore } from '../game/title';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
 import { Chip, Modal, Tile, useTab } from './kit';
 import { FLAG } from './flag';
-import { fillPromotion, grantTestResources } from '../game/testgrant';
+import { grantTestResources } from '../game/testgrant';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
 import { cityById } from '../data/cities';
 import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { boostsOf } from '../game/boost';
 import { OPERATION_RANK } from '../data/officers';
-import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
 import { OrdersModal } from './OrdersModal';
@@ -81,8 +81,9 @@ export function HomeScreen(props: ScreenProps) {
   const a = state.officer.active;
   const rank = state.player.rankIndex;
   const drills = drillsNow(state.officer, state.worldMs).count;
-  const pc = promotionCheck(state);
-  const promoPct = pc.lines.length ? Math.round((pc.lines.reduce((x, l) => x + Math.min(1, l.have / Math.max(1, l.need)), 0) / pc.lines.length) * 100) : 100;
+  const ttl = titleOf(state);
+  const ttlNext = nextTitle(state);
+  const ttlPct = ttlNext ? Math.round(Math.min(1, titleScore(state) / Math.max(1, ttlNext.title.min)) * 100) : 100;
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
@@ -221,12 +222,13 @@ export function HomeScreen(props: ScreenProps) {
               <small>{a ? (missionReady ? '도착! 전투하기' : `${timeLeft(a.endMs - state.worldMs)} 남음`) : '게시판에 새 임무'}</small>
             </span>
           </button>
-          <button className={`hq ${pc.ready ? 'hot' : ''}`} onClick={() => goTab('officer', 'officer', 'stats')}>
-            <span>🎓</span>
+          <button className="hq" onClick={() => goTab('personal', 'personal', 'profile')}>
+            <span>{ttl.icon}</span>
             <span className="hq-main">
-              <b>{pc.ready ? '승급 가능!' : `승급 준비 ${promoPct}%`}</b>
+              <b>{ttl.name}</b>
+              {ttlNext ? <small>다음 호칭까지 {ttlNext.need}점</small> : <small>가장 높은 호칭</small>}
               <span className="bar">
-                <span className="bar-fill" style={{ width: `${promoPct}%` }} />
+                <span className="bar-fill" style={{ width: `${ttlPct}%` }} />
               </span>
             </span>
           </button>
@@ -575,15 +577,8 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         <div className="buttons">
           <button className="gold" onClick={() => (actions.apply(grantTestResources), setMsg('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))}>🎁 시험 자원 넉넉히</button>
           <button className="gold" onClick={() => (actions.apply(debugTalk), setMsg('대화가 하나 왔어요. 본부의 💬 대화를 눌러 보세요.'))}>💬 대화 바로 받기</button>
-          <button
-            className="gold"
-            disabled={state.player.rankIndex >= PROMOTION.length}
-            onClick={() => (actions.apply(debugPromote), setMsg('조건 없이 바로 다음 등급으로 올렸어요.'))}
-          >
-            ⏫ 바로 승급(조건 무시)
-          </button>
-          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 등급의 승급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 개인 → 프로필에서 승급을 누르세요.'))}>
-            🎖️ 승급 조건 채우기
+          <button className="gold" disabled={!nextTitle(state)} onClick={() => (actions.apply(debugTitleUp), setMsg('명성(모자라면 신뢰도)을 채워 다음 호칭으로 올렸어요.'))}>
+            🎖️ 다음 호칭으로
           </button>
         </div>
         <div className="buttons">
@@ -601,24 +596,19 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             </button>
           ))}
         </div>
-        <small>승급 시험용</small>
+        <small>시험용</small>
         <div className="buttons">
           <button
             onClick={() =>
               actions.apply((s) => {
-                const rule = PROMOTION[s.player.rankIndex];
-                if (!rule) return s;
                 const o = structuredClone(s.officer);
-                o.merit = Math.max(o.merit, rule.merit);
-                o.stars = Math.max(o.stars, rule.stars);
-                o.trust = Math.max(o.trust, rule.trust);
                 o.drills = DRILL_MAX;
                 o.drillAnchorMs = s.worldMs;
                 return { ...s, officer: o };
               })
             }
           >
-            승급 조건 채우기
+            훈련 일정 채우기
           </button>
           <button
             onClick={() =>
@@ -650,7 +640,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             부관 데려오기 + 봉급 5000
           </button>
         </div>
-        <small>등급 바로 바꾸기 (조건 없이)</small>
+        <small>호칭 단계 바로 바꾸기(신뢰도·명성을 맞춰 줌)</small>
         <select value={state.player.rankIndex} onChange={(e) => actions.setRank(Number(e.target.value))}>
           {RANKS.map((r, i) => (
             <option key={r.name} value={i}>

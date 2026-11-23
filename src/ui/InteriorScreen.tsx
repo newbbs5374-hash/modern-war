@@ -34,7 +34,7 @@ import {
   type Facility,
   type Res,
 } from '../data/economy';
-import { RANKS } from '../data/ranks';
+import { titleOf } from '../game/title';
 import { COUNTRIES, countryById } from '../data/world';
 import {
   buffActive,
@@ -242,7 +242,7 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
             label={`+${fmt(salaryPerDay(state))}/시간`}
             title="봉급"
             rows={[
-              ['지도자 등급', RANKS[state.player.rankIndex].name],
+              ['호칭', titleOf(state).name],
               ['쌓인 봉급(본부에서 받기)', fmt(state.player.pendingSalary)],
               ['쌓이는 한도', fmt(pendingCap(state))],
             ]}

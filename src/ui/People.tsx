@@ -4,7 +4,8 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AIDE_EFFECT } from '../battle/grid';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { STAT_IDS, statCap, statExpNeed } from '../data/officers';
-import { RANKS } from '../data/ranks';
+import { RANKS, TITLES } from '../data/ranks';
+import { titleOf } from '../game/title';
 import { COUNTRIES, countryById } from '../data/world';
 import { favorName, favorOf, favorReasons } from '../game/civ';
 import {
@@ -112,10 +113,10 @@ export function personCard(s: GameState, p: PersonRef): Card {
       const r = s.player.rankIndex;
       return {
         name: s.player.name,
-        title: `${countryById(me).name} · ${RANKS[r].name}`,
+        title: `${countryById(me).name} · ${TITLES[s.player.title ?? 0].name}`,
         keys: ['player', `leader-${me}`],
         fallback: <Flag id={me} />,
-        tags: [`등급 ${r + 1}/${RANKS.length}`, `지휘 ${RANKS[r].unit}`],
+        tags: [`호칭 ${(s.player.title ?? 0) + 1}/${TITLES.length}`, `지휘 ${RANKS[r].unit}`],
         intro: `${countryById(me).name}을 이끄는 지도자. 훈련·임무로 스탯을 키우고, 부관·장군과 함께 나라를 지켜요.`,
       };
     }
@@ -151,7 +152,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
         title: `정적 · ${role}`,
         keys: [`aide-${rv.name}`, `rival-${rv.name}`],
         fallback: ROLE_INFO[role].icon,
-        tags: rv.ally ? ['🤝 내 편'] : [`영향력 ${Math.round(influenceOf(rv))}`, o.chiefRival === rv.name ? '⚠️ 승급을 막는 중' : watching(rv, s.worldMs) ? '🕵️ 지켜보는 중' : '적대'],
+        tags: rv.ally ? ['🤝 내 편'] : [`영향력 ${Math.round(influenceOf(rv))}`, o.chiefRival === rv.name ? '⚠️ 최고 호칭을 막는 중' : watching(rv, s.worldMs) ? '🕵️ 지켜보는 중' : '적대'],
         intro: `${ROLE_INFO[role].text} ${rv.ally ? ROLE_INFO[role].ally : ROLE_INFO[role].plot}`,
       };
     }
@@ -303,7 +304,7 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
       {who.kind === 'player' && (
         <div className="pw-grid">
           <Row k="나라" v={countryById(me).name} />
-          <Row k="지도자 등급" v={RANKS[state.player.rankIndex].name} />
+          <Row k="호칭" v={titleOf(state).name} />
           <Row k="📣 명성" v={fmt(o.fame)} />
           <Row k="🤝 의회 신뢰" v={Math.round(o.trust)} />
           <Row k="🔐 정보" v={fmt(o.intel)} />
@@ -359,7 +360,7 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
               <Row k="회유 성공" v={rv.ally ? '-' : `${Math.round(wooChance(state, rv) * 100)}%`} />
               <div className="pw-wide">
                 <small>{rv.ally ? '🤝 협력' : '⚠️ 방해 공작'}</small>
-                <p className="small">{rv.ally ? ROLE_INFO[role].ally : `${ROLE_INFO[role].plot} 영향력 ${PLOT_MIN}부터 움직이고, ${BLOCK_AT}을 넘으면 전설의 지도자 승급을 막아요.`}</p>
+                <p className="small">{rv.ally ? ROLE_INFO[role].ally : `${ROLE_INFO[role].plot} 영향력 ${PLOT_MIN}부터 움직이고, ${BLOCK_AT}을 넘으면 전설의 지도자 호칭을 막아요.`}</p>
               </div>
             </div>
           );

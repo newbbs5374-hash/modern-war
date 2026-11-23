@@ -1,6 +1,5 @@
 // 11/23 대장 결정: 지도자가 된 뒤의 라이벌 = 나라 안 정적 3명(야당 대표·군부 실력자·재벌).
 // 영향력이 쌓이면 방해 사건을 일으키고, 지도자는 동향 살피기·견제·회유로 맞섬. 회유에 성공하면 내 편(협력)이 되어 덤을 줌.
-import { PROMOTION } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { REAL_MS_PER_GAME_DAY } from './balance';
 import type { Rng } from './rng';
@@ -107,13 +106,12 @@ export function rivalTick(ns: GameState, o: OfficerState, rng: Rng, tickMs: numb
     }
   });
   const chief = chiefRivalOf(o);
-  if (chief && o.chiefRival !== chief.name) note(ns, `⚠️ 정적 ${chief.name}의 영향력이 ${BLOCK_AT}을 넘었어요. 이대로면 전설의 지도자 승급을 막아요.`);
+  if (chief && o.chiefRival !== chief.name) note(ns, `⚠️ 정적 ${chief.name}의 영향력이 ${BLOCK_AT}을 넘었어요. 이대로면 전설의 지도자 호칭을 막아요.`);
   o.chiefRival = chief?.name ?? null;
 }
 
-/** 마지막 승급(세계 강자 → 전설의 지도자)을 막는 까닭 */
+/** 가장 높은 호칭(전설의 지도자)을 막는 까닭(11-23: 승급 대신 호칭) */
 export function rivalBlock(s: GameState): string | null {
-  if (s.player.rankIndex !== PROMOTION.length - 1) return null;
   const c = chiefRivalOf(s.officer);
   return c ? `정적 ${c.name}의 영향력이 ${BLOCK_AT}을 넘어요(견제·회유 필요)` : null;
 }

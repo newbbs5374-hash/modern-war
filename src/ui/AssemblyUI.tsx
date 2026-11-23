@@ -77,7 +77,7 @@ export function AssemblyPanel({ state, actions }: ScreenProps) {
         </p>
         <Meter value={cc * 100} max={100} tone={cc >= 0.7 ? 'green' : cc >= 0.4 ? 'gold' : 'red'} />
         <p className="small muted">
-          실제 14일마다 열려요. 지지도 35면 0%, 65면 100%. 통과 💎{CONF_RUBY} · 명성 +{CONF_FAME} / 실패하면 등급 한 단계 내려가요(게임은 계속). 지금까지 {a.confWins}승 {a.confLoss}패
+          실제 14일마다 열려요. 지지도 35면 0%, 65면 100%. 통과 💎{CONF_RUBY} · 명성 +{CONF_FAME} / 실패하면 신뢰도 −15 · 명성 −100(호칭이 내려갈 수 있어요, 게임은 계속). 지금까지 {a.confWins}승 {a.confLoss}패
         </p>
       </Card>
       {why && (
