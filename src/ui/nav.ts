@@ -7,6 +7,7 @@ export type Screen =
   | 'diplo'
   | 'society'
   | 'economy'
+  | 'culture'
   // 옛 화면 이름(주소·안내에서 들어오면 새 탭으로 옮겨 줌)
   | 'ops'
   | 'officer'
@@ -26,6 +27,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   diplo: '외교',
   society: '사회',
   economy: '경제',
+  culture: '문화',
   ops: '작전',
   officer: '장교',
   forces: '부대',
@@ -38,7 +40,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   battle: '전투',
 };
 
-/** 아래 메뉴 7칸(11-23 대장 결정): 본부(강조) + 개인·국방·외교·사회·경제 + 상점 */
+/** 아래 메뉴 8칸: 본부(강조) + 개인·국방·외교·사회·경제·문화(11-23 추가) + 상점 */
 export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: boolean; locked?: string }> = [
   { screen: 'home', icon: '🏠', label: '본부', main: true },
   { screen: 'personal', icon: '👤', label: '개인' },
@@ -46,6 +48,7 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
   { screen: 'diplo', icon: '🌐', label: '외교' },
   { screen: 'society', icon: '👥', label: '사회' },
   { screen: 'economy', icon: '💰', label: '경제' },
+  { screen: 'culture', icon: '🎭', label: '문화' },
   { screen: 'shop', icon: '🛒', label: '상점' },
 ];
 

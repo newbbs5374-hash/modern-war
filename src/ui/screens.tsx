@@ -1,4 +1,5 @@
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
+import { CultureScreen } from './CultureScreen';
 import { BriefingModal } from './BriefingUI';
 import { todos } from '../game/briefing';
 import { useState } from 'react';
@@ -529,6 +530,7 @@ export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   diplo: DiplomacyScreen,
   society: SocietyScreen,
   economy: EconomyScreen,
+  culture: CultureScreen,
   // 옛 이름(routeTo가 새 탭으로 옮겨 주지만, 혹시 남아 있어도 열리게)
   ops: DefenseScreen,
   officer: PersonalScreen,

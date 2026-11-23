@@ -1,6 +1,7 @@
 // 대통령식 내정(11-23 대장 결정): 지지도(국민) · 신뢰도(의회·군·재계) · 분야 점수 5개.
 // 지지도는 분야 점수가 정하는 목표 쪽으로 천천히 움직이고, 바닥이면 탄핵 위기(실제 3일 안에 못 올리면 등급 1단계 ↓).
 // 신뢰도는 지금 있던 '의회 신뢰도'(officer.trust)를 그대로 쓰고, 외교·안보·경제 점수 쪽으로 조금씩 끌려가요.
+import { cultureMood } from './culture';
 import { COUNTRIES, countryById } from '../data/world';
 import { CITIES } from '../data/cities';
 import { BASIC_RES } from '../data/economy';
@@ -145,6 +146,8 @@ function societyRows(s: GameState): Rows {
   const t = cityTotals(s);
   const rows: Rows = [['도시 민심 평균', t.avgLoyalty]];
   if (chaos(s)) rows.push(['체제 혼란', -10]);
+  const cm = cultureMood(s);
+  if (cm) rows.push(['🎭 문화 시설', cm]);
   return rows;
 }
 
