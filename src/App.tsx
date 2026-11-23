@@ -8,6 +8,7 @@ import { Shell } from './ui/Shell';
 import { parseScreen, type Screen } from './ui/nav';
 import { StartScreen } from './ui/StartScreen';
 import { AideReport } from './ui/AideReport';
+import { PeopleProvider } from './ui/People';
 import { addReports, dismissReport } from './game/report';
 
 const TICK_MS = 250;
@@ -198,6 +199,7 @@ export function App() {
 
   const View = SCREENS[screen];
   return (
+    <PeopleProvider state={state} actions={actions} go={go}>
     <Shell
       state={state}
       screen={screen}
@@ -215,5 +217,6 @@ export function App() {
         go={go}
       />
     </Shell>
+    </PeopleProvider>
   );
 }

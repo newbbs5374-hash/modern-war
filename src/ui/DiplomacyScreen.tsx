@@ -27,6 +27,7 @@ import type { ScreenProps } from './screens';
 import { civOf } from '../game/civ';
 import { AgreePanel, CouncilPanel, FavorBox, IslandPanel } from './CivScreens';
 import { REL_COLORS } from './WorldMap';
+import { PersonFace } from './People';
 
 type Tab = 'trade' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
@@ -200,7 +201,9 @@ function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) =>
         return (
           <button key={c.id} className={`ncard ${alive ? '' : 'dead'}`} style={{ borderColor: REL_COLORS[rel as Relation | '나'] }} onClick={() => onPick(c.id)}>
             <span className="ncard-top">
-              <span className="ncard-flag">{FLAG[c.id]}</span>
+              <span className="ncard-flag">
+                <PersonFace who={{ kind: 'leader', country: c.id }} keys={[`leader-${c.id}`]} fallback={FLAG[c.id]} />
+              </span>
               <span className="ncard-name">
                 <b>{c.name}</b>
                 <small>
