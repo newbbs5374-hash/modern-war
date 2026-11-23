@@ -1,4 +1,5 @@
 // 내정 화면: 금고(나라 살림 한눈에) · 자원(설명·사용처·획득처) · 시설(분야 5개 × 3개 + 내정 업무, 단계마다 그림)
+import { routeTo } from './nav';
 import { ResIcon, facilityArtExact, facilityArtUrl, vaultArtUrl, type VaultName } from './iconArt';
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -66,7 +67,7 @@ import { PIONEER_ISLANDS } from '../data/hexmap';
 import { TECHS } from '../data/civ';
 
 /** 고를 수 있는 연구가 있는데 비어 있는 줄이 있으면 */
-const needPick = (s: ScreenProps['state']) => (['mil', 'soc'] as const).some((l) => !civOf(s).cur[l] && TECHS.some((t) => t.line === l && !canResearch(s, t.id)));
+export const needPick = (s: ScreenProps['state']) => (['mil', 'soc'] as const).some((l) => !civOf(s).cur[l] && TECHS.some((t) => t.line === l && !canResearch(s, t.id)));
 import { CityPanel, GovPanel, ResearchPanel } from './CivScreens';
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -190,7 +191,7 @@ function FacArt({ id, level, cls = '' }: { id: BuildingId; level: number; cls?: 
   const url = facilityArtUrl(id, level);
   return url ? <img className={`fac-art ${level < 1 ? 'empty' : ''} ${cls}`} src={url} alt={id} draggable={false} /> : <span className={`bcard-ico ${level < 1 ? 'empty' : ''}`}>{buildingInfo(id).icon}</span>;
 }
-function TreasuryPanel({ state, actions }: ScreenProps) {
+export function TreasuryPanel({ state, actions }: ScreenProps) {
   const me = countryById(state.player.countryId);
   const n = state.nations[me.id];
   const w = state.world;
@@ -316,7 +317,7 @@ function TreasuryPanel({ state, actions }: ScreenProps) {
 }
 
 /* ───────── 자원 ───────── */
-function ResourcePanel(props: ScreenProps) {
+export function ResourcePanel(props: ScreenProps) {
   const { state } = props;
   const e = state.economy;
   const per = resPerDay(state);
@@ -466,15 +467,16 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
       ) : (
         <p className="small muted">지금 이 자원을 만드는 다른 나라가 없어요.</p>
       )}
-      <button className="wide" style={{ marginTop: 6 }} onClick={() => (onClose(), go('diplo'))}>
-        🤝 외교 → 무역에서 사고팔기
+      <button className="wide" style={{ marginTop: 6 }} onClick={() => (onClose(), go(routeTo('diplo', 'diplo', 'trade')))}>
+        🚢 경제 → 무역에서 사고팔기
       </button>
     </Modal>
   );
 }
 
 /* ───────── 시설 ───────── */
-function FacilityPanel(props: ScreenProps) {
+/** 시설 칸. only를 주면 그 시설만(분야 탭마다 나눠 보여 줌) */
+export function FacilityPanel(props: ScreenProps & { only?: readonly BuildingId[] }) {
   const { state, actions } = props;
   const e = state.economy;
   const chore = e.chore;
@@ -500,7 +502,7 @@ function FacilityPanel(props: ScreenProps) {
         )}
       </div>
       {chore && <BoostBar state={state} apply={actions.apply} target={{ kind: 'chore' }} compact />}
-      {FACILITIES.map((f) => (
+      {FACILITIES.filter((f) => BUILDINGS.some((b) => b.fac === f && (!props.only || props.only.includes(b.id)))).map((f) => (
         <FacilityGroup key={f} {...props} fac={f} onPick={setPick} />
       ))}
       {pick && <BuildingModal {...props} id={pick} onClose={() => setPick(null)} />}
@@ -508,10 +510,11 @@ function FacilityPanel(props: ScreenProps) {
   );
 }
 
-function FacilityGroup({ state, fac, onPick }: ScreenProps & { fac: Facility; onPick: (id: BuildingId) => void }) {
+function FacilityGroup({ state, fac, onPick, only }: ScreenProps & { fac: Facility; onPick: (id: BuildingId) => void; only?: readonly BuildingId[] }) {
   const e = state.economy;
-  const list = BUILDINGS.filter((b) => b.fac === fac);
-  const lowest = Math.min(...list.map((b) => upgradeCost(state, b.id).exp));
+  const all = BUILDINGS.filter((b) => b.fac === fac);
+  const list = all.filter((b) => !only || only.includes(b.id));
+  const lowest = Math.min(...all.map((b) => upgradeCost(state, b.id).exp));
   return (
     <div className="fac-group">
       <div className="fac-head">

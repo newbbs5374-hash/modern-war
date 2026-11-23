@@ -7,11 +7,11 @@ import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, HOUR, fmt } from './common';
 import type { Screen } from './nav';
 import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
-import { GrandCard, MissionCard, OfficerScreen, TrainingScreen, timeLeft } from './officerScreens';
+import { GrandCard, MissionCard, timeLeft } from './officerScreens';
 import { DRILL_MAX, debugAddAide, debugPromote, drillsNow, promotionCheck } from '../game/officer';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
-import { Chip, Modal, Tabs, Tile, useTab } from './kit';
+import { Chip, Modal, Tile, useTab } from './kit';
 import { FLAG } from './flag';
 import { fillPromotion, grantTestResources } from '../game/testgrant';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
@@ -24,16 +24,14 @@ import { PROMOTION } from '../data/officers';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
 import { OrdersModal } from './OrdersModal';
-import { SpyPanel } from './SpyPanel';
 import { FleetWatchCard } from './FleetWatch';
-import { spyOf } from '../game/spy';
 import { ORDER_INFO, ordersOf } from '../game/orders';
 import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
-import { goalsOf } from '../game/goals';
+import { goalsOf, goalsReady } from '../game/goals';
 import { GUIDE, claimGuide, guideOf, guideStep, hideGuide, rewardText } from '../game/guide';
-import { ForcesScreen } from './ForcesScreen';
-import { InteriorScreen } from './InteriorScreen';
 import { DiplomacyScreen } from './DiplomacyScreen';
+import { DefenseScreen, EconomyScreen, PersonalScreen, SocietyScreen } from './MainScreens';
+import { routeTo } from './nav';
 import { debugTalk } from '../game/talk';
 import { PortraitList } from './Portrait';
 import { FieldArtList, IconArtList } from './FieldArtList';
@@ -106,14 +104,7 @@ export function HomeScreen(props: ScreenProps) {
       /* 무시 */
     }
   };
-  const goTab = (screen: Screen, key: string, tab: string) => {
-    try {
-      sessionStorage.setItem(`tab:${key}`, tab);
-    } catch {
-      /* 무시 */
-    }
-    go(screen);
-  };
+  const goTab = (screen: string, key: string, tab: string) => go(routeTo(screen, key, tab));
   const missionReady = !!a && state.worldMs >= a.endMs;
   // 레이더 아래 숫자: 우리나라와 다른 나라 사이 가장 높은 긴장(전쟁 아닌 쌍)
   const tension = Math.round(
@@ -126,6 +117,7 @@ export function HomeScreen(props: ScreenProps) {
       { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
       { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
       { icon: '📋', label: '명령', x: 90, y: 52, on: () => setOrdersOpen(true), badge: ORDER_INFO.filter((x) => ordersOf(state)[x.key]).length || null },
+      { icon: '🛒', label: '상점', x: 90, y: 68, on: () => go('shop'), badge: goalsReady(state) || null },
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
       { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
       { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
@@ -168,7 +160,7 @@ export function HomeScreen(props: ScreenProps) {
             <div className="guide-hq">
               <button
                 className={`hq ${gready ? 'hot' : ''}`}
-                onClick={() => (gready ? actions.apply(claimGuide) : goTab(gstep.go.screen as Screen, gstep.go.key ?? '', gstep.go.tab ?? ''))}
+                onClick={() => (gready ? actions.apply(claimGuide) : goTab(gstep.go.screen, gstep.go.key ?? '', gstep.go.tab ?? ''))}
                 title={gstep.say}
               >
                 <span>{gstep.icon}</span>
@@ -221,7 +213,7 @@ export function HomeScreen(props: ScreenProps) {
               </span>
             </span>
           </button>
-          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => go('training')}>
+          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'personal', 'train')}>
             <span>📅</span>
             <span className="hq-main">
               <b>
@@ -305,8 +297,8 @@ function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string
         <Tile icon="⛏️" label="자원" sub={res.map(([r, n]) => `${RES_ICON[r]}${n}`).join(' ') || '없음'} />
       </div>
       {st === '점령당함' && (
-        <button className="primary wide-btn" onClick={() => go('ops')}>
-          🏙️ 작전 화면에서 되찾기
+        <button className="primary wide-btn" onClick={() => go(routeTo('ops', 'ops', 'mission'))}>
+          🏙️ 국방 → 작전에서 되찾기
         </button>
       )}
     </Modal>
@@ -314,25 +306,31 @@ function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string
 }
 
 /* ───────── 작전: 임무 · 대전투 · 지도 · 전황 (탭) ───────── */
-type OpsTab = 'mission' | 'grand' | 'spy' | 'map' | 'news';
+type OpsTab = 'mission' | 'grand' | 'map' | 'news';
+/** 국방 > 작전: 임무 · 대전투 · 지도 · 전황(작은 버튼 줄로 한 화면) */
 export function OpsScreen(props: ScreenProps) {
   const { state } = props;
   const rank = state.player.rankIndex;
-  const [tab, setTab] = useTab<OpsTab>('ops', 'mission');
+  const [raw, setTab] = useTab<OpsTab>('ops', 'mission');
+  const tab: OpsTab = (['mission', 'grand', 'map', 'news'] as const).includes(raw) ? raw : 'mission';
   const ready = state.officer.active && state.worldMs >= state.officer.active.endMs;
+  const segs: Array<{ id: OpsTab; label: string; locked?: boolean; badge?: boolean }> = [
+    { id: 'mission', label: '🎯 임무', badge: !!ready },
+    { id: 'grand', label: '🏙️ 대전투', locked: rank < OPERATION_RANK },
+    { id: 'map', label: '🗺️ 지도' },
+    { id: 'news', label: '📰 전황' },
+  ];
   return (
     <>
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'mission', label: '임무', icon: '🎯', badge: ready ? '!' : null },
-          { id: 'grand', label: '대전투', icon: '🏙️', locked: rank < OPERATION_RANK },
-          { id: 'spy', label: '첩보', icon: '🕵️', badge: spyOf(state).active.length || null },
-          { id: 'map', label: '지도', icon: '🗺️' },
-          { id: 'news', label: '전황', icon: '📰' },
-        ]}
-      />
+      <div className="seg branch-tabs">
+        {segs.map((x) => (
+          <button key={x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>
+            {x.locked ? '🔒 ' : ''}
+            {x.label}
+            {x.badge ? ' ❗' : ''}
+          </button>
+        ))}
+      </div>
       {tab === 'mission' && (
         <>
           <MissionCard {...props} />
@@ -348,7 +346,6 @@ export function OpsScreen(props: ScreenProps) {
             {rank >= 8 && <VictoryCard {...props} />}
           </>
         ))}
-      {tab === 'spy' && <SpyPanel {...props} />}
       {tab === 'map' && <MapPanel {...props} />}
       {tab === 'news' && <FleetWatchCard {...props} />}
       {tab === 'news' && (
@@ -568,7 +565,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           >
             ⏫ 바로 승급(조건 무시)
           </button>
-          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 등급의 승급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 장교 화면에서 승급을 누르세요.'))}>
+          <button className="gold" onClick={() => (actions.apply(fillPromotion), setMsg('이번 등급의 승급 조건(공훈·훈련 별·신뢰도)을 채웠어요. 개인 → 프로필에서 승급을 누르세요.'))}>
             🎖️ 승급 조건 채우기
           </button>
         </div>
@@ -661,12 +658,17 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
 
 export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   home: HomeScreen,
-  ops: OpsScreen,
-  officer: OfficerScreen,
-  forces: ForcesScreen,
-  training: TrainingScreen,
-  nation: InteriorScreen,
+  personal: PersonalScreen,
+  defense: DefenseScreen,
   diplo: DiplomacyScreen,
+  society: SocietyScreen,
+  economy: EconomyScreen,
+  // 옛 이름(routeTo가 새 탭으로 옮겨 주지만, 혹시 남아 있어도 열리게)
+  ops: DefenseScreen,
+  officer: PersonalScreen,
+  forces: DefenseScreen,
+  training: PersonalScreen,
+  nation: EconomyScreen,
   shop: ShopScreen,
   settings: SettingsScreen,
   herald: HeraldScreen,

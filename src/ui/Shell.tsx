@@ -62,7 +62,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
     <div className="frame">
       <header className="top">
         {screen === 'home' ? (
-          <button className="who" onClick={() => go('officer')}>
+          <button className="who" onClick={() => go('personal')}>
             <span className="portrait">
               <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${me.id}`]} fallback={<Flag id={me.id} />} />
             </span>
@@ -123,7 +123,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           >
             <span className="ico">{n.icon}</span>
             <small>{n.label}</small>
-            {n.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
+            {n.screen === 'personal' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
           </button>
         ))}
       </nav>

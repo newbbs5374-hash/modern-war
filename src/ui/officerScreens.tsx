@@ -219,7 +219,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
       <p>🗺️ <b>지도 위 전투(추천)</b>: 도시 주변 육각 지도에서 육·해·공 부대를 실시간으로 움직여요. 적 사령부·적 기함과 붙는 큰 싸움은 "직접 지휘"로 직접 할 수 있어요.</p>
       <p>🎬 <b>다섯 판</b>: {GRAND_STAGES.map((g) => `${FRAME_ICON[g.frame]} ${g.label}`).join(' → ')}. 시가지 돌입(⚑)은 꼭 이기고, 세 판 이상 이기면 차지해요.</p>
       <p>어느 쪽이든 부관에게 맡길 수 있어요(별 최대 2).</p>
-      <p>방어도가 낮은 도시일수록 쉽고, 나라 화면에서 부대를 만들면 더 쉬워져요. {GRAND_COOLDOWN_HOURS}시간마다 한 번.</p>
+      <p>방어도가 낮은 도시일수록 쉽고, 국방 → 부대에서 부대를 만들면 더 쉬워져요. {GRAND_COOLDOWN_HOURS}시간마다 한 번.</p>
     </>
   );
   return (
@@ -288,6 +288,73 @@ export function GrandCard({ state, actions }: ScreenProps) {
 
 /* ───────── 장교 ───────── */
 type OfficerTab = 'stats' | 'aides' | 'generals' | 'rivals';
+
+/** 지도자 얼굴·등급·승급 카드(개인 > 프로필 맨 위) */
+export function LeaderHero(props: ScreenProps) {
+  const { state, actions } = props;
+  const o = state.officer;
+  const r = state.player.rankIndex;
+  const pc = promotionCheck(state);
+  return (
+    <>
+      {o.dismissDeadlineMs !== null && (
+        <div className="alert">
+          ⚠️ 불신임 경고: {timeLeft(o.dismissDeadlineMs - state.worldMs)} 안에 의회 신뢰도를 40 넘게 올려야 해요. 임무에 성공하면 올라요.
+        </div>
+      )}
+      <section className="card">
+        <div className="hero">
+          <span className="avatar">
+            <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+          </span>
+          <div className="hero-main">
+            <b>
+              {RANKS[r].name} {state.player.name}
+            </b>
+            <div className="small muted">지휘: {RANKS[r].unit}</div>
+            <div className="ichips" style={{ marginTop: 4 }}>
+              <Chip icon="📣" value={fmt(o.fame)} label="명성" />
+              <Chip icon="🤝" value={Math.round(o.trust)} label={r >= COMMAND_RANK && o.trust < 40 ? '신뢰 ⚠️' : '신뢰'} />
+              <Chip icon="🔐" value={fmt(o.intel)} label="정보" />
+            </div>
+          </div>
+        </div>
+        <div className="pillrow" style={{ marginTop: 8 }}>
+          {RANKS.map((x, i) => (
+            <span key={x.name} className={i === r ? 'now' : i < r ? 'done' : ''}>
+              {x.name}
+            </span>
+          ))}
+        </div>
+        {r < RANKS.length - 1 && (
+          <div className="promo">
+            <div className="row">
+              <b className="small">⏫ 다음: {RANKS[r + 1].name}</b>
+              <Help title="승급">
+                <p>공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급할 수 있어요. 심사는 없어요.</p>
+                <p>승급하면 공훈과 별은 다시 모아요. 마지막 승급(전설의 지도자)은 영향력 70을 넘는 정적이 없어야 해요.</p>
+              </Help>
+            </div>
+            {pc.lines.map((l) => (
+              <div key={l.label} className="promo-line">
+                <small>
+                  {l.ok ? '✅' : '⬜'} {l.label}
+                </small>
+                <Meter value={l.have} max={l.need} tone={l.ok ? 'green' : undefined} />
+                <small className="muted">
+                  {fmt(l.have)}/{fmt(l.need)}
+                </small>
+              </div>
+            ))}
+            <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => actions.apply(promoteNow)}>
+              {pc.ready ? `⏫ ${RANKS[r + 1].name}(으)로 승급` : pc.why}
+            </button>
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
 
 export function OfficerScreen(props: ScreenProps) {
   const { state, actions } = props;
@@ -374,7 +441,7 @@ export function OfficerScreen(props: ScreenProps) {
 const STAT_DOES: Record<string, string> = Object.fromEntries(STAT_GROUPS.flatMap((g) => g.stats.map((s) => [s.name, s.does])));
 const TRAIN_FOR: Record<string, string[]> = Object.fromEntries(STAT_IDS.map((id) => [id, Object.entries(TRAINING_STATS).filter(([, v]) => v.includes(id)).map(([k]) => k)]));
 
-function StatsPanel({ state }: ScreenProps) {
+export function StatsPanel({ state }: ScreenProps) {
   const o = state.officer;
   const cap = statCap(state.player.rankIndex);
   const [pick, setPick] = useState<StatId | null>(null);
@@ -431,7 +498,7 @@ function StatsPanel({ state }: ScreenProps) {
   );
 }
 
-function AidesPanel({ state, actions }: ScreenProps) {
+export function AidesPanel({ state, actions }: ScreenProps) {
   const o = state.officer;
   const r = state.player.rankIndex;
   const slots = aideSlots(r);
@@ -579,7 +646,7 @@ function AideModal({
   );
 }
 
-function GeneralsPanel({ state, actions }: ScreenProps) {
+export function GeneralsPanel({ state, actions }: ScreenProps) {
   const o = state.officer;
   const r = state.player.rankIndex;
   const slots = generalSlots(r);
@@ -615,7 +682,7 @@ function GeneralsPanel({ state, actions }: ScreenProps) {
   );
 }
 
-function RivalsPanel({ state }: ScreenProps) {
+export function RivalsPanel({ state }: ScreenProps) {
   const o = state.officer;
   const rivals = rivalsView(state);
   return (

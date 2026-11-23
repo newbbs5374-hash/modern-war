@@ -30,9 +30,10 @@ import { AgreePanel, CouncilPanel, FavorBox, IslandPanel } from './CivScreens';
 import { REL_COLORS } from './WorldMap';
 import { PersonFace } from './People';
 
-type Tab = 'trade' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
+type Tab = 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
-  const [tab, setTab] = useTab<Tab>('diplo', 'trade');
+  const [raw, setTab] = useTab<Tab>('diplo', 'nations');
+  const tab: Tab = (['nations', 'rel', 'agree', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
   const [sel, setSel] = useState<string | null>(null);
   const civ = civOf(props.state);
   return (
@@ -41,7 +42,6 @@ export function DiplomacyScreen(props: ScreenProps) {
         value={tab}
         onChange={setTab}
         tabs={[
-          { id: 'trade', label: '무역', icon: '🚢' },
           { id: 'nations', label: '국가정보', icon: '🗂️' },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
           { id: 'agree', label: '호감·협정', icon: '🤝' },
@@ -52,7 +52,6 @@ export function DiplomacyScreen(props: ScreenProps) {
       {tab === 'agree' && <AgreePanel {...props} />}
       {tab === 'isle' && <IslandPanel {...props} />}
       {tab === 'council' && <CouncilPanel {...props} />}
-      {tab === 'trade' && <TradePanel {...props} />}
       {tab === 'nations' && <NationsPanel {...props} onPick={setSel} />}
       {tab === 'rel' && <RelationsPanel {...props} onPick={setSel} />}
       {sel && <CountryModal {...props} id={sel} onClose={() => setSel(null)} />}
@@ -61,7 +60,7 @@ export function DiplomacyScreen(props: ScreenProps) {
 }
 
 /* ───────── 무역 ───────── */
-function TradePanel({ state, actions }: ScreenProps) {
+export function TradePanel({ state, actions }: ScreenProps) {
   const partners = tradePartners(state);
   const [who, setWho] = useState(partners[0] ?? '');
   const [pick, setPick] = useState<Res | null>(null);

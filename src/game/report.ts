@@ -59,7 +59,7 @@ export function addReports(b: GameState | null, a: GameState): GameState {
   }
   // 내정 일 완료
   const ch = b.economy.chore;
-  if (ch && a.economy.chore && a.economy.chore.endMs === ch.endMs && crossed(ch.endMs)) out.push({ icon: '📋', text: `내정 업무 "${ch.title}" 끝났습니다. 내정 화면에서 보상을 받아 주세요.` });
+  if (ch && a.economy.chore && a.economy.chore.endMs === ch.endMs && crossed(ch.endMs)) out.push({ icon: '📋', text: `내정 업무 "${ch.title}" 끝났습니다. 시설 화면(국방·사회·경제의 시설 탭)에서 보상을 받아 주세요.` });
   // 임무 현장 도착
   const m = b.officer.active;
   if (m && a.officer.active?.id === m.id && crossed(m.endMs)) out.push({ icon: m.exam ? '🎓' : '🎯', text: `${m.title} — 현장에 도착했습니다. 지시를 내려 주십시오.` });

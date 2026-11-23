@@ -5,7 +5,7 @@ import { firstTestGrant } from './game/testgrant';
 import { deleteSave, exportCode, importCode, loadGame, saveGame } from './game/save';
 import { SCREENS, type GameActions } from './ui/screens';
 import { Shell } from './ui/Shell';
-import { parseScreen, type Screen } from './ui/nav';
+import { parseScreen, routeTo, type Screen } from './ui/nav';
 import { StartScreen } from './ui/StartScreen';
 import { AideReport } from './ui/AideReport';
 import { PeopleProvider } from './ui/People';
@@ -80,7 +80,11 @@ export function App() {
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
-  const go = (s: Screen) => {
+  // 같은 화면 안에서 다른 작은 탭으로 갈 때도 다시 그리도록(작은 탭은 화면을 열 때 읽음)
+  const [visit, setVisit] = useState(0);
+  const go = (to: Screen) => {
+    const s = routeTo(to);
+    setVisit((v) => v + 1);
     if (s === screen) return;
     history.current.push(screen);
     location.hash = s === 'home' ? '' : s;
@@ -254,6 +258,7 @@ export function App() {
       }
     >
       <View
+        key={`${screen}-${visit}`}
         state={state}
         speed={speed}
         notices={notices}

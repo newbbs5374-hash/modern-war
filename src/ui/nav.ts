@@ -2,12 +2,17 @@
 
 export type Screen =
   | 'home'
+  | 'personal'
+  | 'defense'
+  | 'diplo'
+  | 'society'
+  | 'economy'
+  // 옛 화면 이름(주소·안내에서 들어오면 새 탭으로 옮겨 줌)
   | 'ops'
   | 'officer'
   | 'forces'
   | 'training'
   | 'nation'
-  | 'diplo'
   | 'shop'
   | 'settings'
   | 'herald'
@@ -16,12 +21,16 @@ export type Screen =
 
 export const SCREEN_TITLES: Record<Screen, string> = {
   home: '본부',
+  personal: '개인',
+  defense: '국방',
+  diplo: '외교',
+  society: '사회',
+  economy: '경제',
   ops: '작전',
   officer: '장교',
   forces: '부대',
   training: '훈련',
   nation: '내정',
-  diplo: '외교',
   shop: '상점',
   settings: '설정',
   herald: '전령',
@@ -29,18 +38,74 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   battle: '전투',
 };
 
-/** 아래 메뉴 6칸. 작전이 주 메뉴(강조색). locked = 아직 못 쓰는 까닭 */
+/** 아래 메뉴 6칸(11-23 대장 결정): 본부(강조) + 개인·국방·외교·사회·경제 */
 export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: boolean; locked?: string }> = [
-  { screen: 'ops', icon: '🗺️', label: '작전', main: true },
-  { screen: 'officer', icon: '🎖️', label: '장교' },
-  { screen: 'forces', icon: '🪖', label: '부대' },
-  { screen: 'training', icon: '🎯', label: '훈련' },
-  { screen: 'nation', icon: '🏛️', label: '내정' },
+  { screen: 'home', icon: '🏠', label: '본부', main: true },
+  { screen: 'personal', icon: '👤', label: '개인' },
+  { screen: 'defense', icon: '🛡️', label: '국방' },
   { screen: 'diplo', icon: '🌐', label: '외교' },
-  { screen: 'shop', icon: '🛒', label: '상점' },
+  { screen: 'society', icon: '👥', label: '사회' },
+  { screen: 'economy', icon: '💰', label: '경제' },
 ];
 
+/** 새 큰 탭 안의 작은 탭 이름 */
+export type PersonalTab = 'profile' | 'train' | 'aides' | 'talent' | 'plan' | 'ach';
+export type DefenseTab = 'ops' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
+export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
+export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'press';
+export type EconomyTab = 'vault' | 'res' | 'ind' | 'trade' | 'tax' | 'facall';
+
+function remember(key: string, tab: string) {
+  try {
+    sessionStorage.setItem(`tab:${key}`, tab);
+  } catch {
+    /* 무시 */
+  }
+}
+
+/** 옛 화면·탭 이름 → 새 큰 탭 + 작은 탭 */
+export function legacyRoute(screen: string, tab?: string): { screen: Screen; set: Array<[string, string]> } {
+  const t = tab ?? '';
+  switch (screen) {
+    case 'ops':
+      if (t === 'spy') return { screen: 'defense', set: [['defense', 'spy']] };
+      return { screen: 'defense', set: [['defense', 'ops'], ...(t ? ([['ops', t]] as Array<[string, string]>) : [])] };
+    case 'officer':
+      if (t === 'aides') return { screen: 'personal', set: [['personal', 'aides']] };
+      if (t === 'generals') return { screen: 'defense', set: [['defense', 'command']] };
+      if (t === 'rivals') return { screen: 'society', set: [['society', 'politics']] };
+      return { screen: 'personal', set: [['personal', 'profile']] };
+    case 'forces':
+      return { screen: 'defense', set: [['defense', 'forces']] };
+    case 'training':
+      return { screen: 'personal', set: [['personal', 'train']] };
+    case 'nation':
+      if (t === 'res') return { screen: 'economy', set: [['economy', 'res']] };
+      if (t === 'fac') return { screen: 'economy', set: [['economy', 'facall']] };
+      if (t === 'city') return { screen: 'society', set: [['society', 'city']] };
+      if (t === 'gov') return { screen: 'society', set: [['society', 'gov']] };
+      if (t === 'tech') return { screen: 'defense', set: [['defense', 'tech']] };
+      return { screen: 'economy', set: [['economy', 'vault']] };
+    case 'diplo':
+      if (t === 'trade') return { screen: 'economy', set: [['economy', 'trade']] };
+      return { screen: 'diplo', set: t ? [['diplo', t]] : [] };
+    case 'shop':
+      return { screen: 'personal', set: [['personal', 'ach'], ...(t ? ([['shop', t]] as Array<[string, string]>) : [])] };
+    default:
+      return { screen: (screen in SCREEN_TITLES ? screen : 'home') as Screen, set: t ? [[screen, t]] : [] };
+  }
+}
+
+/** 화면 이름(옛 이름도) + 작은 탭 → 작은 탭을 기억해 두고 갈 화면을 돌려줌 */
+export function routeTo(screen: string, key?: string, tab?: string): Screen {
+  const r = legacyRoute(screen, tab);
+  // key가 화면 이름과 다르면(예: 'shop' 안의 탭) 그대로 기억
+  if (key && tab && key !== screen && !r.set.some(([k]) => k === key)) r.set.push([key, tab]);
+  for (const [k, v] of r.set) remember(k, v);
+  return r.screen;
+}
+
 export function parseScreen(hash: string): Screen {
-  const h = hash.replace(/^#/, '') as Screen;
-  return h in SCREEN_TITLES ? h : 'home';
+  const h = hash.replace(/^#/, '');
+  return h in SCREEN_TITLES ? routeTo(h) : 'home';
 }
