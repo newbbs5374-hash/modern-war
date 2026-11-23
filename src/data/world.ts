@@ -89,7 +89,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'pacific', faith: 'covenant', faithStrength: '중',
     specialUnit: { name: '항모 타격단', base: '항공모함', effect: '함재기 출격 2배 · 호위함 보호막' },
     ability: { name: '대양 항로', effect: '먼 바다 보급 손실 −30% · 다른 지역에 기지 건설 가능' },
-    shapes: [{ x: 608, y: 172, w: 90, h: 176 }, { x: 640, y: 384, w: 40, h: 40 }],
+    shapes: [{ x: 880, y: 150, w: 120, h: 280 }],
   }),
   C({
     id: 'cn', name: '중국', continent: 'asien', intro: '사람이 많고 공장이 쉬지 않는 넓은 나라',
@@ -98,7 +98,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '대규모 동원 사단', base: '보병', effect: '병력 1.5배 · 쓰러져도 빨리 채워짐' },
     ability: { name: '거대 공장', effect: '모든 생산 시간 −20%' },
-    shapes: [{ x: 298, y: 202, w: 172, h: 100 }],
+    shapes: [{ x: 440, y: 160, w: 210, h: 140 }],
   }),
   C({
     id: 'ru', name: '러시아', continent: 'norga', intro: '세계에서 가장 넓은 땅. 춥지만 미사일 기술이 앞선 나라',
@@ -107,7 +107,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'continental', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '전략 미사일 여단', base: '미사일', effect: '사거리 +50% · 방공 뚫기 +20%' },
     ability: { name: '혹한 요새', effect: '자기 땅 방어 때 적 이동·보급 −25%' },
-    shapes: [{ x: 202, y: 64, w: 220, h: 62 }, { x: 436, y: 74, w: 94, h: 52 }],
+    shapes: [{ x: 232, y: 118, w: 108, h: 112 }, { x: 330, y: 72, w: 400, h: 86 }],
   }),
   C({
     id: 'de', name: '독일', continent: 'eurona', intro: '유럽 한가운데의 공업 강국. 기갑 공장이 자랑',
@@ -116,7 +116,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '기갑 군단', base: '전차', effect: '장갑 +20% · 돌파 후 추격' },
     ability: { name: '공업력', effect: '강철 생산 +30% · 수리 빠름' },
-    shapes: [{ x: 38, y: 172, w: 72, h: 60 }],
+    shapes: [{ x: 138, y: 140, w: 92, h: 86 }],
   }),
   C({
     id: 'jp', name: '일본', continent: 'amern', intro: '긴 섬나라. 정밀 기술과 이지스 함대가 강함',
@@ -125,7 +125,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '이지스 함대', base: '구축함', effect: '미사일 요격 +40%' },
     ability: { name: '기술 정밀', effect: '연구 속도 +25%' },
-    shapes: [{ x: 708, y: 176, w: 22, h: 130 }, { x: 698, y: 334, w: 32, h: 56 }],
+    shapes: [{ x: 795, y: 150, w: 40, h: 160 }],
   }),
   C({
     id: 'uk', name: '영국', continent: 'eurona', intro: '오랜 해양 강국. 정보기관과 잠수함이 강함',
@@ -134,7 +134,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '특수 공정대', base: '특수부대', effect: '잠입 성공 +30% · 기습 피해 2배' },
     ability: { name: '정보 강국', effect: '정보 점수 +30% · 잠수함 은밀 +' },
-    shapes: [{ x: 124, y: 164, w: 56, h: 46 }, { x: 132, y: 218, w: 30, h: 22 }],
+    shapes: [{ x: 35, y: 110, w: 70, h: 100 }],
   }),
   C({
     id: 'in', name: '인도', continent: 'asien', intro: '인구가 가장 많은 나라. 산악 부대가 강함',
@@ -143,7 +143,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'independent', faith: 'pantheon', faithStrength: '중',
     specialUnit: { name: '산악 보병 사단', base: '보병', effect: '산·고지 전투 +30%' },
     ability: { name: '인구 저력', effect: '병력 회복 +40%' },
-    shapes: [{ x: 290, y: 318, w: 124, h: 76 }],
+    shapes: [{ x: 500, y: 385, w: 140, h: 130 }],
   }),
   C({
     id: 'kr', name: '한국', continent: 'asien', intro: '작지만 반도체와 무기 수출이 강한 나라. 포병이 정밀함',
@@ -152,7 +152,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '자주포 포병대', base: '포병', effect: '쏘고 바로 이동 · 정확도 +30%' },
     ability: { name: '방산 수출', effect: '무기를 팔아 국방예산 + · 연합국 생산 도움' },
-    shapes: [{ x: 486, y: 300, w: 46, h: 58 }],
+    shapes: [{ x: 672, y: 212, w: 58, h: 75 }],
   }),
   C({
     id: 'tr', name: '튀르키예', continent: 'sahar', intro: '두 바다를 잇는 해협의 나라. 무인기와 통행세로 힘을 키움',
@@ -161,7 +161,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'independent', faith: 'blade', faithStrength: '중',
     specialUnit: { name: '무인기 비행대', base: '무인드론', effect: '드론 비용 −40% · 동시 출격 +' },
     ability: { name: '해협 통제', effect: '유럽↔중동 바닷길 막기 · 통행 수익' },
-    shapes: [{ x: 182, y: 310, w: 66, h: 44 }],
+    shapes: [{ x: 200, y: 345, w: 120, h: 75 }],
   }),
   C({
     id: 'il', name: '이스라엘', continent: 'sahar', intro: '성지 곁의 작은 나라. 하늘을 지키는 방공망이 촘촘함',
@@ -170,7 +170,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'pacific', faith: 'covenant', faithStrength: '강',
     specialUnit: { name: '다층 방공망', base: '방공부대', effect: '미사일·로켓·드론 요격 +50%' },
     ability: { name: '예비군 결속', effect: '예비군 동원이 즉시 · 작은 나라지만 병력 +40%' },
-    shapes: [{ x: 78, y: 372, w: 44, h: 38 }],
+    shapes: [{ x: 200, y: 430, w: 70, h: 70 }],
   }),
   C({
     id: 'ir', name: '이란', continent: 'sahar', intro: '사막과 산의 나라. 종교 지도자가 다스리고 고속정 떼가 바다를 누빔',
@@ -179,7 +179,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'continental', faith: 'blade', faithStrength: '강',
     specialUnit: { name: '고속정 떼 함대', base: '구축함', effect: '싸고 많은 고속정 · 큰 함선 상대 +30%' },
     ability: { name: '해협 봉쇄', effect: '호르무즈 해협을 막아 적 석유 수입 −30%' },
-    shapes: [{ x: 142, y: 366, w: 100, h: 84 }],
+    shapes: [{ x: 320, y: 380, w: 140, h: 105 }],
   }),
   C({
     id: 'ua', name: '우크라이나', continent: 'eurona', intro: '밀밭과 해바라기의 나라. 땅을 지키려는 마음이 가장 단단함',
@@ -188,7 +188,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'europe', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '해상 드론 부대', base: '무인드론', effect: '바다 위 드론으로 함선 공격 · 해군 없이도 바다 막기' },
     ability: { name: '국토 방위 의지', effect: '자기 땅 방어 때 피해 −20% · 사기 안 떨어짐 · 연합 원조 2배' },
-    shapes: [{ x: 38, y: 240, w: 76, h: 52 }],
+    shapes: [{ x: 170, y: 232, w: 120, h: 72 }],
   }),
   C({
     id: 'kp', name: '북한', continent: 'norga', intro: '땅굴과 특수부대로 버티는 닫힌 나라',
@@ -197,7 +197,7 @@ export const COUNTRIES: Country[] = [
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '특수작전군', base: '특수부대', effect: '땅굴 침투 · 적 후방 도시 기습' },
     ability: { name: '철벽 체제', effect: '국방비 비율 상한 높음 · 병력 +50% · 대신 경제 성장 −50%' },
-    shapes: [{ x: 544, y: 66, w: 52, h: 62 }],
+    shapes: [{ x: 655, y: 140, w: 70, h: 62 }],
   }),
 ];
 

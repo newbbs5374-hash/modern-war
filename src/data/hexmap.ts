@@ -54,7 +54,7 @@ export function hexCorners(x: number, y: number, s = HEX_SIZE): Array<[number, n
 /** 도시 크기: 반지름 2·3·4 → 19·37·61칸 */
 export type CitySize = 2 | 3 | 4;
 export const SIZE_NAME: Record<CitySize, string> = { 2: '소도시', 3: '중도시', 4: '대도시' };
-export const SIZE_TILES: Record<CitySize, number> = { 2: 19, 3: 37, 4: 61 };
+export const SIZE_TILES: Record<CitySize, number> = { 2: 37, 3: 61, 4: 91 };
 /** 나라 도시 수에 따른 크기: 수도는 4개 이상이면 대도시(아니면 중도시), 4개 이상이면 둘째, 6개 이상이면 셋째도 중도시 */
 export function citySizes(n: number): CitySize[] {
   return Array.from({ length: n }, (_, i) => (i === 0 ? (n >= 4 ? 4 : 3) : i === 1 && n >= 4 ? 3 : i === 2 && n >= 6 ? 3 : 2));
@@ -87,20 +87,36 @@ export interface PioneerIsland {
 
 /** 분쟁 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
 const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [number, number] }> = [
-  { id: 'p-cheongseok', name: '푸른암초', res: '갈륨', at: [250, 160] },
-  { id: 'p-whale', name: '고래섬', res: '석유', at: [640, 120] },
-  { id: 'p-storm', name: '폭풍섬', res: '티타늄', at: [120, 110] },
-  { id: 'p-twin', name: '쌍둥이섬', res: '알루미늄', at: [560, 175] },
-  { id: 'p-flame', name: '불꽃섬', res: '석유', at: [300, 470] },
-  { id: 'p-fog', name: '안개섬', res: '갈륨', at: [30, 330] },
-  { id: 'p-southwind', name: '남풍섬', res: '석유', at: [440, 470] },
-  { id: 'p-coral', name: '산호환초', res: '산호', at: [580, 450] },
-  { id: 'p-turtle', name: '거북섬', res: '알루미늄', at: [760, 330] },
-  { id: 'p-southcross', name: '남십자섬', res: '희토류', at: [170, 520] },
-  { id: 'p-blackrock', name: '검은바위섬', res: '강철', at: [660, 30] },
-  { id: 'p-dawn', name: '새벽섬', res: '항구', at: [560, 300] },
+  { id: 'p-cheongseok', name: '푸른암초', res: '갈륨', at: [690, 120] },
+  { id: 'p-whale', name: '고래섬', res: '석유', at: [820, 60] },
+  { id: 'p-storm', name: '폭풍섬', res: '티타늄', at: [130, 50] },
+  { id: 'p-twin', name: '쌍둥이섬', res: '알루미늄', at: [770, 350] },
+  { id: 'p-flame', name: '불꽃섬', res: '석유', at: [470, 345] },
+  { id: 'p-fog', name: '안개섬', res: '갈륨', at: [70, 300] },
+  { id: 'p-southwind', name: '남풍섬', res: '석유', at: [380, 540] },
+  { id: 'p-coral', name: '산호환초', res: '산호', at: [720, 480] },
+  { id: 'p-turtle', name: '거북섬', res: '알루미늄', at: [850, 480] },
+  { id: 'p-southcross', name: '남십자섬', res: '희토류', at: [110, 540] },
+  { id: 'p-blackrock', name: '검은바위섬', res: '강철', at: [560, 15] },
+  { id: 'p-dawn', name: '새벽섬', res: '항구', at: [770, 220] },
 ];
-const HOLY_AT: [number, number] = [118, 318];
+const HOLY_AT: [number, number] = [150, 455];
+/** 분쟁 섬 크기(칸) */
+export const ISLAND_TILES = 7;
+/** 땅덩어리: 같은 대륙 나라끼리는 국경을 맞댈 수 있음. 나머지는 섬나라/따로 떨어진 대륙 */
+const LANDMASS: Record<string, string> = { de: 'eurasia', ua: 'eurasia', ru: 'eurasia', cn: 'eurasia', kp: 'eurasia', kr: 'eurasia', tr: 'mideast', ir: 'mideast', il: 'mideast' };
+
+/** 같은 대륙 나라는 도시 자리를 직접 정함(국경을 맞대도록). 순서는 world.ts 도시 순서 */
+const CITY_AT: Record<string, Array<[number, number]>> = {
+  uk: [[70, 190], [70, 135]],
+  de: [[190, 195], [180, 145]],
+  ru: [[268, 172], [258, 115], [380, 125], [300, 68], [325, 150], [358, 76], [420, 62], [485, 82], [548, 112], [455, 125]],
+  ua: [[238, 245], [292, 238], [232, 292]],
+  cn: [[555, 190], [600, 228], [565, 292], [615, 300], [480, 145], [525, 250], [458, 205], [640, 262]],
+  kp: [[680, 188], [648, 160]],
+  kr: [[712, 250], [726, 296]],
+  jp: [[812, 225], [796, 292]],
+};
 
 /** 나라 네모(옛 지도 좌표) 안에 도시 목표 자리를 긴 쪽으로 고르게 */
 function targets(c: Country, n: number): Array<[number, number]> {
@@ -150,7 +166,7 @@ function build() {
   /** 대륙마다 못 쓰는 칸(다른 대륙 땅에서 2칸 안) */
   const forbid = new Map<string, Set<string>>();
   // 땅 덩어리 묶음: 같은 지역끼리는 이어질 수 있음. 일본은 따로 떨어진 긴 섬
-  const landGroup = (c: Country) => (c.id === 'jp' ? 'jp' : c.continent);
+  const landGroup = (c: Country) => LANDMASS[c.id] ?? c.id;
   const continents = [...new Set(COUNTRIES.map(landGroup))];
   for (const ct of continents) forbid.set(ct, new Set());
   const GAP = 2;
@@ -164,7 +180,7 @@ function build() {
   const jobs: Job[] = [];
   for (const c of COUNTRIES) {
     const sizes = citySizes(c.cities.length);
-    const tg = targets(c, c.cities.length);
+    const tg = CITY_AT[c.id] ?? targets(c, c.cities.length);
     sizes.forEach((size, idx) => jobs.push({ country: c, idx, size, target: pixelToHex(tg[idx][0], tg[idx][1]) }));
   }
   // 수도 먼저(큰 나라부터), 다음은 둘째 도시들…
@@ -225,7 +241,7 @@ function build() {
         if (!ok(c)) continue;
         let near = j.idx === 0;
         if (!near)
-          for (const t of disk(c, j.size + 1))
+          for (const t of disk(c, j.size + 2))
             if (owner.get(hexKey(t.q, t.r))?.home === j.country.id) {
               near = true;
               break;
@@ -261,7 +277,7 @@ function build() {
   for (const t of holy.tiles) put(t, { home: '', place: 'holy', kind: 'holy', center: t.q === holyC.q && t.r === holyC.r, continent: '' });
   const pioneers: PioneerIsland[] = [];
   for (const p of PIONEER_DEF) {
-    const { c, tiles } = placeIsland(p.at, 19);
+    const { c, tiles } = placeIsland(p.at, ISLAND_TILES);
     for (const t of tiles) put(t, { home: '', place: p.id, kind: 'island', center: t.q === c.q && t.r === c.r, continent: '' });
     pioneers.push({ id: p.id, name: p.name, res: p.res, q: c.q, r: c.r, ...hexToPixel(c.q, c.r) });
   }
