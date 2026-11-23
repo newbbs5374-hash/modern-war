@@ -69,7 +69,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
       )}
       {ex && (
         <p className="small muted">
-          👑 독점 병과 · {ex.why} · 만드는 연방: {ex.only.map((id) => countryById(id).name).join(', ')}
+          👑 독점 병과 · {ex.why} · 만드는 나라: {ex.only.map((id) => countryById(id).name).join(', ')}
         </p>
       )}
       <div className="kv2">

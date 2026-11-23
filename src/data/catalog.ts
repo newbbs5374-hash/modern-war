@@ -49,7 +49,7 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
   { name: '잠수함', domain: '해', role: '숨어서 기습', rank: 7 },
   { name: '미사일', domain: '공', role: '한 번 쓰고 사라짐, 아주 멀리', rank: 8 },
   { name: '항공모함', domain: '해', role: '바다 위 비행장, 함재기 출격', rank: 9 },
-  // 독점 병과(몇 연방만, data/specials.ts EXCLUSIVES)
+  // 독점 병과(몇 나라만, data/specials.ts EXCLUSIVES)
   { name: '강습상륙함', domain: '해', role: '보병을 싣고 섬에 바로 상륙, 바다 위 보급 기지', rank: 6 },
   { name: '원자력 잠수함', domain: '해', role: '우라늄 원자로라 멀리 가도 지치지 않음, 더 깊이 숨음', rank: 8 },
   { name: '청광 방벽함', domain: '해', role: '청광석 보호막으로 둘레 2칸 우리 편 피해 −30%', rank: 8 },

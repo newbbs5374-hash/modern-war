@@ -81,7 +81,7 @@ export function addReports(b: GameState | null, a: GameState): GameState {
   // 스탯 상승
   const ups = STAT_IDS.filter((id) => Math.floor(a.officer.stats[id]) > Math.floor(b.officer.stats[id]));
   if (ups.length) out.push({ icon: '📈', text: `${ups.map((id) => `${id} ${Math.floor(a.officer.stats[id])}`).join(', ')}! 능력이 올랐습니다.` });
-  // 문명식 운영: 연구 완료 · 번뜩임 · 구역 완공 · 시대 · 군도 회의
+  // 문명식 운영: 연구 완료 · 번뜩임 · 구역 완공 · 시대 · 국제 회의
   const cb = b.civ;
   const ca = a.civ;
   if (cb && ca) {
@@ -93,8 +93,8 @@ export function addReports(b: GameState | null, a: GameState): GameState {
       for (const d of cc.districts) if (d.told && !old?.districts.find((x) => x.tile === d.tile)?.told) out.push({ icon: districtById(d.id).icon, text: `${josa(districtById(d.id).name, '이', '가')} 완공되었습니다.` });
     }
     const op = ca.council.open;
-    if (op && op.id !== cb.council.open?.id) out.push({ icon: '🏛️', text: `군도 회의가 열렸습니다. 안건은 "${agendaById(op.agenda).name}"입니다. 외교 화면에서 투표해 주십시오.` });
-    if (ca.council.last && ca.council.last !== cb.council.last) out.push({ icon: '🗳️', text: `군도 회의 결과: ${ca.council.last}` });
+    if (op && op.id !== cb.council.open?.id) out.push({ icon: '🏛️', text: `국제 회의가 열렸습니다. 안건은 "${agendaById(op.agenda).name}"입니다. 외교 화면에서 투표해 주십시오.` });
+    if (ca.council.last && ca.council.last !== cb.council.last) out.push({ icon: '🗳️', text: `국제 회의 결과: ${ca.council.last}` });
   }
 
   let s = a;

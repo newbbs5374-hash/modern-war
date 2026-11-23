@@ -1,5 +1,5 @@
 {
- "설명": "여명 군도 육각 타일 지도. 뾰족한 위 육각형, 축 좌표(q,r). 픽셀 x = size·√3·(q + r/2), y = size·1.5·r. 목록에 없는 칸은 바다.",
+ "설명": "세계 육각 타일 지도. 뾰족한 위 육각형, 축 좌표(q,r). 픽셀 x = size·√3·(q + r/2), y = size·1.5·r. 목록에 없는 칸은 바다.",
  "size": 5.2,
  "orientation": "pointy-top",
  "bounds": {
@@ -11,11 +11,11 @@
  "countries": [
   {
    "id": "us",
-   "name": "아스트라 연방",
+   "name": "미국",
    "cities": [
     {
      "id": "us-0",
-     "name": "스타포트",
+     "name": "워싱턴",
      "capital": true,
      "size": "대도시",
      "tiles": 61,
@@ -26,7 +26,7 @@
     },
     {
      "id": "us-1",
-     "name": "노바헤이븐",
+     "name": "뉴욕",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -37,7 +37,7 @@
     },
     {
      "id": "us-2",
-     "name": "실버베이",
+     "name": "샌프란시스코",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -48,7 +48,7 @@
     },
     {
      "id": "us-3",
-     "name": "코랄섬",
+     "name": "호놀룰루",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -59,7 +59,7 @@
     },
     {
      "id": "us-4",
-     "name": "이글록",
+     "name": "덴버",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -70,7 +70,7 @@
     },
     {
      "id": "us-5",
-     "name": "썬더캐년",
+     "name": "피닉스",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -81,7 +81,7 @@
     },
     {
      "id": "us-6",
-     "name": "프론티어시",
+     "name": "피츠버그",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -92,7 +92,7 @@
     },
     {
      "id": "us-7",
-     "name": "레드메사",
+     "name": "휴스턴",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -106,11 +106,11 @@
   },
   {
    "id": "cn",
-   "name": "용린 공화국",
+   "name": "중국",
    "cities": [
     {
      "id": "cn-0",
-     "name": "용린성",
+     "name": "베이징",
      "capital": true,
      "size": "대도시",
      "tiles": 61,
@@ -121,7 +121,7 @@
     },
     {
      "id": "cn-1",
-     "name": "비취항",
+     "name": "톈진",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -132,7 +132,7 @@
     },
     {
      "id": "cn-2",
-     "name": "홍등시",
+     "name": "광저우",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -143,7 +143,7 @@
     },
     {
      "id": "cn-3",
-     "name": "운해진",
+     "name": "선전",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -154,7 +154,7 @@
     },
     {
      "id": "cn-4",
-     "name": "금룡시",
+     "name": "바오터우",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -165,7 +165,7 @@
     },
     {
      "id": "cn-5",
-     "name": "청하진",
+     "name": "우한",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -176,7 +176,7 @@
     },
     {
      "id": "cn-6",
-     "name": "옥문관",
+     "name": "란저우",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -187,7 +187,7 @@
     },
     {
      "id": "cn-7",
-     "name": "남풍포",
+     "name": "상하이",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -201,11 +201,11 @@
   },
   {
    "id": "ru",
-   "name": "북빙 연합",
+   "name": "러시아",
    "cities": [
     {
      "id": "ru-0",
-     "name": "빙관성",
+     "name": "모스크바",
      "capital": true,
      "size": "대도시",
      "tiles": 61,
@@ -216,7 +216,7 @@
     },
     {
      "id": "ru-1",
-     "name": "백야항",
+     "name": "상트페테르부르크",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -227,7 +227,7 @@
     },
     {
      "id": "ru-2",
-     "name": "서리봉",
+     "name": "튜멘",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -238,7 +238,7 @@
     },
     {
      "id": "ru-3",
-     "name": "오로라시",
+     "name": "무르만스크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -249,7 +249,7 @@
     },
     {
      "id": "ru-4",
-     "name": "설원진",
+     "name": "예카테린부르크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -260,7 +260,7 @@
     },
     {
      "id": "ru-5",
-     "name": "툰드라항",
+     "name": "아르한겔스크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -271,7 +271,7 @@
     },
     {
      "id": "ru-6",
-     "name": "얼음송곳",
+     "name": "노릴스크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -282,7 +282,7 @@
     },
     {
      "id": "ru-7",
-     "name": "북극성채",
+     "name": "야쿠츠크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -293,7 +293,7 @@
     },
     {
      "id": "ru-8",
-     "name": "백곰만",
+     "name": "블라디보스토크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -304,7 +304,7 @@
     },
     {
      "id": "ru-9",
-     "name": "눈보라령",
+     "name": "노보시비르스크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -318,11 +318,11 @@
   },
   {
    "id": "de",
-   "name": "철각 공국",
+   "name": "독일",
    "cities": [
     {
      "id": "de-0",
-     "name": "철각성",
+     "name": "베를린",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -333,7 +333,7 @@
     },
     {
      "id": "de-1",
-     "name": "용광시",
+     "name": "함부르크",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -347,11 +347,11 @@
   },
   {
    "id": "jp",
-   "name": "벚섬 왕국",
+   "name": "일본",
    "cities": [
     {
      "id": "jp-0",
-     "name": "벚꽃궁",
+     "name": "도쿄",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -362,7 +362,7 @@
     },
     {
      "id": "jp-1",
-     "name": "달빛항",
+     "name": "후쿠오카",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -376,11 +376,11 @@
   },
   {
    "id": "uk",
-   "name": "안개항 왕국",
+   "name": "영국",
    "cities": [
     {
      "id": "uk-0",
-     "name": "안개항",
+     "name": "런던",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -391,7 +391,7 @@
     },
     {
      "id": "uk-1",
-     "name": "회색탑",
+     "name": "버밍엄",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -405,11 +405,11 @@
   },
   {
    "id": "in",
-   "name": "금빛평원 연방",
+   "name": "인도",
    "cities": [
     {
      "id": "in-0",
-     "name": "금빛성",
+     "name": "뉴델리",
      "capital": true,
      "size": "대도시",
      "tiles": 61,
@@ -420,7 +420,7 @@
     },
     {
      "id": "in-1",
-     "name": "태양평야",
+     "name": "콜카타",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -431,7 +431,7 @@
     },
     {
      "id": "in-2",
-     "name": "연꽃항",
+     "name": "벵갈루루",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -442,7 +442,7 @@
     },
     {
      "id": "in-3",
-     "name": "코끼리강",
+     "name": "첸나이",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -453,7 +453,7 @@
     },
     {
      "id": "in-4",
-     "name": "향신료시",
+     "name": "뭄바이",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -467,11 +467,11 @@
   },
   {
    "id": "kr",
-   "name": "가람 공화국",
+   "name": "한국",
    "cities": [
     {
      "id": "kr-0",
-     "name": "한빛",
+     "name": "서울",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -482,7 +482,7 @@
     },
     {
      "id": "kr-1",
-     "name": "별가람",
+     "name": "부산",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -496,11 +496,11 @@
   },
   {
    "id": "tr",
-   "name": "쌍해협 칸국",
+   "name": "튀르키예",
    "cities": [
     {
      "id": "tr-0",
-     "name": "쌍해협성",
+     "name": "앙카라",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -511,7 +511,7 @@
     },
     {
      "id": "tr-1",
-     "name": "바람시장",
+     "name": "이스탄불",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -522,7 +522,7 @@
     },
     {
      "id": "tr-2",
-     "name": "초승항",
+     "name": "이즈미르",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -536,11 +536,11 @@
   },
   {
    "id": "il",
-   "name": "별방패 도시국",
+   "name": "이스라엘",
    "cities": [
     {
      "id": "il-0",
-     "name": "별방패성",
+     "name": "텔아비브",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -551,7 +551,7 @@
     },
     {
      "id": "il-1",
-     "name": "수정항",
+     "name": "하이파",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -565,11 +565,11 @@
   },
   {
    "id": "ir",
-   "name": "붉은모래 신정국",
+   "name": "이란",
    "cities": [
     {
      "id": "ir-0",
-     "name": "붉은모래성",
+     "name": "테헤란",
      "capital": true,
      "size": "대도시",
      "tiles": 61,
@@ -580,7 +580,7 @@
     },
     {
      "id": "ir-1",
-     "name": "신탁시",
+     "name": "이스파한",
      "capital": false,
      "size": "중도시",
      "tiles": 37,
@@ -591,7 +591,7 @@
     },
     {
      "id": "ir-2",
-     "name": "모래항",
+     "name": "반다르아바스",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -602,7 +602,7 @@
     },
     {
      "id": "ir-3",
-     "name": "오아시스진",
+     "name": "시라즈",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -616,11 +616,11 @@
   },
   {
    "id": "ua",
-   "name": "푸른들 자유국",
+   "name": "우크라이나",
    "cities": [
     {
      "id": "ua-0",
-     "name": "푸른들성",
+     "name": "키이우",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -631,7 +631,7 @@
     },
     {
      "id": "ua-1",
-     "name": "밀밭시",
+     "name": "하르키우",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -642,7 +642,7 @@
     },
     {
      "id": "ua-2",
-     "name": "해바라기항",
+     "name": "오데사",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -656,11 +656,11 @@
   },
   {
    "id": "kp",
-   "name": "흑철 요새국",
+   "name": "북한",
    "cities": [
     {
      "id": "kp-0",
-     "name": "흑철성",
+     "name": "평양",
      "capital": true,
      "size": "중도시",
      "tiles": 37,
@@ -671,7 +671,7 @@
     },
     {
      "id": "kp-1",
-     "name": "동굴항",
+     "name": "남포",
      "capital": false,
      "size": "소도시",
      "tiles": 19,
@@ -688,7 +688,7 @@
   {
    "id": "p-cheongseok",
    "name": "청석섬",
-   "res": "희토류",
+   "res": "청광석",
    "q": 17,
    "r": 21,
    "x": 247.7,
@@ -738,7 +738,7 @@
   {
    "id": "p-fog",
    "name": "안개섬",
-   "res": "리튬",
+   "res": "청광석",
    "q": -18,
    "r": 42,
    "x": 27,
@@ -758,7 +758,7 @@
   {
    "id": "p-coral",
    "name": "산호환초",
-   "res": "리튬",
+   "res": "산호",
    "q": 35,
    "r": 58,
    "x": 576.4,
@@ -807,7 +807,7 @@
   }
  ],
  "holy": {
-  "name": "떠오른 성소",
+  "name": "고대 성지",
   "q": -7,
   "r": 41,
   "x": 121.6,

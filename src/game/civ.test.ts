@@ -116,7 +116,7 @@ describe('외교', () => {
     s = advance(s, 1 * H);
     expect(s.economy.stock[isl.res as keyof GameState['economy']['stock']]).toBeGreaterThan(before);
   });
-  it('군도 회의: 열리고, 투표가 없으면 부관이 대신, 끌 수 있음', () => {
+  it('국제 회의: 열리고, 투표가 없으면 부관이 대신, 끌 수 있음', () => {
     let s = newGame('t', 'kr', 0, { seed: 7 });
     s = C.debugCouncil(s);
     expect(C.civOf(s).council.open).not.toBeNull();

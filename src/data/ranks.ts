@@ -13,7 +13,7 @@ export const RANKS: Rank[] = [
   { name: '개척 지도자', unit: '중대', salaryPerDay: 220 },
   { name: '섬 수호자', unit: '대대', salaryPerDay: 320 },
   { name: '항로 지도자', unit: '대대 2개', salaryPerDay: 450 },
-  { name: '군도 지도자', unit: '연대', salaryPerDay: 620 },
+  { name: '지역 지도자', unit: '연대', salaryPerDay: 620 },
   { name: '존경받는 지도자', unit: '여단', salaryPerDay: 850 },
   { name: '강국 지도자', unit: '사단', salaryPerDay: 1150 },
   { name: '위대한 지도자', unit: '군단', salaryPerDay: 1550 },

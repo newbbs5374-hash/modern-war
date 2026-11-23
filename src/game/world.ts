@@ -95,7 +95,7 @@ export function newWorld(seed: number, randomLeaders: boolean, firstTickMs: numb
       const rel = startingRelation(a.id, b.id);
       pairs[pairKey(a.id, b.id)] = {
         rel,
-        // 새 세계관: 모두 평화로 시작. 맞수 사이만 긴장 20~35에서 시작(여명 조약)
+        // 새 세계관: 모두 평화로 시작. 맞수 사이만 긴장 20~35에서 시작
         tension: rel === '중립' ? (isRival(a.id, b.id) ? Math.round(rng.range(20, 35)) : 5) : 0,
         weariness: 0,
       };
@@ -150,7 +150,7 @@ function faithClash(a: string, b: string): boolean {
   return fa === 'polaris' && fb === 'polaris';
 }
 
-/** 맞수 사이: 동해 협의체 ↔ 북방 협약, 북빙 ↔ 서풍 동맹, 용린 ↔ 금빛평원(항로 다툼), 신앙 충돌 */
+/** 맞수 사이: 태평양 연합 ↔ 대륙 협약, 러시아 ↔ 유럽 연합, 중국 ↔ 인도(항로 다툼), 신앙 충돌 */
 export function isRival(a: string, b: string): boolean {
   const ba = countryById(a).bloc;
   const bb = countryById(b).bloc;
@@ -261,7 +261,7 @@ function diplomacy(ctx: Ctx) {
       startWar(ctx, att, def, p.rel === '휴전' ? '휴전이 깨짐' : '긴장이 한계에 다다름');
     }
   }
-  // 신앙 사건: "떠오른 성소"를 두고 빛의 언약 ↔ 성검 교단
+  // 신앙 사건: "고대 성지"를 두고 빛의 언약 ↔ 성검 교단
   if (rng.chance(FAITH_EVENT_CHANCE)) {
     const covenant = COUNTRIES.filter((c) => c.faith === 'covenant' && isAlive(w, c.id));
     const blade = COUNTRIES.filter((c) => c.faith === 'blade' && isAlive(w, c.id));
@@ -271,7 +271,7 @@ function diplomacy(ctx: Ctx) {
       const what = rng.pick(['성지 충돌', '순례자 공격', '신앙 지도자 선동']);
       const p = w.pairs[pairKey(a, b)];
       if (p.rel !== '전쟁') p.tension = Math.min(TENSION_MAX - 1, p.tension + FAITH_EVENT_TENSION);
-      log(ctx, '신앙', `떠오른 성소에서 ${what}! ${gwa(nm(a))} ${nm(b)} 사이 긴장이 크게 올랐어요.`, a, b);
+      log(ctx, '신앙', `고대 성지에서 ${what}! ${gwa(nm(a))} ${nm(b)} 사이 긴장이 크게 올랐어요.`, a, b);
     }
   }
 }
@@ -288,7 +288,7 @@ function power(ctx: Ctx, country: string, troops: number, defending: boolean, ov
   return pw;
 }
 
-/** 바다를 건너야 하는가(같은 군도이거나 쌍해협 칸국의 해협이면 아님) */
+/** 바다를 건너야 하는가(같은 지역이거나 튀르키예의 해협이면 아님) */
 function isOverseas(from: string, cityHome: string): boolean {
   const a = countryById(from).continent;
   const b = countryById(cityHome).continent;

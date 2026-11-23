@@ -23,7 +23,7 @@ export interface BattleSpec {
   /** 지도 위 전투: 대상 도시 id · 도시 방어도 */
   city?: string;
   defense?: number;
-  /** 지도 위 전투: 우리 특화 유닛·독점 병과 · 적 연방 · 연료·탄약 */
+  /** 지도 위 전투: 우리 특화 유닛·독점 병과 · 적 나라 · 연료·탄약 */
   army?: { roster: Record<string, number>; enemyId?: string; fuel?: number; ammo?: number };
 }
 

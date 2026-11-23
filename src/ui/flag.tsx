@@ -17,7 +17,7 @@ export const FLAG_DEF: Record<string, FlagDef> = {
   jp: { bands: ['#f8fafc', '#f8fafc'], dir: 'h', emblem: '✿', ec: '#be123c' }, // 히노모리: 흰 바탕 붉은 꽃
   uk: { bands: ['#14532d', '#1e3a8a'], dir: 'd', emblem: '♛', ec: '#fde68a' }, // 애셔랜드: 왕관
   in: { bands: ['#ea580c', '#f8fafc', '#15803d'], dir: 'v', emblem: '☀', ec: '#1d4ed8' }, // 수리야: 태양
-  kr: { bands: ['#f8fafc', '#0ea5e9', '#f8fafc'], dir: 'h', emblem: '≋', ec: '#1e40af' }, // 가람: 흐르는 강
+  kr: { bands: ['#f8fafc', '#0ea5e9', '#f8fafc'], dir: 'h', emblem: '≋', ec: '#1e40af' }, // 한국: 흐르는 강
   tr: { bands: ['#991b1b', '#0f766e'], dir: 'v', emblem: '⚔', ec: '#f8fafc' }, // 카라한: 교차한 칼
   il: { bands: ['#f8fafc', '#1d4ed8', '#f8fafc'], dir: 'v', emblem: '✦', ec: '#1d4ed8' }, // 하리온: 빛나는 별
   ir: { bands: ['#166534', '#f8fafc', '#166534'], dir: 'h', emblem: '⚜', ec: '#b45309' }, // 샤르반: 신전 문양

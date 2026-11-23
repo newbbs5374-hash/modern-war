@@ -94,7 +94,7 @@ export function moodName(m: number): { name: string; icon: string; text: string 
   if (m < 30) return { name: '평화 개척', icon: '🌅', text: '나라들이 섬을 개척하며 평화롭게 지내요' };
   if (m < 60) return { name: '냉전', icon: '🧊', text: '자원과 항로를 두고 서로 노려봐요' };
   if (m < 80) return { name: '국지전', icon: '🔥', text: '곳곳에서 싸움이 일어나요' };
-  return { name: '대전쟁', icon: '💥', text: '군도 전체가 전쟁에 휩싸였어요' };
+  return { name: '대전쟁', icon: '💥', text: '온 세계가 전쟁에 휩싸였어요' };
 }
 
 /* ───────── 확률·표시 ───────── */

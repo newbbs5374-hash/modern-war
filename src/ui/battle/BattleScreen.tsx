@@ -101,7 +101,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     const owner = state.world.owner[a.city];
     const foeId = owner !== me ? owner : COUNTRIES.find((c) => c.id !== me && relationOf(state.world, me, c.id) === '전쟁')?.id;
     const p = planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined, state.world.defense[a.city]);
-    // 지도 위 전투: 우리 특화 유닛·독점 병과, 적 연방 특화 유닛, 출발 연료·탄약
+    // 지도 위 전투: 우리 특화 유닛·독점 병과, 적 나라 특화 유닛, 출발 연료·탄약
     const army = { roster: fieldRoster(state), enemyId: foeId, fuel: a.fuel, ammo: a.ammo };
     return { ...p, stages: p.stages.map((st) => (st.frame === 'field' ? { ...st, army } : st)) };
   });
