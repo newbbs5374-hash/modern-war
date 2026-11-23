@@ -1,4 +1,5 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { salaryPerDay } from '../game/state';
 import { originFits, originOf } from '../game/origin';
 import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
@@ -321,7 +322,7 @@ export function LeaderCard(props: ScreenProps) {
           </span>
           <div className="lc-name">{state.player.name}</div>
           <div className="lc-sub">
-            {FLAG[state.player.countryId]} {countryById(state.player.countryId).name} · 지휘 {RANKS[r].unit}
+            {FLAG[state.player.countryId]} {countryById(state.player.countryId).name} · 봉급 시간당 {Math.round(salaryPerDay(state))}
           </div>
           {og && (
             <div className="lc-sub lc-origin">

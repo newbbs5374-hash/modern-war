@@ -40,6 +40,8 @@ export const FIELDS: Array<{ id: FieldId; icon: string; name: string; tab: strin
 /** 지지도 = 사회 40% + 경제 30% + 안보 20% + 평판 10% */
 export const APPROVAL_W: Record<FieldId, number> = { society: 0.4, economy: 0.3, defense: 0.2, personal: 0.1, diplo: 0 };
 /** 신뢰도가 끌려가는 목표 = 외교 40% + 안보 30% + 경제 30% */
+/** 안보 점수: 연합국 병력 중 우리 편으로 쳐 주는 몫 */
+export const ALLY_DEFENSE_SHARE = 0.3;
 export const TRUST_W: Record<FieldId, number> = { diplo: 0.4, defense: 0.3, economy: 0.3, personal: 0, society: 0 };
 
 export interface PresMod {
@@ -73,13 +75,15 @@ const sum = (rows: Rows) => rows.reduce((a, [, v]) => a + v, 0);
 
 function defenseRows(s: GameState): Rows {
   const me = s.player.countryId;
-  const mine = s.nations[me]?.troops ?? 0;
+  const own = s.nations[me]?.troops ?? 0;
+  let allyTroops = 0;
   let threat = 0;
   let wars = 0;
   for (const c of COUNTRIES) {
     if (c.id === me || !isAlive(s.world, c.id)) continue;
     const rel = relationOf(s.world, me, c.id);
     const t = s.nations[c.id]?.troops ?? 0;
+    if (rel === '연합') allyTroops += t;
     if (rel === '전쟁') {
       wars++;
       threat = Math.max(threat, t);
@@ -88,11 +92,13 @@ function defenseRows(s: GameState): Rows {
       if (p && p.tension >= 50) threat = Math.max(threat, t * 0.6);
     }
   }
+  // 연합국 병력도 함께 지켜 준다고 봄(11-23 점검: 작은 나라는 큰 나라 병력과 1:1로 비교하면 안보 점수가 늘 바닥이었음)
+  const mine = own + allyTroops * ALLY_DEFENSE_SHARE;
   const rows: Rows = [];
   if (threat <= 0) rows.push(['위협 없음', 75]);
   else {
     const v = clamp(50 + 25 * Math.log2(Math.max(0.05, mine / threat)), 10, 92);
-    rows.push([`병력 ÷ 가장 센 적(${wars ? '전쟁' : '긴장'})`, v]);
+    rows.push([`병력${allyTroops ? '(연합 몫 포함)' : ''} ÷ 가장 센 적(${wars ? '전쟁' : '긴장'})`, v]);
   }
   let lost = 0;
   let won = 0;

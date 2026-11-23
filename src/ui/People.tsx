@@ -4,7 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AIDE_EFFECT } from '../battle/grid';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { STAT_IDS, statCap, statExpNeed } from '../data/officers';
-import { RANKS, TITLES } from '../data/ranks';
+import { TITLES } from '../data/ranks';
 import { titleOf } from '../game/title';
 import { COUNTRIES, countryById } from '../data/world';
 import { favorName, favorOf, favorReasons } from '../game/civ';
@@ -26,7 +26,7 @@ import {
   type ErrandKind,
 } from '../game/officer';
 import { NPC_INFO, actCost, actsOf, canAct, doAct, letterChance, personExists, type PersonRef } from '../game/people';
-import { budgetPerDay, troopsPerDay, type GameState } from '../game/state';
+import { budgetPerDay, salaryPerDay, troopsPerDay, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
 import { fmt } from './common';
 import { Flag } from './flag';
@@ -110,13 +110,12 @@ export function personCard(s: GameState, p: PersonRef): Card {
   const me = s.player.countryId;
   switch (p.kind) {
     case 'player': {
-      const r = s.player.rankIndex;
       return {
         name: s.player.name,
         title: `${countryById(me).name} · ${TITLES[s.player.title ?? 0].name}`,
         keys: ['player', `leader-${me}`],
         fallback: <Flag id={me} />,
-        tags: [`호칭 ${(s.player.title ?? 0) + 1}/${TITLES.length}`, `지휘 ${RANKS[r].unit}`],
+        tags: [`호칭 ${(s.player.title ?? 0) + 1}/${TITLES.length}`, `봉급 시간당 ${Math.round(salaryPerDay(s))}`],
         intro: `${countryById(me).name}을 이끄는 지도자. 훈련·임무로 스탯을 키우고, 부관·장군과 함께 나라를 지켜요.`,
       };
     }

@@ -67,17 +67,20 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
     const t = id ? techById(id)! : null;
     const cost = t ? C.techCost(state, t) : 0;
     const got = t ? (c.progress[t.id] ?? 0) : 0;
+    const allDone = !t && (l === 'mil' ? MIL_TECHS : SOC_TECHS).every((x) => c.done.includes(x.id));
     return (
-      <button className={`civ-cur ${t ? '' : 'idle'}`} onClick={() => (setLine(l), t && setPick(t))}>
+      <button className={`civ-cur ${t || allDone ? '' : 'idle'}`} onClick={() => (setLine(l), t && setPick(t))}>
         <span className="civ-cur-ico">{t ? <ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} /> : l === 'mil' ? '⚙️' : '📜'}</span>
         <span className="civ-cur-main">
           <small className="muted">{l === 'mil' ? '군사 기술' : '사회 제도'}</small>
-          <b>{t ? t.name : '고르는 중…'}</b>
+          <b>{t ? t.name : allDone ? '모든 연구 끝' : '고르는 중…'}</b>
           {t ? (
             <>
               <Meter value={got} max={cost} tone={l === 'mil' ? 'blue' : 'gold'} />
               <small className="muted">{timeLeft(((cost - got) / Math.max(0.01, rate)) * H)} 남음{c.eureka.includes(t.id) ? ' · 💡' : ''}</small>
             </>
+          ) : allDone ? (
+            <small className="ok">✓ 이 줄 연구를 모두 끝냈어요</small>
           ) : (
             <small className="warn">아래에서 연구를 골라 주세요{c.bank[l] > 0.05 ? ` (모인 점수 ${r1(c.bank[l])})` : ''}</small>
           )}

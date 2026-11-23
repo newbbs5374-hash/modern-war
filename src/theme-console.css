@@ -566,3 +566,34 @@ button.on { outline: 1px solid var(--amber); }
 .home-res .ichip > span:first-child { font-size: 16px; }
 .bld-col { top: 70px; }
 .hq { font-size: 20px; }
+
+/* ───────── 설정 화면(11-23 정리): 한 화면에, 시험 도구는 팝업으로 ───────── */
+.settings { display: flex; flex-direction: column; }
+.set-me { display: flex; align-items: center; gap: 10px; }
+.set-flag { flex: none; display: flex; }
+.set-me-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.set-me-main b { font-size: 15px; }
+.set-me-main small { font-size: 11.5px; }
+.set-auto { flex: none; font-size: 11px; color: var(--hud); border: 1px solid var(--hud); padding: 2px 6px; }
+.settings .tiles.c4 .itile { min-height: 74px; justify-content: center; }
+.settings .tiles.c4 .itile-ico { font-size: 28px; }
+.settings .tiles.c4 .itile small { font-size: 10px; }
+.set-rows { display: flex; flex-direction: column; gap: 6px; }
+.set-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; background: var(--panel2); border: 1px solid var(--line); }
+.set-row .set-ico { font-size: 24px; flex: none; }
+.set-row .set-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.set-row .set-txt b { font-size: 14px; }
+.set-row .set-txt small { font-size: 11px; color: var(--muted); }
+.set-switch { flex: none; position: relative; width: 44px; height: 24px; background: #2c3640; border: 1px solid var(--line); border-radius: 12px; transition: background .15s; }
+.set-switch i { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: left .15s, background .15s; }
+.set-row.is-on .set-switch { background: #2a6f7a; border-color: var(--hud); }
+.set-row.is-on .set-switch i { left: 22px; background: #fff; }
+.set-msg { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--hud); background: #3fb8c91a; }
+.set-reset { width: 100%; margin-top: 2px; }
+.set-foot { text-align: center; margin: 6px 0 0; }
+.set-code { width: 100%; min-height: 110px; font-size: 11px; word-break: break-all; }
+.set-group { margin-bottom: 8px; }
+.set-group .buttons { margin-top: 4px; }
+.set-group select { width: 100%; margin-top: 4px; }
+.set-art { margin-top: 8px; }
+.modal-foot .set-yes { margin-top: 0; }
