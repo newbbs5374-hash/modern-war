@@ -92,6 +92,7 @@ export function assemblyTick(s: GameState): GameState {
     if (ok) {
       if (a.laws.length >= LAW_MAX) a.laws.sort((x, y) => x.untilMs - y.untilMs).shift();
       a.laws.push({ id: b.id, untilMs: s.worldMs + LAW_MS });
+      a.passed = (a.passed ?? 0) + 1;
       ns = withOfficer(ns, (o) => {
         o.trust = clamp(o.trust + 2);
       });

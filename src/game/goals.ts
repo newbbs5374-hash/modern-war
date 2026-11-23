@@ -5,6 +5,10 @@ import { RANKS } from '../data/ranks';
 import { CITIES } from '../data/cities';
 import { DRILL_MAX, DRILL_REFILL_MS, drillsNow } from './officer';
 import { civOf, myIslands } from './civ';
+import { assemblyOf } from './assembly';
+import { cabinetOf, ministerCount } from './cabinet';
+import { mediaOf } from './media';
+import { scheduleOf } from './schedule';
 import { Rng } from './rng';
 import type { GameState } from './state';
 
@@ -93,6 +97,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   ACH('event5', '위기 해결사', '⚡', '돌발 사건 5번 직접 해결', 40, (_, g) => [t(g, 'event'), 5]),
   ACH('spy5', '그림자 사령관', '🕵️', '첩보 작전 5번 성공', 50, (_, g) => [t(g, 'spy'), 5]),
   ACH('streak3', '성실한 지도자', '📅', '매일 할 일 3일 연속 다 하기', 60, (_, g) => [g.streak, 3]),
+  // 11-23 대통령식 내정
+  ACH('plan20', '바쁜 대통령', '🗓️', '대통령 일정 20번 소화', 40, (s) => [scheduleOf(s).total, 20]),
+  ACH('cab5', '내각 완성', '🏛️', '장관 5명 앉히기', 60, (s) => [s.cabinet ? ministerCount(cabinetOf(s)) : 0, 5]),
+  ACH('law3', '입법의 달인', '📜', '법안 3개 국회 통과', 50, (s) => [assemblyOf(s).passed ?? 0, 3]),
+  ACH('conf1', '국민의 재신임', '🗳️', '재신임 국민투표 통과', 80, (s) => [assemblyOf(s).confWins, 1]),
+  ACH('pet5', '국민의 목소리', '📝', '국민 청원 5개 들어주기', 40, (s) => [mediaOf(s).petDone, 5]),
+  ACH('summit3', '정상 외교', '🤝', '정상회담 3번 성공', 50, (s) => [mediaOf(s).summits, 3]),
 ];
 
 export const dayOf = (worldMs: number) => Math.floor(worldMs / DAY);

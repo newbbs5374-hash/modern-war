@@ -436,3 +436,16 @@ button.on { outline: 1px solid var(--amber); }
 .sum-pick select { width: 100%; margin: 2px 0 4px; }
 .sum-ags { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
 .sum-ags .pw-act.on { outline: 2px solid var(--gold, #e6b800); }
+
+/* 국정 보고서(11-23) */
+.brf-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.brf-top > div { display: flex; flex-direction: column; border: 1px solid var(--hud-dim); padding: 4px 6px; }
+.brf-top b { font-size: 22px; color: var(--hud); }
+.brf-top b small { font-size: 12px; margin-left: 4px; }
+.brf-say { display: flex; gap: 8px; margin: 8px 0 2px; padding: 6px; border-left: 3px solid var(--hud); background: #0a1a12; }
+.brf-say p { margin: 0 0 4px; }
+.brf-face { flex: none; width: 44px; height: 44px; overflow: hidden; border: 1px solid var(--hud-dim); display: inline-flex; align-items: center; justify-content: center; font-size: 26px; }
+.brf-face .face-img { width: 100%; height: 100%; object-fit: cover; }
+.brf-todos { display: flex; flex-direction: column; gap: 3px; }
+.brf-todos .pw-act { padding: 5px 8px; align-items: center; }
+.brf-todos .pw-act-ico { font-size: 18px; }
