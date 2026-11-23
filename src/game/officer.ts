@@ -1,6 +1,7 @@
 // 3단계: 장교의 성장(스탯·공훈·승급), 임무, 간이 훈련, 부관·장군, 라이벌, 불신임.
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
+import { noteCapture } from './territory';
 import { originEff } from './origin';
 import { cabMission } from './cabinet';
 import { TEST_BOOSTS } from './boost';
@@ -892,6 +893,7 @@ function captureCity(ns: GameState, city: string) {
   const w = ns.world;
   const me = ns.player.countryId;
   const prev = w.owner[city];
+  noteCapture(w, city, me);
   w.owner[city] = me;
   w.defense[city] = CAPTURED_DEFENSE;
   const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전)`, mine: true };
