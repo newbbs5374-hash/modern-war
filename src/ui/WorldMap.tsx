@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as RPointerEvent,
@@ -413,6 +414,21 @@ export function WorldMap({
     ? `${X0} ${Y0} ${MW} ${MH}`
     : `${(X0 + cv.x).toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
   const owner = world.owner;
+  // 나라(지금 주인)마다 땅 모양을 곡선 하나로: 나라 사이 경계도 해안처럼 둥글게(육각 계단 없음)
+  const ownerShapes = useMemo(() => {
+    const segs: Record<string, Seg[]> = {};
+    for (const t of TILES) {
+      if (t.kind !== "city") continue;
+      const o = owner[t.place];
+      const cs = hexCorners(t.x, t.y);
+      for (let i = 0; i < 6; i++) {
+        const dir = HEX_DIRS[EDGE_DIR[i]];
+        const n = TILE_AT.get(hexKey(t.q + dir.q, t.r + dir.r));
+        if (!n || n.kind !== "city" || owner[n.place] !== o) (segs[o] ??= []).push([cs[i], cs[(i + 1) % 6]]);
+      }
+    }
+    return Object.entries(segs).map(([o, sg]) => ({ o, d: smoothPath(sg, { relax: 10 }) }));
+  }, [owner]);
 
   const svg = (
     <svg
@@ -498,11 +514,9 @@ export function WorldMap({
       <g clipPath="url(#wm-land)">
         {/* 그림이 있으면 나라 색은 반투명하게 덮어 땅 그림이 비침 */}
         <g opacity={ART ? (mode === "나라" ? 0.5 : 0.4) : 1}>
-          {CITY_PLACES.map((id) => {
-            const home = id.split("-")[0];
-            const o = owner[id];
-            const sel = home === selectedId;
-            const alive = isAlive(world, home);
+          {ownerShapes.map(({ o, d }) => {
+            const sel = o === selectedId;
+            const alive = isAlive(world, o);
             const c = mixColor(
               colorOf(o),
               mode === "나라"
@@ -519,23 +533,13 @@ export function WorldMap({
                       ? 0.48
                       : 0.25,
             );
+            const coast = CITY_PLACES.filter((id) => owner[id] === o)
+              .map((id) => PLACE_COAST[id] ?? "")
+              .join("");
             return (
-              <g key={id} className="map-country" onClick={() => pick(home)}>
-                <path
-                  d={PLACE_PATH[id]}
-                  fill={c}
-                  stroke={c}
-                  strokeWidth={0.8}
-                />
-                {PLACE_COAST[id] && (
-                  <path
-                    d={PLACE_COAST[id]}
-                    fill="none"
-                    stroke={c}
-                    strokeWidth={HEX_SIZE * 2.4}
-                    strokeLinecap="round"
-                  />
-                )}
+              <g key={o} className="map-country" onClick={() => pick(o)}>
+                <path d={d} fill={c} fillRule="evenodd" stroke={c} strokeWidth={2} strokeLinejoin="round" />
+                {coast && <path d={coast} fill="none" stroke={c} strokeWidth={HEX_SIZE * 2.4} strokeLinecap="round" />}
               </g>
             );
           })}
