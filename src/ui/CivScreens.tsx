@@ -194,7 +194,7 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
     >
       {iconArt(techArtKey(t.id)) && (
         <div className="fac-hero">
-          <img className="fac-art big" src={iconArt(techArtKey(t.id))!} alt={t.name} draggable={false} />
+          <img className="fac-art big contain" src={iconArt(techArtKey(t.id))!} alt={t.name} draggable={false} />
         </div>
       )}
       <p>
