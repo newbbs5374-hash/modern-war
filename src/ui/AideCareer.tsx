@@ -15,6 +15,7 @@ import {
   bondStage,
   canAppoint,
   canSchool,
+  fieldTaken,
   loyaltyMood,
   loyaltyOf,
   schoolCost,
@@ -91,7 +92,7 @@ export function AideCareer({ state, a, apply, onDone }: { state: GameState; a: A
           <p className="small">🎓 교육을 마쳤어요. 맡길 병과를 골라 임명하세요(능력 {appointSkill(a)}/10).</p>
           <div className="field-pick">
             {GENERAL_FIELDS.map((f) => (
-              <button key={f} className={`pw-act small-act ${field === f ? 'on' : ''}`} onClick={() => setField(f)}>
+              <button key={f} disabled={fieldTaken(state, f)} className={`pw-act small-act ${field === f ? 'on' : ''}`} onClick={() => setField(f)}>
                 <span className="pw-act-ico">{FIELD_ICON[f]}</span>
                 <span className="li-main">
                   <b>{f}</b>

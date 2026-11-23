@@ -91,8 +91,8 @@ describe('장교', () => {
     expect(s.officer.stars).toBe(0);
   });
   it('부관 승격·장군 영입은 장군 칸이 있어야, 장군은 방어 보너스', () => {
-    let s = setRank(newGame('t', 'kr', 0, { seed: 5 }), 7); // 소장: 장군 2칸
-    expect(generalSlots(7)).toBe(2);
+    let s = setRank(newGame('t', 'kr', 0, { seed: 5 }), 6); // 장군 2칸
+    expect(generalSlots(7)).toBe(3);
     expect(aideSlots(7)).toBe(3);
     s = { ...s, player: { ...s.player, salary: 10000 } };
     s = recruitGeneral(s);
@@ -103,9 +103,12 @@ describe('장교', () => {
       officer: { ...s.officer, aides: [{ id: 99, name: '테스트', specialty: '저격', level: 3, exp: 0, bond: 50 }] },
     };
     s = { ...s, officer: { ...s.officer, aides: [{ ...s.officer.aides[0], schooled: true }] } };
-    s = appointGeneral(s, 99, '해군');
+    const taken = s.officer.generals[0].field;
+    expect(appointGeneral(s, 99, taken).officer.generals.length).toBe(1); // 병과마다 한 명
+    const field = taken === '해군' ? '공군' : '해군';
+    s = appointGeneral(s, 99, field);
     expect(s.officer.generals.length).toBe(2);
-    expect(s.officer.generals[1].field).toBe('해군');
+    expect(s.officer.generals[1].field).toBe(field);
     expect(s.officer.aides.length).toBe(0);
     expect(recruitGeneral(s).officer.generals.length).toBe(2); // 칸이 꽉 참
     expect(generalDefense(s.officer)).toBeGreaterThan(1);

@@ -6,6 +6,7 @@ import { REAL_MS_PER_GAME_DAY } from './balance';
 import type { Rng } from './rng';
 import type { GameState } from './state';
 import { note, type OfficerState, type Rival } from './officer';
+import { counterOn } from './cabinet';
 
 const HOUR = 60 * 60 * 1000;
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
@@ -79,7 +80,7 @@ export function rivalTick(ns: GameState, o: OfficerState, rng: Rng, tickMs: numb
     rv.nextPlotMs = ns.worldMs + rng.range(PLOT_GAP_H[0], PLOT_GAP_H[1]) * HOUR;
     const inf = influenceOf(rv);
     if (inf < PLOT_MIN || !rng.chance(inf / 100)) return;
-    if (watching(rv, ns.worldMs)) {
+    if (watching(rv, ns.worldMs) || counterOn(ns)) {
       rv.influence = clamp(inf - 8, 0, 100);
       o.intel += 5;
       note(ns, `🕵️ ${rv.name}(${role})의 방해 공작을 미리 막았어요. 영향력 −8 · 정보 +5`);

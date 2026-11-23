@@ -1,6 +1,7 @@
 // 인물 창: 누구를 보고 있는지(PersonRef) · 인물과의 교류(대화·선물·연설·친서). 하루 한 번씩.
 // 부관 선물·특별 훈련·부관 임무는 officer.ts 것을 그대로 씀. 여기에는 새 교류만.
 import { originEff } from './origin';
+import { cabSpeech } from './cabinet';
 import { addPresMod } from './approval';
 import { LEADERS } from '../data/leaders';
 import { countryById } from '../data/world';
@@ -149,7 +150,7 @@ export function doAct(s: GameState, p: PersonRef, act: ActId): { state: GameStat
   const r = s.player.rankIndex;
 
   if (p.kind === 'player' && act === 'speech') {
-    const sp = 1 + originEff(s, 'speech');
+    const sp = 1 + originEff(s, 'speech') + cabSpeech(s);
     const fame = Math.round((10 + r * 6 + (o.stats['정치'] ?? 0) * 0.5) * sp);
     o.fame += fame;
     o.trust = Math.min(100, o.trust + 2);
