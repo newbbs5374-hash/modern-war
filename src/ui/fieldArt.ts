@@ -45,6 +45,26 @@ export const spArt = (sp: string): string => {
   return x ? `unit-ex-${x.key}` : `unit-sp-${sp}`;
 };
 
+/** 본부 지도(수도) 꾸밈 그림 칸: 없으면 지금처럼 도형으로 그림 */
+export const LAND_ART = {
+  landmark: 'land-landmark',
+  towers: ['land-tower-1', 'land-tower-2'],
+  offices: ['land-office-1', 'land-office-2'],
+  houses: ['land-house-1', 'land-house-2'],
+  factory: 'land-factory',
+  port: 'land-port',
+  base: 'land-base',
+  trees: ['land-tree-1', 'land-tree-2'],
+  mountain: 'land-mountain',
+} as const;
+const LAND_WHO: Record<string, string> = {
+  'land-landmark': '수도 랜드마크', 'land-tower-1': '고층 빌딩 1', 'land-tower-2': '고층 빌딩 2', 'land-office-1': '중간 빌딩 1',
+  'land-office-2': '중간 빌딩 2', 'land-house-1': '주택 1', 'land-house-2': '주택 2', 'land-factory': '공장',
+  'land-port': '항구', 'land-base': '군 기지', 'land-tree-1': '나무(활엽수)', 'land-tree-2': '나무(침엽수)', 'land-mountain': '산',
+};
+/** 여러 장 중 그림이 있는 것만(없으면 빈 배열 = 도형으로 그림) */
+export const landPick = (keys: readonly string[]): string[] => keys.map((k) => fieldArt(k)).filter((u): u is string => !!u);
+
 /** 그림 칸 전체(설정 화면에서 무엇이 들어왔는지 보기) */
 export function fieldSlots(): Array<{ key: string; who: string }> {
   const U: Record<FKind, string> = {
@@ -59,5 +79,6 @@ export function fieldSlots(): Array<{ key: string; who: string }> {
     { key: FX_ART.landing, who: '표시 · 상륙 거점' },
     ...SPECIALS.map((d) => ({ key: spArt(d.id), who: `특화 · ${countryById(d.country).name} ${d.name}` })),
     ...EXCLUSIVES.map((x) => ({ key: spArt(x.name), who: `독점 · ${x.name}` })),
+    ...Object.keys(LAND_WHO).map((k) => ({ key: k, who: `본부 지도 · ${LAND_WHO[k]}` })),
   ];
 }

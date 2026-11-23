@@ -2,12 +2,13 @@
 // - 두 손가락/휠로 확대·축소, 끌어서 이동, 도시를 누르면 가까이 가서 정보 팝업
 // - 평소: 도로에 자동차·버스, 바다에 배, 하늘에 여객기, 구름 그림자, 흐르는 강, 실제 시각에 맞춘 낮·밤과 불빛
 // - 전쟁 때만: 공격받는 도시에 연기·불꽃, 군 차량 행렬, 전투기 / 빼앗긴 도시에는 상대 깃발
-// 나중에 제작 이미지로 바꿀 때는 "땅" 층(landPath·산·숲)만 그림으로 갈아 끼우면 위 층(차량·날씨·전쟁)은 그대로 씀.
+// 꾸밈 그림: src/assets/field/land-*.png 가 있으면 건물·나무·산을 그 그림으로 그림(명령문 src/assets/field/LAND.md). 도로·강·차량·날씨·전쟁 연출은 그대로 코드로 그림.
 import { Carrier, Escort, Jet } from './units';
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES, type City } from '../data/cities';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { FLAG_DEF } from './flag';
+import { LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
 
 const W = 390;
@@ -122,7 +123,7 @@ export function HomeLand(props: {
       const d = 6 + Math.sqrt(j / n) * 80 + r() * 8;
       const w = 6 + r() * 6;
       const h = Math.max(5, 34 + r() * 26 - d * 0.42);
-      return { x: cx + Math.cos(a) * d - w / 2, y: cy + Math.sin(a) * d * 0.62 - h, w, h };
+      return { x: cx + Math.cos(a) * d - w / 2, y: cy + Math.sin(a) * d * 0.62 - h, w, h, d };
     });
   });
   // 도로: 수도 ↔ 다른 도시, 그리고 이웃 도시끼리
@@ -153,6 +154,23 @@ export function HomeLand(props: {
   });
   void road;
 
+  // 대장이 만든 꾸밈 그림(있을 때만). 없으면 아래 도형 그대로
+  const art = {
+    landmark: fieldArt(LAND_ART.landmark),
+    towers: landPick(LAND_ART.towers),
+    offices: landPick(LAND_ART.offices),
+    houses: landPick(LAND_ART.houses),
+    factory: fieldArt(LAND_ART.factory),
+    port: fieldArt(LAND_ART.port),
+    base: fieldArt(LAND_ART.base),
+    trees: landPick(LAND_ART.trees),
+    mountain: fieldArt(LAND_ART.mountain),
+  };
+  /** 건물 칸의 그림: 가운데 고층 → 중간 빌딩 → 바깥 주택 */
+  const blockArt = (d: number, j: number): string | null => {
+    const set = d < 34 ? art.towers : d < 62 ? art.offices : art.houses;
+    return set.length ? set[j % set.length] : null;
+  };
   const status = homeCities.map((c) => cityStatus(c, world, countryId, atWar));
   const hot = status.some((s) => s === '공격받음' || s === '점령당함');
   const [night, setNight] = useState(() => nightLevel(dayMode));
@@ -283,17 +301,30 @@ export function HomeLand(props: {
           <path className="river-flow" d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#e0f2fe" strokeWidth="1.4" strokeDasharray="3 9" strokeLinecap="round" />
           {forests.map(([x, y], i) => (
             <g key={`f${i}`} className="tree" style={{ animationDelay: `${-i * 0.4}s`, transformOrigin: `${x}px ${y + 6}px` }}>
-              <circle cx={x} cy={y} r="7" fill="#1f5a2e" />
-              <circle cx={x + 7} cy={y + 3} r="6" fill="#2a6b38" />
+              {art.trees.length ? (
+                <>
+                  <image href={art.trees[i % art.trees.length]} x={x - 9} y={y - 14} width="18" height="18" />
+                  <image href={art.trees[(i + 1) % art.trees.length]} x={x - 1} y={y - 9} width="16" height="16" />
+                </>
+              ) : (
+                <>
+                  <circle cx={x} cy={y} r="7" fill="#1f5a2e" />
+                  <circle cx={x + 7} cy={y + 3} r="6" fill="#2a6b38" />
+                </>
+              )}
             </g>
           ))}
-          {mountains.map(([x, y, s], i) => (
+          {mountains.map(([x, y, s], i) =>
+            art.mountain ? (
+              <image key={`m${i}`} href={art.mountain} x={x - s * 1.6} y={y - s * 2} width={s * 3.2} height={s * 3.2} />
+            ) : (
             <g key={`m${i}`}>
               <polygon points={`${x - s},${y + s * 0.7} ${x},${y - s} ${x + s},${y + s * 0.7}`} fill="#8a7656" />
               <polygon points={`${x},${y - s} ${x + s},${y + s * 0.7} ${x + s * 0.2},${y + s * 0.7}`} fill="#64543d" />
               <polygon points={`${x - s * 0.3},${y - s * 0.4} ${x},${y - s} ${x + s * 0.3},${y - s * 0.4}`} fill="#f1f5f9" />
             </g>
-          ))}
+            ),
+          )}
           {/* 밤: 땅과 바다를 어둡게(불빛·차량은 그 위) */}
           <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#0b1638" opacity={night * 0.55} pointerEvents="none" />
 
@@ -329,7 +360,25 @@ export function HomeLand(props: {
             return (
               <g key={c.id} className="city" onClick={() => tapCity(c.id, x, y)}>
                 <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="#cbd5e1" opacity="0.28" />
-                {blocks[i].map((b, j) => (
+                {c.capital && art.factory && <image href={art.factory} x={x - 118} y={y - 6} width="44" height="44" />}
+                {c.capital && art.base && <image href={art.base} x={x - 96} y={y + 34} width="48" height="48" />}
+                {c.capital && art.port && <image href={art.port} x={x + 72} y={y + 10} width="48" height="48" />}
+                {[...blocks[i]]
+                  .map((b, j) => ({ b, j }))
+                  .sort((p, q) => p.b.y + p.b.h - (q.b.y + q.b.h))
+                  .map(({ b, j }) => {
+                    const img = blockArt(b.d, j);
+                    if (img) {
+                      // 그림은 정사각형: 건물 높이에 맞춰 조금 크게, 바닥 가운데를 맞춤
+                      const sz = Math.max(b.w * 1.9, b.h * 1.25);
+                      return (
+                        <g key={j}>
+                          <image href={img} x={b.x + b.w / 2 - sz / 2} y={b.y + b.h - sz} width={sz} height={sz} />
+                          {nightOn && <circle cx={b.x + b.w / 2} cy={b.y + b.h * 0.4} r={b.w * 0.6} fill="#fde047" opacity={night * 0.22} />}
+                        </g>
+                      );
+                    }
+                    return (
                   <g key={j}>
                     <rect x={b.x} y={b.y} width={b.w} height={b.h} fill={j % 3 === 0 ? '#cbd5e1' : j % 3 === 1 ? '#94a3b8' : '#e2e8f0'} stroke="#334155" strokeWidth="0.4" />
                     <rect x={b.x} y={b.y} width={b.w} height="1.6" fill="#64748b" />
@@ -337,7 +386,9 @@ export function HomeLand(props: {
                       <rect x={b.x + 1} y={b.y + 2.5} width={Math.max(1, b.w - 2)} height={Math.max(1, b.h - 4)} fill="#fde047" opacity={night * (0.35 + ((j * 37) % 10) / 20)} className="win" style={{ animationDelay: `${-j}s` }} />
                     )}
                   </g>
-                ))}
+                    );
+                  })}
+                {c.capital && art.landmark && <image href={art.landmark} x={x - 30} y={y - 64} width="60" height="60" />}
                 {nightOn && <circle cx={x} cy={y - 4} r={c.capital ? 110 : 24} fill="url(#glow)" opacity={night * 0.75} />}
                 {st === '점령당함' ? (
                   <g transform={`translate(${x + 8},${y - 34})`}>
