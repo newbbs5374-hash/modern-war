@@ -46,6 +46,7 @@ import {
 } from './balance';
 import { Rng } from './rng';
 import { noteCapture } from './territory';
+import { instDefense } from './institutions';
 import type { NationState } from './state';
 
 export interface PairState {
@@ -343,6 +344,7 @@ function invasions(ctx: Ctx) {
       const ap = power(ctx, att, commit, false, overseas);
       let dp = power(ctx, def, garrison + allyHelp, true, false);
       if (city.capital) dp *= CAPITAL_DEFENSE;
+      dp *= instDefense(city.name);
       if (city.home === def) dp *= HOMELAND_DEFENSE;
       if (targets.length === 1) dp *= LAST_STAND_DEFENSE;
       if (def === ctx.player && city.home === def) dp *= PLAYER_HOME_DEFENSE * ctx.playerDefense;

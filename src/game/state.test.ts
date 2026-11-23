@@ -42,7 +42,7 @@ describe('시간당 누적', () => {
     const s0 = newGame('테스트', 'kr', 0);
     const s1 = advance(s0, HOUR / 6);
     expect(s1.player.pendingSalary).toBeCloseTo(salaryPerDay(s0) / 6);
-    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo((22 * 10) / 6);
+    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10) / 6) * 1.04); // 서울 금융 센터 +4%
     const t0 = s0.nations.kr.troops;
     expect(s1.nations.kr.troops).toBeCloseTo(t0 * Math.exp(-0.008 / 6) + (45 * 40) / 6);
   });

@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { instSum } from './institutions';
 import { originEff, originOf } from './origin';
 import { cabBuild, cabFavor, cabGrowth, cabLoyalty, cabRes, cabResearch } from './cabinet';
 import { lawEff, lawRows } from './laws';
@@ -288,6 +289,8 @@ export function researchBreakdown(s: GameState): Array<[string, number]> {
   if (og) rows.push([`🎓 출신(${originOf(s)!.name})`, og]);
   const cr = cabResearch(s);
   if (cr) rows.push(['🔬 과학기술부', cr]);
+  const inst = instSum(s.world, me, 'lab') + instSum(s.world, me, 'univ');
+  if (inst) rows.push(['🏛️ 도시 기관(연구소·대학)', inst]);
   rows.push(...lawRows(s, 'research'));
   return rows;
 }
@@ -994,22 +997,22 @@ export function cityTotals(s: GameState): { mult: number; popBonus: number; pop:
 const islandPort = (s: GameState) => myIslands(s).filter((id) => PIONEER_ISLANDS.find((p) => p.id === id)!.res === '항구').length * 0.03;
 export function civBudgetMult(s: GameState): number {
   const t = cityTotals(s);
-  return Math.max(0.3, (1 + effSum(s, 'budget') + t.popBonus + industryBonus(s) + islandPort(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1));
+  return Math.max(0.3, (1 + effSum(s, 'budget') + instSum(s.world, s.player.countryId, 'bank') + t.popBonus + industryBonus(s) + islandPort(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1));
 }
 export function civResMult(s: GameState): number {
   const t = cityTotals(s);
-  return Math.max(0.3, (1 + effSum(s, 'res') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s) * cabRes(s) * (1 + lawEff(s, 'res'));
+  return Math.max(0.3, (1 + effSum(s, 'res') + instSum(s.world, s.player.countryId, 'nuke') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s) * cabRes(s) * (1 + lawEff(s, 'res'));
 }
 /** 모집 빠르기 배율(시간을 이 값으로 나눔) */
 export function civBuildSpeed(s: GameState, unit: string): number {
   const dom = domOf(unit);
-  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s) * cabBuild(s) * (1 + lawEff(s, 'build'));
+  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + instSum(s.world, s.player.countryId, dom === '해' ? 'navy' : dom === '공' ? 'air' : 'army') + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s) * cabBuild(s) * (1 + lawEff(s, 'build'));
 }
 export function civPowerMult(s: GameState, unit: string): number {
   return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)) + facBonus(s, '우주기지'));
 }
 export function civMission(s: GameState): number {
-  return effSum(s, 'mission') + facBonus(s, '정보본부');
+  return effSum(s, 'mission') + facBonus(s, '정보본부') + instSum(s.world, s.player.countryId, 'intel');
 }
 
 /** 병과가 열렸는지: 지도자 등급 + 연구 둘 다(11-22 결정). 등급은 economy가 먼저 봄 */
