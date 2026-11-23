@@ -293,7 +293,7 @@ export function OpsScreen(props: ScreenProps) {
       )}
       {tab === 'grand' &&
         (rank < OPERATION_RANK ? (
-          <p className="empty">🔒 개척 지도자부터 작전, 존경받는 지도자부터 대전투(도시 점령)가 열려요.</p>
+          <p className="empty">🔒 실무 지도자부터 작전, 존경받는 지도자부터 대전투(도시 점령)가 열려요.</p>
         ) : (
           <>
             <GrandCard {...props} />

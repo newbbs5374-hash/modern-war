@@ -514,7 +514,7 @@ export function createField(inp: FieldInput): FieldBattle {
   }
   const cvU = b.units.find((u) => u.side === 'me' && u.kind === 'carrier');
   if (f.hasSea && cvU) {
-    for (const name of ['강습상륙함', '청광 방벽함']) {
+    for (const name of ['강습상륙함', '레이저 방공함']) {
       if (!(roster[name] > 0)) continue;
       const at = pick('destroyer', (i) => D(i, cvU.at) <= 3 && D(i, C) >= 3, (i) => D(i, cvU.at) + D(i, C) * 0.1);
       if (at !== null) add('destroyer', 'me', at, { sp: name });
@@ -843,8 +843,8 @@ function meThink(b: FieldBattle, vis: Set<number>) {
     if (u.side !== 'me') continue;
     const def = defOf(u);
     const inRange = foes.some((e) => fDist(f, u.at, e.at) <= def.range && fMult(u.kind, e.kind) > 0);
-    // 강습상륙함은 항모 곁, 청광 방벽함은 우리 함대 한가운데(보호막)
-    if (u.sp === '강습상륙함' || u.sp === '청광 방벽함') {
+    // 강습상륙함은 항모 곁, 레이저 방공함은 우리 함대 한가운데(보호막)
+    if (u.sp === '강습상륙함' || u.sp === '레이저 방공함') {
       const fleet = b.units.filter((x) => x.side === 'me' && x !== u && FUNIT[x.kind].layer === 'sea' && (u.sp === '강습상륙함' ? x.kind === 'carrier' : x.kind !== 'carrier'));
       const buddy = nearest(b, u.at, fleet.length ? fleet : b.units.filter((x) => x.side === 'me' && x !== u && FUNIT[x.kind].layer === 'sea'));
       if (buddy && fDist(f, buddy.at, u.at) > 1) setGoal(b, u, buddy.at);

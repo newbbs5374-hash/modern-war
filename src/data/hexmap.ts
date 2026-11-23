@@ -2,7 +2,7 @@
 // - 타일: 뾰족한 위(pointy-top) 육각형, 축 좌표(q, r). 픽셀 중심 x = S·√3·(q + r/2), y = S·1.5·r (S = HEX_SIZE, 꼭짓점까지 거리)
 // - 도시 = 육각 칸 묶음: 소도시 19칸 · 중도시 37칸 · 대도시 61칸. 정육각형이 아니라 자연스러운 모양으로 키워 이웃 도시·나라와 이어짐
 // - 나라 땅 = 그 나라 도시 묶음의 합. 도시 수는 모티브 나라 면적에 맞춰 정함(world.ts의 cities)
-// - 개척 섬 12개(19칸, 주인 없음) + 고대 성지(7칸). 나머지는 모두 바다 타일
+// - 분쟁 섬 12개(19칸, 주인 없음) + 고대 성지(7칸). 나머지는 모두 바다 타일
 // 배치는 정해진 규칙(목표 자리에 가장 가까운 빈 곳)으로 계산하므로 언제나 같은 결과가 나온다.
 import { COUNTRIES, type Country } from './world';
 import type { Res } from './economy';
@@ -67,7 +67,7 @@ export interface Tile {
   x: number;
   y: number;
   kind: TileKind;
-  /** 처음 주인 나라(개척 섬·성지는 '') */
+  /** 처음 주인 나라(분쟁 섬·성지는 '') */
   home: string;
   /** 도시 id(나라-번호) 또는 섬 id */
   place: string;
@@ -85,14 +85,14 @@ export interface PioneerIsland {
   y: number;
 }
 
-/** 개척 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
+/** 분쟁 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
 const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [number, number] }> = [
-  { id: 'p-cheongseok', name: '청석섬', res: '청광석', at: [250, 160] },
+  { id: 'p-cheongseok', name: '푸른암초', res: '갈륨', at: [250, 160] },
   { id: 'p-whale', name: '고래섬', res: '석유', at: [640, 120] },
   { id: 'p-storm', name: '폭풍섬', res: '티타늄', at: [120, 110] },
   { id: 'p-twin', name: '쌍둥이섬', res: '알루미늄', at: [560, 175] },
   { id: 'p-flame', name: '불꽃섬', res: '석유', at: [300, 470] },
-  { id: 'p-fog', name: '안개섬', res: '청광석', at: [30, 330] },
+  { id: 'p-fog', name: '안개섬', res: '갈륨', at: [30, 330] },
   { id: 'p-southwind', name: '남풍섬', res: '석유', at: [440, 470] },
   { id: 'p-coral', name: '산호환초', res: '산호', at: [580, 450] },
   { id: 'p-turtle', name: '거북섬', res: '알루미늄', at: [760, 330] },
@@ -291,7 +291,7 @@ function ring(c: Hex, R: number): Hex[] {
 }
 
 const BUILT = build();
-/** 땅 타일 전부(도시·개척 섬·성지). 이 밖은 바다 */
+/** 땅 타일 전부(도시·분쟁 섬·성지). 이 밖은 바다 */
 export const TILES: Tile[] = BUILT.tiles;
 /** 도시 id → 한가운데 칸과 크기(반지름) */
 export const CITY_HEX = BUILT.centers;

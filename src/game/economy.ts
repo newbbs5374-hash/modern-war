@@ -69,7 +69,7 @@ export interface QueueItem {
   special: boolean;
   /** 특화 유닛 이름표(us-2 등) */
   sp?: string;
-  /** 청광 개량형(청광석 1을 더 씀) */
+  /** 갈륨 개량형(갈륨 1을 더 씀) */
   crystal?: boolean;
   startMs: number;
   endMs: number;
@@ -214,7 +214,7 @@ export function economyTick(s: GameState): GameState {
     e.army[name] = (e.army[name] ?? 0) + 1;
     e.power += power;
     troops += c.troops;
-    log(e, `${name}${q.crystal ? '(청광 개량형)' : ''} 1부대 완성(전투력 +${power}).`);
+    log(e, `${name}${q.crystal ? '(갈륨 개량형)' : ''} 1부대 완성(전투력 +${power}).`);
     return false;
   });
   return { ...s, economy: e, nations: { ...s.nations, [me]: { ...s.nations[me], troops } } };
@@ -295,11 +295,11 @@ export function queueName(s: GameState, q: QueueItem): string {
 }
 /** 국가 비밀 병기 연구: 특화 유닛 전투력 +15% */
 export const SECRET_POWER = 1.15;
-/** 청광 개량형: 청광석 1을 더 써서 전투력 +15% */
+/** 갈륨 개량형: 갈륨 1을 더 써서 전투력 +15% */
 export const CRYSTAL_POWER = 1.15;
 export const specialPowerMult = (s: GameState) => (hasTech(s, 'm-secret') ? SECRET_POWER : 1);
-/** 청광석 동력 연구 뒤 청광석이 있으면 특화 유닛은 청광 개량형으로 만듦 */
-export const crystalReady = (s: GameState) => hasTech(s, 'm-crystal') && (s.economy.stock.청광석 ?? 0) >= 1;
+/** 갈륨 레이더 연구 뒤 갈륨이 있으면 특화 유닛은 갈륨 개량형으로 만듦 */
+export const crystalReady = (s: GameState) => hasTech(s, 'm-crystal') && (s.economy.stock.갈륨 ?? 0) >= 1;
 
 export function costOf(s: GameState, unit: string, variant?: string | boolean): UnitCost {
   const v = variantOf(s, variant);
@@ -333,7 +333,7 @@ export function produce(s: GameState, unit: string, variant?: string | boolean):
   const c = costOf(s, unit, v?.id);
   for (const [r, n] of Object.entries(c.res)) e.stock[r as Res] -= n!;
   const crystal = !!v && crystalReady(s);
-  if (crystal) e.stock.청광석 -= 1;
+  if (crystal) e.stock.갈륨 -= 1;
   const startMs = Math.max(s.worldMs, ...e.queue.map((q) => q.endMs));
   e.queue.push({ id: e.nextId++, unit, special: !!v, sp: v?.id, crystal: crystal || undefined, startMs, endMs: startMs + buildMs(s, unit, v?.id) });
   const me = s.player.countryId;

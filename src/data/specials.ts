@@ -1,7 +1,7 @@
 // 나라별 특화 유닛(11-23 대장 결정): 나라마다 2개 + 몇 나라만 만드는 독점 병과 3종.
 // - 특화 유닛은 바탕 병과와 같은 연구·등급·구역에서 열리고, 바탕 병과도 계속 만들 수 있음(바꿔 끼우기 아님).
 // - 값은 바탕 병과의 약 ×1.15, 전투력 ×1.25 + 고유 능력 1개. 능력은 지도 위 전투(battle/field.ts)에서 실제로 작동.
-// - '국가 비밀 병기' 연구: 특화 유닛 전투력 +15%. '청광석 동력' 연구 뒤에는 청광석 1을 더 써서 청광 개량형(+15%).
+// - '국가 비밀 병기' 연구: 특화 유닛 전투력 +15%. '갈륨 레이더' 연구 뒤에는 갈륨 1을 더 써서 갈륨 개량형(+15%).
 // - AI 나라도 지도 위 전투에서 자기 특화 유닛을 내보냄. 남의 도시를 점령해도 남의 특화 유닛은 못 만듦.
 // 이름·모양은 이 게임에서 새로 지은 것(실제 무기·다른 게임 이름 아님).
 import type { FKind, FTerrain } from '../battle/field';
@@ -155,10 +155,10 @@ export const EXCLUSIVES: ExclusiveDef[] = [
     art: 'A very long nuclear submarine with a tall sail and a faint glow near the stern, surfacing.',
   },
   {
-    name: '청광 방벽함',
+    name: '레이저 방공함',
     key: 'ward',
     only: ['us', 'il', 'tr', 'ir'],
-    why: '고대 성지를 섬기는 빛의 언약·성검 교단 나라',
+    why: '레이저·다층 방공 기술을 가진 나라',
     field: { kind: 'destroyer', hp: 1.2, def: 1.3, shield: { r: 2, v: 0.7 } },
     art: 'A futuristic warship with glowing blue crystal pylons on its deck projecting a faint dome-shaped shield.',
   },

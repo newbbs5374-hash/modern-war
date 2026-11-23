@@ -52,7 +52,7 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
   // 독점 병과(몇 나라만, data/specials.ts EXCLUSIVES)
   { name: '강습상륙함', domain: '해', role: '보병을 싣고 섬에 바로 상륙, 바다 위 보급 기지', rank: 6 },
   { name: '원자력 잠수함', domain: '해', role: '우라늄 원자로라 멀리 가도 지치지 않음, 더 깊이 숨음', rank: 8 },
-  { name: '청광 방벽함', domain: '해', role: '청광석 보호막으로 둘레 2칸 우리 편 피해 −30%', rank: 8 },
+  { name: '레이저 방공함', domain: '해', role: '레이저 방공망으로 둘레 2칸 우리 편 피해 −30%', rank: 8 },
 ];
 
 export const TRAININGS: Array<{ name: string; frame: string; raises: string; rank: number }> = [
@@ -98,7 +98,7 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     groups: [
       { name: '수상함', icon: '🚢', units: ['구축함', '항공모함'] },
       { name: '잠수함', icon: '🫧', units: ['잠수함'] },
-      { name: '독점 병과', icon: '👑', units: ['강습상륙함', '원자력 잠수함', '청광 방벽함'] },
+      { name: '독점 병과', icon: '👑', units: ['강습상륙함', '원자력 잠수함', '레이저 방공함'] },
     ],
   },
   {

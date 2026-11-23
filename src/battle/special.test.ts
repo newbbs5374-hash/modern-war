@@ -45,7 +45,7 @@ describe('특화 유닛·독점 병과', () => {
     expect(poor).toBeLessThanOrEqual(base);
   });
   it('같은 입력이면 같은 결과(특화 유닛 포함)', () => {
-    const inp = { city: seaCities[1].id, difficulty: 1.2, rank: 6, stats, seed: 77, roster: { 'us-1': 1, 'us-2': 2, '원자력 잠수함': 1, '청광 방벽함': 1 }, enemyId: 'ru', fuel: 0.6, ammo: 0.8 };
+    const inp = { city: seaCities[1].id, difficulty: 1.2, rank: 6, stats, seed: 77, roster: { 'us-1': 1, 'us-2': 2, '원자력 잠수함': 1, '레이저 방공함': 1 }, enemyId: 'ru', fuel: 0.6, ammo: 0.8 };
     expect(finishField(createField(inp)).result).toEqual(finishField(createField(inp)).result);
   });
 });

@@ -755,7 +755,7 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #1b1
 .row-check { display: flex; gap: 6px; align-items: center; margin: 4px 0 8px; }
 .field-roster button i { position: absolute; left: 3px; bottom: 2px; height: 2px; background: #22c55e; max-width: calc(100% - 6px); }
 .field-duel { display: flex; flex-direction: column; gap: 6px; }
-/* ───────── 문명식 운영: 연구 · 체제 · 도시 · 호감 · 개척 섬 · 국제 회의 ───────── */
+/* ───────── 문명식 운영: 연구 · 체제 · 도시 · 호감 · 분쟁 섬 · 국제 회의 ───────── */
 .good { color: #4ade80; }
 .mini-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; padding: 2px 7px; border-radius: 999px; background: #10201a; border: 1px solid #1d4a32; white-space: nowrap; }
 .mini-chip.pos { border-color: #166534; background: #14532d55; }
