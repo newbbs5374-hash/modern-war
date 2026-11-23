@@ -9,6 +9,7 @@ import { originEff } from './origin';
 import { influenceOf, roleOf } from './rivals';
 import { Rng } from './rng';
 import type { GameState } from './state';
+import { titleOf, titleScore } from './title';
 
 const H = 3600e3;
 export const VOTE_MS = 2 * H;
@@ -75,8 +76,16 @@ export function repealLaw(s: GameState, id: BillId): GameState {
   return { ...s, assembly: a };
 }
 
-/** 재신임 통과 확률(지지도 35 → 0%, 65 → 100%) */
-export const confChance = (s: GameState) => clamp((approvalOf(s) - 35) / 30, 0, 1);
+/** 재신임 통과 확률의 까닭: 지지도(35 → 0%, 65 → 100%) + 호칭(평판, 11-24 대장 결정: 평판은 재신임에만 영향) */
+export function confRows(s: GameState): Array<[string, number]> {
+  const ap = approvalOf(s);
+  const t = titleOf(s);
+  return [
+    [`지지도 ${Math.round(ap)}`, (ap - 35) / 30],
+    [`호칭(평판) 「${t.name}」`, Math.round(((titleScore(s) - 100) / 400) * 100) / 100],
+  ];
+}
+export const confChance = (s: GameState) => clamp(confRows(s).reduce((a, [, v]) => a + v, 0), 0, 1);
 
 export function assemblyTick(s: GameState): GameState {
   const a = structuredClone(assemblyOf(s));

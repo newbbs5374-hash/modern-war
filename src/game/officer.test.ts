@@ -1,4 +1,5 @@
 import { SAVE_VERSION } from './state';
+import { citiesOf } from './world';
 import { describe, expect, it, test } from 'vitest';
 import { aideSlots, generalSlots, statCap } from '../data/officers';
 import { advance, newGame, setRank, type GameState } from './state';
@@ -45,10 +46,9 @@ describe('장교', () => {
     expect(drillsNow(s.officer, s.worldMs + 4 * H).count).toBe(1);
     expect(drillsNow(s.officer, s.worldMs + 30 * H).count).toBe(DRILL_MAX);
   });
-  it('계급이 모자라면 훈련 잠김', () => {
+  it('11-24: 호칭과 상관없이 처음부터 모든 훈련이 열림', () => {
     const s = newGame('t', 'kr', 0, { seed: 1 });
-    expect(train(s, '포격').result.ok).toBe(false);
-    expect(train(setRank(s, 1), '포격').result.ok).toBe(true);
+    expect(train(s, '포격').result.ok).toBe(true);
   });
   it('스탯은 계급 상한을 넘지 않음', () => {
     let s = newGame('t', 'kr', 0, { seed: 2 });
@@ -56,7 +56,7 @@ describe('장교', () => {
       for (let i = 0; i < 6; i++) s = train(s, '사격').state;
       s = advance(s, 24 * H);
     }
-    expect(s.officer.stats['사격']).toBeLessThanOrEqual(statCap(0));
+    expect(s.officer.stats['사격']).toBeLessThanOrEqual(statCap(s.player.rankIndex));
   });
   it('임무: 게시판 3개 → 시작 → 시간이 지나야 결과, 공훈이 쌓임', () => {
     let s = newGame('t', 'kr', 0, { seed: 3 });
@@ -130,4 +130,23 @@ test('직접 싸운 결과로 임무를 받으면 이기고 지는 것이 그대
   };
   expect(one(3, true).merit).toBeGreaterThan(one(1, true).merit);
   expect(one(1, false).merit).toBeLessThan(one(1, true).merit);
+});
+
+describe('지도자 임무(11-24)', () => {
+  it('게시판에는 수송·호송 같은 병사 일이 없고 지도자 임무만 나옴', () => {
+    const old = ['방어', '기습', '정찰', '호송', '구출'];
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const b = boardNow(newGame('t', 'kr', 0, { seed })).board;
+      expect(b.length).toBe(3);
+      for (const m of b) expect(old).not.toContain(m.kind);
+    }
+  });
+  it('현장 방문에 성공하면 지지도가 오름', () => {
+    let s = newGame('t', 'kr', 0, { seed: 9 });
+    const m = { id: 999, kind: '현장방문' as const, title: '시험 방문', city: citiesOf(s.world, 'kr')[0], difficulty: 1, hours: 1 };
+    s = { ...s, officer: { ...s.officer, active: { ...m, startMs: 0, endMs: 0 } } };
+    const r = claimMission(s, { win: true, stars: 3 });
+    expect(r.text).toContain('지지도 +4');
+    expect((r.state.pres?.mods ?? []).some((x) => x.why.includes('민생'))).toBe(true);
+  });
 });

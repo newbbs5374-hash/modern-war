@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { firstTestGrant } from './testgrant';
 import { COUNTRIES, startingRelation } from '../data/world';
-import { advance, catchUp, claimSalary, gameClock, newGame, pendingCap, setRank, skip } from './state';
+import { advance, catchUp, claimSalary, gameClock, newGame, pendingCap, salaryPerDay, setRank, skip } from './state';
 import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } from './save';
 
 const HOUR = 60 * 60 * 1000;
@@ -41,13 +41,14 @@ describe('시간당 누적', () => {
   it('봉급·국방예산·병력이 시간에 맞게 쌓인다(AI 판단 전 10분)', () => {
     const s0 = newGame('테스트', 'kr', 0);
     const s1 = advance(s0, HOUR / 6);
-    expect(s1.player.pendingSalary).toBeCloseTo(100 / 6);
+    expect(s1.player.pendingSalary).toBeCloseTo(salaryPerDay(s0) / 6);
     expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo((22 * 10) / 6);
     const t0 = s0.nations.kr.troops;
     expect(s1.nations.kr.troops).toBeCloseTo(t0 * Math.exp(-0.008 / 6) + (45 * 40) / 6);
   });
   it('봉급은 3시간이면 3일치', () => {
-    expect(advance(newGame('t', 'kr', 0), 3 * HOUR).player.pendingSalary).toBeCloseTo(300);
+    const g = newGame('t', 'kr', 0);
+    expect(advance(g, 3 * HOUR).player.pendingSalary).toBeCloseTo(salaryPerDay(g) * 3);
   });
   it('작게 여러 번 흘려도 한 번에 흘린 것과 같다', () => {
     let a = newGame('a', 'us', 0);
@@ -61,11 +62,11 @@ describe('시간당 누적', () => {
   it('받지 않은 봉급은 12시간치까지만 쌓인다', () => {
     const s = skip(newGame('t', 'kr', 0), 48 * HOUR);
     expect(s.player.pendingSalary).toBeCloseTo(pendingCap(s));
-    expect(pendingCap(s)).toBeCloseTo(1200);
+    expect(pendingCap(s)).toBeCloseTo(salaryPerDay(s) * 12);
   });
   it('받기', () => {
     const s = claimSalary(advance(newGame('t', 'kr', 0), 2.5 * HOUR));
-    expect(s.player.salary).toBe(250);
+    expect(s.player.salary).toBe(Math.floor(salaryPerDay(s) * 2.5));
     expect(s.player.pendingSalary).toBeCloseTo(0);
   });
   it('계급이 오르면 봉급이 오른다', () => {

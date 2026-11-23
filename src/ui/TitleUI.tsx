@@ -1,21 +1,9 @@
-// 호칭 카드(11-23 대장 결정): 승급 버튼 대신 "신뢰도 + 명성 점수 = 호칭". 누르면 15단계 표와 단계마다 열리는 자리.
+// 호칭 카드(11-23 대장 결정): 승급 버튼 대신 "신뢰도 + 명성 점수 = 호칭". 11-24: 호칭(평판)은 재신임 국민투표에만 영향.
 import { useState } from 'react';
-import { ministerSlots } from '../data/cabinet';
-import { aideSlots, generalSlots } from '../data/officers';
-import { TITLES, rankOfTier } from '../data/ranks';
+import { TITLES } from '../data/ranks';
 import { TITLE_MAX, TITLE_SLACK, famePts, nextTitle, tierNow, titleOf, titleScore } from '../game/title';
 import type { GameState } from '../game/state';
 import { Meter, Modal } from './kit';
-
-/** 단계 r에서 처음 열리는 것(앞 단계와 비교) */
-function opens(r: number): string {
-  if (r === 0) return `장관 ${ministerSlots(0)}석 · 차관 9석`;
-  const out: string[] = [];
-  if (ministerSlots(r) > ministerSlots(r - 1)) out.push(`장관 ${ministerSlots(r)}석`);
-  if (generalSlots(r) > generalSlots(r - 1)) out.push(`장군 ${generalSlots(r)}석`);
-  if (aideSlots(r) > aideSlots(r - 1)) out.push(`부관 ${aideSlots(r)}명`);
-  return out.join(' · ') || '봉급·스탯 상한 ↑';
-}
 
 export function TitleBox({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
@@ -47,18 +35,19 @@ export function TitleBox({ state }: { state: GameState }) {
             승급은 없어요. <b>의회 신뢰도(0~100) + 명성 점수(0~100)</b>를 더한 점수(최대 {TITLE_MAX})로 호칭이 저절로 정해져요. 명성 점수는 명성 ÷ 10이에요(명성 1,000 = 100점).
           </p>
           <p className="small muted">
-            점수가 오르면 바로 호칭이 오르고, 떨어지면({TITLE_SLACK}점 여유) 호칭도 내려가요. 탄핵·재신임 실패·불신임은 신뢰도·명성을 깎아요. 이미 앉힌 장관·장군은 호칭이 내려가도 그대로지만, 새로 앉힐 자리는 지금 호칭을 따라요.
+            점수가 오르면 바로 호칭이 오르고, 떨어지면({TITLE_SLACK}점 여유) 호칭도 내려가요. 탄핵·재신임 실패·불신임은 신뢰도·명성을 깎아요.
+          </p>
+          <p className="small">
+            🗳️ 호칭(평판)은 <b>재신임 국민투표 통과 확률에만</b> 영향을 줘요(가장 낮은 호칭 −25%p ~ 가장 높은 호칭 +25%p). 장관·장군·부관 자리, 만들 수 있는 병과, 작전·외교 같은 기능은 처음부터 모두 열려 있어요.
           </p>
           <div className="ttl-list">
             {TITLES.map((x, i) => {
-              const r = rankOfTier(i);
-              const first = i === 0 || rankOfTier(i - 1) < r;
               return (
                 <div key={x.name} className={`ttl-row ${i === tier ? 'now' : i < tier ? 'done' : ''}`}>
                   <span>{x.icon}</span>
                   <b>{x.name}</b>
                   <small className="muted">{x.min}점~</small>
-                  <small>{first ? opens(r) : ''}</small>
+                  <small>재신임 {x.min >= 100 ? '+' : '−'}{Math.abs(Math.round((x.min - 100) / 4))}%p</small>
                 </div>
               );
             })}

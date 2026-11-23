@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { CONF_FAME, CONF_RUBY, assemblyOf, billChance, billRows, canSubmit, confChance, submitBill } from '../game/assembly';
 import { LAW_DAYS, LAW_MAX, billById, liveLaws, type BillId } from '../game/laws';
 import { approvalOf } from '../game/approval';
+import { titleOf } from '../game/title';
 import { Card } from './common';
 import { Help, Meter, Modal } from './kit';
 import { timeLeft } from './officerScreens';
@@ -73,11 +74,11 @@ export function AssemblyPanel({ state, actions }: ScreenProps) {
       </Card>
       <Card title="재신임 국민투표" icon="🗳️">
         <p className="small">
-          다음 투표까지 <b>{longLeft(Math.max(0, a.confMs - state.worldMs))}</b> · 지금 지지도 {Math.round(approvalOf(state))} → 통과 {pct(cc)}
+          다음 투표까지 <b>{longLeft(Math.max(0, a.confMs - state.worldMs))}</b> · 지금 지지도 {Math.round(approvalOf(state))} · 호칭 「{titleOf(state).name}」 → 통과 {pct(cc)}
         </p>
         <Meter value={cc * 100} max={100} tone={cc >= 0.7 ? 'green' : cc >= 0.4 ? 'gold' : 'red'} />
         <p className="small muted">
-          실제 14일마다 열려요. 지지도 35면 0%, 65면 100%. 통과 💎{CONF_RUBY} · 명성 +{CONF_FAME} / 실패하면 신뢰도 −15 · 명성 −100(호칭이 내려갈 수 있어요, 게임은 계속). 지금까지 {a.confWins}승 {a.confLoss}패
+          실제 14일마다 열려요. 지지도 35면 0%, 65면 100%에 호칭(평판)이 더하거나 빼요(가장 낮은 호칭 −25%p, 가장 높은 호칭 +25%p). 통과 💎{CONF_RUBY} · 명성 +{CONF_FAME} / 실패하면 신뢰도 −15 · 명성 −100(호칭이 내려갈 수 있어요, 게임은 계속). 지금까지 {a.confWins}승 {a.confLoss}패
         </p>
       </Card>
       {why && (

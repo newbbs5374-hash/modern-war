@@ -289,7 +289,7 @@ export function claimSalary(s: GameState): GameState {
   };
 }
 
-/** 시험용: 혜택 단계 r이 되도록 신뢰도·명성을 맞춤(호칭 제도라 점수로 정해짐) */
+/** 시험용: 혜택 단계를 r로 바꿈(11-24부터 평소엔 늘 가장 높은 단계. 시간이 흐르면 다시 열림). 신뢰도·명성도 그 호칭쯤으로 맞춤 */
 export function setRank(s: GameState, rankIndex: number): GameState {
   const r = Math.max(0, Math.min(RANKS.length - 1, rankIndex));
   const t = firstTierOfRank(r);
@@ -298,7 +298,8 @@ export function setRank(s: GameState, rankIndex: number): GameState {
   const want = Math.round((lo + hi) / 2);
   const trust = Math.max(TRUST_START, Math.min(100, want - 100 + 5));
   const fame = Math.max(0, Math.min(1000, (want - trust) * 10));
-  return syncTitle({ ...s, officer: { ...s.officer, trust, fame }, player: { ...s.player, title: undefined, rankIndex: 0 } }, true);
+  const ns = syncTitle({ ...s, officer: { ...s.officer, trust, fame }, player: { ...s.player, title: undefined } }, true);
+  return { ...ns, player: { ...ns.player, rankIndex: r } };
 }
 
 export interface GameClock {

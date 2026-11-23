@@ -1,4 +1,4 @@
-// 부관 보고 말풍선: 중요한 일이 끝나면 부관 얼굴과 함께 아래에 뜸. 누르면 다음 보고, 6초 뒤 저절로 넘어감.
+// 부관 보고 말풍선: 중요한 일이 끝나면 부관 얼굴과 함께 아래에 뜸. 누르면 다음 보고, 2초 뒤 저절로 사라짐(11-24 대장 지시).
 import { useEffect } from 'react';
 import { reportsOf } from '../game/report';
 import type { GameState } from '../game/state';
@@ -6,7 +6,7 @@ import { AIDE_ICON } from './icons';
 import { Face, aideKeys } from './Portrait';
 import { PersonFace } from './People';
 
-export const REPORT_SHOW_MS = 6000;
+export const REPORT_SHOW_MS = 2000;
 
 export function AideReport({ state, onNext }: { state: GameState; onNext: () => void }) {
   const list = reportsOf(state);

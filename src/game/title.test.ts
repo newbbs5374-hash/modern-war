@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TITLES, rankOfTier } from '../data/ranks';
 import { newGame, advance, setRank } from './state';
-import { debugTitleUp, famePts, nextTitle, syncTitle, tierOf, titleScore } from './title';
+import { OPEN_RANK, debugTitleUp, famePts, nextTitle, syncTitle, tierOf, titleScore } from './title';
 import { demote } from './approval';
 
 const H = 3600e3;
@@ -22,13 +22,14 @@ describe('호칭(11-23: 승급 대신 신뢰도+명성)', () => {
   it('새 판은 첫 호칭, 명성이 쌓이면 저절로 오름', () => {
     let s = newGame('t', 'kr', 0, { seed: 2 });
     expect(s.player.title).toBe(0);
-    expect(s.player.rankIndex).toBe(0);
+    // 11-24: 호칭과 상관없이 모든 자리·잠금이 처음부터 열림
+    expect(s.player.rankIndex).toBe(OPEN_RANK);
     s = { ...s, officer: { ...s.officer, trust: 50, fame: 300 } };
     expect(famePts(s.officer)).toBe(30);
     expect(titleScore(s)).toBe(80);
     s = advance(s, 1000);
     expect(s.player.title).toBe(3);
-    expect(s.player.rankIndex).toBe(rankOfTier(3));
+    expect(s.player.rankIndex).toBe(OPEN_RANK);
     expect(s.world.events.some((e) => e.text.includes('호칭이'))).toBe(true);
   });
   it('시험 버튼은 다음 호칭으로', () => {
@@ -46,11 +47,11 @@ describe('호칭(11-23: 승급 대신 신뢰도+명성)', () => {
     s = syncTitle(demote(s, '시험'));
     expect(s.player.title!).toBeLessThan(t0);
   });
-  it('옛 저장(승급 시절 등급)은 그 등급 호칭으로 이어짐', () => {
+  it('옛 저장도 모든 자리·잠금이 열림', () => {
     const s0 = newGame('t', 'kr', 0, { seed: 6 });
     const old = { ...s0, player: { ...s0.player, title: undefined, rankIndex: 6 } };
     const s = syncTitle(old);
-    expect(s.player.rankIndex).toBe(6);
+    expect(s.player.rankIndex).toBe(OPEN_RANK);
     void H;
   });
 });
