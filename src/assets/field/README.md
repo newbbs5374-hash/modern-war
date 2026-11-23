@@ -77,3 +77,7 @@ Seamless tileable game terrain texture, straight top-down view, stylized hand-pa
 ## 특화 유닛·독점 병과 그림 (29장)
 
 연방마다 2개인 🌟특화 유닛과 👑독점 병과 그림 칸(`unit-sp-us-2`, `unit-ex-lhd` …)의 반실사 명령문은 같은 폴더의 `SPECIALS.md`에 있어요. 그림이 없으면 바탕 병과 그림이 대신 나와요.
+
+## 본부 지도 꾸밈 그림 (13장)
+
+본부 지도(수도)의 건물·나무·산 그림 칸(`land-landmark`, `land-tower-1` …)의 반실사 명령문은 같은 폴더의 `LAND.md`에 있어요. 도로·강은 게임이 그려서 그림이 필요 없어요.
