@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type PointerEvent as RPointerEvent,
@@ -28,7 +27,23 @@ import { isAlive, relationOf, type WorldState } from "../game/world";
 import { Carrier, Escort, Jet } from "./units";
 import { smoothPath, type Seg } from "./smoothHex";
 
-export type MapMode = "관계" | "묶음";
+export type MapMode = "나라" | "관계" | "묶음";
+/** 나라마다 한눈에 구분되는 색(국경선 대신 색으로 영토를 보여 줌). 이웃끼리 겹치지 않게 고름 */
+export const COUNTRY_COLORS: Record<string, string> = {
+  us: "#3b82f6",
+  cn: "#ef4444",
+  ru: "#8b5cf6",
+  de: "#f59e0b",
+  jp: "#ec4899",
+  uk: "#14b8a6",
+  in: "#f97316",
+  kr: "#facc15",
+  tr: "#22c55e",
+  il: "#38bdf8",
+  ir: "#a16207",
+  ua: "#84cc16",
+  kp: "#64748b",
+};
 
 export const REL_COLORS: Record<Relation | "나", string> = {
   나: "#fde047",
@@ -276,11 +291,13 @@ export function WorldMap({
   playerCountryId,
   selectedId,
   onSelect,
-  mode = "관계",
+  mode = "나라",
   mini,
 }: Props) {
   const colorOf = (id: string) =>
-    mode === "묶음"
+    mode === "나라"
+      ? (COUNTRY_COLORS[id] ?? "#94a3b8")
+      : mode === "묶음"
       ? BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color
       : id === playerCountryId
         ? REL_COLORS["나"]
@@ -396,29 +413,6 @@ export function WorldMap({
     ? `${X0} ${Y0} ${MW} ${MH}`
     : `${(X0 + cv.x).toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
   const owner = world.owner;
-  // 나라 경계: 옆 칸 주인이 다르면 선
-  const borders = useMemo(() => {
-    const segs: Seg[] = [];
-    const own = (t: { kind: string; place: string; home: string }) =>
-      t.kind === "city" ? owner[t.place] : t.place;
-    for (const t of TILES) {
-      const o = own(t);
-      const cs = hexCorners(t.x, t.y);
-      for (let i = 0; i < 6; i++) {
-        const dir = HEX_DIRS[EDGE_DIR[i]];
-        const n = TILE_AT.get(hexKey(t.q + dir.q, t.r + dir.r));
-        if (
-          n &&
-          own(n) !== o &&
-          (t.kind === "city" || n.kind === "city") &&
-          EDGE_DIR[i] < 3
-        ) {
-          segs.push([cs[i], cs[(i + 1) % 6]]);
-        }
-      }
-    }
-    return smoothPath(segs, { relax: 6 });
-  }, [owner]);
 
   const svg = (
     <svg
@@ -503,7 +497,7 @@ export function WorldMap({
       )}
       <g clipPath="url(#wm-land)">
         {/* 그림이 있으면 나라 색은 반투명하게 덮어 땅 그림이 비침 */}
-        <g opacity={ART ? 0.4 : 1}>
+        <g opacity={ART ? (mode === "나라" ? 0.5 : 0.4) : 1}>
           {CITY_PLACES.map((id) => {
             const home = id.split("-")[0];
             const o = owner[id];
@@ -511,7 +505,19 @@ export function WorldMap({
             const alive = isAlive(world, home);
             const c = mixColor(
               colorOf(o),
-              sel ? 0.75 : o === playerCountryId ? 0.62 : alive ? 0.48 : 0.25,
+              mode === "나라"
+                ? sel
+                  ? 0.95
+                  : alive
+                    ? 0.8
+                    : 0.4
+                : sel
+                  ? 0.75
+                  : o === playerCountryId
+                    ? 0.62
+                    : alive
+                      ? 0.48
+                      : 0.25,
             );
             return (
               <g key={id} className="map-country" onClick={() => pick(home)}>
@@ -567,17 +573,6 @@ export function WorldMap({
             )}
           </g>
         </g>
-        {/* 나라 경계(지금 주인 기준, 곡선) */}
-        <path
-          d={borders}
-          fill="none"
-          stroke="#f8fafc"
-          strokeOpacity="0.85"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pointerEvents="none"
-        />
       </g>
       <path
         d={COAST}
