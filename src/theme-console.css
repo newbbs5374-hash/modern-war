@@ -273,3 +273,23 @@ button.on { outline: 1px solid var(--amber); }
 .spy-target .rel { font-style: normal; font-size: 9.5px; color: var(--muted); }
 .spy-target .rel-전쟁 { color: #ff6b6b; }
 .spy-target .rel-연합 { color: #45f59a; }
+
+/* 함대 충돌 관전 */
+.fleet-back { position: fixed; inset: 0; z-index: 110; background: #000c; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.fleet-box { width: 100%; max-width: 420px; background: var(--panel, #0b1410); border: 1px solid var(--line, #45f59a55); border-radius: 6px; overflow: hidden; }
+.fleet-hud { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 34px 6px 8px; font-size: 12px; }
+.fleet-side { display: flex; flex-direction: column; gap: 2px; }
+.fleet-side.s1 { text-align: right; }
+.fleet-side.s1 .bar-fill { background: #ff8a3d; margin-left: auto; }
+.fleet-x { position: absolute; right: 4px; top: 4px; }
+.fleet-stage { position: relative; height: 300px; overflow: hidden; background: #0d3554; background-size: 100% 100%, cover; background-position: center; }
+.fleet-hp { position: absolute; transform: translateX(-50%); width: 40px; height: 4px; background: #0008; border-radius: 2px; }
+.fleet-hp i { display: block; height: 100%; border-radius: 2px; background: #45f59a; }
+.fleet-hp i.s1 { background: #ff8a3d; }
+.fleet-torpedo { position: absolute; width: 18px; height: 2px; background: #e6f7ff; box-shadow: 0 0 6px #fff; transform: translate(-50%, -50%); opacity: 0.8; }
+.fleet-result { position: absolute; inset: auto 12px 12px; padding: 10px; text-align: center; background: #000b; border: 1px solid var(--amber, #ffb02e); border-radius: 6px; }
+.fleet-result h3 { margin: 0 0 4px; }
+.fleet-ctrl { display: flex; gap: 6px; align-items: center; padding: 8px; }
+.fleet-ctrl button { padding: 4px 10px; }
+.fleet-ctrl button.on { border-color: var(--amber, #ffb02e); color: var(--amber, #ffb02e); }
+.fleet-ctrl small { margin-left: auto; }

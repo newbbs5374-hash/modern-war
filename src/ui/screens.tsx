@@ -25,6 +25,7 @@ import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
 import { OrdersModal } from './OrdersModal';
 import { SpyPanel } from './SpyPanel';
+import { FleetWatchCard } from './FleetWatch';
 import { spyOf } from '../game/spy';
 import { ORDER_INFO, ordersOf } from '../game/orders';
 import { crisisById, crisisOf, debugCrisis } from '../game/crisis';
@@ -326,6 +327,7 @@ export function OpsScreen(props: ScreenProps) {
         ))}
       {tab === 'spy' && <SpyPanel {...props} />}
       {tab === 'map' && <MapPanel {...props} />}
+      {tab === 'news' && <FleetWatchCard {...props} />}
       {tab === 'news' && (
         <Card title="최근 전황" icon="📰">
           <EventList events={state.world.events} limit={12} />
