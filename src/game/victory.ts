@@ -2,6 +2,7 @@
 //  ① 연합 승리: 내 나라 + 연합국이 세계 도시 76% 이상
 //  ② 정복 승리: 내 나라 혼자 세계 도시 48% 이상
 //  ③ 평화 승리: 세계 평화 헌장(서명 2/3)을 7일 지킴 — peace.ts
+//  ④ 문화 승리: 다른 나라 2/3에서 문화 우세 + 5단계 문화 시설 2곳을 7일 지킴 — culture.ts
 //  둘 중 하나를 HOLD_DAYS일 동안 계속 지켜야 이김(지도자가 된 날 바로 끝나지 않게)
 import { CITIES } from '../data/cities';
 import { countryById } from '../data/world';
@@ -9,6 +10,7 @@ import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { relationOf } from './world';
 import { peaceTick } from './peace';
+import { cultureWinTick } from './culture';
 
 export const VICTORY_RANK = RANKS.length - 1;
 export const ALLIED_SHARE = 0.76;
@@ -17,7 +19,7 @@ export const HOLD_DAYS = 7;
 const HOLD_MS = HOLD_DAYS * 24 * 3600e3;
 
 export interface Ending {
-  kind: '연합 승리' | '정복 승리' | '평화 승리';
+  kind: '연합 승리' | '정복 승리' | '평화 승리' | '문화 승리';
   /** 전쟁 며칠째에 이겼는지 */
   day: number;
   country: string;
@@ -50,9 +52,12 @@ export function checkVictory(s: GameState): GameState {
   if (s.ending) return s;
   const pt = peaceTick(s);
   s = pt.s;
+  const ct = cultureWinTick(s);
+  s = ct.s;
   if (s.player.rankIndex < VICTORY_RANK) return s;
   const p = victoryProgress(s);
   if (pt.won) return finish(s, '평화 승리', p);
+  if (ct.won) return finish(s, '문화 승리', p);
   const kind = p.mine >= p.needAlone ? '정복 승리' : p.allied >= p.needAllied ? '연합 승리' : null;
   const since = s.officer.winSinceMs ?? null;
   if (!kind) return since === null ? s : { ...s, officer: { ...s.officer, winSinceMs: null } };
@@ -74,7 +79,7 @@ function finish(s: GameState, kind: Ending['kind'], p: ReturnType<typeof victory
     captured: p.captured,
     generals: s.officer.generals.map((g) => g.name),
   };
-  const ev = { t: s.worldMs, kind: '점령' as const, text: kind === '평화 승리' ? `🕊️ 평화 승리! ${ending.country}이(가) 세계에 평화를 가져왔어요.` : `🏆 ${kind}! ${ending.country}이(가) 전쟁을 끝냈어요.`, mine: true };
+  const ev = { t: s.worldMs, kind: '점령' as const, text: kind === '평화 승리' ? `🕊️ 평화 승리! ${ending.country}이(가) 세계에 평화를 가져왔어요.` : kind === '문화 승리' ? `🎨 문화 승리! ${ending.country}의 문화가 세계를 사로잡았어요.` : `🏆 ${kind}! ${ending.country}이(가) 전쟁을 끝냈어요.`, mine: true };
   return { ...s, ending, world: { ...s.world, events: [ev, ...s.world.events] } };
 }
 
