@@ -2,6 +2,7 @@
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
 import { originEff, originOf } from './origin';
 import { cabBuild, cabFavor, cabGrowth, cabLoyalty, cabRes, cabResearch } from './cabinet';
+import { lawEff, lawRows } from './laws';
 import { splitBuild, splitEco, splitFavor, splitLoyalty, splitOf } from './policy';
 import { CITIES, cityById, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -287,6 +288,7 @@ export function researchBreakdown(s: GameState): Array<[string, number]> {
   if (og) rows.push([`🎓 출신(${originOf(s)!.name})`, og]);
   const cr = cabResearch(s);
   if (cr) rows.push(['🔬 과학기술부', cr]);
+  rows.push(...lawRows(s, 'research'));
   return rows;
 }
 
@@ -442,6 +444,7 @@ export function favorReasons(s: GameState, id: string): Array<[string, number]> 
   if (of) rows.push([`🎓 출신(${originOf(s)!.name})`, of]);
   const cf = Math.round(cabFavor(s));
   if (cf) rows.push(['🌐 외교부', cf]);
+  rows.push(...lawRows(s, 'favor'));
   return rows;
 }
 export function favorOf(s: GameState, id: string): number {
@@ -950,6 +953,7 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   if (ol) rows.push([`🎓 출신(${originOf(s)!.name})`, ol]);
   const cl = Math.round(cabLoyalty(s) * 10) / 10;
   if (cl) rows.push(['🏘️ 행안부·복지부', cl]);
+  rows.push(...lawRows(s, 'loyalty'));
   return rows;
 }
 export function loyaltyTarget(s: GameState, cityId: string): number {
@@ -994,12 +998,12 @@ export function civBudgetMult(s: GameState): number {
 }
 export function civResMult(s: GameState): number {
   const t = cityTotals(s);
-  return Math.max(0.3, (1 + effSum(s, 'res') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s) * cabRes(s);
+  return Math.max(0.3, (1 + effSum(s, 'res') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s) * cabRes(s) * (1 + lawEff(s, 'res'));
 }
 /** 모집 빠르기 배율(시간을 이 값으로 나눔) */
 export function civBuildSpeed(s: GameState, unit: string): number {
   const dom = domOf(unit);
-  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s) * cabBuild(s);
+  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s) * cabBuild(s) * (1 + lawEff(s, 'build'));
 }
 export function civPowerMult(s: GameState, unit: string): number {
   return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)) + facBonus(s, '우주기지'));

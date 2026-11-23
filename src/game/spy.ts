@@ -3,6 +3,7 @@
 // 공작 팀 수 = 1 + 지도자 등급 4마다 1(최대 3). 성공률 = 기본 + (은밀+정보) 스탯.
 import { originEff } from './origin';
 import { cabSpy } from './cabinet';
+import { lawEff } from './laws';
 import { COUNTRIES, countryById } from '../data/world';
 import { CITIES } from '../data/cities';
 import { addFavorNote, civOf } from './civ';
@@ -71,7 +72,7 @@ export function spyChance(s: GameState, op: SpyOpId, target: string): number {
   const skill = ((st['은밀'] ?? 8) + (st['정보'] ?? 8)) / 2;
   const watch = relationOf(s.world, s.player.countryId, target) === '전쟁' ? -0.05 : 0; // 전쟁 중엔 경계가 심함
   const scout = scouted(s, target) ? 0.05 : 0;
-  return Math.max(0.1, Math.min(0.95, d.base + skill * 0.004 + watch + scout + originEff(s, 'spy') + cabSpy(s)));
+  return Math.max(0.1, Math.min(0.95, d.base + skill * 0.004 + watch + scout + originEff(s, 'spy') + cabSpy(s) + lawEff(s, 'spy')));
 }
 
 export function canSpy(s: GameState, op: SpyOpId, target: string): string | null {

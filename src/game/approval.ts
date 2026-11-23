@@ -15,6 +15,7 @@ import type { GameState } from './state';
 import { originEff, originOf, type OriginEffKey } from './origin';
 import { cabApprovalRows, cabFieldRows, cabTaxSoft, cabTrust } from './cabinet';
 import { scheduleFieldRows } from './schedule';
+import { lawEff, lawRows } from './laws';
 import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
@@ -190,6 +191,7 @@ export function fieldRows(s: GameState, f: FieldId): Rows {
   if (o) rows.push([`🎓 출신(${originOf(s)!.name})`, o]);
   if (f !== 'personal') rows.push(...cabFieldRows(s, f));
   rows.push(...scheduleFieldRows(s, f));
+  if (f !== 'personal') rows.push(...lawRows(s, f));
   return rows;
 }
 /** 분야 점수(계산용, 반올림 안 함) */
@@ -215,6 +217,7 @@ export function approvalRows(s: GameState, sc: Record<FieldId, number> = fieldVa
   const tx = tx0 < 0 ? tx0 * (1 - originEff(s, 'taxSoft')) * (1 - cabTaxSoft(s)) : tx0;
   if (tx) rows.push([`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, tx]);
   rows.push(...cabApprovalRows(s));
+  rows.push(...lawRows(s, 'approval'));
   for (const m of presOf(s).mods) if (m.untilMs > s.worldMs && m.v) rows.push([m.why, m.v]);
   return rows;
 }
@@ -222,7 +225,7 @@ export function approvalTarget(s: GameState, sc?: Record<FieldId, number>): numb
   return clamp(sum(approvalRows(s, sc)));
 }
 export function trustTarget(s: GameState, sc: Record<FieldId, number> = fieldValues(s)): number {
-  return clamp(FIELDS.reduce((a, f) => a + sc[f.id] * TRUST_W[f.id], 0) + cabTrust(s));
+  return clamp(FIELDS.reduce((a, f) => a + sc[f.id] * TRUST_W[f.id], 0) + cabTrust(s) + lawEff(s, 'trust'));
 }
 export const approvalOf = (s: GameState) => presOf(s).approval;
 export const trustOf = (s: GameState) => s.officer.trust;
@@ -292,14 +295,22 @@ export function presTick(s: GameState, tickMs: number): GameState {
   } else if (p.impeachMs !== null && s.worldMs >= p.impeachMs) {
     p.impeachMs = null;
     p.approval = 40;
-    const oo = structuredClone(ns.officer);
-    oo.merit = 0;
-    oo.stars = 0;
-    for (const a of oo.aides) addLoyalty(a, -10);
-    while (oo.generals.length > generalSlots(r - 1)) oo.generals.pop();
-    ns = { ...ns, officer: oo, player: { ...ns.player, rankIndex: r - 1 }, world: { ...ns.world, events: [...ns.world.events] } };
-    note(ns, `탄핵되었어요. ${RANKS[r - 1].name}(으)로 내려가 다시 민심을 얻어야 해요.`);
+    ns = demote(ns, `탄핵되었어요. ${RANKS[r - 1].name}(으)로 내려가 다시 민심을 얻어야 해요.`);
   }
+  return ns;
+}
+
+/** 지도자 등급 한 단계 내리기(탄핵·재신임 실패). 등급 0이면 그대로 */
+export function demote(s: GameState, text: string): GameState {
+  const r = s.player.rankIndex;
+  if (r < 1) return s;
+  const oo = structuredClone(s.officer);
+  oo.merit = 0;
+  oo.stars = 0;
+  for (const a of oo.aides) addLoyalty(a, -10);
+  while (oo.generals.length > generalSlots(r - 1)) oo.generals.pop();
+  const ns: GameState = { ...s, officer: oo, player: { ...s.player, rankIndex: r - 1 }, world: { ...s.world, events: [...s.world.events] } };
+  note(ns, text);
   return ns;
 }
 
