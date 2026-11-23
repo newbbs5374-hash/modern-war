@@ -19,6 +19,7 @@ import type { GuideState } from './guide';
 import { splitEco, splitTroop, taxBudget, TAX_INFO, taxOf, splitOf, type PolicyState } from './policy';
 import { cabBudget, cabTroop, newCabinet, addBuddy, type CabinetState } from './cabinet';
 import { cabinetTick } from './cabinetOps';
+import type { ScheduleState } from './schedule';
 import { approvalBudgetMult, approvalTroopMult, presTick, type PresState } from './approval';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
@@ -93,6 +94,8 @@ export interface GameState {
   pres?: PresState;
   /** 인물·부처(11-23) */
   cabinet?: CabinetState;
+  /** 대통령 일정(11-23) */
+  schedule?: ScheduleState;
   /** 예산 나누기·세금(없으면 기본 40/20/20/20 · 보통) */
   policy?: PolicyState;
 }

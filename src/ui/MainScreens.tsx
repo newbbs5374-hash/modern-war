@@ -18,6 +18,8 @@ import { FieldBar } from './PresUI';
 import { PolicyPanel } from './PolicyPanel';
 import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
 import { GeneralCandidates, MinistryCards, TalentPanel } from './CabinetUI';
+import { SchedulePanel } from './ScheduleUI';
+import { scheduleOf } from '../game/schedule';
 import { cabinetOf } from '../game/cabinet';
 
 /** 시설 15개를 효과가 닿는 분야로 나눔 */
@@ -51,6 +53,7 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'train', label: '훈련', icon: '🎯' },
     { id: 'aides', label: `참모 ${o.aides.length}/${aideSlots(r)}`, icon: '🧑‍✈️', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
+    { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'ach', label: '업적·상점', icon: '🏅', badge: goalsReady(state) || null },
   ];
   const tab = pickTab(tabs, raw);
@@ -67,6 +70,7 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'train' && <TrainingScreen {...props} />}
       {tab === 'aides' && <AidesPanel {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
+      {tab === 'plan' && <SchedulePanel {...props} />}
       {tab === 'ach' && <ShopScreen {...props} />}
     </>
   );
