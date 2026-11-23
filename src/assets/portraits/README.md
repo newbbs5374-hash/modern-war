@@ -10,19 +10,19 @@
 | 파일 이름 | 누구 |
 | --- | --- |
 | player | 나(플레이어 지도자). 없으면 우리 나라 지도자 그림을 씀 |
-| leader-us | 아스트라 연방 집정관 오리온 스타크 |
-| leader-cn | 용린 공화국 국가원수 룽샤오란 |
-| leader-ru | 북빙 연합 대공 볼코라 세베린 |
-| leader-de | 철각 공국 공작 하겐 아이젠라트 |
-| leader-jp | 벚섬 왕국 국왕 아마기 소우겐 |
-| leader-uk | 안개항 왕국 국왕 에드윈 그레이번 |
-| leader-in | 금빛평원 연방 연방 의장 비크람 라자단 |
-| leader-kr | 가람 공화국 대통령 한도윤 |
-| leader-tr | 쌍해협 칸국 칸 볼칸 카라테페 |
-| leader-il | 별방패 도시국 수호관 아브넬 하리시 |
-| leader-ir | 붉은모래 신정국 최고 신관 다리우센 |
-| leader-ua | 푸른들 자유국 대통령 야리나 졸로타 |
-| leader-kp | 흑철 요새국 요새 사령관 강철명 |
+| leader-us | 미국 대통령 제임스 하트웰 |
+| leader-cn | 중국 국가주석 천웨이밍 |
+| leader-ru | 러시아 대통령 알렉세이 볼코프 |
+| leader-de | 독일 총리 클라우스 베르크만 |
+| leader-jp | 일본 총리 다카하시 겐이치 |
+| leader-uk | 영국 총리 에드워드 그레이엄 |
+| leader-in | 인도 총리 비크람 라오 |
+| leader-kr | 한국 대통령 한도윤 |
+| leader-tr | 튀르키예 대통령 메흐메트 카야 |
+| leader-il | 이스라엘 총리 다비드 레빈 |
+| leader-ir | 이란 최고지도자 하산 모라디 |
+| leader-ua | 우크라이나 대통령 올레나 코발렌코 |
+| leader-kp | 북한 국무위원장 리철준 |
 | aide | 기본 부관(당직 부관) |
 | aide-sniper | 저격 부관 |
 | aide-medic | 의무 부관 |

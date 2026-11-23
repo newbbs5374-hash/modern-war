@@ -1,6 +1,6 @@
 # 특화 유닛·독점 병과 그림 29장 · GPT 명령문 (복사용)
 
-새로 생긴 🌟특화 유닛 26장(연방마다 2장)과 👑독점 병과 3장이에요. 각 그림의 **회색 상자 안 영어 문장 전체**를 그대로 복사해서 ChatGPT(이미지 만들기)에 붙여 넣으면 돼요. 화풍 문구와 **저장할 파일 이름**이 문장 안에 다 들어 있어요.
+새로 생긴 🌟특화 유닛 26장(나라마다 2장)과 👑독점 병과 3장이에요. 각 그림의 **회색 상자 안 영어 문장 전체**를 그대로 복사해서 ChatGPT(이미지 만들기)에 붙여 넣으면 돼요. 화풍 문구와 **저장할 파일 이름**이 문장 안에 다 들어 있어요.
 
 그림이 없어도 게임은 돌아가요. 없는 칸은 바탕 병과 그림(예: 전차)이 대신 나와요.
 
@@ -33,7 +33,7 @@
 
 ### 1. 대규모 동원 사단 · 파일 이름 `unit-sp-cn-1.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 용린 공화국 특화 · 바탕 보병
+- 누구: 🌟 중국 특화 · 바탕 보병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 이 창의 첫 그림: `ref-battle-screen.png` + (있으면) `unit-infantry.png`를 같이 첨부하세요.
@@ -44,7 +44,7 @@ The attached screenshot shows the game map where this sprite will appear as a sm
 
 ### 2. 철갑 척탄병 · 파일 이름 `unit-sp-de-2.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 철각 공국 특화 · 바탕 기갑병
+- 누구: 🌟 독일 특화 · 바탕 기갑병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -55,7 +55,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 3. 즉시 동원 예비군 · 파일 이름 `unit-sp-il-2.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 별방패 도시국 특화 · 바탕 보병
+- 누구: 🌟 이스라엘 특화 · 바탕 보병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -66,7 +66,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 4. 산악 보병 사단 · 파일 이름 `unit-sp-in-1.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 금빛평원 연방 특화 · 바탕 보병
+- 누구: 🌟 인도 특화 · 바탕 보병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -77,7 +77,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 5. 특수작전군 · 파일 이름 `unit-sp-kp-1.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 흑철 요새국 특화 · 바탕 특수부대
+- 누구: 🌟 북한 특화 · 바탕 특수부대
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -86,9 +86,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A squad of commandos emerging from a tunnel hatch in the ground at night. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-kp-1.png
 ```
 
-### 6. 들판 방위대 · 파일 이름 `unit-sp-ua-2.png` · 창 1 · 보병 특화
+### 6. 국토 방위대 · 파일 이름 `unit-sp-ua-2.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 푸른들 자유국 특화 · 바탕 보병
+- 누구: 🌟 우크라이나 특화 · 바탕 보병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -97,9 +97,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A squad of soldiers in trenches with sandbags among wheat stalks, one with a shoulder-launched rocket. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-ua-2.png
 ```
 
-### 7. 그림자 공정대 · 파일 이름 `unit-sp-uk-1.png` · 창 1 · 보병 특화
+### 7. 특수 공정대 · 파일 이름 `unit-sp-uk-1.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 안개항 왕국 특화 · 바탕 특수부대
+- 누구: 🌟 영국 특화 · 바탕 특수부대
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -108,9 +108,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A small team of special forces soldiers in dark grey with parachutes folded, crouching in fog. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-uk-1.png
 ```
 
-### 8. 회색 암호국 · 파일 이름 `unit-sp-uk-2.png` · 창 1 · 보병 특화
+### 8. 암호 정보국 · 파일 이름 `unit-sp-uk-2.png` · 창 1 · 보병 특화
 
-- 누구: 🌟 안개항 왕국 특화 · 바탕 해킹부대
+- 누구: 🌟 영국 특화 · 바탕 해킹부대
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-infantry.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -123,7 +123,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 9. 기갑 군단 · 파일 이름 `unit-sp-de-1.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 철각 공국 특화 · 바탕 전차
+- 누구: 🌟 독일 특화 · 바탕 전차
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-tank.png`
 - 참고 그림: 이 창의 첫 그림: `ref-battle-screen.png` + (있으면) `unit-tank.png`를 같이 첨부하세요.
@@ -134,7 +134,7 @@ The attached screenshot shows the game map where this sprite will appear as a sm
 
 ### 10. 다층 방공망 · 파일 이름 `unit-sp-il-1.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 별방패 도시국 특화 · 바탕 방공부대
+- 누구: 🌟 이스라엘 특화 · 바탕 방공부대
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-aa.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -145,7 +145,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 11. 사막 탄도 여단 · 파일 이름 `unit-sp-ir-2.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 붉은모래 신정국 특화 · 바탕 미사일
+- 누구: 🌟 이란 특화 · 바탕 미사일
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-artillery.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -154,9 +154,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A desert-camouflage truck launcher carrying one big ballistic missile raised at an angle. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-ir-2.png
 ```
 
-### 12. 동굴 포병 · 파일 이름 `unit-sp-kp-2.png` · 창 2 · 전차·포·방공·미사일 특화
+### 12. 갱도 포병 · 파일 이름 `unit-sp-kp-2.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 흑철 요새국 특화 · 바탕 포병
+- 누구: 🌟 북한 특화 · 바탕 포병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-artillery.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -167,7 +167,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 13. 자주포 포병대 · 파일 이름 `unit-sp-kr-1.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 가람 공화국 특화 · 바탕 포병
+- 누구: 🌟 한국 특화 · 바탕 포병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-artillery.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -176,9 +176,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A tracked self-propelled howitzer with a long barrel, compact turret and ammo carrier behind. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-kr-1.png
 ```
 
-### 14. 별가람 수출 전차 · 파일 이름 `unit-sp-kr-2.png` · 창 2 · 전차·포·방공·미사일 특화
+### 14. 흑표 수출 전차 · 파일 이름 `unit-sp-kr-2.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 가람 공화국 특화 · 바탕 전차
+- 누구: 🌟 한국 특화 · 바탕 전차
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-tank.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -189,7 +189,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 15. 전략 미사일 여단 · 파일 이름 `unit-sp-ru-1.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 북빙 연합 특화 · 바탕 미사일
+- 누구: 🌟 러시아 특화 · 바탕 미사일
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-artillery.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -198,9 +198,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A large eight-wheeled missile launcher truck carrying a long strategic missile tube raised high. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-ru-1.png
 ```
 
-### 16. 빙원 돌격 전차 · 파일 이름 `unit-sp-ru-2.png` · 창 2 · 전차·포·방공·미사일 특화
+### 16. 시베리아 돌격 전차 · 파일 이름 `unit-sp-ru-2.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 북빙 연합 특화 · 바탕 전차
+- 누구: 🌟 러시아 특화 · 바탕 전차
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-tank.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -211,7 +211,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 17. 해협 해안포대 · 파일 이름 `unit-sp-tr-2.png` · 창 2 · 전차·포·방공·미사일 특화
 
-- 누구: 🌟 쌍해협 칸국 특화 · 바탕 포병
+- 누구: 🌟 튀르키예 특화 · 바탕 포병
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-artillery.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -224,7 +224,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 18. 강습상륙함 · 파일 이름 `unit-ex-lhd.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 👑 독점 · 아스트라 연방·벚섬 왕국·가람 공화국 전용
+- 누구: 👑 독점 · 미국·일본·한국 전용
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-destroyer.png`
 - 참고 그림: 이 창의 첫 그림: `ref-battle-screen.png` + (있으면) `unit-destroyer.png`를 같이 첨부하세요.
@@ -235,7 +235,7 @@ The attached screenshot shows the game map where this sprite will appear as a sm
 
 ### 19. 원자력 잠수함 · 파일 이름 `unit-ex-ssn.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 👑 독점 · 아스트라 연방·북빙 연합·용린 공화국·안개항 왕국·금빛평원 연방 전용
+- 누구: 👑 독점 · 미국·러시아·중국·영국·인도 전용
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-submarine.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -246,7 +246,7 @@ Use exactly the same art style as the previous images in this chat. This is a ra
 
 ### 20. 청광 방벽함 · 파일 이름 `unit-ex-ward.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 👑 독점 · 아스트라 연방·별방패 도시국·쌍해협 칸국·붉은모래 신정국 전용
+- 누구: 👑 독점 · 미국·이스라엘·튀르키예·이란 전용
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-destroyer.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -255,9 +255,9 @@ Use exactly the same art style as the previous images in this chat. This is a ra
 Use exactly the same art style as the previous images in this chat. This is a rare top-tier warship only a few nations can build: make it look large, advanced and impressive while staying a believable near-future military design. A futuristic warship with glowing blue crystal pylons on its deck projecting a faint dome-shaped shield. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-ex-ward.png
 ```
 
-### 21. 용린 호위전단 · 파일 이름 `unit-sp-cn-2.png` · 창 3 · 해군 특화·독점 병과
+### 21. 남해 호위전단 · 파일 이름 `unit-sp-cn-2.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 🌟 용린 공화국 특화 · 바탕 구축함
+- 누구: 🌟 중국 특화 · 바탕 구축함
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-destroyer.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -268,7 +268,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 22. 고속정 떼 함대 · 파일 이름 `unit-sp-ir-1.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 🌟 붉은모래 신정국 특화 · 바탕 구축함
+- 누구: 🌟 이란 특화 · 바탕 구축함
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-destroyer.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -277,9 +277,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A swarm of three small fast attack boats with machine guns, white wakes behind them. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-ir-1.png
 ```
 
-### 23. 방패 함대 · 파일 이름 `unit-sp-jp-1.png` · 창 3 · 해군 특화·독점 병과
+### 23. 이지스 함대 · 파일 이름 `unit-sp-jp-1.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 🌟 벚섬 왕국 특화 · 바탕 구축함
+- 누구: 🌟 일본 특화 · 바탕 구축함
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-destroyer.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -290,7 +290,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 24. 정숙 잠수전대 · 파일 이름 `unit-sp-jp-2.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 🌟 벚섬 왕국 특화 · 바탕 잠수함
+- 누구: 🌟 일본 특화 · 바탕 잠수함
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-submarine.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -301,7 +301,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 25. 항모 타격단 · 파일 이름 `unit-sp-us-1.png` · 창 3 · 해군 특화·독점 병과
 
-- 누구: 🌟 아스트라 연방 특화 · 바탕 항공모함
+- 누구: 🌟 미국 특화 · 바탕 항공모함
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-carrier.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -314,7 +314,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 26. 고원 사냥헬기 · 파일 이름 `unit-sp-in-2.png` · 창 4 · 하늘·드론 특화
 
-- 누구: 🌟 금빛평원 연방 특화 · 바탕 공격헬기
+- 누구: 🌟 인도 특화 · 바탕 공격헬기
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-fighter.png`
 - 참고 그림: 이 창의 첫 그림: `ref-battle-screen.png` + (있으면) `unit-fighter.png`를 같이 첨부하세요.
@@ -325,7 +325,7 @@ The attached screenshot shows the game map where this sprite will appear as a sm
 
 ### 27. 무인기 비행대 · 파일 이름 `unit-sp-tr-1.png` · 창 4 · 하늘·드론 특화
 
-- 누구: 🌟 쌍해협 칸국 특화 · 바탕 무인드론
+- 누구: 🌟 튀르키예 특화 · 바탕 무인드론
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-drone.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -336,7 +336,7 @@ Use exactly the same art style as the previous images in this chat. This is an e
 
 ### 28. 해상 드론 부대 · 파일 이름 `unit-sp-ua-1.png` · 창 4 · 하늘·드론 특화
 
-- 누구: 🌟 푸른들 자유국 특화 · 바탕 무인드론
+- 누구: 🌟 우크라이나 특화 · 바탕 무인드론
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-drone.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -345,9 +345,9 @@ Use exactly the same art style as the previous images in this chat. This is an e
 Use exactly the same art style as the previous images in this chat. This is an elite special version of a standard unit: keep it clearly recognizable as the same type of unit, but give it one or two distinctive features that make it look special and upgraded. A small black explosive sea drone boat skimming the waves with a camera mast. Mobile strategy game unit sprite for a near-future military game. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter top-down view with the camera about 45 degrees above, the object faces RIGHT (nose/front pointing to the right side of the image). Realistic soft shading with subtle painterly finish, believable metal, fabric and paint textures, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green and sand military palette. Exactly one object, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 32 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no ground, no cast shadow, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as unit-sp-ua-1.png
 ```
 
-### 29. 별그림자 비행대 · 파일 이름 `unit-sp-us-2.png` · 창 4 · 하늘·드론 특화
+### 29. 스텔스 비행대 · 파일 이름 `unit-sp-us-2.png` · 창 4 · 하늘·드론 특화
 
-- 누구: 🌟 아스트라 연방 특화 · 바탕 전투기
+- 누구: 🌟 미국 특화 · 바탕 전투기
 - 크기·배경: 1024×1024 정사각형 · 투명 배경, 오른쪽을 봄
 - 기본 병과 그림: `unit-fighter.png`
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)

@@ -316,7 +316,7 @@ export function canProduce(s: GameState, unit: string, variant?: string | boolea
   const ex = exclusiveLock(me, unit);
   if (ex) return ex;
   const v = variantOf(s, variant);
-  if (variant && (!v || v.country !== me || v.base !== unit)) return '우리 연방 특화 유닛이 아니에요';
+  if (variant && (!v || v.country !== me || v.base !== unit)) return '우리 나라 특화 유닛이 아니에요';
   if (s.player.rankIndex < unitRank(unit)) return `${RANKS[unitRank(unit)].name}부터`;
   const tech = unitTechLock(s, unit);
   if (tech) return tech;

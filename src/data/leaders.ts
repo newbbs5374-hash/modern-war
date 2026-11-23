@@ -1,4 +1,4 @@
-// 가상 AI 지도자(나라 이름·도시처럼 모두 가상). 성향은 기본값이고, 새 게임에서 "무작위"를 고를 수 있다.
+// AI 지도자(이름은 실제 같은 가상 인물). 성향은 기본값이고, 새 게임에서 "무작위"를 고를 수 있다.
 
 export type Personality = '공격형' | '방어형' | '경제형' | '기회주의';
 
@@ -21,20 +21,25 @@ export const PERSONALITIES: Record<Personality, PersonalityInfo> = {
   기회주의: { aggression: 1.1, tension: 1.1, peace: 1.0, budget: 1.0, text: '약한 상대를 노리고 편을 잘 바꿈' },
 };
 
+/**
+ * 나라 지도자(11-23 대장 결정: 실제 정치인이 아니라 그 나라에 흔한 "실제 같은 가상 이름").
+ * 지도자 이름·직함은 여기 한 곳에서만 바꾸면 게임 전체(시작 화면·외교·대화·도감)에 반영된다.
+ * 그림 파일 이름은 이름과 상관없이 leader-<나라 id>.png 그대로.
+ */
 export const LEADERS: Record<string, { name: string; title: string; personality: Personality }> = {
-  us: { name: '오리온 스타크', title: '집정관', personality: '공격형' },
-  cn: { name: '룽샤오란', title: '국가원수', personality: '경제형' },
-  ru: { name: '볼코라 세베린', title: '대공', personality: '공격형' },
-  de: { name: '하겐 아이젠라트', title: '공작', personality: '방어형' },
-  jp: { name: '아마기 소우겐', title: '국왕', personality: '방어형' },
-  uk: { name: '에드윈 그레이번', title: '국왕', personality: '기회주의' },
-  in: { name: '비크람 라자단', title: '연방 의장', personality: '경제형' },
+  us: { name: '제임스 하트웰', title: '대통령', personality: '공격형' },
+  cn: { name: '천웨이밍', title: '국가주석', personality: '경제형' },
+  ru: { name: '알렉세이 볼코프', title: '대통령', personality: '공격형' },
+  de: { name: '클라우스 베르크만', title: '총리', personality: '방어형' },
+  jp: { name: '다카하시 겐이치', title: '총리', personality: '방어형' },
+  uk: { name: '에드워드 그레이엄', title: '총리', personality: '기회주의' },
+  in: { name: '비크람 라오', title: '총리', personality: '경제형' },
   kr: { name: '한도윤', title: '대통령', personality: '방어형' },
-  tr: { name: '볼칸 카라테페', title: '칸', personality: '기회주의' },
-  il: { name: '아브넬 하리시', title: '수호관', personality: '공격형' },
-  ir: { name: '다리우센', title: '최고 신관', personality: '공격형' },
-  ua: { name: '야리나 졸로타', title: '대통령', personality: '방어형' },
-  kp: { name: '강철명', title: '요새 사령관', personality: '공격형' },
+  tr: { name: '메흐메트 카야', title: '대통령', personality: '기회주의' },
+  il: { name: '다비드 레빈', title: '총리', personality: '공격형' },
+  ir: { name: '하산 모라디', title: '최고지도자', personality: '공격형' },
+  ua: { name: '올레나 코발렌코', title: '대통령', personality: '방어형' },
+  kp: { name: '리철준', title: '국무위원장', personality: '공격형' },
 };
 
 export const PERSONALITY_LIST = Object.keys(PERSONALITIES) as Personality[];

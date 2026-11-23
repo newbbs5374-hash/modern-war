@@ -488,9 +488,9 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         </button>
       </Card>
 
-      <Card title="🏛️ 군도 회의">
+      <Card title="🏛️ 국제 회의">
         <div className="row">
-          <small className="muted">떠오른 성소에서 실제 하루마다 열리는 투표(외교 → 군도 회의)</small>
+          <small className="muted">고대 성지에서 실제 하루마다 열리는 투표(외교 → 국제 회의)</small>
           <button className={civOf(state).council.on ? 'on' : ''} onClick={() => actions.apply((s) => setCouncilOn(s, !civOf(s).council.on))}>
             {civOf(state).council.on ? '켜짐' : '꺼짐'}
           </button>
@@ -503,7 +503,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           <button className="gold" onClick={() => (actions.apply(debugFinishResearch), setMsg('하던 연구(없으면 고를 수 있는 첫 연구)를 바로 끝냈어요.'))}>🔬 연구 바로 끝내기</button>
           <button onClick={() => (actions.apply(debugAllResearch), setMsg('연구 35개를 모두 끝냈어요.'))}>🔬 모든 연구 끝</button>
           <button onClick={() => (actions.apply(debugFinishDistricts), setMsg('짓던 구역을 모두 완공했어요.'))}>🏗️ 구역 바로 완공</button>
-          <button onClick={() => (actions.apply(debugCouncil), setMsg(civOf(state).council.open ? '회의를 바로 마감했어요. 외교 → 군도 회의에서 결과를 보세요.' : '회의를 바로 열었어요. 외교 → 군도 회의에서 투표하세요.'))}>
+          <button onClick={() => (actions.apply(debugCouncil), setMsg(civOf(state).council.open ? '회의를 바로 마감했어요. 외교 → 국제 회의에서 결과를 보세요.' : '회의를 바로 열었어요. 외교 → 국제 회의에서 투표하세요.'))}>
             🏛️ 회의 {civOf(state).council.open ? '바로 마감' : '바로 열기'}
           </button>
         </div>

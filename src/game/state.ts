@@ -22,7 +22,7 @@ import {
   TROOP_ATTRITION_PER_DAY,
 } from './balance';
 
-export const SAVE_VERSION = 6; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개) — 예전 저장은 새 판으로
+export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개), 7: 현실 나라·도시 이름(11-23) — 예전 저장은 새 판으로
 
 export interface NationState {
   /** 나라 금고(국방예산) */
@@ -59,7 +59,7 @@ export interface GameState {
   ending: Ending | null;
   /** 부관 보고(아직 안 본 것) */
   reports?: Report[];
-  /** 문명식 운영(연구·체제·호감·협정·개척 섬·군도 회의·도시 구역/민심/인구). 옛 저장은 불러올 때 채움 */
+  /** 문명식 운영(연구·체제·호감·협정·개척 섬·국제 회의·도시 구역/민심/인구). 옛 저장은 불러올 때 채움 */
   civ?: CivState;
 }
 

@@ -44,7 +44,7 @@ export function DiplomacyScreen(props: ScreenProps) {
           { id: 'rel', label: '외교관계', icon: '🕸️' },
           { id: 'agree', label: '호감·협정', icon: '🤝' },
           { id: 'isle', label: '개척 섬', icon: '🏝️' },
-          { id: 'council', label: '군도 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
+          { id: 'council', label: '국제 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
         ]}
       />
       {tab === 'agree' && <AgreePanel {...props} />}

@@ -1,7 +1,7 @@
-// 세계 데이터: "새 대륙 개척 시대"(11-22 대장 결정).
-// 대융기(大隆起)로 바다 밑 땅이 솟아 "여명 군도"가 생겼고, 그 섬들에 신생 연방 13개가 세워졌다.
-// 처음엔 모두 평화롭게 개척을 시작하지만 자원·항로 다툼으로 긴장이 쌓여 전쟁이 날 수 있다.
-// 나라 id(us, kr…)는 코드 안에서만 쓰는 이름표다(실제 나라와 상관없음).
+// 세계 데이터: 현실 나라 13개와 실제 도시(11-23 대장 결정으로 가상 "여명 군도"에서 되돌림).
+// 가까운 미래. 처음엔 모두 평화롭지만 자원·바닷길 다툼으로 긴장이 쌓여 전쟁이 날 수 있다.
+// 지도는 게임용으로 줄인 세계지도(지역 5개). 지도자는 실제 같은 가상 인물(data/leaders.ts).
+// 나라 id(us, kr…)는 그림 파일 이름(leader-kr.png 등)에도 쓰므로 바꾸지 않는다.
 
 export type ContinentId = 'eurona' | 'norga' | 'sahar' | 'asien' | 'amern';
 export type BlocId = 'pacific' | 'continental' | 'europe' | 'independent';
@@ -18,7 +18,7 @@ export interface Rect {
 export interface Continent {
   id: ContinentId;
   name: string;
-  /** 군도가 차지한 얕은 바다(둥근 네모) */
+  /** 지역이 차지한 얕은 바다(둥근 네모) */
   shapes: Rect[];
   label: { x: number; y: number };
 }
@@ -49,32 +49,32 @@ export interface Country {
 
 export const MAP_SIZE = { w: 760, h: 470 };
 
-/** 군도 5개(코드 id는 예전 대륙 id를 그대로 씀) */
+/** 지역 5개(코드 id는 예전 대륙 id를 그대로 씀) */
 export const CONTINENTS: Continent[] = [
-  { id: 'norga', name: '북빙 군도', shapes: [{ x: 186, y: 50, w: 418, h: 92 }], label: { x: 196, y: 64 } },
-  { id: 'eurona', name: '서풍 군도', shapes: [{ x: 24, y: 152, w: 180, h: 146 }], label: { x: 32, y: 166 } },
-  { id: 'asien', name: '중앙 대도', shapes: [{ x: 276, y: 186, w: 272, h: 222 }], label: { x: 286, y: 200 } },
-  { id: 'sahar', name: '남양 군도', shapes: [{ x: 64, y: 306, w: 196, h: 156 }], label: { x: 72, y: 458 } },
-  { id: 'amern', name: '동해 군도', shapes: [{ x: 596, y: 156, w: 142, h: 284 }], label: { x: 604, y: 170 } },
+  { id: 'norga', name: '북유라시아', shapes: [{ x: 186, y: 50, w: 418, h: 92 }], label: { x: 196, y: 64 } },
+  { id: 'eurona', name: '유럽', shapes: [{ x: 24, y: 152, w: 180, h: 146 }], label: { x: 32, y: 166 } },
+  { id: 'asien', name: '아시아', shapes: [{ x: 276, y: 186, w: 272, h: 222 }], label: { x: 286, y: 200 } },
+  { id: 'sahar', name: '중동', shapes: [{ x: 64, y: 306, w: 196, h: 156 }], label: { x: 72, y: 458 } },
+  { id: 'amern', name: '태평양', shapes: [{ x: 596, y: 156, w: 142, h: 284 }], label: { x: 604, y: 170 } },
 ];
 
 export const BLOCS: Record<BlocId, { name: string; color: string }> = {
-  pacific: { name: '동해 협의체', color: '#3b82f6' },
-  continental: { name: '북방 협약', color: '#ef4444' },
-  europe: { name: '서풍 동맹', color: '#22c55e' },
+  pacific: { name: '태평양 연합', color: '#3b82f6' },
+  continental: { name: '대륙 협약', color: '#ef4444' },
+  europe: { name: '유럽 연합', color: '#22c55e' },
   independent: { name: '독자 세력', color: '#a3a3a3' },
 };
 
 export const FAITHS: Record<FaithId, { name: string; trait: string }> = {
-  covenant: { name: '빛의 언약', trait: '떠오른 성소를 지키는 것이 가장 큰 사명' },
-  blade: { name: '성검 교단', trait: '떠오른 성소를 차지하는 것이 사명 · 신관이 나라를 이끔' },
+  covenant: { name: '빛의 언약', trait: '고대 성지를 지키는 것이 가장 큰 사명' },
+  blade: { name: '성검 교단', trait: '고대 성지를 차지하는 것이 사명 · 신관이 나라를 이끔' },
   polaris: { name: '북극성 정교', trait: '같은 신앙이지만 정통을 두고 갈라져 다툼' },
   pantheon: { name: '만신 전통', trait: '여러 신을 모시는 넓은 신앙 · 다른 신앙과 덜 부딪힘' },
   secular: { name: '세속', trait: '신앙보다 자원·항로·이익으로 움직임' },
 };
 
-/** 대융기 때 바다에서 함께 떠오른 고대 유적 "떠오른 성소"(서풍·남양 군도 사이 해협) */
-export const HOLY_CITY = { name: '떠오른 성소', x: 120, y: 330 };
+/** 여러 신앙이 함께 받드는 "고대 성지"(유럽·중동 사이 해협). 어느 나라 땅도 아님 */
+export const HOLY_CITY = { name: '고대 성지', x: 120, y: 330 };
 
 const C = (o: Omit<Country, 'label'> & { label?: { x: number; y: number } }): Country => {
   const r = o.shapes[0];
@@ -83,17 +83,17 @@ const C = (o: Omit<Country, 'label'> & { label?: { x: number; y: number } }): Co
 
 export const COUNTRIES: Country[] = [
   C({
-    id: 'us', name: '아스트라 연방', continent: 'amern', intro: '동해 군도의 큰 섬. 가장 먼저 항구를 연 부유한 해양 연방',
-    cities: ['스타포트', '노바헤이븐', '실버베이', '코랄섬', '이글록', '썬더캐년', '프론티어시', '레드메사'],
+    id: 'us', name: '미국', continent: 'amern', intro: '세계 최강의 해군과 항공모함을 가진 부유한 나라',
+    cities: ['워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '덴버', '피닉스', '피츠버그', '휴스턴'],
     economy: 100, budget: 100, military: 100, difficulty: '쉬움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '중',
     specialUnit: { name: '항모 타격단', base: '항공모함', effect: '함재기 출격 2배 · 호위함 보호막' },
-    ability: { name: '대양 항로', effect: '먼 바다 보급 손실 −30% · 다른 군도에 기지 건설 가능' },
+    ability: { name: '대양 항로', effect: '먼 바다 보급 손실 −30% · 다른 지역에 기지 건설 가능' },
     shapes: [{ x: 608, y: 172, w: 90, h: 176 }, { x: 640, y: 384, w: 40, h: 40 }],
   }),
   C({
-    id: 'cn', name: '용린 공화국', continent: 'asien', intro: '중앙 대도의 넓은 땅. 사람이 많고 공장이 쉬지 않는 나라',
-    cities: ['용린성', '비취항', '홍등시', '운해진', '금룡시', '청하진', '옥문관', '남풍포'],
+    id: 'cn', name: '중국', continent: 'asien', intro: '사람이 많고 공장이 쉬지 않는 넓은 나라',
+    cities: ['베이징', '톈진', '광저우', '선전', '바오터우', '우한', '란저우', '상하이'],
     economy: 80, budget: 59, military: 80, difficulty: '쉬움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '대규모 동원 사단', base: '보병', effect: '병력 1.5배 · 쓰러져도 빨리 채워짐' },
@@ -101,8 +101,8 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 298, y: 202, w: 172, h: 100 }],
   }),
   C({
-    id: 'ru', name: '북빙 연합', continent: 'norga', intro: '얼음과 오로라의 북빙 군도. 춥지만 미사일 기술이 앞선 나라',
-    cities: ['빙관성', '백야항', '서리봉', '오로라시', '설원진', '툰드라항', '얼음송곳', '북극성채', '백곰만', '눈보라령'],
+    id: 'ru', name: '러시아', continent: 'norga', intro: '세계에서 가장 넓은 땅. 춥지만 미사일 기술이 앞선 나라',
+    cities: ['모스크바', '상트페테르부르크', '튜멘', '무르만스크', '예카테린부르크', '아르한겔스크', '노릴스크', '야쿠츠크', '블라디보스토크', '노보시비르스크'],
     economy: 29, budget: 45, military: 94, difficulty: '쉬움',
     bloc: 'continental', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '전략 미사일 여단', base: '미사일', effect: '사거리 +50% · 방공 뚫기 +20%' },
@@ -110,8 +110,8 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 202, y: 64, w: 220, h: 62 }, { x: 436, y: 74, w: 94, h: 52 }],
   }),
   C({
-    id: 'de', name: '철각 공국', continent: 'eurona', intro: '철광 섬 위의 공국. 용광로와 기갑 공장이 자랑',
-    cities: ['철각성', '용광시'],
+    id: 'de', name: '독일', continent: 'eurona', intro: '유럽 한가운데의 공업 강국. 기갑 공장이 자랑',
+    cities: ['베를린', '함부르크'],
     economy: 41, budget: 35, military: 30, difficulty: '보통',
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '기갑 군단', base: '전차', effect: '장갑 +20% · 돌파 후 추격' },
@@ -119,26 +119,26 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 38, y: 172, w: 72, h: 60 }],
   }),
   C({
-    id: 'jp', name: '벚섬 왕국', continent: 'amern', intro: '동해 군도의 꽃이 지지 않는 긴 섬. 정밀 기술과 방패 함대의 왕국',
-    cities: ['벚꽃궁', '달빛항'],
+    id: 'jp', name: '일본', continent: 'amern', intro: '긴 섬나라. 정밀 기술과 이지스 함대가 강함',
+    cities: ['도쿄', '후쿠오카'],
     economy: 38, budget: 26, military: 39, difficulty: '보통',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
-    specialUnit: { name: '방패 함대', base: '구축함', effect: '미사일 요격 +40%' },
+    specialUnit: { name: '이지스 함대', base: '구축함', effect: '미사일 요격 +40%' },
     ability: { name: '기술 정밀', effect: '연구 속도 +25%' },
     shapes: [{ x: 708, y: 176, w: 22, h: 130 }, { x: 698, y: 334, w: 32, h: 56 }],
   }),
   C({
-    id: 'uk', name: '안개항 왕국', continent: 'eurona', intro: '늘 안개 낀 항구 섬. 정보원과 잠수함이 강한 오래된 왕가',
-    cities: ['안개항', '회색탑'],
+    id: 'uk', name: '영국', continent: 'eurona', intro: '오랜 해양 강국. 정보기관과 잠수함이 강함',
+    cities: ['런던', '버밍엄'],
     economy: 36, budget: 31, military: 39, difficulty: '보통',
     bloc: 'europe', faith: 'secular', faithStrength: '약',
-    specialUnit: { name: '그림자 공정대', base: '특수부대', effect: '잠입 성공 +30% · 기습 피해 2배' },
+    specialUnit: { name: '특수 공정대', base: '특수부대', effect: '잠입 성공 +30% · 기습 피해 2배' },
     ability: { name: '정보 강국', effect: '정보 점수 +30% · 잠수함 은밀 +' },
     shapes: [{ x: 124, y: 164, w: 56, h: 46 }, { x: 132, y: 218, w: 30, h: 22 }],
   }),
   C({
-    id: 'in', name: '금빛평원 연방', continent: 'asien', intro: '중앙 대도 남쪽의 넓은 들. 사람이 많고 산악 부대가 강함',
-    cities: ['금빛성', '태양평야', '연꽃항', '코끼리강', '향신료시'],
+    id: 'in', name: '인도', continent: 'asien', intro: '인구가 가장 많은 나라. 산악 부대가 강함',
+    cities: ['뉴델리', '콜카타', '벵갈루루', '첸나이', '뭄바이'],
     economy: 36, budget: 31, military: 55, difficulty: '보통',
     bloc: 'independent', faith: 'pantheon', faithStrength: '중',
     specialUnit: { name: '산악 보병 사단', base: '보병', effect: '산·고지 전투 +30%' },
@@ -146,8 +146,8 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 290, y: 318, w: 124, h: 76 }],
   }),
   C({
-    id: 'kr', name: '가람 공화국', continent: 'asien', intro: '강이 흐르는 작은 섬. 정밀한 포병과 무기 수출로 살아가는 나라',
-    cities: ['한빛', '별가람'],
+    id: 'kr', name: '한국', continent: 'asien', intro: '작지만 반도체와 무기 수출이 강한 나라. 포병이 정밀함',
+    cities: ['서울', '부산'],
     economy: 25, budget: 22, military: 45, difficulty: '어려움',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '자주포 포병대', base: '포병', effect: '쏘고 바로 이동 · 정확도 +30%' },
@@ -155,17 +155,17 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 486, y: 300, w: 46, h: 58 }],
   }),
   C({
-    id: 'tr', name: '쌍해협 칸국', continent: 'sahar', intro: '두 바다를 잇는 해협의 칸국. 무인기와 통행세로 힘을 키움',
-    cities: ['쌍해협성', '바람시장', '초승항'],
+    id: 'tr', name: '튀르키예', continent: 'sahar', intro: '두 바다를 잇는 해협의 나라. 무인기와 통행세로 힘을 키움',
+    cities: ['앙카라', '이스탄불', '이즈미르'],
     economy: 23, budget: 18, military: 37, difficulty: '어려움',
     bloc: 'independent', faith: 'blade', faithStrength: '중',
     specialUnit: { name: '무인기 비행대', base: '무인드론', effect: '드론 비용 −40% · 동시 출격 +' },
-    ability: { name: '해협 통제', effect: '서풍↔남양 바닷길 막기 · 통행 수익' },
+    ability: { name: '해협 통제', effect: '유럽↔중동 바닷길 막기 · 통행 수익' },
     shapes: [{ x: 182, y: 310, w: 66, h: 44 }],
   }),
   C({
-    id: 'il', name: '별방패 도시국', continent: 'sahar', intro: '성소 곁의 작은 도시 섬. 하늘을 지키는 방공망이 촘촘함',
-    cities: ['별방패성', '수정항'],
+    id: 'il', name: '이스라엘', continent: 'sahar', intro: '성지 곁의 작은 나라. 하늘을 지키는 방공망이 촘촘함',
+    cities: ['텔아비브', '하이파'],
     economy: 14, budget: 22, military: 27, difficulty: '어려움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '강',
     specialUnit: { name: '다층 방공망', base: '방공부대', effect: '미사일·로켓·드론 요격 +50%' },
@@ -173,17 +173,17 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 78, y: 372, w: 44, h: 38 }],
   }),
   C({
-    id: 'ir', name: '붉은모래 신정국', continent: 'sahar', intro: '붉은 사막 섬의 신정국. 신관이 다스리고 고속정 떼가 바다를 누빔',
-    cities: ['붉은모래성', '신탁시', '모래항', '오아시스진'],
+    id: 'ir', name: '이란', continent: 'sahar', intro: '사막과 산의 나라. 종교 지도자가 다스리고 고속정 떼가 바다를 누빔',
+    cities: ['테헤란', '이스파한', '반다르아바스', '시라즈'],
     economy: 15, budget: 9, military: 23, difficulty: '어려움',
     bloc: 'continental', faith: 'blade', faithStrength: '강',
     specialUnit: { name: '고속정 떼 함대', base: '구축함', effect: '싸고 많은 고속정 · 큰 함선 상대 +30%' },
-    ability: { name: '해협 봉쇄', effect: '남양 바닷길을 막아 적 석유 수입 −30%' },
+    ability: { name: '해협 봉쇄', effect: '호르무즈 해협을 막아 적 석유 수입 −30%' },
     shapes: [{ x: 142, y: 366, w: 100, h: 84 }],
   }),
   C({
-    id: 'ua', name: '푸른들 자유국', continent: 'eurona', intro: '밀밭과 해바라기의 섬. 작지만 땅을 지키려는 마음이 가장 단단함',
-    cities: ['푸른들성', '밀밭시', '해바라기항'],
+    id: 'ua', name: '우크라이나', continent: 'eurona', intro: '밀밭과 해바라기의 나라. 땅을 지키려는 마음이 가장 단단함',
+    cities: ['키이우', '하르키우', '오데사'],
     economy: 10, budget: 30, military: 20, difficulty: '매우 어려움',
     bloc: 'europe', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '해상 드론 부대', base: '무인드론', effect: '바다 위 드론으로 함선 공격 · 해군 없이도 바다 막기' },
@@ -191,8 +191,8 @@ export const COUNTRIES: Country[] = [
     shapes: [{ x: 38, y: 240, w: 76, h: 52 }],
   }),
   C({
-    id: 'kp', name: '흑철 요새국', continent: 'norga', intro: '북빙 군도 끝 검은 바위 섬의 요새국. 땅굴과 특수부대로 버티는 폐쇄된 나라',
-    cities: ['흑철성', '동굴항'],
+    id: 'kp', name: '북한', continent: 'norga', intro: '땅굴과 특수부대로 버티는 닫힌 나라',
+    cities: ['평양', '남포'],
     economy: 3, budget: 10, military: 12, difficulty: '매우 어려움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '특수작전군', base: '특수부대', effect: '땅굴 침투 · 적 후방 도시 기습' },
