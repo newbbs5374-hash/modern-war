@@ -311,40 +311,44 @@ export function LeaderCard(props: ScreenProps) {
       <div className="lc-card">
         <div className="lc-photo">
           <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
-          <span className="lc-rank">
-            {tt.icon} {tt.name}
-          </span>
           <span className="lc-step">
             {tier + 1}/{TITLES.length}
           </span>
         </div>
-        <div className="lc-name">{state.player.name}</div>
-        <div className="lc-sub">
-          {og ? (
-            <>
+        <div className="lc-info">
+          <span className="lc-rank">
+            {tt.icon} {tt.name}
+          </span>
+          <div className="lc-name">{state.player.name}</div>
+          <div className="lc-sub">
+            {FLAG[state.player.countryId]} {countryById(state.player.countryId).name} · 지휘 {RANKS[r].unit}
+          </div>
+          {og && (
+            <div className="lc-sub lc-origin">
               {og.icon} {og.name}
               {originFits(og, state.player.countryId) ? ' ★' : ''} · {og.perk}
-            </>
-          ) : (
-            <>지휘: {RANKS[r].unit}</>
+            </div>
           )}
+          <div className="lc-chips">
+            <span>
+              📣<small>명성</small>
+              <b>{fmt(o.fame)}</b>
+            </span>
+            <span className={r >= COMMAND_RANK && o.trust < 40 ? 'warn' : ''}>
+              🤝<small>신뢰</small>
+              <b>{Math.round(o.trust)}</b>
+            </span>
+            <span>
+              🔐<small>정보</small>
+              <b>{fmt(o.intel)}</b>
+            </span>
+          </div>
+          <div className="lc-road" aria-label="호칭 단계">
+            {TITLES.map((x, i) => (
+              <i key={x.name} className={i < tier ? 'done' : i === tier ? 'now' : ''} title={x.name} />
+            ))}
+          </div>
         </div>
-        <div className="lc-road" aria-label="호칭 단계">
-          {TITLES.map((x, i) => (
-            <i key={x.name} className={i < tier ? 'done' : i === tier ? 'now' : ''} title={x.name} />
-          ))}
-        </div>
-      </div>
-      <div className="lc-chips">
-        <span>
-          📣 명성<b>{fmt(o.fame)}</b>
-        </span>
-        <span className={r >= COMMAND_RANK && o.trust < 40 ? 'warn' : ''}>
-          🤝 신뢰<b>{Math.round(o.trust)}</b>
-        </span>
-        <span>
-          🔐 정보<b>{fmt(o.intel)}</b>
-        </span>
       </div>
       <TitleBox state={state} />
       <div className="lc-box">

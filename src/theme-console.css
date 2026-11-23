@@ -467,23 +467,26 @@ button.on { outline: 1px solid var(--amber); }
 .guide-hide { font-size: 10px; }
 
 /* ── 개인 > 프로필: 캐릭터 카드형(11/23 대장 결정) ── */
-.lc-card { position: relative; margin: 2px 24px 0; border-radius: 20px !important; padding: 8px; background: linear-gradient(180deg, #ffd36b, #c98a1a); box-shadow: 0 4px 0 #7a5410, 0 10px 22px #0008; }
-.lc-photo { position: relative; height: 178px; border-radius: 14px; overflow: hidden; background: radial-gradient(circle at 50% 30%, #3a6a7e, #356b8c); }
+.lc-card { position: relative; display: flex; gap: 10px; padding: 8px; border-radius: 16px !important; background: linear-gradient(135deg, #ffd36b, #c98a1a); box-shadow: 0 3px 0 #7a5410, 0 8px 18px #0006; margin-bottom: 8px; }
+.lc-photo { position: relative; flex: 0 0 132px; height: 162px; border-radius: 12px; overflow: hidden; background: radial-gradient(circle at 50% 30%, #4d7f95, #24465e); }
 .lc-photo .person-face { position: absolute; inset: 0; }
 .lc-photo .face-img { object-position: 50% 12%; }
-.lc-photo .person-face:not(:has(img)) { font-size: 90px; }
-.lc-rank { position: absolute; top: 8px; left: 8px; background: var(--amber); color: #835a19; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 99px; box-shadow: 0 2px 0 #0006; }
-.lc-step { position: absolute; top: 8px; right: 8px; background: #000a; color: #fff; font-family: var(--num); font-size: 12px; padding: 2px 8px; border-radius: 99px; }
-.lc-name { text-align: center; font-size: 21px; font-weight: 700; color: #9a620d; margin: 6px 0 0; }
-.lc-sub { text-align: center; font-size: 12px; color: #4a3408; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lc-road { display: flex; gap: 3px; margin: 6px 6px 2px; }
+.lc-photo .person-face:not(:has(img)) { font-size: 70px; }
+.lc-step { position: absolute; bottom: 6px; right: 6px; background: #000a; color: #fff; font-family: var(--num); font-size: 12px; padding: 1px 7px; border-radius: 99px; }
+.lc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lc-rank { align-self: flex-start; max-width: 100%; background: #2a3440; color: #ffd36b; font-weight: 700; font-size: 12.5px; padding: 2px 9px; border-radius: 99px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-name { font-size: 21px; font-weight: 800; color: #2a1a02; line-height: 1.15; }
+.lc-sub { font-size: 11.5px; color: #4a3408; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-origin { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lc-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: auto; }
+.lc-chips span { display: flex; flex-direction: column; align-items: center; background: #ffffff55; border: 1px solid #00000022; border-radius: 8px; padding: 2px 0; font-size: 13px; color: #2a1a02; line-height: 1.15; }
+.lc-chips span.warn { border-color: #ef4444; background: #fecaca; }
+.lc-chips small { font-size: 10px; color: #5a3d06; }
+.lc-chips b { font-family: var(--num); font-size: 14px; }
+.lc-road { display: flex; gap: 2px; margin-top: 3px; }
 .lc-road i { flex: 1; height: 5px; border-radius: 3px; background: #0000002e; }
 .lc-road i.done { background: #5a3d06; }
 .lc-road i.now { background: #fff; box-shadow: 0 0 0 1px #5a3d06; }
-.lc-chips { display: flex; justify-content: center; gap: 6px; margin: 10px 0 8px; }
-.lc-chips span { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; font-size: 12.5px; color: var(--text); }
-.lc-chips span.warn { border-color: #ef4444; }
-.lc-chips b { margin-left: 4px; font-family: var(--num); }
 .lc-promo { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 6px 6px 4px; margin-bottom: 8px; }
 .lc-promo.ready { border-color: var(--amber); box-shadow: inset 0 0 12px #ffb02022; }
 .lc-promo .lc-promo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; background: transparent; border: 0; text-align: left; padding: 2px 6px; }
@@ -519,3 +522,16 @@ button.on { outline: 1px solid var(--amber); }
 .ttl-row small { font-size: 10px; }
 .ttl-row.done { opacity: 0.7; }
 .ttl-row.now { border: 1px solid var(--amber); background: #3b1d0e66; }
+
+/* ── 외교 > 국가정보: 작은 칸(11/23 대장 요청) — 얼굴+작은 국기 왼쪽, 정보 오른쪽 ── */
+.ncards { gap: 5px; }
+.ncard { display: grid !important; grid-template-columns: 44px 1fr; grid-template-rows: auto auto auto; column-gap: 7px; row-gap: 2px; padding: 6px 7px !important; align-items: center; }
+.ncard .ncard-pics { grid-row: 1 / 4; display: flex; flex-direction: column; align-items: center; gap: 3px; height: auto; }
+.ncard .ncard-face { order: 1; flex: none; width: 44px; height: 44px; }
+.ncard .ncard-face .person-face { width: 44px; height: 44px; font-size: 22px; }
+.ncard .ncard-flagbig { order: 2; flex: none; width: 30px; height: 20px; background: none; border: 1px solid #0006; }
+.ncard .ncard-name b { font-size: 13px; }
+.ncard .ncard-tags .tag { font-size: 10px; padding: 0 5px; }
+.ncard .ncard-stats { gap: 4px; justify-content: flex-start; font-size: 10.5px; }
+.ncard .ncard-stats small { white-space: nowrap; }
+.lc-sub .flag, .lc-sub svg, .lc-sub img { width: 18px !important; height: 12px !important; vertical-align: -1px; display: inline-block; }
