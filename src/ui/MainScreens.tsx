@@ -1,7 +1,6 @@
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
 // 지금 있던 기능은 하나도 빼지 않고, 맡은 분야 탭 안의 작은 탭으로 옮겼어요.
 import { BUILDINGS, type BuildingId } from '../data/economy';
-import { goalsReady } from '../game/goals';
 import { spyOf } from '../game/spy';
 import { civOf } from '../game/civ';
 import { aideSlots, generalSlots } from '../data/officers';
@@ -10,7 +9,6 @@ import { FacilityPanel, ResourcePanel, TreasuryPanel, needPick } from './Interio
 import { TradePanel } from './DiplomacyScreen';
 import { ForcesScreen } from './ForcesScreen';
 import { SpyPanel } from './SpyPanel';
-import { ShopScreen } from './ShopScreen';
 import { AidesPanel, GeneralsPanel, LeaderHero, RivalsPanel, StatsPanel, TrainingScreen } from './officerScreens';
 import { OpsScreen, type ScreenProps } from './screens';
 import { Tabs, useTab, type TabDef } from './kit';
@@ -59,7 +57,6 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'aides', label: `참모 ${o.aides.length}/${aideSlots(r)}`, icon: '🧑‍✈️', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
-    { id: 'ach', label: '업적·상점', icon: '🏅', badge: goalsReady(state) || null },
   ];
   const tab = pickTab(tabs, raw);
   return (
@@ -76,7 +73,6 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'aides' && <AidesPanel {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
       {tab === 'plan' && <SchedulePanel {...props} />}
-      {tab === 'ach' && <ShopScreen {...props} />}
     </>
   );
 }

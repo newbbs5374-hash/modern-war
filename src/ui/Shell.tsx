@@ -123,7 +123,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           >
             <span className="ico">{n.icon}</span>
             <small>{n.label}</small>
-            {n.screen === 'personal' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
+            {n.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
           </button>
         ))}
       </nav>

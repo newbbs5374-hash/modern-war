@@ -38,7 +38,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   battle: '전투',
 };
 
-/** 아래 메뉴 6칸(11-23 대장 결정): 본부(강조) + 개인·국방·외교·사회·경제 */
+/** 아래 메뉴 7칸(11-23 대장 결정): 본부(강조) + 개인·국방·외교·사회·경제 + 상점 */
 export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: boolean; locked?: string }> = [
   { screen: 'home', icon: '🏠', label: '본부', main: true },
   { screen: 'personal', icon: '👤', label: '개인' },
@@ -46,10 +46,11 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
   { screen: 'diplo', icon: '🌐', label: '외교' },
   { screen: 'society', icon: '👥', label: '사회' },
   { screen: 'economy', icon: '💰', label: '경제' },
+  { screen: 'shop', icon: '🛒', label: '상점' },
 ];
 
 /** 새 큰 탭 안의 작은 탭 이름 */
-export type PersonalTab = 'profile' | 'train' | 'aides' | 'talent' | 'plan' | 'ach';
+export type PersonalTab = 'profile' | 'train' | 'aides' | 'talent' | 'plan';
 export type DefenseTab = 'ops' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
 export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'press';
@@ -90,7 +91,7 @@ export function legacyRoute(screen: string, tab?: string): { screen: Screen; set
       if (t === 'trade') return { screen: 'economy', set: [['economy', 'trade']] };
       return { screen: 'diplo', set: t ? [['diplo', t]] : [] };
     case 'shop':
-      return { screen: 'personal', set: [['personal', 'ach'], ...(t ? ([['shop', t]] as Array<[string, string]>) : [])] };
+      return { screen: 'shop', set: t ? [['shop', t]] : [] };
     default:
       return { screen: (screen in SCREEN_TITLES ? screen : 'home') as Screen, set: t ? [[screen, t]] : [] };
   }
