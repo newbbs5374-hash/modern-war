@@ -9,6 +9,10 @@ import { assemblyOf } from './assembly';
 import { cabinetOf, ministerCount } from './cabinet';
 import { mediaOf } from './media';
 import { scheduleOf } from './schedule';
+import { presOf } from './approval';
+import { favorOf } from './civ';
+import { COUNTRIES } from '../data/world';
+import type { OriginId } from './origin';
 import { Rng } from './rng';
 import type { GameState } from './state';
 
@@ -76,6 +80,8 @@ export interface Achievement {
   ruby: number;
   /** 진행(현재, 목표) */
   prog: (s: GameState, g: GoalsState) => [number, number];
+  /** 이 출신 지도자에게만 보이는 전용 업적(11-23) */
+  origin?: OriginId;
 }
 const t = (g: GoalsState, k: Count) => g.total[k] ?? 0;
 const ACH = (id: string, name: string, icon: string, text: string, ruby: number, prog: Achievement['prog']): Achievement => ({ id, name, icon, text, ruby, prog });
@@ -104,7 +110,38 @@ export const ACHIEVEMENTS: Achievement[] = [
   ACH('conf1', '국민의 재신임', '🗳️', '재신임 국민투표 통과', 80, (s) => [assemblyOf(s).confWins, 1]),
   ACH('pet5', '국민의 목소리', '📝', '국민 청원 5개 들어주기', 40, (s) => [mediaOf(s).petDone, 5]),
   ACH('summit3', '정상 외교', '🤝', '정상회담 3번 성공', 50, (s) => [mediaOf(s).summits, 3]),
+  ...ORIGIN_ACH(),
 ];
+
+/** 출신 전용 업적 16개(그 출신일 때만 보임) */
+function ORIGIN_ACH(): Achievement[] {
+  const me = (s: GameState) => s.player.countryId;
+  const O = (origin: OriginId, id: string, name: string, icon: string, text: string, prog: Achievement['prog']): Achievement => ({ ...ACH(`o-${id}`, name, icon, `[출신] ${text}`, 80, prog), origin });
+  return [
+    O('econ', 'econ', '나라 곳간지기', '💼', '국방예산 금고 50,000 모으기', (s) => [Math.floor(s.nations[me(s)]?.treasury ?? 0), 50000]),
+    O('general', 'general', '별들의 사령관', '⭐', '장군 4명 두기', (s) => [s.officer.generals.length, 4]),
+    O('scientist', 'scientist', '과학 대국', '🔬', '연구 15개 끝내기', (s) => [civOf(s).done.length, 15]),
+    O('athlete', 'athlete', '국민 영웅', '🏅', '지지도 80 넘기기', (s) => [Math.floor(presOf(s).approval), 80]),
+    O('diplomat', 'diplomat', '세계의 중재자', '🌐', '정상회담 5번 성공', (s) => [mediaOf(s).summits, 5]),
+    O('spy', 'spy', '보이지 않는 손', '🕵️', '첩보 작전 10번 성공', (_, g) => [t(g, 'spy'), 10]),
+    O('lawyer', 'lawyer', '법치의 수호자', '⚖️', '법안 5개 국회 통과', (s) => [assemblyOf(s).passed ?? 0, 5]),
+    O('chaebol', 'chaebol', '부자 나라', '🏢', '국방예산 금고 150,000 모으기', (s) => [Math.floor(s.nations[me(s)]?.treasury ?? 0), 150000]),
+    O('broadcaster', 'broadcaster', '국민 MC', '🎙️', '명성 1,000 쌓기', (s) => [Math.floor(s.officer.fame), 1000]),
+    O('activist', 'activist', '광장의 목소리', '✊', '국민 청원 10개 들어주기', (s) => [mediaOf(s).petDone, 10]),
+    O('doctor', 'doctor', '건강한 나라', '🩺', '내 도시 평균 민심 80 넘기기', (s) => {
+      const c = civOf(s);
+      const own = CITIES.filter((x) => s.world.owner[x.id] === me(s) && c.cities[x.id]);
+      return [own.length ? Math.floor(own.reduce((a, x) => a + c.cities[x.id].loyalty, 0) / own.length) : 0, 80];
+    }),
+    O('mayor', 'mayor', '도시의 아버지', '🏙️', '도시 10개 갖기', (s) => [CITIES.filter((x) => s.world.owner[x.id] === me(s)).length, 10]),
+    O('commando', 'commando', '전설의 특수요원', '🪂', '임무·전투 30번 이기기', (_, g) => [t(g, 'merit'), 30]),
+    O('admiral', 'admiral', '바다의 지배자', '🚢', '다른 나라 도시 3개 차지하기', (_, g) => [t(g, 'capture'), 3]),
+    O('commoner', 'commoner', '국민이 뽑은 대통령', '🌾', '재신임 국민투표 2번 통과', (s) => [assemblyOf(s).confWins, 2]),
+    O('religious', 'religious', '화해의 사도', '🙏', '호감 50 넘는 나라 5개', (s) => [COUNTRIES.filter((c) => c.id !== me(s) && favorOf(s, c.id) >= 50).length, 5]),
+  ];
+}
+/** 이 지도자에게 보이는 업적(출신 전용은 그 출신만) */
+export const achList = (s: GameState) => ACHIEVEMENTS.filter((a) => !a.origin || a.origin === s.player.origin);
 
 export const dayOf = (worldMs: number) => Math.floor(worldMs / DAY);
 
@@ -208,7 +245,7 @@ export function achState(s: GameState, a: Achievement): { have: number; need: nu
   return { have: Math.min(have, need), need, ready: !got && have >= need, got };
 }
 export function claimAch(s: GameState, id: string): GameState {
-  const a = ACHIEVEMENTS.find((x) => x.id === id);
+  const a = achList(s).find((x) => x.id === id);
   if (!a || !achState(s, a).ready) return s;
   const g = goalsOf(s);
   return { ...s, goals: { ...g, ruby: g.ruby + a.ruby, got: [...g.got, id] } };
@@ -216,7 +253,7 @@ export function claimAch(s: GameState, id: string): GameState {
 /** 받을 수 있는 보상 수(빨간 점) */
 export function goalsReady(s: GameState): number {
   const g = goalsOf(s);
-  return g.daily.filter((x) => !x.claimed && x.have >= x.need).length + ACHIEVEMENTS.filter((a) => achState(s, a).ready).length;
+  return g.daily.filter((x) => !x.claimed && x.have >= x.need).length + achList(s).filter((a) => achState(s, a).ready).length;
 }
 
 // ── 루비 상점 ──

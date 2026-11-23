@@ -449,3 +449,7 @@ button.on { outline: 1px solid var(--amber); }
 .brf-todos { display: flex; flex-direction: column; gap: 3px; }
 .brf-todos .pw-act { padding: 5px 8px; align-items: center; }
 .brf-todos .pw-act-ico { font-size: 18px; }
+.cab-min-ico { position: relative; width: 36px !important; display: inline-flex; justify-content: center; }
+.cab-min-art { object-fit: contain; display: block; }
+.cab-min-face { position: absolute; right: -6px; bottom: -6px; }
+.cab-min-banner { display: block; width: 100%; max-height: 140px; object-fit: contain; margin-bottom: 4px; }

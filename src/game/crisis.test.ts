@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { advance, newGame } from './state';
-import { CRISES, CRISIS_ANSWER_MS, canChoose, chooseCrisis, crisisOf, debugCrisis, crisisTick } from './crisis';
+import { ALL_CRISES, CRISES, CRISIS_ANSWER_MS, canChoose, chooseCrisis, crisisOf, debugCrisis, crisisTick } from './crisis';
 import { goalsOf, trackGoals } from './goals';
 
 const H = 3600e3;
@@ -41,7 +41,7 @@ describe('돌발 사건', () => {
   });
 
   it('모든 사건은 선택지 2~3개, 부관 선택 번호가 올바름', () => {
-    for (const d of CRISES) {
+    for (const d of ALL_CRISES) {
       expect(d.options.length).toBeGreaterThanOrEqual(2);
       expect(d.options.length).toBeLessThanOrEqual(3);
       expect(d.options[d.auto]).toBeDefined();

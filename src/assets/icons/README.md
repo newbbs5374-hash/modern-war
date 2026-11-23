@@ -536,3 +536,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 
 - 폴더 `src/assets/icons/` 에 위 파일 이름 그대로 넣으면 바로 바뀌어요(png·webp 모두 됨). 코드: `src/ui/iconArt.tsx`.
 - 설정 화면 맨 아래 **🎖️ 부대·훈련·자원·분쟁 섬 아이콘 칸**에서 몇 장 들어왔는지 볼 수 있어요.
+
+## 부처 건물 9장 (11/23)
+- `icon-min-{mnd|nis|mofa|mof|moti|mois|mohw|msit|kocis}.png`
+- 명령문: 프로젝트 파일 `guides/ministry-art-prompts.md`, 참고 그림 `guides/ministry-art-ref.zip`

@@ -4,7 +4,7 @@ import { Tabs, useTab } from './kit';
 import type { ScreenProps } from './screens';
 import { timeLeft } from './officerScreens';
 import {
-  ACHIEVEMENTS,
+  achList,
   DAILY_BONUS_BOOSTS,
   DAILY_BONUS_RUBY,
   DAILY_RUBY,
@@ -36,7 +36,7 @@ export function ShopScreen({ state, actions }: ScreenProps) {
   const sameDay = g.day === dayOf(state.worldMs);
   const daily = sameDay ? g.daily : [];
   const dReady = daily.filter((x) => !x.claimed && x.have >= x.need).length;
-  const aReady = ACHIEVEMENTS.filter((a) => achState(state, a).ready).length;
+  const aReady = achList(state).filter((a) => achState(state, a).ready).length;
   const resetIn = (dayOf(state.worldMs) + 1) * DAY - state.worldMs;
   return (
     <>
@@ -76,8 +76,8 @@ export function ShopScreen({ state, actions }: ScreenProps) {
         </Card>
       )}
       {tab === 'ach' && (
-        <Card title="업적" right={<small className="muted">{g.got.length}/{ACHIEVEMENTS.length}</small>}>
-          {ACHIEVEMENTS.map((a) => {
+        <Card title="업적" right={<small className="muted">{achList(state).filter((a) => g.got.includes(a.id)).length}/{achList(state).length}</small>}>
+          {achList(state).map((a) => {
             const st = achState(state, a);
             return (
               <div key={a.id} className={`list-row small ${st.got ? 'muted' : ''}`}>
