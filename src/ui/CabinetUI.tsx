@@ -53,6 +53,7 @@ import { Card, fmt } from './common';
 import { Help, Meter, Modal } from './kit';
 import { personFaceUrl } from './Portrait';
 import { Flag } from './flag';
+import { iconArt } from './iconArt';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 
@@ -61,6 +62,12 @@ const cname = (id: string) => COUNTRIES.find((c) => c.id === id)?.name ?? id;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /* ───────── 작은 부품 ───────── */
+
+/** 부처 건물 그림(src/assets/icons/icon-min-<id>.png), 없으면 이모지 */
+export function MinIcon({ id, size = 30 }: { id: MinistryId; size?: number }) {
+  const url = iconArt(`icon-min-${id}`);
+  return url ? <img className="cab-min-art" src={url} alt="" draggable={false} style={{ width: size, height: size }} /> : <>{ministryById(id).icon}</>;
+}
 
 export function PersonFace({ p, size = 36 }: { p: Person; size?: number }) {
   const url = personFaceUrl(lookOf(p), p.sex, p.age, p.id);
@@ -379,7 +386,10 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
             const hearing = c.hearing?.min === id;
             return (
               <button key={id} className="cab-min" onClick={() => setOpen(id)}>
-                <span className="cab-min-ico">{mn ? <PersonFace p={mn} size={30} /> : m.icon}</span>
+                <span className="cab-min-ico">
+                  <MinIcon id={id} size={34} />
+                  {mn && <span className="cab-min-face"><PersonFace p={mn} size={18} /></span>}
+                </span>
                 <span className="cab-main">
                   <b>
                     {m.icon} {m.name}
@@ -416,6 +426,7 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
     );
   return (
     <Modal title={m.name} icon={m.icon} onClose={onClose}>
+      {iconArt(`icon-min-${id}`) && <img className="cab-min-banner" src={iconArt(`icon-min-${id}`)!} alt="" draggable={false} />}
       <p className="small">{m.text}</p>
       <div className="cab-kv small">
         <span>🎯 맡은 일</span>

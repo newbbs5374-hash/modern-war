@@ -5,6 +5,8 @@ import { COUNTRIES, countryById } from '../data/world';
 import type { Res } from '../data/economy';
 import { addFavorNote, civOf } from './civ';
 import { addPresMod } from './approval';
+import { ORIGIN_CRISES } from '../data/originContent';
+import type { OriginId } from './origin';
 import { Rng } from './rng';
 import { pushReport } from './report';
 import type { GameState } from './state';
@@ -48,6 +50,8 @@ export interface CrisisDef {
   options: CrisisOption[];
   /** 안 고르면 부관이 고르는 번호 */
   auto: number;
+  /** 이 출신 지도자일 때만 나옴(11-23) */
+  origin?: OriginId;
 }
 
 export const CRISES: CrisisDef[] = [
@@ -252,7 +256,11 @@ export const CRISES: CrisisDef[] = [
     ],
   },
 ];
-export const crisisById = (id: string) => CRISES.find((c) => c.id === id)!;
+/** 일반 사건 + 출신 전용 사건 */
+export const ALL_CRISES: CrisisDef[] = [...CRISES, ...ORIGIN_CRISES];
+export const crisisById = (id: string) => ALL_CRISES.find((c) => c.id === id)!;
+/** 이 지도자에게 나올 수 있는 사건 */
+export const crisesFor = (s: GameState) => ALL_CRISES.filter((d) => !d.origin || d.origin === s.player.origin);
 
 export interface CrisisOpen {
   id: number;
@@ -418,8 +426,9 @@ export function crisisTick(s: GameState): GameState {
   }
   if (!c.open && s.worldMs >= c.nextMs) {
     const rng = new Rng((c.nextId * 2246822519 + s.world.seed + Math.floor(c.nextMs / H)) >>> 0);
-    const pool = CRISES.filter((d) => !c.recent.includes(d.id));
-    const d = rng.pick(pool.length ? pool : CRISES);
+    const all = crisesFor(s);
+    const pool = all.filter((d) => !c.recent.includes(d.id));
+    const d = rng.pick(pool.length ? pool : all);
     const me = s.player.countryId;
     let target: string | null = null;
     if (d.target) {

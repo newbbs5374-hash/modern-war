@@ -2,6 +2,7 @@
 // 부관 선물·특별 훈련·부관 임무는 officer.ts 것을 그대로 씀. 여기에는 새 교류만.
 import { originEff } from './origin';
 import { cabSpeech } from './cabinet';
+import { ORIGIN_LINES } from '../data/originContent';
 import { addPresMod } from './approval';
 import { LEADERS } from '../data/leaders';
 import { countryById } from '../data/world';
@@ -160,7 +161,8 @@ export function doAct(s: GameState, p: PersonRef, act: ActId): { state: GameStat
     out = `🎤 연설을 마쳤어요. 명성 +${fame} · 의회 신뢰 +2 · 지지도 +${ap}(6시간) · 정적 영향력 −2`;
   } else if (p.kind === 'aide' && act === 'chat') {
     const a = o.aides.find((x) => x.id === p.id)!;
-    const line = rng.pick(AIDE_CHAT[a.bond >= 60 ? 'high' : a.bond >= 30 ? 'mid' : 'low']);
+    const og = s.player.origin ? ORIGIN_LINES[s.player.origin] : null;
+    const line = og && rng.chance(0.4) ? rng.pick(og) : rng.pick(AIDE_CHAT[a.bond >= 60 ? 'high' : a.bond >= 30 ? 'mid' : 'low']);
     a.bond = Math.min(100, a.bond + 3);
     touchAide(a, s.worldMs);
     addLoyalty(a, 2);
