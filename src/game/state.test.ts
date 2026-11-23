@@ -53,7 +53,8 @@ describe('시간당 누적', () => {
     let a = newGame('a', 'us', 0);
     for (let i = 0; i < 360; i++) a = advance(a, 20000);
     const b = advance(newGame('b', 'us', 0), 2 * HOUR);
-    expect(a.nations.us.treasury).toBeCloseTo(b.nations.us.treasury, 4);
+    // 지지도(11-23)가 도시 민심·병력을 보고 국방예산 배율을 정하는데, 민심·병력은 잘게 나눠 흘리면 아주 조금 달라짐 → 0.01% 안이면 같음
+    expect(Math.abs(a.nations.us.treasury - b.nations.us.treasury) / b.nations.us.treasury).toBeLessThan(1e-4);
     expect(a.player.pendingSalary).toBeCloseTo(b.player.pendingSalary, 6);
     expect(a.world).toEqual(b.world);
   });
