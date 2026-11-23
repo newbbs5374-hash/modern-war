@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BLOCS, COUNTRIES } from '../data/world';
 import { HallList } from './victoryScreens';
+import { loadHall } from '../game/victory';
 import { Flag } from './flag';
 import { LEADERS } from '../data/leaders';
 import { specialsOf } from '../data/specials';
@@ -18,54 +19,71 @@ export function StartScreen({ onStart, onImport }: Props) {
   const [err, setErr] = useState('');
   const [randomLeaders, setRandomLeaders] = useState(false);
 
+  const [open, setOpen] = useState<string | null>(null);
+
   return (
-    <div className="start">
+    <div className="start start-compact">
       <h1>현대전 사령관 · 시험판</h1>
-      <p className="muted">
-        대융기로 바다에서 떠오른 새 군도, 여명 군도. 막 세워진 나라들은 평화롭게 출발하지만 자원과 항로를 두고 긴장이
-        쌓입니다. 나라를 골라 지도자로 취임하세요. 처음엔 임시 지도자이고, 명성과 신뢰를 쌓아 전설의 지도자까지 등급을 올려요. 세계 시계는 실제 1시간 = 게임 하루로 흐르고, 게임을 꺼 두어도 흐릅니다.
+      <p className="muted small start-intro">
+        가까운 미래, 13개 나라는 평화롭게 출발하지만 자원과 바닷길을 두고 긴장이 쌓여요. 나라를 골라 지도자로 취임하세요.
+        세계 시계는 실제 1시간 = 게임 하루예요.
       </p>
-      <label className="field">
-        장교 이름
+      <label className="field start-name">
+        지도자 이름
         <input value={name} maxLength={12} placeholder="예: 김철수" onChange={(e) => setName(e.target.value)} />
       </label>
-      <HallList />
-      <h2>나라 고르기</h2>
-      <div className="country-grid">
-        {COUNTRIES.map((c) => (
-          <button
-            key={c.id}
-            className={`country-card ${pick === c.id ? 'picked' : ''}`}
-            style={{ borderColor: BLOCS[c.bloc].color }}
-            onClick={() => setPick(c.id)}
-          >
-            <div className="row">
-              <Flag id={c.id} size={1.2} />
-              <b>{c.name}</b>
-              <span className={`diff diff-${c.difficulty.replace(' ', '')}`}>{c.difficulty}</span>
-            </div>
-            <div className="muted small">
-              {BLOCS[c.bloc].name} · {LEADERS[c.id].title} {LEADERS[c.id].name}
-            </div>
-            {(['경제', '예산', '군사'] as const).map((k) => {
-              const v = k === '경제' ? c.economy : k === '예산' ? c.budget : c.military;
-              return (
-                <div key={k} className="cc-stat">
-                  <small>{k}</small>
-                  <span className="bar">
-                    <span className="bar-fill" style={{ width: `${v}%` }} />
-                  </span>
+      <div className="country-list" role="list">
+        {COUNTRIES.map((c) => {
+          const isOpen = open === c.id;
+          const L = LEADERS[c.id];
+          return (
+            <div key={c.id} role="listitem" className={`country-line ${pick === c.id ? 'picked' : ''} ${isOpen ? 'open' : ''}`} style={{ borderLeftColor: BLOCS[c.bloc].color }}>
+              <button
+                className="cl-head"
+                aria-expanded={isOpen}
+                onClick={() => {
+                  setPick(c.id);
+                  setOpen(isOpen ? null : c.id);
+                }}
+              >
+                <Flag id={c.id} size={0.9} />
+                <b>{c.name}</b>
+                <small className="muted cl-bloc">{BLOCS[c.bloc].name}</small>
+                <span className={`diff diff-${c.difficulty.replace(' ', '')}`}>{c.difficulty}</span>
+                <span className="cl-arrow">{isOpen ? '▾' : '▸'}</span>
+              </button>
+              {isOpen && (
+                <div className="cl-body small">
+                  <div className="muted">
+                    {L.title} {L.name} · {c.intro}
+                  </div>
+                  <div className="cl-stats">
+                    {(['경제', '예산', '군사'] as const).map((k) => {
+                      const v = k === '경제' ? c.economy : k === '예산' ? c.budget : c.military;
+                      return (
+                        <div key={k} className="cc-stat">
+                          <small>{k}</small>
+                          <span className="bar">
+                            <span className="bar-fill" style={{ width: `${v}%` }} />
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div>
+                    ⭐ <b>{c.ability.name}</b> <span className="muted">{c.ability.effect}</span>
+                  </div>
+                  <div className="muted">
+                    🌟 {specialsOf(c.id)
+                      .map((d) => d.name)
+                      .join(' · ')}
+                  </div>
+                  <div className="muted">🏙️ {c.cities.join(' · ')}</div>
                 </div>
-              );
-            })}
-            <div className="small">⭐ {c.ability.name}</div>
-            <div className="small muted">
-              🌟 {specialsOf(c.id)
-                .map((d) => d.name)
-                .join(' · ')}
+              )}
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
       <label className="check">
         <input type="checkbox" checked={randomLeaders} onChange={(e) => setRandomLeaders(e.target.checked)} />
@@ -79,6 +97,12 @@ export function StartScreen({ onStart, onImport }: Props) {
         {pick && name.trim() ? '지도자로 취임하기' : '이름을 쓰고 나라를 고르세요'}
       </button>
 
+      {loadHall().length > 0 && (
+        <details className="import">
+          <summary>명예의 전당</summary>
+          <HallList />
+        </details>
+      )}
       <details className="import">
         <summary>저장 코드로 이어하기</summary>
         <textarea value={code} onChange={(e) => setCode(e.target.value)} placeholder="저장 코드를 붙여 넣으세요" />

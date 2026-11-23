@@ -91,10 +91,10 @@ export function worldMood(w: WorldState): number {
 }
 
 export function moodName(m: number): { name: string; icon: string; text: string } {
-  if (m < 30) return { name: '평화 개척', icon: '🌅', text: '나라들이 섬을 개척하며 평화롭게 지내요' };
+  if (m < 30) return { name: '평화', icon: '🌅', text: '나라들이 무역하며 평화롭게 지내요' };
   if (m < 60) return { name: '냉전', icon: '🧊', text: '자원과 항로를 두고 서로 노려봐요' };
   if (m < 80) return { name: '국지전', icon: '🔥', text: '곳곳에서 싸움이 일어나요' };
-  return { name: '대전쟁', icon: '💥', text: '군도 전체가 전쟁에 휩싸였어요' };
+  return { name: '대전쟁', icon: '💥', text: '온 세계가 전쟁에 휩싸였어요' };
 }
 
 /* ───────── 확률·표시 ───────── */
@@ -148,7 +148,7 @@ function pairOf(s: GameState, id: string) {
 const need = (s: GameState, extra = 0) => 10 + s.player.rankIndex * 3 + extra;
 
 const MAKERS: Maker[] = [
-  // 맞수 사절: 항로·개척 다툼
+  // 맞수 사절: 항로·자원 다툼
   (s, rng) => {
     const xs = others(s).filter((id) => {
       const p = pairOf(s, id);
@@ -165,7 +165,7 @@ const MAKERS: Maker[] = [
       icon: '🧑‍⚖️',
       text: `"${what}은 우리가 먼저 찾았소. 당신네 함대가 물러나지 않으면, 우리도 가만있지 않겠소."`,
       choices: [
-        { att: '화해', label: '공동 개척을 제안한다', stat: '정치', need: need(s), base: 0.45, ok: { text: '공동 개척 협정을 맺었어요. 긴장이 크게 내려갔어요.', tension: -35, fame: 3 }, fail: { text: '제안이 거절됐어요.', tension: 5 } },
+        { att: '화해', label: '공동 개발을 제안한다', stat: '정치', need: need(s), base: 0.45, ok: { text: '공동 개발 협정을 맺었어요. 긴장이 크게 내려갔어요.', tension: -35, fame: 3 }, fail: { text: '제안이 거절됐어요.', tension: 5 } },
         { att: '거래', label: '예산을 조금 내주고 물러난다', base: 1, ok: { text: '보상을 주고 물러났어요. 일단 조용해졌어요.', tension: -25, treasury: -0.04, fame: -2 } },
         { att: '위협', label: '"한 척이라도 넘어오면 침몰시킨다"', stat: '통솔', need: need(s), base: 0.5, ok: { text: '상대가 기가 꺾여 물러났어요.', tension: -10, fame: 6, merit: 40 }, fail: { text: '상대가 맞불을 놓았어요. 긴장이 치솟았어요!', tension: 30, fame: 2 } },
         { att: '원칙', label: '"국제 해양 규약대로 하자"', base: 1, ok: { text: '규약대로 하자고 했어요. 상대는 불만이지만 지켜봐요.', tension: 5, trust: 3 } },
@@ -272,7 +272,7 @@ const MAKERS: Maker[] = [
     return {
       kind: '시민',
       who: x,
-      speaker: '개척민 대표',
+      speaker: '섬 주민 대표',
       face: 'settler',
       icon: '📢',
       text: `"우린 섬을 일구러 왔지 싸우러 온 게 아닙니다! ${gwa(nm(x))}의 전쟁을 멈춰 주세요!"`,
@@ -284,7 +284,7 @@ const MAKERS: Maker[] = [
       ignore: { text: '시위가 커졌어요.', fame: -3 },
     };
   },
-  // 평화 시: 개척민·부관 이야기(언제나 가능)
+  // 평화 시: 섬 주민·부관 이야기(언제나 가능)
   (s, rng) => {
     const o = s.officer;
     const who = o.aides.length ? rng.pick(o.aides) : null;
@@ -298,13 +298,13 @@ const MAKERS: Maker[] = [
       speaker: aide,
       face: who ? `aide-${who.name}` : 'aide',
       icon: '🧑‍✈️',
-      text: `"${nm(x)} 쪽 개척선이 우리 앞바다에서 길을 잃었답니다. 어떻게 할까요?"`,
+      text: `"${nm(x)} 쪽 어선이 우리 앞바다에서 길을 잃었답니다. 어떻게 할까요?"`,
       choices: [
         { att: '화해', label: '구조해서 돌려보낸다', base: 1, ok: { text: '구조해서 돌려보냈어요. 상대가 고마워해요.', tension: -12, fame: 4 } },
         { att: '속임', label: '구조하며 정보를 캐낸다', stat: '정보', need: need(s, -2), base: 0.6, ok: { text: '항로 정보를 얻었어요.', intel: 25, tension: -4 }, fail: { text: '눈치챈 선원들이 항의했어요.', tension: 8, fame: -2 } },
         { att: '거래', label: '구조비를 받는다', base: 1, ok: { text: '구조비를 받았어요.', treasury: 0.02, tension: 3 } },
       ],
-      ignore: { text: '개척선은 알아서 떠났어요.' },
+      ignore: { text: '어선은 알아서 떠났어요.' },
     };
   },
 ];

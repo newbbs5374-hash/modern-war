@@ -4,7 +4,7 @@
 // - 보급: 상륙 거점·항모에서 멀어지면 힘이 줄어듦
 // - 안개: 내 부대 주변만 보임(드론·잠수함이 멀리 봄). 잠수함은 가까이 가거나 구축함이 있어야 보임
 // - 큰 싸움(적 사령부·적 기함)에 닿으면 "직접 지휘"로 기존 전투 틀에 들어갈 수 있음
-// - 특화 유닛(11-23): 우리·적 연방의 특화 유닛·독점 병과가 고유 능력을 갖고 나옴(data/specials.ts)
+// - 특화 유닛(11-23): 우리·적 나라의 특화 유닛·독점 병과가 고유 능력을 갖고 나옴(data/specials.ts)
 // - 연료·탄약(자원 3안): 쏠 때 탄약, 비행기·배는 움직일 때 연료를 씀. 보급 범위에서 다시 채움. 떨어지면 약하고 느려짐
 // 계산은 이 파일에서만 하고(같은 입력·같은 조작이면 같은 결과), 화면은 보여 주기만 한다.
 import { CITY_HEX, HEX_DIRS, TILE_AT, disk, hexDist, hexKey, type Hex } from '../data/hexmap';
@@ -205,7 +205,7 @@ export interface FieldInput {
   defense?: number;
   /** 우리가 가진 특화 유닛·독점 병과(이름표 → 부대 수) */
   roster?: Record<string, number>;
-  /** 적 연방 id(적 특화 유닛) */
+  /** 적 나라 id(적 특화 유닛) */
   enemyId?: string;
   /** 출발 때 연료·탄약(0~1, 나라 창고의 석유·구리만큼) */
   fuel?: number;
@@ -514,7 +514,7 @@ export function createField(inp: FieldInput): FieldBattle {
   }
   const cvU = b.units.find((u) => u.side === 'me' && u.kind === 'carrier');
   if (f.hasSea && cvU) {
-    for (const name of ['강습상륙함', '청광 방벽함']) {
+    for (const name of ['강습상륙함', '레이저 방공함']) {
       if (!(roster[name] > 0)) continue;
       const at = pick('destroyer', (i) => D(i, cvU.at) <= 3 && D(i, C) >= 3, (i) => D(i, cvU.at) + D(i, C) * 0.1);
       if (at !== null) add('destroyer', 'me', at, { sp: name });
@@ -525,7 +525,7 @@ export function createField(inp: FieldInput): FieldBattle {
       }
     }
   }
-  // 적 연방 특화 유닛: 종류마다 하나씩
+  // 적 나라 특화 유닛: 종류마다 하나씩
   if (inp.enemyId) {
     for (const kind of [...new Set(b.units.filter((u) => u.side === 'foe').map((u) => u.kind))]) {
       const list = specialsByKind(inp.enemyId, kind);
@@ -843,8 +843,8 @@ function meThink(b: FieldBattle, vis: Set<number>) {
     if (u.side !== 'me') continue;
     const def = defOf(u);
     const inRange = foes.some((e) => fDist(f, u.at, e.at) <= def.range && fMult(u.kind, e.kind) > 0);
-    // 강습상륙함은 항모 곁, 청광 방벽함은 우리 함대 한가운데(보호막)
-    if (u.sp === '강습상륙함' || u.sp === '청광 방벽함') {
+    // 강습상륙함은 항모 곁, 레이저 방공함은 우리 함대 한가운데(보호막)
+    if (u.sp === '강습상륙함' || u.sp === '레이저 방공함') {
       const fleet = b.units.filter((x) => x.side === 'me' && x !== u && FUNIT[x.kind].layer === 'sea' && (u.sp === '강습상륙함' ? x.kind === 'carrier' : x.kind !== 'carrier'));
       const buddy = nearest(b, u.at, fleet.length ? fleet : b.units.filter((x) => x.side === 'me' && x !== u && FUNIT[x.kind].layer === 'sea'));
       if (buddy && fDist(f, buddy.at, u.at) > 1) setGoal(b, u, buddy.at);

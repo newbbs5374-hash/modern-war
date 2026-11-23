@@ -64,12 +64,12 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
       {sp && (
         <p className="small muted">
           🌟 {name} 특화 유닛 · {name}와 같은 연구·등급에서 열려요(바탕 {name}도 계속 만들 수 있어요)
-          {crystalReady(state) ? ' · 💎 지금 만들면 청광석 1을 더 써서 청광 개량형(+15%)' : ''}
+          {crystalReady(state) ? ' · 🧪 지금 만들면 갈륨 1을 더 써서 갈륨 개량형(+15%)' : ''}
         </p>
       )}
       {ex && (
         <p className="small muted">
-          👑 독점 병과 · {ex.why} · 만드는 연방: {ex.only.map((id) => countryById(id).name).join(', ')}
+          👑 독점 병과 · {ex.why} · 만드는 나라: {ex.only.map((id) => countryById(id).name).join(', ')}
         </p>
       )}
       <div className="kv2">

@@ -1,4 +1,4 @@
-// 문명식 운영: 연구 두 줄 · 연방 체제와 정책 카드 · 호감/협정/불만 장부 · 개척 섬 영향력 · 군도 회의 · 도시 구역/민심/인구.
+// 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
 import { CITIES, cityById, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -305,7 +305,7 @@ function finishTech(ns: GameState, c: CivState, t: Tech): GameState {
       const p = pairs[k];
       if (p && isRival(me, o.id) && p.rel !== '전쟁') pairs[k] = { ...p, tension: Math.min(99, p.tension + ERA_TENSION) };
     }
-    ns = worldEvent({ ...ns, world: { ...ns.world, pairs } }, `${ERAS[era].icon} ${countryById(me).name}, ${ERAS[era].name}에 들어섰어요. 맞수 연방들이 긴장해요.`);
+    ns = worldEvent({ ...ns, world: { ...ns.world, pairs } }, `${ERAS[era].icon} ${countryById(me).name}, ${ERAS[era].name}에 들어섰어요. 맞수 나라들이 긴장해요.`);
     clog(c, `${ERAS[era].icon} ${ERAS[era].name}에 들어섰어요!`);
   }
   return ns;
@@ -344,7 +344,7 @@ export function chaos(s: GameState): boolean {
 export function canSetGov(s: GameState, id: GovId): string | null {
   const c = civOf(s);
   if (c.gov === id) return '지금 체제예요';
-  if (c.gov && !hasTech(s, 's-charter')) return '개척 헌장 연구 뒤 바꿀 수 있어요';
+  if (c.gov && !hasTech(s, 's-charter')) return '국가 헌장 연구 뒤 바꿀 수 있어요';
   if (c.gov && s.nations[s.player.countryId].treasury < GOV_CHANGE_COST) return `국방예산 ${GOV_CHANGE_COST.toLocaleString()} 필요`;
   return null;
 }
@@ -402,7 +402,7 @@ export function putCard(s: GameState, slot: number, cardId: string | null): Game
 export function activeAgreements(s: GameState, who?: string): Agreement[] {
   return civOf(s).agreements.filter((a) => a.untilMs > s.worldMs && (!who || a.who === who));
 }
-/** 그 연방이 나를 얼마나 좋아하는지와 이유 */
+/** 그 나라이 나를 얼마나 좋아하는지와 이유 */
 export function favorReasons(s: GameState, id: string): Array<[string, number]> {
   const me = s.player.countryId;
   const c = civOf(s);
@@ -446,7 +446,7 @@ export function addFavorNote(s: GameState, id: string, text: string, v: number):
     if (list.length > 6) list.length = 6;
   });
 }
-/** 불만 장부: 맞은 나라 + 이웃 연방도 같이 */
+/** 불만 장부: 맞은 나라 + 이웃 나라도 같이 */
 export function addGrievance(s: GameState, id: string, v: number, why: string): GameState {
   const me = s.player.countryId;
   return withCiv(s, (c) => {
@@ -455,10 +455,10 @@ export function addGrievance(s: GameState, id: string, v: number, why: string): 
       if (o.id === id || o.id === me) continue;
       if (sameBloc(o.id, id) || countryById(o.id).continent === countryById(id).continent) c.grievance[o.id] = (c.grievance[o.id] ?? 0) + v * GRIEVANCE.neighbor;
     }
-    clog(c, `😠 ${why} → ${countryById(id).name} 불만 +${Math.round(v)} (이웃 연방도 기억해요)`);
+    clog(c, `😠 ${why} → ${countryById(id).name} 불만 +${Math.round(v)} (이웃 나라도 기억해요)`);
   });
 }
-/** 내가 선전포고했을 때(대화·지도자 명령 모두): 기습·협정 깨기·성소 휴전 어기기는 오래 남음 */
+/** 내가 선전포고했을 때(대화·지도자 명령 모두): 기습·협정 깨기·성지 휴전 어기기는 오래 남음 */
 export function onPlayerWar(before: GameState, after: GameState, id: string): GameState {
   const favor = favorOf(before, id);
   const pacts = activeAgreements(before, id);
@@ -475,7 +475,7 @@ export function onPlayerWar(before: GameState, after: GameState, id: string): Ga
   }
   if (civOf(before).council.active.some((a) => a.agenda === 'truce' && a.untilMs > before.worldMs)) {
     v += GRIEVANCE.holy;
-    why.push('성소 휴전 어김');
+    why.push('성지 휴전 어김');
   }
   s = addGrievance(s, id, v, why.join(' · '));
   if (pacts.length) s = withCiv(s, (c) => void (c.agreements = c.agreements.filter((a) => a.who !== id)));
@@ -523,7 +523,7 @@ export function defenseMult(s: GameState): number {
   return 1 + 0.05 * Math.min(3, activeAgreements(s).filter((a) => a.kind === 'defense').length);
 }
 
-// ── 개척 섬 영향력 ──
+// ── 분쟁 섬 영향력 ──
 
 export function islandLeader(s: GameState, island: string): { id: string | null; v: number } {
   const inf = civOf(s).influence[island] ?? {};
@@ -588,7 +588,7 @@ export function fulfillRequest(s: GameState, island: string): GameState {
   return myIslands(ns).length > before ? eureka(ns, { kind: 'island' }) : ns;
 }
 
-// ── 군도 회의 ──
+// ── 국제 회의 ──
 
 export function councilVotes(s: GameState, id: string): number {
   const c = civOf(s);
@@ -638,14 +638,14 @@ function openCouncil(s: GameState, c: CivState) {
   const a = rng.pick(AGENDAS);
   let target: string | undefined;
   if (a.id === 'sanction') {
-    // 가장 많이 싸우는(전쟁이 많은) 연방을 제재 대상으로
+    // 가장 많이 싸우는(전쟁이 많은) 나라을 제재 대상으로
     const alive = COUNTRIES.map((x) => x.id).filter((id) => isAlive(s.world, id));
     const wars = (id: string) => alive.filter((o) => o !== id && relationOf(s.world, id, o) === '전쟁').length;
     target = [...alive].sort((x, y) => wars(y) - wars(x) || (rng.next() < 0.5 ? -1 : 1))[0];
   }
   c.council.open = { id: c.nextId++, agenda: a.id, target, untilMs: s.worldMs + COUNCIL_ANSWER_MS, vote: null };
   c.council.nextMs = s.worldMs + COUNCIL_EVERY_MS;
-  clog(c, `🏛️ 군도 회의 안건: ${a.icon} ${a.name}${target ? `(${countryById(target).name})` : ''} — ${COUNCIL_ANSWER_MS / H}시간 안에 투표`);
+  clog(c, `🏛️ 국제 회의 안건: ${a.icon} ${a.name}${target ? `(${countryById(target).name})` : ''} — ${COUNCIL_ANSWER_MS / H}시간 안에 투표`);
 }
 function closeCouncil(s: GameState, c: CivState): GameState {
   const o = c.council.open!;
@@ -686,7 +686,7 @@ function closeCouncil(s: GameState, c: CivState): GameState {
     n.unshift({ text: o.vote ? '회의에서 제재에 찬성함' : '회의에서 제재를 막아 줌', v: o.vote ? -15 : 15, t: s.worldMs });
     if (n.length > 6) n.length = 6;
   }
-  return worldEvent(ns, `🏛️ 군도 회의 ${c.council.last}`);
+  return worldEvent(ns, `🏛️ 국제 회의 ${c.council.last}`);
 }
 /** 회의 제재 중인 나라의 국방예산 배율 */
 export function sanctionMult(s: GameState, id: string): number {
@@ -1110,7 +1110,7 @@ export function civTick(s: GameState, pairsBefore: Record<string, { tension: num
     }
   }
   if (changed) ns = { ...ns, world: { ...ns.world, pairs } };
-  // AI 연방이 가까운 섬에 영향력을 쌓음
+  // AI 나라이 가까운 섬에 영향력을 쌓음
   const rng = new Rng((Math.floor(s.worldMs / 60e3) * 31 + s.world.seed) >>> 0);
   for (const x of COUNTRIES) {
     if (x.id === me || !isAlive(s.world, x.id)) continue;
@@ -1119,7 +1119,7 @@ export function civTick(s: GameState, pairsBefore: Record<string, { tension: num
     const k = (c.aiGov[x.id] === 'assembly' ? 1.25 : 1) * (s.world.personalities[x.id] === '경제형' ? 1.2 : 1);
     for (const p of near) if (rng.chance(0.6)) addInfluence(c, p.id, x.id, AI_INFLUENCE_PER_TICK * k * (1 + rng.next()));
   }
-  // 군도 회의
+  // 국제 회의
   if (c.council.on) {
     if (c.council.open && s.worldMs >= c.council.open.untilMs) ns = closeCouncil(ns, c);
     else if (!c.council.open && s.worldMs >= c.council.nextMs) openCouncil(ns, c);
@@ -1198,7 +1198,7 @@ export function debugCouncil(s: GameState): GameState {
 
 export { AGREES, GOVS, DISTRICTS, AGENDAS };
 
-/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 개척 섬 · 채굴장 · 복합소재(재료는 −) */
+/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 분쟁 섬 · 채굴장 · 복합소재(재료는 −) */
 export function extraResPerHour(s: GameState): Partial<Record<Res, number>> {
   const out: Partial<Record<Res, number>> = { ...minePerHour(s) };
   for (const id of myIslands(s)) {

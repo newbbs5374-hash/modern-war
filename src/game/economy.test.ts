@@ -1,3 +1,4 @@
+import { SAVE_VERSION } from './state';
 import { describe, expect, it } from 'vitest';
 import { advance, budgetPerDay, newGame, setRank, troopsPerDay, type GameState } from './state';
 import { addContract, buildMs, canProduce, canTrade, canUpgrade, cancelContract, claimChore, produce, producesOf, resPerDay, startChore, trade, tradePartners, upgradeFacility } from './economy';
@@ -18,7 +19,7 @@ describe('내정', () => {
   it('내 도시에서 자원이 쌓이고, 점령 도시는 절반', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     const per = resPerDay(s);
-    expect(per.반도체).toBe(3); // 한빛 2 + 별가람 1
+    expect(per.반도체).toBe(3); // 서울 2 + 부산 1
     s = advance(s, 2 * H);
     expect(s.economy.stock.반도체).toBeCloseTo(6, 5);
     const w = { ...s.world, owner: { ...s.world.owner, 'jp-0': 'kr' } };
@@ -86,9 +87,9 @@ describe('내정', () => {
     s = advance(s, 4 * H);
     expect(s.economy.queue.length).toBe(0);
     expect(s.economy.army.전차).toBe(1);
-    expect(s.economy.power).toBe(14); // 9 + 2, 연구(청광석 +10% · 통합 전장망 육군 +15%)로 ×1.25
+    expect(s.economy.power).toBe(14); // 9 + 2, 연구(갈륨 +10% · 통합 전장망 육군 +15%)로 ×1.25
     expect(s.nations.kr.troops).toBeGreaterThan(base.nations.kr.troops + 2000);
-    // 특화 유닛(가람: ① 자주포 포병대 · ② 별가람 수출 전차). 바탕 병과도 계속 만들 수 있음
+    // 특화 유닛(한국: ① 자주포 포병대 · ② 흑표 수출 전차). 바탕 병과도 계속 만들 수 있음
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 80, 석유: 30, 구리: 10 } } };
     expect(canProduce(s, '포병', 'kr-1')).toBeNull();
     expect(canProduce(s, '포병', 'us-1')).toMatch(/특화/);
@@ -98,16 +99,16 @@ describe('내정', () => {
     s = produce(s, '포병');
     s = advance(s, 12 * H);
     expect(s.economy.army['자주포 포병대']).toBe(1);
-    expect(s.economy.army['별가람 수출 전차']).toBe(1);
+    expect(s.economy.army['흑표 수출 전차']).toBe(1);
     expect(s.economy.army.포병).toBe(1);
-    // 독점 병과: 가람은 강습상륙함 O, 원자력 잠수함 X
+    // 독점 병과: 한국은 강습상륙함 O, 원자력 잠수함 X
     expect(canProduce(s, '원자력 잠수함')).toMatch(/전용/);
   });
   it('무역: 전쟁 중이 아닌 나라와 사고팔기, 성향에 따라 값이 다름', () => {
     let s = rich(setRank(war(newGame('t', 'kr', 0, { seed: 4 }), 'kr', 'kp'), 6));
     const ps = tradePartners(s);
     expect(ps.length).toBeGreaterThan(0);
-    expect(ps).not.toContain('kp'); // 흑철과는 전쟁 중
+    expect(ps).not.toContain('kp'); // 북한과는 전쟁 중
     const seller = ps.find((id) => canTrade(s, id, '강철', 5, true) === null)!;
     expect(seller).toBeTruthy();
     const t0 = s.nations.kr.treasury;
@@ -122,7 +123,7 @@ describe('내정', () => {
     const { economy: _e, ...rest } = s;
     void _e;
     const loaded = parseSave(JSON.stringify({ ...rest, version: 3 }));
-    expect(loaded?.version).toBe(6);
+    expect(loaded?.version).toBe(SAVE_VERSION);
     expect(loaded?.economy.facilities.산업.level).toBe(1);
     expect(loaded?.economy.buildings.제련소.level).toBe(1);
     expect(loaded?.officer.training).toBeNull();

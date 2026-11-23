@@ -755,7 +755,7 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #1b1
 .row-check { display: flex; gap: 6px; align-items: center; margin: 4px 0 8px; }
 .field-roster button i { position: absolute; left: 3px; bottom: 2px; height: 2px; background: #22c55e; max-width: calc(100% - 6px); }
 .field-duel { display: flex; flex-direction: column; gap: 6px; }
-/* ───────── 문명식 운영: 연구 · 체제 · 도시 · 호감 · 개척 섬 · 군도 회의 ───────── */
+/* ───────── 문명식 운영: 연구 · 체제 · 도시 · 호감 · 분쟁 섬 · 국제 회의 ───────── */
 .good { color: #4ade80; }
 .mini-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; padding: 2px 7px; border-radius: 999px; background: #10201a; border: 1px solid #1d4a32; white-space: nowrap; }
 .mini-chip.pos { border-color: #166534; background: #14532d55; }
@@ -819,3 +819,23 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #1b1
 /* 지도 바닥 층(경계 없이 섞인 지형) 위에 말·효과 층을 겹침 */
 .field-ground { display: block; width: 100%; height: auto; background: #1e4d73; border-radius: 10px; will-change: transform; }
 .field-stage .field-map { position: absolute; inset: 0; width: 100%; height: 100%; background: transparent; }
+
+/* 시작 화면(11-23): 나라는 한 줄 상자, 누르면 펼침. 한 화면에 다 보이게 */
+.start-compact { padding: 10px 12px; }
+.start-compact h1 { font-size: 19px; margin: 2px 0 4px; }
+.start-intro { margin: 0 0 6px; line-height: 1.35; }
+.start-name { margin-bottom: 6px; }
+.start-name input { padding: 6px 8px; }
+.country-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+.country-line { border: 1px solid var(--line, #334); border-left: 4px solid; border-radius: 6px; background: var(--panel); }
+.country-line.picked { outline: 2px solid var(--accent); }
+.cl-head { display: flex; align-items: center; gap: 6px; width: 100%; padding: 5px 8px; min-height: 0; background: none; border: 0; text-align: left; font-size: 14px; }
+.cl-head b { white-space: nowrap; }
+.cl-bloc { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.cl-head .diff { font-size: 11px; }
+.cl-arrow { width: 12px; text-align: center; color: var(--muted); }
+.cl-body { padding: 0 8px 7px; display: flex; flex-direction: column; gap: 3px; line-height: 1.35; }
+.cl-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.start-compact .check { margin: 4px 0; font-size: 13px; }
+.start-compact .primary.big { padding: 9px; }
+.start-compact details.import { margin-top: 4px; font-size: 13px; }

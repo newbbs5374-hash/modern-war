@@ -1,8 +1,8 @@
-// 육각 타일 세계지도(여명 군도). 나중에 이미지 작업을 할 때 이 좌표를 그대로 쓴다.
+// 육각 타일 세계지도. 나중에 이미지 작업을 할 때 이 좌표를 그대로 쓴다.
 // - 타일: 뾰족한 위(pointy-top) 육각형, 축 좌표(q, r). 픽셀 중심 x = S·√3·(q + r/2), y = S·1.5·r (S = HEX_SIZE, 꼭짓점까지 거리)
 // - 도시 = 육각 칸 묶음: 소도시 19칸 · 중도시 37칸 · 대도시 61칸. 정육각형이 아니라 자연스러운 모양으로 키워 이웃 도시·나라와 이어짐
 // - 나라 땅 = 그 나라 도시 묶음의 합. 도시 수는 모티브 나라 면적에 맞춰 정함(world.ts의 cities)
-// - 개척 섬 12개(19칸, 주인 없음) + 떠오른 성소(7칸). 나머지는 모두 바다 타일
+// - 분쟁 섬 12개(19칸, 주인 없음) + 고대 성지(7칸). 나머지는 모두 바다 타일
 // 배치는 정해진 규칙(목표 자리에 가장 가까운 빈 곳)으로 계산하므로 언제나 같은 결과가 나온다.
 import { COUNTRIES, type Country } from './world';
 import type { Res } from './economy';
@@ -67,7 +67,7 @@ export interface Tile {
   x: number;
   y: number;
   kind: TileKind;
-  /** 처음 주인 나라(개척 섬·성소는 '') */
+  /** 처음 주인 나라(분쟁 섬·성지는 '') */
   home: string;
   /** 도시 id(나라-번호) 또는 섬 id */
   place: string;
@@ -85,14 +85,14 @@ export interface PioneerIsland {
   y: number;
 }
 
-/** 개척 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
+/** 분쟁 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
 const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [number, number] }> = [
-  { id: 'p-cheongseok', name: '청석섬', res: '청광석', at: [250, 160] },
+  { id: 'p-cheongseok', name: '푸른암초', res: '갈륨', at: [250, 160] },
   { id: 'p-whale', name: '고래섬', res: '석유', at: [640, 120] },
   { id: 'p-storm', name: '폭풍섬', res: '티타늄', at: [120, 110] },
   { id: 'p-twin', name: '쌍둥이섬', res: '알루미늄', at: [560, 175] },
   { id: 'p-flame', name: '불꽃섬', res: '석유', at: [300, 470] },
-  { id: 'p-fog', name: '안개섬', res: '청광석', at: [30, 330] },
+  { id: 'p-fog', name: '안개섬', res: '갈륨', at: [30, 330] },
   { id: 'p-southwind', name: '남풍섬', res: '석유', at: [440, 470] },
   { id: 'p-coral', name: '산호환초', res: '산호', at: [580, 450] },
   { id: 'p-turtle', name: '거북섬', res: '알루미늄', at: [760, 330] },
@@ -149,7 +149,7 @@ function build() {
   const owner = new Map<string, { home: string; place: string; kind: TileKind; center: boolean; continent: string }>();
   /** 대륙마다 못 쓰는 칸(다른 대륙 땅에서 2칸 안) */
   const forbid = new Map<string, Set<string>>();
-  // 땅 덩어리 묶음: 같은 군도끼리는 이어질 수 있음. 벚섬은 따로 떨어진 긴 섬
+  // 땅 덩어리 묶음: 같은 지역끼리는 이어질 수 있음. 일본은 따로 떨어진 긴 섬
   const landGroup = (c: Country) => (c.id === 'jp' ? 'jp' : c.continent);
   const continents = [...new Set(COUNTRIES.map(landGroup))];
   for (const ct of continents) forbid.set(ct, new Set());
@@ -172,7 +172,7 @@ function build() {
   const centers: Record<string, Hex & { size: CitySize }> = {};
   const nbrs = (h: Hex) => HEX_DIRS.map((d) => ({ q: h.q + d.q, r: h.r + d.r }));
   /**
-   * 정해진 칸 수(19·37·61)만큼 땅을 자연스럽게 키움: 이미 키운 칸·같은 나라·같은 군도 땅에 붙을수록,
+   * 정해진 칸 수(19·37·61)만큼 땅을 자연스럽게 키움: 이미 키운 칸·같은 나라·같은 지역 땅에 붙을수록,
    * 가운데에 가까울수록, 칸마다 정해진 흔들림이 클수록 먼저 붙임 → 들쭉날쭉한 해안선, 이웃과 이어지는 땅
    */
   const grow = (center: Hex, n: number, ok: (h: Hex) => boolean, home: string, continent: string): Hex[] | null => {
@@ -291,7 +291,7 @@ function ring(c: Hex, R: number): Hex[] {
 }
 
 const BUILT = build();
-/** 땅 타일 전부(도시·개척 섬·성소). 이 밖은 바다 */
+/** 땅 타일 전부(도시·분쟁 섬·성지). 이 밖은 바다 */
 export const TILES: Tile[] = BUILT.tiles;
 /** 도시 id → 한가운데 칸과 크기(반지름) */
 export const CITY_HEX = BUILT.centers;
@@ -312,7 +312,7 @@ export function seaNear(countryId: string): { x: number; y: number } {
 /** 이미지 작업용 자료(JSON) */
 export function hexmapData() {
   return {
-    설명: '여명 군도 육각 타일 지도. 뾰족한 위 육각형, 축 좌표(q,r). 픽셀 x = size·√3·(q + r/2), y = size·1.5·r. 목록에 없는 칸은 바다.',
+    설명: '세계 육각 타일 지도. 뾰족한 위 육각형, 축 좌표(q,r). 픽셀 x = size·√3·(q + r/2), y = size·1.5·r. 목록에 없는 칸은 바다.',
     size: HEX_SIZE,
     orientation: 'pointy-top',
     bounds: MAP_BOUNDS,
@@ -326,7 +326,7 @@ export function hexmapData() {
       tiles: TILES.filter((t) => t.home === c.id).length,
     })),
     pioneerIslands: PIONEER_ISLANDS.map((p) => ({ ...p, ...round(p), tiles: 19 })),
-    holy: { name: '떠오른 성소', ...HOLY_HEX, ...round(HOLY_HEX), tiles: 7 },
+    holy: { name: '고대 성지', ...HOLY_HEX, ...round(HOLY_HEX), tiles: 7 },
     tiles: TILES.map((t) => ({ q: t.q, r: t.r, ...round(t), kind: t.kind, home: t.home, place: t.place })),
   };
 }

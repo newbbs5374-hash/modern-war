@@ -16,7 +16,7 @@ it('hexmap svg', () => {
   for (const c of CITIES) out.push(`<text x="${c.x}" y="${c.y - 3}" font-size="5" text-anchor="middle" fill="#000">${c.capital ? '★' : ''}${c.name}</text>`);
   for (const p of PIONEER_ISLANDS) out.push(`<text x="${p.x}" y="${p.y + 12}" font-size="5" text-anchor="middle" fill="#fff">${p.name}</text>`);
   for (const c of COUNTRIES) { const ts = TILES.filter(t => t.home === c.id); const x = ts.reduce((a,t)=>a+t.x,0)/ts.length, y = ts.reduce((a,t)=>a+t.y,0)/ts.length; out.push(`<text x="${x}" y="${y+8}" font-size="8" font-weight="bold" text-anchor="middle" fill="#fff" stroke="#000" stroke-width="0.3">${c.name} ${ts.length}</text>`); }
-  out.push(`<text x="${HOLY_HEX.x}" y="${HOLY_HEX.y + 10}" font-size="5" text-anchor="middle" fill="#fde68a">떠오른 성소</text></svg>`);
+  out.push(`<text x="${HOLY_HEX.x}" y="${HOLY_HEX.y + 10}" font-size="5" text-anchor="middle" fill="#fde68a">고대 성지</text></svg>`);
   writeFileSync(process.env.OUT ?? '/tmp/hexmap.svg', out.join('\n'));
   writeFileSync((process.env.OUT ?? '/tmp/hexmap.svg').replace('.svg', '.json'), JSON.stringify(hexmapData(), null, 1));
   console.log('tiles', TILES.length, 'bounds', JSON.stringify(b), Object.keys(CITY_HEX).length);

@@ -1,4 +1,4 @@
-// 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 개척 섬 · 군도 회의).
+// 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
 import { useMemo, useState } from 'react';
 import { CITIES, cityById } from '../data/cities';
@@ -99,7 +99,7 @@ export function ResearchPanel(props: ScreenProps) {
               <b>💡 번뜩임</b>: 훈련·임무·대화·구역 짓기 같은 일을 해내면 관련 연구가 절반으로 줄어요. 연구를 누르면 무엇을 하면 되는지 보여요.
             </p>
             <p>
-              <b>시대</b>: 개척기 → 항로기 → 제공기 → 대양기. 한 시대 연구를 4개 끝내면 다음 시대로 가고, 맞수 연방들이 조금 긴장해요.
+              <b>시대</b>: 도약기 → 항로기 → 제공기 → 대양기. 한 시대 연구를 4개 끝내면 다음 시대로 가고, 맞수 나라들이 조금 긴장해요.
             </p>
             <p>연구 속도는 도시 인구·🔬연구소 구역·연구 협력 협정·카드로 빨라져요. 고르지 않은 동안 모인 점수는 12시간치까지 다음 연구에 쓰여요.</p>
           </Help>
@@ -252,13 +252,13 @@ export function GovPanel(props: ScreenProps) {
               </span>
             </span>
           ) : (
-            <b>🏛️ 연방 체제를 골라 주세요</b>
+            <b>🏛️ 나라 체제를 골라 주세요</b>
           )}
           <Help title="체제와 정책 카드">
             <p>체제를 고르면 정책 카드 칸이 정해져요(⚔️군사 · 💰경제 · 🕊️외교 · ⭐자유). 자유 칸에는 아무 카드나 끼워요.</p>
             <p>칸은 지도자 등급이 오를수록 늘어요: 처음 2칸 → 전설의 지도자 8칸.</p>
-            <p>카드 바꾸기는 실제 하루 1번 무료, 그 밖엔 국방예산이 들어요. 체제 바꾸기는 개척 헌장 연구 뒤, 예산 {fmt(GOV_CHANGE_COST)}과 하루 혼란(생산·연구 −20%)이 있어요. 처음 고르는 건 무료예요.</p>
-            <p>다른 연방도 체제가 있어요. 같은 체제면 호감 +5, 다르면 −3이고, 다른 체제의 맞수와는 긴장이 조금씩 올라요.</p>
+            <p>카드 바꾸기는 실제 하루 1번 무료, 그 밖엔 국방예산이 들어요. 체제 바꾸기는 국가 헌장 연구 뒤, 예산 {fmt(GOV_CHANGE_COST)}과 하루 혼란(생산·연구 −20%)이 있어요. 처음 고르는 건 무료예요.</p>
+            <p>다른 나라도 체제가 있어요. 같은 체제면 호감 +5, 다르면 −3이고, 다른 체제의 맞수와는 긴장이 조금씩 올라요.</p>
           </Help>
         </div>
         {gov && (
@@ -298,7 +298,7 @@ export function GovPanel(props: ScreenProps) {
       )}
       {gov && (
         <section className="card">
-          <small className="stat-group-name">🌐 다른 연방의 체제</small>
+          <small className="stat-group-name">🌐 다른 나라의 체제</small>
           <div className="civ-govs">
             {COUNTRIES.filter((x) => x.id !== state.player.countryId && isAlive(state.world, x.id)).map((x) => (
               <span key={x.id} className={`mini-chip ${c.aiGov[x.id] === c.gov ? 'same' : ''}`} title={x.name}>
@@ -664,13 +664,13 @@ export function AgreePanel(props: ScreenProps) {
           <small className="muted">맺은 협정 {C.activeAgreements(state).length}</small>
           <Help title="호감·협정·불만 장부">
             <p>
-              연방마다 나를 얼마나 좋아하는지(−100~+100)와 그 <b>이유</b>가 보여요. 대화에서 고른 태도, 같은 체제·신앙, 협정, 회의 투표가 쌓여요.
+              나라마다 나를 얼마나 좋아하는지(−100~+100)와 그 <b>이유</b>가 보여요. 대화에서 고른 태도, 같은 체제·신앙, 협정, 회의 투표가 쌓여요.
             </p>
             <p>
               <b>협정 5가지</b>(실제 1~3일): {AGREES.map((a) => `${a.icon}${a.name}`).join(' · ')}. 상대 호감이 충분해야 받아 줘요. 사회 제도 연구로 열려요.
             </p>
             <p>
-              <b>😠 불만 장부</b>: 기습 침공(호감이 좋았거나 협정 중이던 나라에 선전포고), 협정 깨기, 성소 휴전 어기기는 오래 남고 이웃 연방도 함께 미워해요. 실제 하루에 10%씩 천천히 줄어요.
+              <b>😠 불만 장부</b>: 기습 침공(호감이 좋았거나 협정 중이던 나라에 선전포고), 협정 깨기, 성지 휴전 어기기는 오래 남고 이웃 나라도 함께 미워해요. 실제 하루에 10%씩 천천히 줄어요.
             </p>
           </Help>
         </div>
@@ -742,7 +742,7 @@ function AgreeModal({ state, actions, id, onClose }: ScreenProps & { id: string;
   );
 }
 
-/* ═════════════ 개척 섬 영향력 ═════════════ */
+/* ═════════════ 분쟁 섬 영향력 ═════════════ */
 
 export function IslandPanel(props: ScreenProps) {
   const { state } = props;
@@ -758,12 +758,12 @@ export function IslandPanel(props: ScreenProps) {
             🏝️ 1등인 섬 <b>{C.myIslands(state).length}</b>/12
           </span>
           <small className={ready ? 'good' : 'muted'}>🕊️ 사절 {ready ? '준비됨' : timeLeft(c.envoyReadyMs - state.worldMs)}</small>
-          <Help title="개척 섬 영향력">
-            <p>주인 없는 개척 섬 12곳마다 주민 대표가 있어요. 사절을 보내거나(예산 {fmt(ENVOY_COST)}) 섬 부탁(자원 보내기)을 들어주면 영향력이 쌓여요.</p>
+          <Help title="분쟁 섬 영향력">
+            <p>주인 없는 분쟁 섬 12곳마다 주민 대표가 있어요. 사절을 보내거나(예산 {fmt(ENVOY_COST)}) 섬 부탁(자원 보내기)을 들어주면 영향력이 쌓여요.</p>
             <p>
-              영향력 1등이면서 {ISLAND_LEAD_MIN} 이상이면 그 섬 자원을 시간당 {ISLAND_RES_PER_HOUR}개 받고, 군도 회의 표가 1장 늘어요. 다른 연방도 가까운 섬에 영향력을 쌓아요.
+              영향력 1등이면서 {ISLAND_LEAD_MIN} 이상이면 그 섬 자원을 시간당 {ISLAND_RES_PER_HOUR}개 받고, 국제 회의 표가 1장 늘어요. 다른 나라도 가까운 섬에 영향력을 쌓아요.
             </p>
-            <p>개척 의회 체제·사절단 연구·상주 사절 카드로 영향력이 더 많이 쌓여요.</p>
+            <p>국민 의회 체제·사절단 연구·상주 사절 카드로 영향력이 더 많이 쌓여요.</p>
           </Help>
         </div>
       </section>
@@ -847,7 +847,7 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
   );
 }
 
-/* ═════════════ 군도 회의 ═════════════ */
+/* ═════════════ 국제 회의 ═════════════ */
 
 export function CouncilPanel(props: ScreenProps) {
   const { state, actions } = props;
@@ -859,9 +859,9 @@ export function CouncilPanel(props: ScreenProps) {
     <>
       <section className="card civ-council">
         <div className="row">
-          <b>🏛️ 떠오른 성소 · 군도 회의</b>
-          <Help title="군도 회의">
-            <p>떠오른 성소에서 실제 하루마다 회의가 열려요. 안건에 연방들이 표를 던지고, 통과하면 하루 동안 효과가 있어요.</p>
+          <b>🏛️ 고대 성지 · 국제 회의</b>
+          <Help title="국제 회의">
+            <p>고대 성지에서 실제 하루마다 회의가 열려요. 안건에 나라들이 표를 던지고, 통과하면 하루 동안 효과가 있어요.</p>
             <ul>
               {AGENDAS.map((a) => (
                 <li key={a.id}>
@@ -869,7 +869,7 @@ export function CouncilPanel(props: ScreenProps) {
                 </li>
               ))}
             </ul>
-            <p>표 = 1 + 1등인 개척 섬 수 + 체제·연구·카드. 나를 좋아하는 연방은 내 표를 따라오기도 해요. 6시간 안에 투표하지 않으면 부관이 체제 성향대로 골라요.</p>
+            <p>표 = 1 + 1등인 분쟁 섬 수 + 체제·연구·카드. 나를 좋아하는 나라는 내 표를 따라오기도 해요. 6시간 안에 투표하지 않으면 부관이 체제 성향대로 골라요.</p>
             <p>설정에서 회의를 끌 수 있어요.</p>
           </Help>
         </div>
@@ -906,7 +906,7 @@ export function CouncilPanel(props: ScreenProps) {
       </section>
       {c.council.on && (
         <section className="card">
-          <small className="stat-group-name">🗳️ 연방별 표</small>
+          <small className="stat-group-name">🗳️ 나라별 표</small>
           <div className="civ-govs">
             {COUNTRIES.filter((x) => isAlive(state.world, x.id)).map((x) => (
               <span key={x.id} className={`mini-chip ${x.id === me ? 'same' : ''}`}>

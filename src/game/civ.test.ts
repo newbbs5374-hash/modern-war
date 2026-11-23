@@ -69,8 +69,8 @@ describe('체제·정책 카드', () => {
     expect(s.nations.kr.treasury).toBe(t0);
     s = C.putCard(s, 0, '군-훈련');
     expect(s.nations.kr.treasury).toBeLessThan(t0);
-    // 체제 바꾸기는 개척 헌장 뒤, 하루 혼란
-    expect(C.canSetGov(s, 'merchant')).toMatch(/개척 헌장/);
+    // 체제 바꾸기는 국가 헌장 뒤, 하루 혼란
+    expect(C.canSetGov(s, 'merchant')).toMatch(/국가 헌장/);
     s = C.debugAllResearch(s);
     s = C.setGov(s, 'merchant');
     expect(C.chaos(s)).toBe(true);
@@ -102,7 +102,7 @@ describe('외교', () => {
     expect(C.civOf(s).grievance[partner]).toBeLessThan(g);
     expect(C.civOf(s).grievance[partner]).toBeGreaterThan(g * 0.8);
   });
-  it('개척 섬: 사절·부탁으로 영향력, 1등이면 섬 자원', () => {
+  it('분쟁 섬: 사절·부탁으로 영향력, 1등이면 섬 자원', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 6 }));
     const isl = PIONEER_ISLANDS.find((p) => p.res !== '항구')!;
     for (let i = 0; i < 4; i++) {
@@ -116,7 +116,7 @@ describe('외교', () => {
     s = advance(s, 1 * H);
     expect(s.economy.stock[isl.res as keyof GameState['economy']['stock']]).toBeGreaterThan(before);
   });
-  it('군도 회의: 열리고, 투표가 없으면 부관이 대신, 끌 수 있음', () => {
+  it('국제 회의: 열리고, 투표가 없으면 부관이 대신, 끌 수 있음', () => {
     let s = newGame('t', 'kr', 0, { seed: 7 });
     s = C.debugCouncil(s);
     expect(C.civOf(s).council.open).not.toBeNull();
@@ -213,9 +213,9 @@ describe('자원 3안: 매장지·채굴장 · 생활 자원 · 복합소재', (
     const s = newGame('t', 'kr', 0, { seed: 4 });
     const old = JSON.parse(JSON.stringify(s));
     delete old.economy.stock.구리;
-    delete old.economy.stock.청광석;
+    delete old.economy.stock.갈륨;
     const back = parseSave(JSON.stringify(old))!;
     expect(typeof back.economy.stock.구리).toBe('number');
-    expect(typeof back.economy.stock.청광석).toBe('number');
+    expect(typeof back.economy.stock.갈륨).toBe('number');
   });
 });
