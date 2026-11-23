@@ -37,11 +37,14 @@ import { BattleBar, type FrameProps } from './BattleScreen';
 import { fieldArmy } from '../../battle/auto';
 import { SideView } from './SideView';
 import { GridView } from './GridView';
+import { FieldFx, fxMood } from './FieldFx';
 
 const SIDE_COLOR = { me: '#2563eb', foe: '#dc2626' };
 const STEP = 0.25;
 /** ×1 = 전투 1초를 실제 1초에 */
 const RATE = 1;
+/** 확대 한도 */
+const ZMAX = 3.5;
 
 export function FieldView(props: FrameProps) {
   const { spec, stats, rank, onEnd } = props;
@@ -69,15 +72,14 @@ export function FieldView(props: FrameProps) {
     const t = setInterval(() => {
       const cur = bRef.current!;
       if (!runRef.current || cur.result || cur.prompt) return;
-      acc.current += 0.1 * speedRef.current * RATE;
-      let moved = false;
+      acc.current += 0.05 * speedRef.current * RATE;
       while (acc.current >= STEP && !cur.result && !cur.prompt) {
         stepField(cur, STEP);
         acc.current -= STEP;
-        moved = true;
       }
-      if (moved) redraw();
-    }, 100);
+      // 계산은 0.25초 단위, 그림은 그 사이도 부드럽게(연출 시간 = b.t + 남은 몫)
+      redraw();
+    }, 50);
     return () => clearInterval(t);
   }, []);
   useEffect(() => {
@@ -93,6 +95,8 @@ export function FieldView(props: FrameProps) {
   }, [toast]);
 
   const f = b.field;
+  /** 연출용 시간: 계산 시간 + 아직 계산 안 한 몫 */
+  const vt = b.t + (b.result || b.prompt ? 0 : acc.current);
   const vis = visibleSet(b, 'me');
   const seen = b.units.filter((u) => canSeeUnit(b, 'me', u, vis));
   const selU = sel !== null ? b.units.find((u) => u.id === sel && u.side === 'me') ?? null : null;
@@ -100,6 +104,73 @@ export function FieldView(props: FrameProps) {
   const minY = Math.min(...f.cells.map((c) => c.y)) - FIELD_HEX;
   const W = f.w + 2;
   const H = f.h + 2;
+  // 확대·축소·끌어서 옮기기(보이는 범위 = 가운데 cx,cy · 배율 zoom)
+  const [view, setView] = useState({ zoom: 1, cx: minX + W / 2, cy: minY + H / 2 });
+  const clampView = (v: { zoom: number; cx: number; cy: number }) => {
+    const zoom = Math.max(1, Math.min(ZMAX, v.zoom));
+    const hw = W / zoom / 2;
+    const hh = H / zoom / 2;
+    return { zoom, cx: Math.max(minX + hw, Math.min(minX + W - hw, v.cx)), cy: Math.max(minY + hh, Math.min(minY + H - hh, v.cy)) };
+  };
+  const zoomBy = (k: number, at?: { x: number; y: number }) =>
+    setView((v) => {
+      const zoom = Math.max(1, Math.min(ZMAX, v.zoom * k));
+      const p = at ?? { x: v.cx, y: v.cy };
+      // 누른 자리가 화면에서 그대로 있게
+      return clampView({ zoom, cx: p.x + (v.cx - p.x) * (v.zoom / zoom), cy: p.y + (v.cy - p.y) * (v.zoom / zoom) });
+    });
+  const vw = W / view.zoom;
+  const vh = H / view.zoom;
+  const vx = view.cx - vw / 2;
+  const vy = view.cy - vh / 2;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{ dist: number; moved: number }>({ dist: 0, moved: 0 });
+  const dragged = useRef(false);
+  /** 화면 좌표 → 지도 좌표 */
+  const toMap = (clientX: number, clientY: number) => {
+    const r = svgRef.current!.getBoundingClientRect();
+    return { x: vx + ((clientX - r.left) / r.width) * vw, y: vy + ((clientY - r.top) / r.height) * vh };
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 1) {
+      gesture.current.moved = 0;
+      dragged.current = false;
+    }
+    if (pointers.current.size === 2) {
+      const [p1, p2] = [...pointers.current.values()];
+      gesture.current.dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    }
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const prev = pointers.current.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    pointers.current.set(e.pointerId, cur);
+    const r = svgRef.current!.getBoundingClientRect();
+    if (pointers.current.size >= 2) {
+      const [p1, p2] = [...pointers.current.values()];
+      const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      if (gesture.current.dist > 0 && d > 0) zoomBy(d / gesture.current.dist, toMap((p1.x + p2.x) / 2, (p1.y + p2.y) / 2));
+      gesture.current.dist = d;
+      dragged.current = true;
+      return;
+    }
+    const dx = cur.x - prev.x;
+    const dy = cur.y - prev.y;
+    gesture.current.moved += Math.abs(dx) + Math.abs(dy);
+    if (gesture.current.moved > 8) dragged.current = true;
+    if (view.zoom > 1 && dragged.current) setView((v) => clampView({ ...v, cx: v.cx - (dx / r.width) * vw, cy: v.cy - (dy / r.height) * vh }));
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) gesture.current.dist = 0;
+  };
+  const onWheel = (e: React.WheelEvent) => zoomBy(e.deltaY < 0 ? 1.2 : 1 / 1.2, toMap(e.clientX, e.clientY));
+  const mood = fxMood(b, vt);
+  const shakeX = mood.shake ? Math.sin(vt * 90) * 1.6 * mood.shake : 0;
+  const shakeY = mood.shake ? Math.cos(vt * 70) * 1.2 * mood.shake : 0;
   const polys = useMemo(() => f.cells.map((c) => hexCorners(c.x, c.y, FIELD_HEX - 0.4).map((p) => p.join(',')).join(' ')), [f]);
   const terrains = useMemo(() => [...new Set(f.cells.map((c) => c.terrain))], [f]);
 
@@ -130,6 +201,11 @@ export function FieldView(props: FrameProps) {
 
   const tapCell = (i: number) => {
     if (b.result) return;
+    // 끌거나 두 손가락으로 확대한 뒤에는 누른 것으로 치지 않음
+    if (dragged.current) {
+      dragged.current = false;
+      return;
+    }
     const here = b.units.filter((u) => u.at === i && u.side === 'me');
     if (here.length) {
       // 같은 칸에 땅·하늘 부대가 겹치면 누를 때마다 번갈아
@@ -158,7 +234,7 @@ export function FieldView(props: FrameProps) {
     if (!u.path.length) return { x: a.x, y: a.y };
     const n = f.cells[u.path[0]];
     const need = moveNeed(u, n.terrain);
-    const k = Math.min(0.85, need ? u.mv / need : 0);
+    const k = Math.min(0.85, need ? (u.mv + (b.result || b.prompt ? 0 : acc.current)) / need : 0);
     return { x: a.x + (n.x - a.x) * k, y: a.y + (n.y - a.y) * k };
   };
 
@@ -216,7 +292,20 @@ export function FieldView(props: FrameProps) {
           ?
         </button>
       </div>
-      <svg className="field-map" viewBox={`${minX} ${minY} ${W} ${H}`} role="img" aria-label={`${cityById(f.city).name} 주변 지도`}>
+      <div className="field-stage">
+      <svg
+        ref={svgRef}
+        className={`field-map ${view.zoom > 1 ? 'zoomed' : ''}`}
+        viewBox={`${vx + shakeX} ${vy + shakeY} ${vw} ${vh}`}
+        role="img"
+        aria-label={`${cityById(f.city).name} 주변 지도`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onPointerLeave={onPointerUp}
+        onWheel={onWheel}
+      >
         <defs>
           {terrains.map((t) => {
             const url = fieldArt(TILE_ART[t]);
@@ -265,7 +354,10 @@ export function FieldView(props: FrameProps) {
           const r = air ? 5.5 : big ? 8.5 : 7.5;
           const artKey = u.sp && fieldArt(spArt(u.sp)) ? spArt(u.sp) : UNIT_ART[u.kind];
           const pic = !!fieldArt(artKey);
-          const x = p.x + (air ? 6 : 0);
+          const hit = u.hitAt !== undefined ? vt - u.hitAt : 9;
+          // 맞으면 잠깐 흔들리고 하얗게 번쩍
+          const jig = hit < 0.3 ? Math.sin(hit * 80) * 1.2 * (1 - hit / 0.3) : 0;
+          const x = p.x + (air ? 6 : 0) + jig;
           const y = p.y + (air ? -6 : 0);
           return (
             <g key={u.id} transform={`translate(${x},${y})`} pointerEvents="none" className={u.side === 'me' && u.supply < 0.95 ? 'low-supply' : ''}>
@@ -276,6 +368,7 @@ export function FieldView(props: FrameProps) {
                   🌟
                 </text>
               )}
+              {hit < 0.25 && <circle r={r} fill="#fff" opacity={0.7 * (1 - hit / 0.25)} />}
               <rect x={-7} y={r - 1} width={14} height={2.2} fill="#0009" />
               <rect x={-7} y={r - 1} width={(14 * Math.max(0, u.hp)) / u.maxHp} height={2.2} fill={u.hp / u.maxHp > 0.5 ? '#22c55e' : u.hp / u.maxHp > 0.25 ? '#f59e0b' : '#ef4444'} />
               {u.side === 'me' && (u.supply < 0.95 || u.ammo <= 0 || (FUNIT[u.kind].layer !== 'land' && u.fuel <= 0)) && (
@@ -286,20 +379,35 @@ export function FieldView(props: FrameProps) {
             </g>
           );
         })}
-        {/* 효과 */}
-        {b.fx.map((x, k) => {
-          const a = f.cells[x.from];
-          const c = f.cells[x.to];
-          const age = b.t - x.t;
-          if (x.kind === 'wreck') return <Sprite key={k} x={c.x} y={c.y} art={FX_ART.wreck} emoji="🔥" size={11} opacity={Math.max(0, 1 - age / 2.5)} />;
-          return (
-            <g key={k} pointerEvents="none" opacity={Math.max(0, 1 - age / 0.6)}>
-              <line x1={a.x} y1={a.y} x2={c.x} y2={c.y} stroke={x.side === 'me' ? '#93c5fd' : '#fca5a5'} strokeWidth={0.9} />
-              <Sprite x={c.x + 3} y={c.y - 3} art={FX_ART.explosion} emoji="💥" size={8} />
-            </g>
-          );
-        })}
+        {/* 효과: 포탄·미사일·어뢰가 날아가고, 맞은 자리에 폭발·물보라 */}
+        <FieldFx b={b} vt={vt} pos={(i, air) => ({ x: f.cells[i].x + (air ? 6 : 0), y: f.cells[i].y + (air ? -6 : 0) })} />
       </svg>
+      {mood.hurt > 0 && <div className="field-hurt" style={{ opacity: mood.hurt }} />}
+      <div className="field-zoom">
+        <button onClick={() => zoomBy(1.5)} aria-label="확대" disabled={view.zoom >= ZMAX}>
+          ＋
+        </button>
+        <button onClick={() => zoomBy(1 / 1.5)} aria-label="축소" disabled={view.zoom <= 1}>
+          －
+        </button>
+        {view.zoom > 1 && (
+          <button onClick={() => setView({ zoom: 1, cx: minX + W / 2, cy: minY + H / 2 })} aria-label="전체 보기">
+            ⤢
+          </button>
+        )}
+        {selU && (
+          <button
+            onClick={() => {
+              const p = posOf(selU);
+              setView((v) => clampView({ zoom: Math.max(2, v.zoom), cx: p.x, cy: p.y }));
+            }}
+            aria-label="고른 부대로"
+          >
+            🎯
+          </button>
+        )}
+      </div>
+      </div>
       {toast && <div className="field-toast">{toast}</div>}
       <BattleBar
         auto={auto}
@@ -402,6 +510,7 @@ export function FieldView(props: FrameProps) {
           <p>🎯 쏠 때마다 탄약, ✈️🚢 비행기·배는 움직일 때마다 연료를 써요. 보급 범위(비행기는 기지 옆)에 있으면 다시 차요. 탄약이 떨어지면 공격 ×0.35, 연료가 떨어지면 2.5배 느려요. 대전투는 출발할 때 창고의 🛢️석유 6·🟠구리 4를 쓰고, 모자라면 그만큼 덜 채우고 출발해요.</p>
           <p>🌟 특화 유닛: 우리 연방 특화 유닛을 만들어 두면 종류마다 2부대까지 바꿔 나가요. 적 연방도 자기 특화 유닛을 내보내요. 말을 누르면 능력이 보여요.</p>
           <p>🌫️ 내 부대 주변만 보여요. 🛸 드론은 4칸까지 봐요. 🫧 잠수함은 가까이 가거나 구축함이 있어야 보여요.</p>
+          <p>🔍 ＋/－ 버튼, 두 손가락 벌리기, 마우스 휠로 확대해요. 확대하면 끌어서 옮기고, 🎯는 고른 부대로 가요.</p>
           <p>⛰️ 산·숲·시가지는 방어에 좋고 느려요. 해협은 배가 느려요.</p>
           <p>🏯 적 사령부·⚓ 적 기함에 닿으면 "직접 지휘"로 큰 싸움을 직접 할 수 있어요.</p>
           <p className="small muted">스탯: 통솔 = 공격 · 전술 = 방어 · 포격 = 포병·함포 · 정보 = 시야 · 군수 = 보급 끊김 덜 함</p>

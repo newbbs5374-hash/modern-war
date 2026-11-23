@@ -38,7 +38,7 @@ export const TILE_ART: Record<FTerrain, string> = {
   해협: 'tile-strait',
   해안: 'tile-beach',
 };
-export const FX_ART = { explosion: 'fx-explosion', wreck: 'fx-wreck', landing: 'mark-landing' };
+export const FX_ART = { explosion: 'fx-explosion', wreck: 'fx-wreck', landing: 'mark-landing', missile: 'fx-missile', muzzle: 'fx-muzzle', splash: 'fx-splash', flak: 'fx-flak' };
 /** 특화 유닛·독점 병과 그림 칸: unit-sp-us-2, unit-ex-lhd … 없으면 바탕 병과 그림 */
 export const spArt = (sp: string): string => {
   const x = EXCLUSIVES.find((e) => e.name === sp);
@@ -77,6 +77,10 @@ export function fieldSlots(): Array<{ key: string; who: string }> {
     { key: FX_ART.explosion, who: '효과 · 폭발' },
     { key: FX_ART.wreck, who: '효과 · 부서진 자리' },
     { key: FX_ART.landing, who: '표시 · 상륙 거점' },
+    { key: FX_ART.missile, who: '효과 · 날아가는 미사일' },
+    { key: FX_ART.muzzle, who: '효과 · 포구 불꽃' },
+    { key: FX_ART.splash, who: '효과 · 물보라' },
+    { key: FX_ART.flak, who: '효과 · 공중 폭발(대공포)' },
     ...SPECIALS.map((d) => ({ key: spArt(d.id), who: `특화 · ${countryById(d.country).name} ${d.name}` })),
     ...EXCLUSIVES.map((x) => ({ key: spArt(x.name), who: `독점 · ${x.name}` })),
     ...Object.keys(LAND_WHO).map((k) => ({ key: k, who: `본부 지도 · ${LAND_WHO[k]}` })),

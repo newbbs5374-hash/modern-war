@@ -120,6 +120,8 @@ export interface FUnit {
   goal: number | null;
   face: 1 | -1;
   supply: number;
+  /** 마지막으로 맞은 때(연출용) */
+  hitAt?: number;
   /** 비행 부대 기지: 항모 id, -1 = 상륙 거점·적 비행장 */
   base?: number;
   /** 처음 자리(적이 지키는 곳) */
@@ -182,7 +184,15 @@ export interface FFx {
   to: number;
   t: number;
   side: Side;
+  /** 쏜 부대 종류 · 맞은 부대 층(연출용: 포탄·미사일·어뢰·물보라) */
+  by?: FKind;
+  at?: Layer;
+  /** 크게 맞음(피해가 큼) */
+  big?: boolean;
 }
+
+/** 효과가 화면에 남는 시간(전투 초) */
+export const FX_LIFE: Record<FFx['kind'], number> = { shot: 1.4, boom: 1.2, wreck: 3 };
 
 export interface FieldInput {
   city?: string;
@@ -1028,13 +1038,16 @@ function tick(b: FieldBattle, ask: boolean) {
     if (u.side === 'me') u.ammo = Math.max(0, u.ammo - AMMO_PER_SHOT * (modOf(u)?.thrift ?? 1));
     if (modOf(u)?.hidden) u.reveal = b.t + 3;
     if (u.kind === 'submarine') u.reveal = b.t + 3;
-    if (u.side === 'me' || visMe.has(u.at) || visMe.has(tgt.at)) b.fx.push({ kind: 'shot', from: u.at, to: tgt.at, t: b.t, side: u.side });
+    tgt.hitAt = b.t;
+    if (u.side === 'me' || visMe.has(u.at) || visMe.has(tgt.at))
+      b.fx.push({ kind: 'shot', from: u.at, to: tgt.at, t: b.t, side: u.side, by: u.kind, at: FUNIT[tgt.kind].layer, big: dmg >= tgt.maxHp * 0.12 });
     if (tgt.hp <= 0) dead.add(tgt.id);
   }
   if (dead.size) {
     for (const id of dead) {
       const u = b.units.find((x) => x.id === id)!;
-      b.fx.push({ kind: 'wreck', from: u.at, to: u.at, t: b.t, side: u.side });
+      b.fx.push({ kind: 'boom', from: u.at, to: u.at, t: b.t, side: u.side, by: u.kind, at: FUNIT[u.kind].layer, big: true });
+      b.fx.push({ kind: 'wreck', from: u.at, to: u.at, t: b.t, side: u.side, at: FUNIT[u.kind].layer });
       const name = FUNIT[u.kind].name;
       if (u.side === 'me') {
         b.lost++;
@@ -1054,7 +1067,7 @@ function tick(b: FieldBattle, ask: boolean) {
     }
     b.units = b.units.filter((u) => !dead.has(u.id));
   }
-  b.fx = b.fx.filter((x) => b.t - x.t < (x.kind === 'wreck' ? 2.5 : 0.6));
+  b.fx = b.fx.filter((x) => b.t - x.t < FX_LIFE[x.kind]);
   if (b.log.length > 30) b.log.length = 30;
   save();
   // 끝?
@@ -1101,7 +1114,8 @@ export function resolveBoss(b: FieldBattle, win: boolean): FieldBattle {
       boss.hp = 0;
       b.units = b.units.filter((u) => u !== boss);
       b.killed++;
-      b.fx.push({ kind: 'wreck', from: boss.at, to: boss.at, t: b.t, side: 'foe' });
+      b.fx.push({ kind: 'boom', from: boss.at, to: boss.at, t: b.t, side: 'foe', by: boss.kind, at: FUNIT[boss.kind].layer, big: true });
+      b.fx.push({ kind: 'wreck', from: boss.at, to: boss.at, t: b.t, side: 'foe', at: FUNIT[boss.kind].layer });
       if (boss.kind === 'hq') {
         b.hqDown = true;
         b.log.unshift('🏯 직접 지휘로 적 사령부를 무너뜨렸어요! 이제 육군이 도심에 닿으면 점령이에요.');

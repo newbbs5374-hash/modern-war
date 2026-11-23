@@ -1,4 +1,4 @@
-# 지도 전투 그림 22장 · GPT 명령문 (복사용)
+# 지도 전투 그림 26장 · GPT 명령문 (복사용)
 
 각 그림마다 **회색 상자 안 영어 문장 전체**를 그대로 복사해서 ChatGPT(이미지 만들기)에 붙여 넣으면 돼요. 공통 문구와 **저장할 파일 이름**이 문장 안에 다 들어 있어요.
 
@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | **창 1 · 부대 말** | 1번~11번 | 11장 | `ref-battle-screen.png`(지금 게임 전투 화면) |
 | **창 2 · 지형 타일** | 12번~19번 | 8장 | `ref-battle-screen.png` + 창 1에서 만든 `unit-tank.png` |
-| **창 3 · 효과·표시** | 20번~22번 | 3장 | 창 1에서 만든 `unit-tank.png` |
+| **창 3 · 효과·표시** | 20번~26번 | 7장 | 창 1에서 만든 `unit-tank.png` |
 
 - 참고 그림 `ref-battle-screen.png`는 이 파일과 같은 곳의 `field-art-ref` 폴더에 있어요(이 메시지에도 첨부). 지금 임시 그림으로 된 전투 화면이라, 그림이 들어갈 자리와 크기를 GPT가 알 수 있어요.
 - 각 창의 **첫 그림을 만들 때만** 참고 그림을 같이 올리면 돼요(사진 버튼으로 첨부 → 명령문 붙여 넣기). 같은 창의 다음 그림부터는 앞 그림을 기억해서 화풍이 이어져요.
@@ -249,6 +249,51 @@ Use exactly the same art style as the previous images in this chat. A small burn
 
 ```
 Use exactly the same art style as the previous images in this chat. A simple tall flag pole with a plain blue triangular pennant (no symbols), and a small pile of wooden supply crates at its base, three-quarter top-down view. Mobile strategy game effect sprite, semi-realistic style (realistic fire, smoke and debris like a high-quality game VFX render, not cartoon, not anime), slightly boosted contrast, readable colors. Exactly one effect, centered, filling about 70 percent of the image with empty margin. Bold simple shape readable at 32 pixels. No text, no letters, no logos, no ground, no background. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as mark-landing.png
+```
+
+
+## 4. 전투 연출 효과 (4장) — 창 3 · 효과·표시 이어서
+
+11-23 추가. 미사일·포격·물보라·대공포 연출에 쓰는 그림이에요. **창 3**(효과·표시)에서 이어서 만들어요. 창 3을 닫았으면 새 창을 열고 23번을 만들 때 앞서 만든 `fx-explosion.png`를 참고 그림으로 같이 첨부하세요.
+
+### 23. 날아가는 미사일 · 파일 이름 `fx-missile.png` · 창 3 · 효과·표시
+
+- 무엇: 오른쪽으로 날아가는 작은 미사일, 꼬리에 불꽃
+- 크기·배경: 1024×1024 정사각형 · 투명 배경
+- 참고 그림: 창 3을 새로 열었다면 `fx-explosion.png`를 같이 첨부하세요(이어서 만들면 첨부 없이)
+
+```
+The attached explosion sprite (if any) shows the art style to match. A single small guided missile flying horizontally to the right, slim white-grey body with small fins, bright orange rocket flame and a short puff of smoke at the tail, seen from the side and slightly above, nose pointing exactly to the right. Mobile strategy game effect sprite, semi-realistic style (realistic fire, smoke and debris like a high-quality game VFX render, not cartoon, not anime), slightly boosted contrast, readable colors. Exactly one effect, centered, filling about 70 percent of the image with empty margin. Bold simple shape readable at 32 pixels. No text, no letters, no logos, no ground, no background. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as fx-missile.png
+```
+
+### 24. 포구 불꽃 · 파일 이름 `fx-muzzle.png` · 창 3 · 효과·표시
+
+- 무엇: 대포를 쏠 때 포구에서 터지는 밝은 불꽃
+- 크기·배경: 1024×1024 정사각형 · 투명 배경
+- 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
+
+```
+Use exactly the same art style as the previous images in this chat. A bright cannon muzzle flash burst pointing to the right, white-yellow hot core, orange flame petals spreading forward, a few sparks, a little grey smoke at the edges. Mobile strategy game effect sprite, semi-realistic style (realistic fire, smoke and debris like a high-quality game VFX render, not cartoon, not anime), slightly boosted contrast, readable colors. Exactly one effect, centered, filling about 70 percent of the image with empty margin. Bold simple shape readable at 32 pixels. No text, no letters, no logos, no ground, no background. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as fx-muzzle.png
+```
+
+### 25. 물보라 · 파일 이름 `fx-splash.png` · 창 3 · 효과·표시
+
+- 무엇: 포탄이 바다에 떨어질 때 솟는 하얀 물기둥
+- 크기·배경: 1024×1024 정사각형 · 투명 배경
+- 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
+
+```
+Use exactly the same art style as the previous images in this chat. A tall white water splash column from a shell hitting the sea, foamy spray and droplets flying up, a ring of foam at the base, realistic water, no ocean around it. Mobile strategy game effect sprite, semi-realistic style (realistic fire, smoke and debris like a high-quality game VFX render, not cartoon, not anime), slightly boosted contrast, readable colors. Exactly one effect, centered, filling about 70 percent of the image with empty margin. Bold simple shape readable at 32 pixels. No text, no letters, no logos, no ground, no background. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as fx-splash.png
+```
+
+### 26. 공중 폭발(대공포) · 파일 이름 `fx-flak.png` · 창 3 · 효과·표시
+
+- 무엇: 하늘에서 터지는 검은 연기와 주황 불꽃
+- 크기·배경: 1024×1024 정사각형 · 투명 배경
+- 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
+
+```
+Use exactly the same art style as the previous images in this chat. A mid-air anti-aircraft flak burst, dark grey-black smoke puff with a bright orange fiery center and small metal fragments flying outward. Mobile strategy game effect sprite, semi-realistic style (realistic fire, smoke and debris like a high-quality game VFX render, not cartoon, not anime), slightly boosted contrast, readable colors. Exactly one effect, centered, filling about 70 percent of the image with empty margin. Bold simple shape readable at 32 pixels. No text, no letters, no logos, no ground, no background. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as fx-flak.png
 ```
 
 ## 다 만들었으면
