@@ -95,6 +95,15 @@ const KIND_BATTLE: Partial<Record<MissionKind, Pick>> = {
   구출: { frame: 'grid', variant: 'rescue' },
   정찰: { frame: 'grid', variant: 'reach' },
   호송: { frame: 'side', variant: 'escort' },
+  // 지도자 임무(11-24): 지도자가 상황실·현장에서 지휘하는 모습
+  안보회의: { frame: 'puzzle', variant: '정보', label: '적 공격 미리 알기' },
+  특수작전: { frame: 'grid', variant: 'infiltrate', label: '특수부대 지휘' },
+  정보보고: { frame: 'puzzle', variant: '해킹', label: '첩보 맞추기' },
+  전선시찰: { frame: 'side', variant: 'hold', label: '전방 방어선' },
+  교민철수: { frame: 'grid', variant: 'rescue', label: '교민 철수' },
+  군수협상: { frame: 'puzzle', variant: '보급', label: '지원 물자 잇기' },
+  현장방문: { frame: 'puzzle', variant: '모병', label: '민심 수습' },
+  방산시찰: { frame: 'arty', variant: 'duel', label: '신무기 시연' },
 };
 
 /** 작전(대위부터): 전선 도시 하나를 두고 여러 판을 이어 싸움 */
@@ -110,7 +119,7 @@ export const OPERATIONS: Array<{ name: string; attack: boolean; stages: Pick[] }
     ],
   },
   { name: '돌파 작전', attack: true, stages: [{ frame: 'puzzle', variant: '해킹', label: '통신 마비' }, { frame: 'side', variant: 'breakthrough', label: '돌파' }] },
-  { name: '보급선 지키기', attack: false, stages: [{ frame: 'puzzle', variant: '보급', label: '보급로 잇기' }, { frame: 'side', variant: 'escort', label: '트럭 호송' }] },
+  { name: '보급로 확보', attack: false, stages: [{ frame: 'puzzle', variant: '보급', label: '보급로 잇기' }, { frame: 'side', variant: 'escort', label: '수송대 엄호 지휘' }] },
   { name: '사령부 기습', attack: true, stages: [{ frame: 'grid', variant: 'infiltrate', label: '잠입' }, { frame: 'grid', variant: 'eliminate', label: '사령부 소탕' }] },
   { name: '잠수함 사냥', attack: true, stages: [{ frame: 'grid', variant: 'naval', label: '잠수함 사냥' }, { frame: 'shooter', variant: 'air', label: '초계기 엄호' }] },
 ];

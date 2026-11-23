@@ -97,8 +97,8 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
       right={<Chip icon="🎖️" value={fmt(o.merit)} />}
       help={
         <>
-          <p>임무를 고르면 실제 시간으로 이동해요(게임을 꺼 두어도 돼요).</p>
-          <p>도착하면 ⚔️ 직접 싸우거나 🤖 스탯으로 자동 계산해요. 직접 싸워 별을 많이 받으면 공훈이 더 커요(★★★ ×1.4).</p>
+          <p>지도자다운 일(안보회의·특수작전 승인·전선 시찰·정상 통화·민생 현장 방문 등)을 고르면 실제 시간이 지나 결과가 나와요(게임을 꺼 두어도 돼요).</p>
+          <p>때가 되면 ⚔️ 상황실에서 직접 지휘하거나 🤖 참모에게 맡겨요(스탯으로 계산). 직접 지휘해 별을 많이 받으면 공훈이 더 커요(★★★ ×1.4).</p>
           <p>{RANKS[OPERATION_RANK].name}부터는 세 번째 칸에 2~3판을 이어 싸우는 🗺️ 작전이 나와요.</p>
         </>
       }
@@ -125,7 +125,7 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
                   go('battle');
                 }}
               >
-                ⚔️ 직접 싸우기
+                ⚔️ 직접 지휘
               </button>
               <button
                 style={{ flex: 1 }}
@@ -138,12 +138,12 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
                   )
                 }
               >
-                🤖 자동 계산
+                🤖 참모에게 맡기기
               </button>
             </div>
           ) : (
             <>
-              <p className="small muted center">⏳ 도착까지 {timeLeft(a.endMs - state.worldMs)} (꺼 두어도 진행돼요)</p>
+              <p className="small muted center">⏳ 결과까지 {timeLeft(a.endMs - state.worldMs)} (꺼 두어도 진행돼요)</p>
               <BoostBar state={state} apply={actions.apply} target={{ kind: 'mission' }} />
             </>
           )}
@@ -181,7 +181,7 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
                   setPick(null);
                 }}
               >
-                🚀 출발 ({pick.hours}시간)
+                🚀 시작 ({pick.hours}시간)
               </button>
             </>
           }
