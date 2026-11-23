@@ -9,12 +9,14 @@ import { CITIES } from "../data/cities";
 import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from "../data/world";
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
 import { KR_INNER, KR_OUTLINE, KR_PROVINCES } from "../data/krProvinces";
+import { HOME_MARKS } from "./homeTerrain";
 import {
   GEO,
   GEO_PATH,
   isLand,
   seaNearXY,
   voronoiCells,
+  project,
 } from "../data/realmap";
 import { isAlive, relationOf, type WorldState } from "../game/world";
 import { Carrier, Escort, Jet } from "./units";
@@ -569,6 +571,22 @@ export function WorldMap({
             {p.name}
           </text>
         ))}
+      {/* 표기만 하는 지명(여수 등) */}
+      {!mini &&
+        cv.k >= 3.5 &&
+        Object.values(HOME_MARKS)
+          .flat()
+          .map((m) => {
+            const q = project(...m.lonlat);
+            return (
+              <g key={m.name} pointerEvents="none">
+                <circle cx={q.x} cy={q.y} r={0.9 * zr} fill="#f8fafc" />
+                <text x={q.x} y={q.y - 2 * z} textAnchor="middle" className="map-prov">
+                  {m.name}
+                </text>
+              </g>
+            );
+          })}
       {/* 분쟁 섬(가상의 작은 섬)·고대 성지 */}
       {PIONEER_ISLANDS.map((p) => (
         <path

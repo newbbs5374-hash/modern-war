@@ -1,19 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { COUNTRIES } from '../data/world';
-import { HOME_CAP, homeTerrain } from './homeTerrain';
+import { CITIES } from '../data/cities';
+import { homeTerrain } from './homeTerrain';
 
 describe('본부 지도 실제 땅', () => {
-  it('13개 나라 모두 수도가 땅 위에 있고, 땅 모양이 있음', () => {
+  it('13개 나라 모두 도시가 화면 안, 수도는 땅 위, 땅 모양이 있음', () => {
     for (const c of COUNTRIES) {
       const t = homeTerrain(c.id);
       expect(t.land.length, c.id).toBeGreaterThan(50);
-      expect(t.onLand(...HOME_CAP), c.id).toBe(true);
-      for (const [x, y] of t.roadEnds) expect(t.onLand(x, y), c.id).toBe(true);
+      for (const city of CITIES.filter((x) => x.home === c.id)) {
+        const [x, y] = t.cityPos[city.id];
+        // 도시는 모두 화면 안
+        expect(x > 0 && x < 390 && y > 0 && y < 640, city.name).toBe(true);
+      }
+      const cap = CITIES.find((x) => x.home === c.id && x.capital)!;
+      expect(t.onLand(...t.cityPos[cap.id]), cap.name).toBe(true);
     }
   });
-  it('한국은 시·도 경계가 있고, 바다 배 길도 있음', () => {
+  it('한국은 시·도 경계·바다 배 길·여수 표기가 있음', () => {
     const t = homeTerrain('kr');
     expect(t.inner.length).toBeGreaterThan(50);
     expect(t.seaLoop).not.toBeNull();
+    expect(t.marks.map((m) => m.name)).toContain('여수');
   });
 });
