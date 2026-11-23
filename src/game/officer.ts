@@ -40,6 +40,7 @@ import type { GameState } from './state';
 import { armyPower } from './economy';
 import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
+import { addPresMod } from './approval';
 import { facBonus } from './facility';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
 import { RIVAL_ROLES, hasAlly, rivalTick, shiftInfluence, type RivalRole } from './rivals';
@@ -653,6 +654,14 @@ export function generalDefense(o: OfficerState): number {
 function makeMission(o: OfficerState, rng: Rng, kind: MissionKind, city: string, rank: number): Mission {
   const c = cityById(city);
   const words: Record<MissionKind, string> = {
+    안보회의: `${c.name} 방어 안보회의`,
+    특수작전: `${c.name} 특수작전 승인`,
+    정보보고: `${c.name} 정보 보고`,
+    전선시찰: `${c.name} 전방 부대 시찰`,
+    교민철수: `${c.name} 교민 철수 지시`,
+    군수협상: `${c.name} 무기 지원 협상`,
+    현장방문: `${c.name} 민생 현장 방문`,
+    방산시찰: `${c.name} 방산업체 시찰`,
     방어: `${c.name} 방어`,
     기습: `${c.name} 기습`,
     정찰: `${c.name} 정찰`,
@@ -680,7 +689,7 @@ function makeOperation(o: OfficerState, rng: Rng, mine: string[], enemyCities: s
   if (!pool.length) return null;
   const m = makeMission(o, rng, '작전', rng.pick(pool), rank);
   m.op = opIdx;
-  m.title = `${cityById(m.city).name} ${op.name}`;
+  m.title = `${cityById(m.city).name} ${op.name} 지휘`;
   return m;
 }
 
@@ -695,20 +704,25 @@ function buildBoard(s: GameState, o: OfficerState, rng: Rng): Mission[] {
   const out: Mission[] = [];
   const r = s.player.rankIndex;
   const weakest = [...mine].sort((a, b) => w.defense[a] - w.defense[b])[0];
+  const any = CITIES.filter((c) => w.owner[c.id] !== me).map((c) => c.id);
+  // 지도자 임무 하나 만들기(어느 도시에서 하는 일인지 정함)
+  const mk = (k: MissionKind) => {
+    const front = enemyCities.length ? rng.pick(near.length ? near : enemyCities) : rng.pick(any.length ? any : mine);
+    const city = k === '안보회의' ? (weakest ?? rng.pick(mine)) : k === '특수작전' || k === '교민철수' || k === '정보보고' ? front : rng.pick(mine);
+    return makeMission(o, rng, k, city, r);
+  };
+  const pickSome = (pool: MissionKind[], n: number) => {
+    const p = [...pool];
+    for (let i = 0; i < n && p.length; i++) out.push(mk(p.splice(Math.floor(rng.next() * p.length), 1)[0]));
+  };
   if (enemies.length && mine.length) {
-    out.push(makeMission(o, rng, '방어', weakest ?? rng.pick(mine), r));
-    out.push(makeMission(o, rng, '기습', rng.pick(near.length ? near : enemyCities), r));
+    out.push(mk('안보회의'));
+    out.push(mk('특수작전'));
     const op = r >= OPERATION_RANK ? makeOperation(o, rng, mine, enemyCities, r) : null;
-    if (op) out.push(op);
-    else {
-      const k = rng.pick(['정찰', '구출', '호송'] as MissionKind[]);
-      out.push(makeMission(o, rng, k, k === '호송' ? rng.pick(mine) : rng.pick(enemyCities), r));
-    }
+    if (op && rng.chance(0.6)) out.push(op);
+    else pickSome(['전선시찰', '정보보고', '교민철수', '군수협상'], 1);
   } else if (mine.length) {
-    const any = CITIES.filter((c) => w.owner[c.id] !== me).map((c) => c.id);
-    out.push(makeMission(o, rng, '호송', rng.pick(mine), r));
-    out.push(makeMission(o, rng, '정찰', rng.pick(any), r));
-    out.push(makeMission(o, rng, '구출', rng.pick(mine), r));
+    pickSome(['정보보고', '현장방문', '방산시찰', '군수협상', '교민철수'], 3);
   }
   return out;
 }
@@ -819,11 +833,30 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
       if (a.kind === '방어') w.defense[a.city] = Math.min(100, w.defense[a.city] + 25);
       if (a.kind === '기습') w.defense[a.city] = Math.max(0, w.defense[a.city] - 20);
       if (a.kind === '정찰') o.intel += 10;
+      if (a.kind === '안보회의') w.defense[a.city] = Math.min(100, w.defense[a.city] + 25);
+      if (a.kind === '특수작전') w.defense[a.city] = Math.max(0, w.defense[a.city] - 20);
+      if (a.kind === '정보보고') o.intel += 12;
+      if (a.kind === '전선시찰') {
+        w.defense[a.city] = Math.min(100, w.defense[a.city] + 15);
+        ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops * 1.01 } };
+      }
+      if (a.kind === '교민철수') o.fame += 6;
+      if (a.kind === '군수협상') ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops * 1.03 } };
+      if (a.kind === '현장방문') o.trust = Math.min(100, o.trust + 1);
+      if (a.kind === '방산시찰') ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + 400 } };
       if (a.kind === '호송') {
         const me = ns.player.countryId;
         ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops * 1.02 } };
       }
       const effect: Record<MissionKind, string> = {
+        안보회의: `${c.name} 방어도 +25`,
+        특수작전: `${c.name} 방어도 −20`,
+        정보보고: '정보 점수 +12',
+        전선시찰: `${c.name} 방어도 +15 · 병력 +1%`,
+        교민철수: '명성 +8 · 지지도 +2',
+        군수협상: '병력 +3%',
+        현장방문: '지지도 +4 · 신뢰도 +1',
+        방산시찰: '국방예산 +400',
         방어: `${c.name} 방어도 +25`,
         기습: `${c.name} 방어도 −20`,
         정찰: '정보 점수 +10',
@@ -849,7 +882,10 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
       note(ns, `작전 중 만난 ${ga(aide.name)} 부관으로 합류했어요(${aide.specialty}).`);
     }
   });
-  return { state: won ? eureka(state, { kind: 'mission', name: a.kind }) : state, text };
+  let out = state;
+  if (won && a.kind === '현장방문') out = addPresMod(out, '🤝 민생 현장 방문', 4, 24);
+  if (won && a.kind === '교민철수') out = addPresMod(out, '✈️ 교민 무사 귀환', 2, 24);
+  return { state: won ? eureka(out, { kind: 'mission', name: a.kind }) : out, text };
 }
 
 /** 도시를 우리 나라가 차지 */

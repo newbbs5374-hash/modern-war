@@ -39,7 +39,7 @@ describe('부대 모집 + 부관 보고', () => {
   it('소위도 보병 모집 가능, 고급 병과는 계급이 되어야 함', () => {
     const s = rich(newGame('t', 'kr', 0, { seed: 4 }));
     expect(canProduce(s, '보병')).toBeNull();
-    expect(canProduce(s, '항공모함')).toMatch(/부터/);
+    expect(canProduce(s, '항공모함')).toMatch(/연구/); // 11-24: 호칭 잠금 없음, 연구만
   });
   it('모집이 끝나면 "보병 모집이 완료되었습니다" 보고, 누르면 사라짐', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 5 }));

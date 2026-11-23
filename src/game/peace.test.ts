@@ -31,8 +31,6 @@ function withTech(s: GameState): GameState {
 describe('평화 승리', () => {
   it('연구·등급·전쟁 조건이 맞아야 제안할 수 있음', () => {
     let s = calmWorld(newGame('t', 'kr', 0, { seed: 4 }));
-    expect(canProposePeace(s)).toMatch(/되면/);
-    s = setRank(s, VICTORY_RANK);
     expect(canProposePeace(s)).toMatch(/연구/);
     s = withTech(s);
     expect(canProposePeace(s)).toBeNull();
