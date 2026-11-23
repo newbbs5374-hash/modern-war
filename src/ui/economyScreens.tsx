@@ -39,7 +39,6 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
   return (
     <Modal
       title={sp ? sp.name : name}
-      icon={<UnitIcon unit={name} sp={spId} />}
       onClose={onClose}
       footer={
         <>
@@ -57,6 +56,21 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
         </>
       }
     >
+      <div className="unit-hero">
+        <div className="unit-photo">
+          <UnitIcon unit={name} sp={spId} />
+        </div>
+        <div className="kv2 unit-kv">
+          <span>전투력</span>
+          <b>💪 {c.power}</b>
+          <span>병력</span>
+          <b>🪖 +{fmt(c.troops)}</b>
+          <span>보유</span>
+          <b>{state.economy.army[sp ? sp.name : name] ?? 0}부대</b>
+          <span>열리는 등급</span>
+          <b>{RANKS[info.rank].name}</b>
+        </div>
+      </div>
       <p>
         <span className="tag">{info.domain}</span> {sp ? sp.effect : info.role}
       </p>
@@ -71,16 +85,6 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
           👑 독점 병과 · {ex.why} · 만드는 나라: {ex.only.map((id) => countryById(id).name).join(', ')}
         </p>
       )}
-      <div className="kv2">
-        <span>전투력</span>
-        <b>💪 {c.power}</b>
-        <span>병력</span>
-        <b>🪖 +{fmt(c.troops)}</b>
-        <span>보유</span>
-        <b>{state.economy.army[sp ? sp.name : name] ?? 0}부대</b>
-        <span>열리는 등급</span>
-        <b>{RANKS[info.rank].name}</b>
-      </div>
       <p className="small muted" style={{ marginTop: 6 }}>
         비용
       </p>

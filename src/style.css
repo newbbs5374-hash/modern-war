@@ -853,3 +853,12 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #1b1
 .art-ico.inline { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.25em; }
 .res-ico .art-ico { margin: 0 auto; }
 .li-ico .art-ico { margin: 0 auto; }
+/* 부대 줄 아이콘은 줄 높이 안에서 크게, 병과 창은 왼쪽 위 1/4 사진 칸 */
+.frow-ico .art-ico { width: 60px; height: 50px; object-fit: cover; margin: -4px 0; }
+.frow-ico .art-ico-tag { font-size: 13px; right: -2px; bottom: -4px; }
+.unit-hero { display: grid; grid-template-columns: 50% 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+.unit-photo { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 64px; border: 1px solid #2a6b48; border-radius: 12px; background: radial-gradient(circle at 50% 45%, #1d3a28, #0a140e 75%); overflow: hidden; }
+.unit-photo .art-ico-wrap { width: 100%; height: 100%; display: block; }
+.unit-photo .art-ico { width: 100%; height: 100%; }
+.unit-photo .art-ico-tag { font-size: 22px; right: 6px; bottom: 6px; }
+.unit-kv { grid-template-columns: auto 1fr; align-content: center; }
