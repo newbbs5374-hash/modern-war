@@ -363,6 +363,151 @@ export function LeaderHero(props: ScreenProps) {
   );
 }
 
+/** 개인 > 프로필: 캐릭터 카드형(11-23 대장 결정). 큰 인물 카드 + 명성·신뢰·정보 칩 + 승급 + 묶음별 색 막대 9줄 */
+const GROUP_TONE = ['g1', 'g2', 'g3'];
+export function LeaderCard(props: ScreenProps) {
+  const { state, actions } = props;
+  const o = state.officer;
+  const r = state.player.rankIndex;
+  const pc = promotionCheck(state);
+  const og = originOf(state);
+  const cap = statCap(r);
+  const [pick, setPick] = useState<StatId | null>(null);
+  const [promo, setPromo] = useState(false);
+  const total = STAT_IDS.reduce((a, id) => a + Math.floor(o.stats[id]), 0);
+  const last = r >= RANKS.length - 1;
+  return (
+    <>
+      {o.dismissDeadlineMs !== null && (
+        <div className="alert">
+          ⚠️ 불신임 경고: {timeLeft(o.dismissDeadlineMs - state.worldMs)} 안에 의회 신뢰도를 40 넘게 올려야 해요. 임무에 성공하면 올라요.
+        </div>
+      )}
+      <div className="lc-card">
+        <div className="lc-photo">
+          <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+          <span className="lc-rank">
+            Lv.{r + 1} {RANKS[r].name}
+          </span>
+          <span className="lc-step">
+            {r + 1}/{RANKS.length}
+          </span>
+        </div>
+        <div className="lc-name">{state.player.name}</div>
+        <div className="lc-sub">
+          {og ? (
+            <>
+              {og.icon} {og.name}
+              {originFits(og, state.player.countryId) ? ' ★' : ''} · {og.perk}
+            </>
+          ) : (
+            <>지휘: {RANKS[r].unit}</>
+          )}
+        </div>
+        <div className="lc-road" aria-label="지도자 등급">
+          {RANKS.map((x, i) => (
+            <i key={x.name} className={i < r ? 'done' : i === r ? 'now' : ''} title={x.name} />
+          ))}
+        </div>
+      </div>
+      <div className="lc-chips">
+        <span>
+          📣 명성<b>{fmt(o.fame)}</b>
+        </span>
+        <span className={r >= COMMAND_RANK && o.trust < 40 ? 'warn' : ''}>
+          🤝 신뢰<b>{Math.round(o.trust)}</b>
+        </span>
+        <span>
+          🔐 정보<b>{fmt(o.intel)}</b>
+        </span>
+      </div>
+      {!last && (
+        <div className={`lc-promo ${pc.ready ? 'ready' : ''}`}>
+          <button className="lc-promo-text" onClick={() => setPromo(true)}>
+            <b>{pc.ready ? '승급할 수 있어요! 🎉' : `다음: ${RANKS[r + 1].name}`}</b>
+            <small>{pc.lines.map((l) => `${l.ok ? '✓' : '·'} ${l.label} ${fmt(l.have)}/${fmt(l.need)}`).join(' · ')}</small>
+          </button>
+          <button className={pc.ready ? 'gold' : ''} disabled={!pc.ready} onClick={() => actions.apply(promoteNow)}>
+            {pc.ready ? '승급 ▶' : '🔒'}
+          </button>
+        </div>
+      )}
+      <div className="lc-box">
+        <div className="lc-head">
+          <b>능력치</b>
+          <small>
+            종합 {total} · 상한 {cap}
+          </small>
+          <Help title="스탯과 경험치">
+            <p>훈련을 하면 그 훈련이 키우는 스탯에 경험치가 쌓여요. 막대 밑 얇은 줄이 다 차면 스탯이 1 올라요.</p>
+            <p>별을 많이 받을수록 경험치가 많아요(별 1개당 {TRAIN_EXP_PER_STAR}, 지면 {TRAIN_EXP_LOSE}). 오늘의 훈련은 2배, 숙련 단계가 오르면 +10%씩 더 받아요.</p>
+            <p>스탯 상한은 등급이 오르면 +10. 줄을 누르면 자세히 볼 수 있어요.</p>
+          </Help>
+        </div>
+        {STAT_GROUPS.map((g, gi) => (
+          <div key={g.name} className={`lc-group ${GROUP_TONE[gi % 3]}`}>
+            {g.stats.map(({ name }) => {
+              const id = name as StatId;
+              const v = Math.floor(o.stats[id]);
+              const max = v >= cap;
+              const exp = max ? 1 : statExpOf(o, id) / statExpNeed(v);
+              return (
+                <button key={id} className="lc-bar" onClick={() => setPick(id)}>
+                  <span className="lc-i">{STAT_ICON[id]}</span>
+                  <span className="lc-n">{id}</span>
+                  <span className="lc-track">
+                    <i style={{ width: `${Math.min(100, (v / cap) * 100)}%` }} />
+                    <em style={{ width: `${Math.min(100, exp * 100)}%` }} />
+                  </span>
+                  <b>{max ? 'MAX' : v}</b>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      {pick && (
+        <Modal title={pick} icon={STAT_ICON[pick]} onClose={() => setPick(null)}>
+          <div className="big-ico">{Math.floor(o.stats[pick])}</div>
+          <p className="small center muted">
+            상한 {cap} · 다음 1점까지 경험치 {Math.floor(statExpOf(o, pick))} / {statExpNeed(Math.floor(o.stats[pick]))}
+          </p>
+          <Meter value={statExpOf(o, pick)} max={statExpNeed(Math.floor(o.stats[pick]))} tone="green" />
+          <p>{STAT_DOES[pick]}</p>
+          <p className="small">올리는 훈련: {TRAIN_FOR[pick].map((t) => `${TRAINING_ICON[t]} ${t}`).join(' · ') || '임무'}</p>
+          <p className="small muted">임무에 성공해도 그 임무가 쓰는 스탯에 경험치가 들어와요.</p>
+        </Modal>
+      )}
+      {promo && !last && (
+        <Modal title={`다음: ${RANKS[r + 1].name}`} icon="⏫" onClose={() => setPromo(false)}>
+          <div className="pillrow">
+            {RANKS.map((x, i) => (
+              <span key={x.name} className={i === r ? 'now' : i < r ? 'done' : ''}>
+                {x.name}
+              </span>
+            ))}
+          </div>
+          {pc.lines.map((l) => (
+            <div key={l.label} className="promo-line">
+              <small>
+                {l.ok ? '✅' : '⬜'} {l.label}
+              </small>
+              <Meter value={l.have} max={l.need} tone={l.ok ? 'green' : undefined} />
+              <small className="muted">
+                {fmt(l.have)}/{fmt(l.need)}
+              </small>
+            </div>
+          ))}
+          <p className="small muted">공훈(임무)·훈련 별(훈련)·의회 신뢰도(국토 수호자부터)를 채우면 바로 승급해요. 승급하면 공훈과 별은 다시 모아요. 마지막 승급은 영향력 70을 넘는 정적이 없어야 해요.</p>
+          <button className={pc.ready ? 'gold wide' : 'wide'} disabled={!pc.ready} onClick={() => (actions.apply(promoteNow), setPromo(false))}>
+            {pc.ready ? `⏫ ${RANKS[r + 1].name}(으)로 승급` : pc.why}
+          </button>
+        </Modal>
+      )}
+    </>
+  );
+}
+
 export function OfficerScreen(props: ScreenProps) {
   const { state, actions } = props;
   const o = state.officer;

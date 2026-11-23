@@ -96,14 +96,8 @@ button.on { outline: 1px solid var(--amber); }
 .modal-foot { border-top-color: var(--line); }
 
 /* ── 본부 ── */
-.homeland-wrap { filter: grayscale(1) sepia(1) hue-rotate(80deg) saturate(1.7) brightness(0.62) contrast(1.15); }
-.home-stage::before {
-  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 55%, transparent 40%, #020604aa 100%),
-    linear-gradient(#45f59a12 1px, transparent 1px) 0 0 / 24px 24px,
-    linear-gradient(90deg, #45f59a12 1px, transparent 1px) 0 0 / 24px 24px;
-}
+/* 11/23 대장 결정: 초록 필터·격자를 걷어 내고 실사 색 그대로(바닥 그림·햇빛·그림자는 HomeLand.tsx) */
+.homeland image { filter: drop-shadow(2px 3px 1.5px rgba(20, 25, 15, 0.55)); }
 .home-res .ichip { background: #08120ccc; border-color: var(--hud-dim); color: var(--hud); }
 .home-res .ichip small { color: var(--muted); }
 .home-side { top: 62px; }
@@ -471,3 +465,44 @@ button.on { outline: 1px solid var(--amber); }
 .hq-main small { font-size: 8.5px; line-height: 1.2; }
 .hq-main .bar { margin-top: 2px; }
 .guide-hide { font-size: 10px; }
+
+/* ── 개인 > 프로필: 캐릭터 카드형(11/23 대장 결정) ── */
+.lc-card { position: relative; margin: 2px 24px 0; border-radius: 20px !important; padding: 8px; background: linear-gradient(180deg, #ffd36b, #c98a1a); box-shadow: 0 4px 0 #7a5410, 0 10px 22px #0008; }
+.lc-photo { position: relative; height: 178px; border-radius: 14px; overflow: hidden; background: radial-gradient(circle at 50% 30%, #3a6a7e, #10202a); }
+.lc-photo .person-face { position: absolute; inset: 0; }
+.lc-photo .face-img { object-position: 50% 12%; }
+.lc-photo .person-face:not(:has(img)) { font-size: 90px; }
+.lc-rank { position: absolute; top: 8px; left: 8px; background: var(--amber); color: #1a1205; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 99px; box-shadow: 0 2px 0 #0006; }
+.lc-step { position: absolute; top: 8px; right: 8px; background: #000a; color: #fff; font-family: var(--num); font-size: 12px; padding: 2px 8px; border-radius: 99px; }
+.lc-name { text-align: center; font-size: 21px; font-weight: 700; color: #241703; margin: 6px 0 0; }
+.lc-sub { text-align: center; font-size: 12px; color: #4a3408; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-road { display: flex; gap: 3px; margin: 6px 6px 2px; }
+.lc-road i { flex: 1; height: 5px; border-radius: 3px; background: #0000002e; }
+.lc-road i.done { background: #5a3d06; }
+.lc-road i.now { background: #fff; box-shadow: 0 0 0 1px #5a3d06; }
+.lc-chips { display: flex; justify-content: center; gap: 6px; margin: 10px 0 8px; }
+.lc-chips span { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; font-size: 12.5px; color: var(--text); }
+.lc-chips span.warn { border-color: #ef4444; }
+.lc-chips b { margin-left: 4px; font-family: var(--num); }
+.lc-promo { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 6px 6px 4px; margin-bottom: 8px; }
+.lc-promo.ready { border-color: var(--amber); box-shadow: inset 0 0 12px #ffb02022; }
+.lc-promo .lc-promo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; background: transparent; border: 0; text-align: left; padding: 2px 6px; }
+.lc-promo .lc-promo-text b { font-size: 15px; color: var(--text); }
+.lc-promo .lc-promo-text small { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.lc-promo > button:last-child { flex: 0 0 auto; font-size: 15px; padding: 8px 14px; }
+.lc-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px 8px; }
+.lc-head { display: flex; align-items: center; gap: 8px; margin: 2px 0 2px; }
+.lc-head b { font-size: 15px; }
+.lc-head small { flex: 1; text-align: right; color: var(--muted); }
+.lc-group { padding: 2px 0; }
+.lc-group + .lc-group { border-top: 1px solid var(--line); }
+.lc-bar { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 26px; padding: 0; background: transparent !important; border: 0 !important; text-align: left; }
+.lc-i { width: 20px; text-align: center; }
+.lc-n { width: 30px; font-size: 12.5px; color: var(--text); }
+.lc-track { position: relative; flex: 1; height: 12px; border-radius: 99px; background: #00000055; overflow: hidden; box-shadow: inset 0 1px 2px #0008; }
+.lc-track i { position: absolute; left: 0; top: 0; bottom: 3px; border-radius: 99px; }
+.lc-track em { position: absolute; left: 0; bottom: 0; height: 2px; background: #ffffffcc; }
+.lc-g1 .lc-track i, .g1 .lc-track i { background: var(--hud); }
+.g2 .lc-track i { background: var(--amber); }
+.g3 .lc-track i { background: #7cd4ff; }
+.lc-bar b { width: 30px; text-align: right; font-family: var(--num); font-size: 15px; color: var(--text); }

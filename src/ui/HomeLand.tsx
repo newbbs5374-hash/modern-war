@@ -10,6 +10,12 @@ import { CITY_DEFENSE_MAX } from '../game/balance';
 import { FLAG_DEF } from './flag';
 import { LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
+// 바닥 그림(11-23 대장 결정 "코드 실사화"): 이음새 없는 풀·들판·모래·바다 그림을 깔고 햇빛·그림자를 코드로 더함.
+// 새 바닥 그림(home-ground-*.png, 명령문 guides/home-real-art-prompts.md)이 오면 이 줄만 바꾸면 됨.
+import groundGrass from '../assets/city/city-ground-grass.webp';
+import groundSand from '../assets/city/city-ground-beach.webp';
+import groundPlain from '../assets/field/tile-plain.webp';
+import groundSea from '../assets/field/tile-sea.webp';
 
 const W = 390;
 const H = 640;
@@ -261,15 +267,29 @@ export function HomeLand(props: {
         onWheel={onWheel}
       >
         <defs>
-          <radialGradient id="sea" cx="60%" cy="55%" r="80%">
-            <stop offset="0%" stopColor="#13507a" />
-            <stop offset="100%" stopColor="#072033" />
+          <pattern id="g-grass" patternUnits="userSpaceOnUse" width="140" height="140"><image href={groundGrass} width="140" height="140" /></pattern>
+          <pattern id="g-plain" patternUnits="userSpaceOnUse" width="220" height="220"><image href={groundPlain} width="220" height="220" /></pattern>
+          <pattern id="g-sea" patternUnits="userSpaceOnUse" width="160" height="160"><image href={groundSea} width="160" height="160" /></pattern>
+          <pattern id="g-sand" patternUnits="userSpaceOnUse" width="60" height="60"><image href={groundSand} width="60" height="60" /></pattern>
+          {/* 햇빛: 왼쪽 위가 밝고 가장자리는 살짝 어둡게 */}
+          <radialGradient id="g-sun" cx="20%" cy="10%" r="95%">
+            <stop offset="0%" stopColor="#fff6d8" stopOpacity="0.3" />
+            <stop offset="55%" stopColor="#fff6d8" stopOpacity="0" />
+            <stop offset="100%" stopColor="#0b1d33" stopOpacity="0.35" />
           </radialGradient>
-          <linearGradient id="land" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#4a7a40" />
-            <stop offset="60%" stopColor="#5a8a45" />
-            <stop offset="100%" stopColor="#7a8c42" />
-          </linearGradient>
+          <radialGradient id="g-shallow" cx="50%" cy="50%" r="50%">
+            <stop offset="70%" stopColor="#3fb6c9" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#3fb6c9" stopOpacity="0" />
+          </radialGradient>
+          {/* 땅 높낮이 얼룩 */}
+          <filter id="g-relief" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7" />
+            <feColorMatrix type="matrix" values="0 0 0 0 .2  0 0 0 0 .25  0 0 0 0 .1  0 0 0 .9 -.3" />
+            <feComposite in2="SourceGraphic" operator="in" />
+          </filter>
+          <filter id="g-soft">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
           <radialGradient id="glow">
             <stop offset="0%" stopColor="#fde68a" stopOpacity="0.9" />
             <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
@@ -289,15 +309,19 @@ export function HomeLand(props: {
         </defs>
         <g style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`, transformOrigin: '0 0', transition: smooth ? 'transform .5s ease' : 'none' }}>
           {/* 바다 */}
-          <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#sea)" />
+          <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#g-sea)" />
           {Array.from({ length: 12 }, (_, i) => (
-            <path key={i} className="wave" d={`M${-20 + (i % 3) * 40},${30 + i * 52} q20,-6 40,0 t40,0`} fill="none" stroke="#bae6fd33" strokeWidth="2" style={{ animationDelay: `${-i * 0.7}s` }} />
+            <path key={i} className="wave" d={`M${-20 + (i % 3) * 40},${30 + i * 52} q20,-6 40,0 t40,0`} fill="none" stroke="#ffffff22" strokeWidth="2" style={{ animationDelay: `${-i * 0.7}s` }} />
           ))}
           {/* 땅 층(나중에 제작 이미지로 바꿀 자리) */}
-          <path d={land} fill="#0b2a40" transform="translate(4,6)" opacity="0.7" />
-          <path d={land} fill="#e8d9a8" stroke="#e8d9a8" strokeWidth="9" />
-          <path d={land} fill="url(#land)" />
-          <path d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#38bdf8" strokeWidth="5" strokeLinecap="round" />
+          {/* 얕은 바다 띠 → 모래 해안 → 풀밭 + 들판 + 높낮이 얼룩 + 파도 거품 */}
+          <path d={land} fill="url(#g-shallow)" stroke="#5fd0dc" strokeWidth="34" strokeOpacity="0.35" filter="url(#g-soft)" />
+          <path d={land} fill="url(#g-sand)" stroke="url(#g-sand)" strokeWidth="12" />
+          <path d={land} fill="url(#g-grass)" />
+          <path d={land} fill="url(#g-plain)" opacity="0.45" />
+          <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.55" />
+          <path d={land} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="1 5" />
+          <path d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#2b7fa3" strokeWidth="4" strokeLinecap="round" />
           <path className="river-flow" d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#e0f2fe" strokeWidth="1.4" strokeDasharray="3 9" strokeLinecap="round" />
           {forests.map(([x, y], i) => (
             <g key={`f${i}`} className="tree" style={{ animationDelay: `${-i * 0.4}s`, transformOrigin: `${x}px ${y + 6}px` }}>
@@ -331,7 +355,8 @@ export function HomeLand(props: {
           {/* 도로와 차량 */}
           {roads.map((rd) => (
             <g key={rd.id}>
-              <path id={rd.id} d={rd.d} fill="none" stroke="#3f3f46" strokeWidth="5" strokeLinecap="round" />
+              <path d={rd.d} fill="none" stroke="#c9c2a8" strokeWidth="7" strokeLinecap="round" opacity="0.6" />
+              <path id={rd.id} d={rd.d} fill="none" stroke="#5b5f66" strokeWidth="4" strokeLinecap="round" />
               <path d={rd.d} fill="none" stroke="#fde68a" strokeWidth="0.6" strokeDasharray="4 4" />
             </g>
           ))}
@@ -359,7 +384,7 @@ export function HomeLand(props: {
             const st = status[i];
             return (
               <g key={c.id} className="city" onClick={() => tapCity(c.id, x, y)}>
-                <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="#cbd5e1" opacity="0.28" />
+                <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="#9a978c" opacity="0.35" filter="url(#g-soft)" />
                 {c.capital && art.factory && <image href={art.factory} x={x - 118} y={y - 6} width="44" height="44" />}
                 {c.capital && art.base && <image href={art.base} x={x - 96} y={y + 34} width="48" height="48" />}
                 {c.capital && art.port && <image href={art.port} x={x + 72} y={y + 10} width="48" height="48" />}
@@ -503,6 +528,7 @@ export function HomeLand(props: {
             ))}
           {/* 낮·밤 */}
           {night > 0 && night < 1 && <rect x="0" y="0" width={W} height={H} fill="#fb923c" opacity={(1 - Math.abs(night - 0.5) * 2) * 0.12} />}
+          <rect x="0" y="0" width={W} height={H} fill="url(#g-sun)" pointerEvents="none" />
         </g>
       </svg>
       <div className="map-zoom">

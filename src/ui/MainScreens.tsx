@@ -9,7 +9,7 @@ import { FacilityPanel, ResourcePanel, TreasuryPanel, needPick } from './Interio
 import { TradePanel } from './DiplomacyScreen';
 import { ForcesScreen } from './ForcesScreen';
 import { SpyPanel } from './SpyPanel';
-import { AidesPanel, GeneralsPanel, LeaderHero, RivalsPanel, StatsPanel, TrainingScreen } from './officerScreens';
+import { AidesPanel, GeneralsPanel, LeaderCard, RivalsPanel, TrainingScreen } from './officerScreens';
 import { OpsScreen, type ScreenProps } from './screens';
 import { Tabs, useTab, type TabDef } from './kit';
 import { FieldBar } from './PresUI';
@@ -64,10 +64,7 @@ export function PersonalScreen(props: ScreenProps) {
       <FieldBar state={state} field="personal" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'profile' && (
-        <>
-          <LeaderHero {...props} />
-          <StatsPanel {...props} />
-        </>
+        <LeaderCard {...props} />
       )}
       {tab === 'train' && <TrainingScreen {...props} />}
       {tab === 'aides' && <AidesPanel {...props} />}
