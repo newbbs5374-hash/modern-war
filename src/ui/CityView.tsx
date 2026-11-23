@@ -34,7 +34,7 @@ const S = HEX_SIZE;
 const GROUND: Record<CityGround, string> = { 평지: '#5d8a3e', 산: '#7c7466', 유적: '#9a8a5c', 바닷가: '#cdb77d' };
 const GROUND_ART: Partial<Record<CityGround, string>> = { 평지: 'city-ground-grass', 바닷가: 'city-ground-beach' };
 const SIZE: Record<CityThing, number> = {
-  center: 2.9,
+  center: 3.8,
   industry: 2.2,
   harbor: 2.2,
   airfield: 2.3,
