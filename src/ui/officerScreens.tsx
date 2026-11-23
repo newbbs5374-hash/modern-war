@@ -63,6 +63,7 @@ import { TrainIcon } from './iconArt';
 import { TitleBox } from './TitleUI';
 import { TITLES } from '../data/ranks';
 import { tierNow, titleOf } from '../game/title';
+import { VOICE_ICON, remarksOf } from '../game/remarks';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
 import { Chip, Help, Meter, Modal, Tile, stars } from './kit';
@@ -680,6 +681,18 @@ export function RivalsPanel({ state }: ScreenProps) {
         </div>
       ))}
       <p className="small muted center">사진을 눌러 🕵️동향 살피기 · 🗞️견제 · 🤝회유</p>
+      {remarksOf(state).log.length > 0 && (
+        <>
+          <h4 className="cab-h">🎙️ 최근 발언</h4>
+          {remarksOf(state)
+            .log.slice(0, 6)
+            .map((r) => (
+              <p key={r.t + r.who} className="small">
+                {VOICE_ICON[r.who]} <b>{r.name ? `${r.who} ${r.name}` : r.who}</b> {r.text}
+              </p>
+            ))}
+        </>
+      )}
       {o.chiefRival && <p className="small warn">⚠️ {o.chiefRival}의 영향력이 {BLOCK_AT}을 넘었어요. 견제·회유로 낮춰야 전설의 지도자가 될 수 있어요.</p>}
     </Card>
   );
