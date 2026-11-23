@@ -72,7 +72,7 @@ select { width: 100%; margin: 4px 0; }
 
 /* 아래 메뉴 6칸 */
 .bottom {
-  flex: 0 0 var(--nav-h); display: grid; grid-template-columns: repeat(7, 1fr);
+  flex: 0 0 var(--nav-h); display: grid; grid-template-columns: repeat(6, 1fr);
   background: #0a120d; border-top: 1px solid var(--line);
 }
 .bottom button {
