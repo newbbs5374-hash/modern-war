@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { splitBuild, splitEco, splitFavor, splitLoyalty, splitOf } from './policy';
 import { CITIES, cityById, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
@@ -429,6 +430,8 @@ export function favorReasons(s: GameState, id: string): Array<[string, number]> 
   for (const n of c.notes[id] ?? []) if (Math.round(n.v)) rows.push([n.text, Math.round(n.v)]);
   const g = c.grievance[id] ?? 0;
   if (g >= 1) rows.push(['😠 불만 장부', -Math.round(g)]);
+  const sf = Math.round(splitFavor(s));
+  if (sf) rows.push([`🌐 외교 예산 ${splitOf(s).dip}%`, sf]);
   return rows;
 }
 export function favorOf(s: GameState, id: string): number {
@@ -931,6 +934,8 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   if (lux.length) rows.push([`생활 자원 ${lux.map((r) => RES_ICON[r]).join('')}`, lux.length * LUXURY_LOYALTY]);
   if (BASIC_RES.some((r) => (s.economy.stock[r] ?? 0) < 1)) rows.push(['자원 부족', -5]);
   if (chaos(s)) rows.push(['체제 혼란', -10]);
+  const sl = Math.round(splitLoyalty(s) * 10) / 10;
+  if (sl) rows.push([`👥 사회 예산 ${splitOf(s).soc}%`, sl]);
   return rows;
 }
 export function loyaltyTarget(s: GameState, cityId: string): number {
@@ -975,12 +980,12 @@ export function civBudgetMult(s: GameState): number {
 }
 export function civResMult(s: GameState): number {
   const t = cityTotals(s);
-  return Math.max(0.3, (1 + effSum(s, 'res') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1));
+  return Math.max(0.3, (1 + effSum(s, 'res') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s);
 }
 /** 모집 빠르기 배율(시간을 이 값으로 나눔) */
 export function civBuildSpeed(s: GameState, unit: string): number {
   const dom = domOf(unit);
-  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom)) * (chaos(s) ? 1 - GOV_CHAOS : 1);
+  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s);
 }
 export function civPowerMult(s: GameState, unit: string): number {
   return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)) + facBonus(s, '우주기지'));

@@ -326,3 +326,17 @@ button.on { outline: 1px solid var(--amber); }
 .home-res .ichip.pres-chip { cursor: pointer; border-color: var(--hud); }
 .home-res .ichip.pres-chip.red { border-color: #ff5a4f; color: #ff7a6f; }
 .home-res .ichip.pres-chip.gold { border-color: var(--gold); color: var(--gold); }
+/* 예산 나누기 · 세금 */
+.split-row { display: grid; grid-template-columns: 64px 30px 1fr 30px; grid-template-areas: 'n m v p' 'e e e e'; align-items: center; gap: 2px 6px; padding: 4px 0; border-bottom: 1px dashed #1d4a3255; }
+.split-name { grid-area: n; font-size: 13px; white-space: nowrap; }
+.split-row > .split-btn:first-of-type { grid-area: m; }
+.split-row > .split-btn:last-of-type { grid-area: p; }
+.split-btn { min-height: 28px; padding: 0; font-size: 16px; font-weight: 700; }
+.split-val { grid-area: v; display: flex; align-items: center; gap: 6px; }
+.split-val .meter { flex: 1; }
+.split-val .num { font-family: var(--num); min-width: 34px; text-align: right; }
+.split-eff { grid-area: e; font-size: 11px; }
+.tax-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tax-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; min-height: 64px; }
+.tax-btn small { font-size: 10px; color: var(--muted); text-align: center; }
+.tax-btn.on { border-color: var(--hud); color: var(--hud); box-shadow: inset 0 0 10px #45f59a33; opacity: 1; }
