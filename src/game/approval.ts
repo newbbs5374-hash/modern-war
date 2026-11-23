@@ -12,6 +12,7 @@ import { addLoyalty } from './loyal';
 import { note } from './officer';
 import { incomeShare, isAlive, pairKey, relationOf } from './world';
 import type { GameState } from './state';
+import { originEff, originOf, type OriginEffKey } from './origin';
 import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
@@ -166,7 +167,8 @@ function personalRows(s: GameState): Rows {
   return rows;
 }
 
-export function fieldRows(s: GameState, f: FieldId): Rows {
+const ORIGIN_FIELD: Record<FieldId, OriginEffKey> = { personal: 'fieldPersonal', defense: 'fieldDefense', diplo: 'fieldDiplo', society: 'fieldSociety', economy: 'fieldEconomy' };
+function baseRows(s: GameState, f: FieldId): Rows {
   switch (f) {
     case 'defense':
       return defenseRows(s);
@@ -179,6 +181,12 @@ export function fieldRows(s: GameState, f: FieldId): Rows {
     case 'personal':
       return personalRows(s);
   }
+}
+export function fieldRows(s: GameState, f: FieldId): Rows {
+  const rows = baseRows(s, f);
+  const o = originEff(s, ORIGIN_FIELD[f]);
+  if (o) rows.push([`🎓 출신(${originOf(s)!.name})`, o]);
+  return rows;
 }
 /** 분야 점수(계산용, 반올림 안 함) */
 export function fieldValue(s: GameState, f: FieldId): number {
@@ -199,7 +207,8 @@ export function fieldScores(s: GameState): Record<FieldId, number> {
 
 export function approvalRows(s: GameState, sc: Record<FieldId, number> = fieldValues(s)): Rows {
   const rows: Rows = FIELDS.filter((f) => APPROVAL_W[f.id] > 0).map((f) => [`${f.icon} ${f.name} ${r0(sc[f.id])} × ${Math.round(APPROVAL_W[f.id] * 100)}%`, sc[f.id] * APPROVAL_W[f.id]]);
-  const tx = taxApproval(s);
+  const tx0 = taxApproval(s);
+  const tx = tx0 < 0 ? tx0 * (1 - originEff(s, 'taxSoft')) : tx0;
   if (tx) rows.push([`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, tx]);
   for (const m of presOf(s).mods) if (m.untilMs > s.worldMs && m.v) rows.push([m.why, m.v]);
   return rows;

@@ -5,9 +5,11 @@ import { loadHall } from '../game/victory';
 import { Flag } from './flag';
 import { LEADERS } from '../data/leaders';
 import { specialsOf } from '../data/specials';
+import { ORIGINS, originFits, originOpen, type OriginId } from '../game/origin';
+import { STAT_ICON } from './icons';
 
 interface Props {
-  onStart: (name: string, countryId: string, randomLeaders: boolean) => void;
+  onStart: (name: string, countryId: string, randomLeaders: boolean, origin: OriginId) => void;
   onImport: (code: string) => string | null;
 }
 
@@ -20,6 +22,62 @@ export function StartScreen({ onStart, onImport }: Props) {
   const [randomLeaders, setRandomLeaders] = useState(false);
 
   const [open, setOpen] = useState<string | null>(null);
+  const [step, setStep] = useState<'country' | 'origin'>('country');
+  const [origin, setOrigin] = useState<OriginId>('econ');
+  const hall = loadHall();
+
+  if (step === 'origin' && pick) {
+    const o = ORIGINS.find((x) => x.id === origin)!;
+    const c = COUNTRIES.find((x) => x.id === pick)!;
+    return (
+      <div className="start start-compact">
+        <h1>출신 고르기</h1>
+        <p className="muted small start-intro">
+          <Flag id={c.id} size={0.8} /> {c.name}의 새 지도자 {name.trim()}. 어떤 길을 걸어 왔나요? 출신에 따라 첫 스탯과 혜택·약점이 달라져요(스탯 합은 같아요). ★ = {c.name}와(과) 잘 맞음(혜택 1.5배).
+        </p>
+        <div className="origin-grid">
+          {ORIGINS.map((x) => {
+            const ok = originOpen(x, hall);
+            return (
+              <button key={x.id} className={`origin-tile ${origin === x.id ? 'on' : ''} ${ok ? '' : 'locked'}`} disabled={!ok} onClick={() => setOrigin(x.id)} title={ok ? x.line : `🔒 ${x.lock?.text}`}>
+                <span className="ot-ico">{ok ? x.icon : '🔒'}</span>
+                <small>{x.name}</small>
+                {ok && originFits(x, c.id) && <i className="ot-star">★</i>}
+              </button>
+            );
+          })}
+        </div>
+        <section className="card origin-detail">
+          <div className="row">
+            <b>
+              {o.icon} {o.name}
+              {originFits(o, c.id) ? ' ★' : ''}
+            </b>
+            <small className="muted">{o.line}</small>
+          </div>
+          <div className="origin-stats">
+            {Object.entries(o.stats).map(([k, v]) => (
+              <span key={k} className={v! > 0 ? 'up' : 'down'}>
+                {STAT_ICON[k as keyof typeof STAT_ICON]} {k} {v! > 0 ? `+${v}` : v}
+              </span>
+            ))}
+          </div>
+          <div className="small">✅ {o.perk}</div>
+          <div className="small">⚠️ {o.weak}</div>
+          <div className="small muted">
+            🙂 지지도 {o.startApproval} · 🤝 신뢰도 {o.startTrust} 출발 · 👥 옛 동료: {o.buddy}
+          </div>
+        </section>
+        <small className="muted">🔒 잠긴 출신: {ORIGINS.filter((x) => !originOpen(x, hall)).map((x) => `${x.name}(${x.lock!.text})`).join(' · ') || '없음'}</small>
+        <div className="row" style={{ gap: 6, marginTop: 8 }}>
+          <button onClick={() => setStep('country')}>← 나라 다시 고르기</button>
+          <button className="primary big" style={{ flex: 1 }} onClick={() => onStart(name.trim(), pick, randomLeaders, origin)}>
+            지도자로 취임하기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="start start-compact">
@@ -92,9 +150,9 @@ export function StartScreen({ onStart, onImport }: Props) {
       <button
         className="primary big"
         disabled={!pick || !name.trim()}
-        onClick={() => pick && onStart(name.trim(), pick, randomLeaders)}
+        onClick={() => pick && setStep('origin')}
       >
-        {pick && name.trim() ? '지도자로 취임하기' : '이름을 쓰고 나라를 고르세요'}
+        {pick && name.trim() ? '다음: 출신 고르기 ▸' : '이름을 쓰고 나라를 고르세요'}
       </button>
 
       {loadHall().length > 0 && (

@@ -1,5 +1,6 @@
 // 게임 상태와 시간 흐름. 화면과 떨어진 순수 계산이라 시험(테스트)하기 쉽다.
 
+import { applyOrigin, type OriginId } from './origin';
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { PERSONALITIES } from '../data/leaders';
@@ -54,6 +55,8 @@ export interface GameState {
     salary: number;
     /** 아직 받지 않고 쌓인 봉급 */
     pendingSalary: number;
+    /** 지도자 출신(11-23). 옛 저장은 없음 */
+    origin?: OriginId;
   };
   nations: Record<string, NationState>;
   /** 시험 버튼으로 건너뛴 총 시간(ms). 기록용 */
@@ -95,6 +98,8 @@ export interface NewGameOptions {
   randomLeaders?: boolean;
   /** 세계 난수 씨앗(시험용으로 고정할 수 있음) */
   seed?: number;
+  /** 지도자 출신(11-23) */
+  origin?: OriginId;
 }
 
 export function newGame(name: string, countryId: string, now: number, opt: NewGameOptions = {}): GameState {
@@ -107,7 +112,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     };
   }
   const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
-  return {
+  const s: GameState = {
     version: SAVE_VERSION,
     worldMs: 0,
     lastRealTime: now,
@@ -121,6 +126,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     civ: newCiv({ world, worldMs: 0 }),
     crisis: newCrisis(0),
   };
+  return opt.origin ? applyOrigin(s, opt.origin) : s;
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */

@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { originEff, originOf } from './origin';
 import { splitBuild, splitEco, splitFavor, splitLoyalty, splitOf } from './policy';
 import { CITIES, cityById, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -281,6 +282,8 @@ export function researchBreakdown(s: GameState): Array<[string, number]> {
   const labB = facBonus(s, '국방과학연구소');
   if (labB) rows.push(['🧬 국방과학연구소', labB]);
   if (countryById(me).ability.effect.includes('연구 속도 +25%')) rows.push([`🌟 ${countryById(me).ability.name}`, 0.25]);
+  const og = originEff(s, 'research');
+  if (og) rows.push([`🎓 출신(${originOf(s)!.name})`, og]);
   return rows;
 }
 
@@ -432,6 +435,8 @@ export function favorReasons(s: GameState, id: string): Array<[string, number]> 
   if (g >= 1) rows.push(['😠 불만 장부', -Math.round(g)]);
   const sf = Math.round(splitFavor(s));
   if (sf) rows.push([`🌐 외교 예산 ${splitOf(s).dip}%`, sf]);
+  const of = Math.round(originEff(s, 'favor') + (countryById(me).faith === countryById(id).faith ? originEff(s, 'favorFaith') : -originEff(s, 'favorFaith') / 3));
+  if (of) rows.push([`🎓 출신(${originOf(s)!.name})`, of]);
   return rows;
 }
 export function favorOf(s: GameState, id: string): number {
@@ -765,7 +770,7 @@ export function canDistrict(s: GameState, cityId: string, tile: string, id: Dist
   return null;
 }
 export function districtHours(s: GameState, id: DistrictId): number {
-  return districtById(id).hours * Math.max(0.4, 1 - effSum(s, 'district'));
+  return districtById(id).hours * Math.max(0.4, 1 - effSum(s, 'district') - originEff(s, 'district'));
 }
 export function buildDistrict(s: GameState, cityId: string, tile: string, id: DistrictId): GameState {
   if (canDistrict(s, cityId, tile, id)) return s;
@@ -936,6 +941,8 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   if (chaos(s)) rows.push(['체제 혼란', -10]);
   const sl = Math.round(splitLoyalty(s) * 10) / 10;
   if (sl) rows.push([`👥 사회 예산 ${splitOf(s).soc}%`, sl]);
+  const ol = originEff(s, 'loyalty');
+  if (ol) rows.push([`🎓 출신(${originOf(s)!.name})`, ol]);
   return rows;
 }
 export function loyaltyTarget(s: GameState, cityId: string): number {
@@ -985,7 +992,7 @@ export function civResMult(s: GameState): number {
 /** 모집 빠르기 배율(시간을 이 값으로 나눔) */
 export function civBuildSpeed(s: GameState, unit: string): number {
   const dom = domOf(unit);
-  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s);
+  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s);
 }
 export function civPowerMult(s: GameState, unit: string): number {
   return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)) + facBonus(s, '우주기지'));
@@ -1039,7 +1046,7 @@ export function civAccrue(s: GameState, ms: number): GameState {
   }
   // 도시: 민심이 목표로 다가가고, 좋으면 인구가 자람
   const tmp: GameState = { ...ns, civ: c };
-  const growth = 1 + effSum(tmp, 'growth');
+  const growth = 1 + effSum(tmp, 'growth') + originEff(tmp, 'growth');
   for (const city of CITIES) {
     if (s.world.owner[city.id] !== me) continue;
     const cc = (c.cities[city.id] ??= defaultCity(s, city));

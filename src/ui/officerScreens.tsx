@@ -1,4 +1,5 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { originFits, originOf } from '../game/origin';
 import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
@@ -312,6 +313,12 @@ export function LeaderHero(props: ScreenProps) {
               {RANKS[r].name} {state.player.name}
             </b>
             <div className="small muted">지휘: {RANKS[r].unit}</div>
+            {originOf(state) && (
+              <div className="small origin-line" title={`${originOf(state)!.perk} / ${originOf(state)!.weak}`}>
+                🎓 {originOf(state)!.icon} {originOf(state)!.name}
+                {originFits(originOf(state)!, state.player.countryId) ? ' ★' : ''} <span className="muted">· {originOf(state)!.perk}</span>
+              </div>
+            )}
             <div className="ichips" style={{ marginTop: 4 }}>
               <Chip icon="📣" value={fmt(o.fame)} label="명성" />
               <Chip icon="🤝" value={Math.round(o.trust)} label={r >= COMMAND_RANK && o.trust < 40 ? '신뢰 ⚠️' : '신뢰'} />

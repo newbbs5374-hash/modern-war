@@ -1,5 +1,7 @@
 // 인물 창: 누구를 보고 있는지(PersonRef) · 인물과의 교류(대화·선물·연설·친서). 하루 한 번씩.
 // 부관 선물·특별 훈련·부관 임무는 officer.ts 것을 그대로 씀. 여기에는 새 교류만.
+import { originEff } from './origin';
+import { addPresMod } from './approval';
 import { LEADERS } from '../data/leaders';
 import { countryById } from '../data/world';
 import { REAL_MS_PER_GAME_DAY } from './balance';
@@ -102,7 +104,7 @@ export function letterChance(s: GameState, country: string): number {
 export function actsOf(p: PersonRef): Array<{ id: ActId; icon: string; name: string; text: string }> {
   switch (p.kind) {
     case 'player':
-      return [{ id: 'speech', icon: '🎤', name: '대국민 연설', text: '명성 + · 의회 신뢰 +2 · 정적 영향력 −2' }];
+      return [{ id: 'speech', icon: '🎤', name: '대국민 연설', text: '명성 + · 의회 신뢰 +2 · 지지도 +3(6시간) · 정적 영향력 −2' }];
     case 'aide':
       return [{ id: 'chat', icon: '💬', name: '대화', text: '인연 +3 · 충성 +2 · 경험 +10' }];
     case 'general':
@@ -147,11 +149,14 @@ export function doAct(s: GameState, p: PersonRef, act: ActId): { state: GameStat
   const r = s.player.rankIndex;
 
   if (p.kind === 'player' && act === 'speech') {
-    const fame = Math.round(10 + r * 6 + (o.stats['정치'] ?? 0) * 0.5);
+    const sp = 1 + originEff(s, 'speech');
+    const fame = Math.round((10 + r * 6 + (o.stats['정치'] ?? 0) * 0.5) * sp);
     o.fame += fame;
     o.trust = Math.min(100, o.trust + 2);
     shiftInfluence(o, -2);
-    out = `🎤 연설을 마쳤어요. 명성 +${fame} · 의회 신뢰 +2 · 정적 영향력 −2`;
+    const ap = Math.round(3 * sp * 10) / 10;
+    ns = addPresMod(ns, '🎤 대국민 연설', ap, 6);
+    out = `🎤 연설을 마쳤어요. 명성 +${fame} · 의회 신뢰 +2 · 지지도 +${ap}(6시간) · 정적 영향력 −2`;
   } else if (p.kind === 'aide' && act === 'chat') {
     const a = o.aides.find((x) => x.id === p.id)!;
     const line = rng.pick(AIDE_CHAT[a.bond >= 60 ? 'high' : a.bond >= 30 ? 'mid' : 'low']);

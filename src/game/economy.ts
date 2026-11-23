@@ -1,9 +1,11 @@
 // 6단계 내정: 시설 3개(산업·인프라·복지) · 전략 자원 7종 · 병과 생산 · 무역.
 // 내 나라만 다룸. 순수 계산(새 상태를 돌려줌).
+import { originEff } from './origin';
 import { CITIES } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
   ALLY_DISCOUNT,
+  LUXURIES,
   CHORES,
   CHORE_EXP,
   CHORE_HOURS,
@@ -154,7 +156,7 @@ export const budgetMult = (s: GameState) => 1 + buildingEff(s, '군수공장');
 /** 제련소·첨단공단: 자원 배율 */
 export const resMult = (s: GameState, r: Res) => {
   const b = RES_BUILDING[r];
-  return (b ? 1 + buildingEff(s, b) : 1) * generalResMult(s);
+  return (b ? 1 + buildingEff(s, b) : 1) * generalResMult(s) * (LUXURIES.includes(r) ? 1 + originEff(s, 'luxury') : 1);
 };
 /** 징병소: 모병 배율 */
 export const welfareMult = (s: GameState) => 1 + buildingEff(s, '징병소');

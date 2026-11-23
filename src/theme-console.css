@@ -340,3 +340,18 @@ button.on { outline: 1px solid var(--amber); }
 .tax-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; min-height: 64px; }
 .tax-btn small { font-size: 10px; color: var(--muted); text-align: center; }
 .tax-btn.on { border-color: var(--hud); color: var(--hud); box-shadow: inset 0 0 10px #45f59a33; opacity: 1; }
+/* 출신 고르기 */
+.origin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 6px 0; }
+.origin-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 6px 2px; min-height: 56px; }
+.origin-tile .ot-ico { font-size: 22px; line-height: 1.1; }
+.origin-tile small { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.origin-tile.on { border-color: var(--hud); color: var(--hud); box-shadow: inset 0 0 10px #45f59a33; }
+.origin-tile.locked { opacity: 0.45; }
+.origin-tile .ot-star { position: absolute; top: 1px; right: 3px; font-style: normal; color: var(--gold); font-size: 12px; }
+.origin-detail { padding: 8px; display: flex; flex-direction: column; gap: 3px; }
+.origin-detail .row { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.origin-stats { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+.origin-stats span { padding: 1px 5px; border: 1px solid var(--hud-dim); }
+.origin-stats .up { color: var(--hud); }
+.origin-stats .down { color: #ff9a8f; }
+.origin-line { margin-top: 4px; font-size: 12px; }
