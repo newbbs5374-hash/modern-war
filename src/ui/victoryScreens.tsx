@@ -6,6 +6,7 @@ import { Card } from './common';
 import { FLAG } from './flag';
 import { PEACE_COST, PEACE_FAVOR, PEACE_HOLD_DAYS, canProposePeace, peaceLeft, peaceName, peaceOf, peaceProgress, proposePeace } from '../game/peace';
 import type { ScreenProps } from './screens';
+import { cultureProgress, cultureWinLeft } from '../game/culture';
 
 function Meter({ have, need }: { have: number; need: number }) {
   return (
@@ -27,9 +28,23 @@ export function VictoryCard({ state, actions }: ScreenProps) {
         <Meter have={p.mine} need={p.needAlone} />
       </div>
       <PeacePart state={state} onPropose={() => actions.apply(proposePeace)} />
+      <CulturePart state={state} />
       {holdLeft(state) !== null && <p className="small result">🏁 조건 달성! {timeLeft(holdLeft(state)!)} 더 지키면 승리해요.</p>}
-      <p className="small muted">셋 중 하나를 {HOLD_DAYS}일 동안 지키면 이겨요. 지도자 외교로 연합국을 늘릴 수 있어요. 대전투로 적 도시를 차지하고, 만든 부대와 복지로 점령지를 지키세요. 점령지는 가끔 반란이 일어나요.</p>
+      <p className="small muted">넷 중 하나를 {HOLD_DAYS}일 동안 지키면 이겨요. 지도자 외교로 연합국을 늘릴 수 있어요. 대전투로 적 도시를 차지하고, 만든 부대와 복지로 점령지를 지키세요. 점령지는 가끔 반란이 일어나요.</p>
     </Card>
+  );
+}
+
+/** ④ 문화 승리(자세한 건 문화 탭) */
+function CulturePart({ state }: { state: ScreenProps['state'] }) {
+  const p = cultureProgress(state);
+  const left = cultureWinLeft(state);
+  return (
+    <div className="small" style={{ marginTop: 6 }}>
+      ④ 문화 승리: 문화 우세 {p.have} / {p.need} · 5단계 시설 {p.top} / {p.needTop}
+      <Meter have={p.have + Math.min(p.top, p.needTop)} need={p.need + p.needTop} />
+      {left !== null && <p className="result">🎨 문화 승리 조건 달성! {timeLeft(left)} 더 지키면 이겨요.</p>}
+    </div>
   );
 }
 
@@ -74,9 +89,9 @@ export function EndingCard({ state, actions }: ScreenProps) {
   if (!e) return null;
   return (
     <div className="ending">
-      <h2>{e.kind === '평화 승리' ? '🕊️' : '🏆'} {e.kind}!</h2>
+      <h2>{e.kind === '평화 승리' ? '🕊️' : e.kind === '문화 승리' ? '🎨' : '🏆'} {e.kind}!</h2>
       <p>
-        {e.name} 지도자가 이끈 {e.country}이(가) {e.day}일째에 {e.kind === '평화 승리' ? '세계 평화 헌장으로 전쟁 없는 세계를 열었어요' : '전쟁을 끝냈어요'}.
+        {e.name} 지도자가 이끈 {e.country}이(가) {e.day}일째에 {e.kind === '평화 승리' ? '세계 평화 헌장으로 전쟁 없는 세계를 열었어요' : e.kind === '문화 승리' ? '문화로 세계 사람들의 마음을 얻었어요' : '전쟁을 끝냈어요'}.
       </p>
       <p className="small">
         도시 {e.cities}개{e.captured.length ? ` · 점령: ${e.captured.join(', ')}` : ''}

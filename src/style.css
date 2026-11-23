@@ -72,7 +72,7 @@ select { width: 100%; margin: 4px 0; }
 
 /* 아래 메뉴 7칸 */
 .bottom {
-  flex: 0 0 var(--nav-h); display: grid; grid-template-columns: repeat(7, 1fr);
+  flex: 0 0 var(--nav-h); display: grid; grid-template-columns: repeat(8, 1fr);
   background: #404e5d; border-top: 1px solid var(--line);
 }
 .bottom button {
@@ -915,3 +915,28 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #8b5
 .isle-tiles .itile-ico .art-ico-wrap { width: 92%; }
 .isle-tiles .art-ico-tag { font-size: 22px; right: 2px; bottom: 2px; }
 .isle-tiles .art-ico-tag .flag { width: 26px !important; height: 17px !important; }
+
+/* 🎭 문화 탭(11-23) */
+.cul-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; margin-bottom: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cul-bar > span { white-space: nowrap; }
+.cul-bar .help { margin-left: auto; }
+.cul-tiles .itile-ico .art-ico.cul-art { width: 58px; height: 58px; margin: 0 auto; }
+.cul-emoji { font-size: 34px; line-height: 1.2; }
+.cul-emoji.dim, .art-ico.dim { opacity: 0.4; filter: grayscale(0.8); }
+.cul-emoji.big { font-size: 72px; }
+.cul-hero { display: flex; justify-content: center; margin: 2px 0 6px; }
+.cul-hero .art-ico.big { width: 160px; height: 160px; }
+.cul-stars { color: var(--amber); letter-spacing: 1px; font-size: 11px; }
+.cul-lvname { display: block; font-size: 10.5px; line-height: 1.2; }
+.cul-works { margin-bottom: 8px; }
+.cul-works button { font-size: 12px; padding: 4px 8px; }
+.cul-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.cul-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 48px; padding: 2px; border: 1px dashed var(--line); border-radius: 8px; font-size: 20px; opacity: 0.45; text-align: center; }
+.cul-slot.open { opacity: 0.8; }
+.cul-slot.on { opacity: 1; border-style: solid; border-color: var(--amber); background: #ffb02014; }
+.cul-slot small { font-size: 9.5px; line-height: 1.1; }
+.cul-row { gap: 6px; }
+.cul-who { flex: 0 0 38%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cul-meter { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.cul-meter small { font-size: 10.5px; color: var(--muted); }
+button.mini { padding: 3px 7px; font-size: 13px; }

@@ -1,5 +1,6 @@
 // 게임 상태와 시간 흐름. 화면과 떨어진 순수 계산이라 시험(테스트)하기 쉽다.
 
+import { cultureTick, type CultureState } from './culture';
 import { applyOrigin, type OriginId } from './origin';
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS, TITLES, firstTierOfRank } from '../data/ranks';
@@ -107,6 +108,8 @@ export interface GameState {
   assembly?: AssemblyState;
   /** 기자회견·청원·정상회담(11-23) */
   media?: MediaState;
+  /** 문화(시설·걸작·행사·영향력, 11-23). 없으면 처음 쓸 때 채움 */
+  culture?: CultureState;
   /** 예산 나누기·세금(없으면 기본 40/20/20/20 · 보통) */
   policy?: PolicyState;
 }
@@ -260,7 +263,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)));
     world = cur.world;
   }
-  return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(accrue(cur, left))))));
+  return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */
