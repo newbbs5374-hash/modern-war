@@ -1,6 +1,6 @@
 // ⑥ 지도 위 전투 화면: 실제 육각 지도에서 부대 말을 움직여 도시를 점령.
 // 계산은 battle/field.ts, 여기서는 그리고 누르는 것만.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CAPTURERS,
   FIELD_HEX,
@@ -172,7 +172,7 @@ export function FieldView(props: FrameProps) {
   const shakeX = mood.shake ? Math.sin(vt * 90) * 1.6 * mood.shake : 0;
   const shakeY = mood.shake ? Math.cos(vt * 70) * 1.2 * mood.shake : 0;
   const polys = useMemo(() => f.cells.map((c) => hexCorners(c.x, c.y, FIELD_HEX - 0.4).map((p) => p.join(',')).join(' ')), [f]);
-  const terrains = useMemo(() => [...new Set(f.cells.map((c) => c.terrain))], [f]);
+  const polysFull = useMemo(() => f.cells.map((c) => hexCorners(c.x, c.y, FIELD_HEX + 0.35).map((p) => p.join(',')).join(' ')), [f]);
 
   // 고른 부대의 작전 범위(비행 부대)·보급 범위(육군)
   const rangeCells = useMemo(() => {
@@ -293,6 +293,7 @@ export function FieldView(props: FrameProps) {
         </button>
       </div>
       <div className="field-stage">
+      <TerrainLayer field={f} viewBox={`${vx + shakeX} ${vy + shakeY} ${vw} ${vh}`} />
       <svg
         ref={svgRef}
         className={`field-map ${view.zoom > 1 ? 'zoomed' : ''}`}
@@ -325,35 +326,31 @@ export function FieldView(props: FrameProps) {
               </feMerge>
             </filter>
           ))}
+          <filter id="fog-soft" x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur stdDeviation={FIELD_HEX * 0.3} />
+          </filter>
           <filter id="fo-hit">
             <feColorMatrix type="matrix" values="1 0 0 0 0.6  0 1 0 0 0.6  0 0 1 0 0.6  0 0 0 1 0" />
           </filter>
-          {terrains.map((t) => {
-            const url = fieldArt(TILE_ART[t]);
-            return url ? (
-              <pattern key={t} id={`ft-${TILE_ART[t]}`} patternUnits="userSpaceOnUse" width={FIELD_HEX * 4} height={FIELD_HEX * 4}>
-                <image href={url} width={FIELD_HEX * 4} height={FIELD_HEX * 4} preserveAspectRatio="xMidYMid slice" />
-              </pattern>
-            ) : null;
-          })}
         </defs>
-        {f.cells.map((c, i) => (
-          <polygon
-            key={i}
-            points={polys[i]}
-            fill={fieldArt(TILE_ART[c.terrain]) ? `url(#ft-${TILE_ART[c.terrain]})` : TERRAIN_INFO[c.terrain].color}
-            stroke={c.terrain === '도심' ? '#fde047' : '#0003'}
-            strokeWidth={c.terrain === '도심' ? 1.2 : 0.5}
-            onClick={() => tapCell(i)}
-          />
+        {/* 누르는 칸(보이지 않음). 지형은 아래 TerrainLayer가 경계 없이 그림 */}
+        {f.cells.map((_, i) => (
+          <polygon key={i} points={polys[i]} fill="transparent" onClick={() => tapCell(i)} />
         ))}
-        {f.cells.map((c, i) => (c.terrain === '숲' || c.terrain === '산') && !fieldArt(TILE_ART[c.terrain]) ? <TerrainMark key={`m${i}`} x={c.x} y={c.y} t={c.terrain} /> : null)}
+        {/* 안개: 경계선 없이 */}
+        <g opacity={0.45} filter="url(#fog-soft)" pointerEvents="none">
+          {f.cells.map((_, i) => (vis.has(i) ? null : <polygon key={`f${i}`} points={polysFull[i]} fill="#020617" />))}
+        </g>
+        {/* 칸 표시는 부대를 골랐을 때만: 범위 칸과 도심 */}
         {rangeCells &&
           f.cells.map((_, i) =>
-            rangeCells.cells[i] ? <polygon key={`r${i}`} points={polys[i]} fill={rangeCells.color} opacity={0.16} pointerEvents="none" /> : null,
+            rangeCells.cells[i] ? (
+              <polygon key={`r${i}`} points={polys[i]} fill={rangeCells.color} fillOpacity={0.14} stroke={rangeCells.color} strokeOpacity={0.45} strokeWidth={0.5} pointerEvents="none" />
+            ) : null,
           )}
-        {/* 안개 */}
-        {f.cells.map((_, i) => (vis.has(i) ? null : <polygon key={`f${i}`} points={polys[i]} fill="#020617" opacity={0.5} pointerEvents="none" />))}
+        {selU && FUNIT[selU.kind].layer === 'land' && (
+          <polygon points={polys[f.center]} fill="none" stroke="#fde047" strokeWidth={1.2} strokeDasharray="3 2" pointerEvents="none" />
+        )}
         {/* 상륙 거점 */}
         <Sprite x={f.cells[f.landing].x} y={f.cells[f.landing].y - 2} art={FX_ART.landing} emoji="🚩" size={14} />
         {/* 고른 부대 길 */}
@@ -590,6 +587,51 @@ function Sprite({ x, y, art, emoji, size, flip, opacity, filter }: { x: number; 
     </text>
   );
 }
+
+/** 지형을 그리는 바닥 층: 칸 경계선 없이, 지형이 바뀌는 곳은 흐리게 번져 옆 칸과 섞임. 보는 범위가 바뀔 때만 다시 그림 */
+const BLEND_ORDER: FTerrain[] = ['바다', '해협', '해안', '평지', '숲', '산', '시가지', '도심'];
+const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox }: { field: FieldBattle['field']; viewBox: string }) {
+  const minX = Math.min(...f.cells.map((c) => c.x)) - FIELD_HEX * 2;
+  const minY = Math.min(...f.cells.map((c) => c.y)) - FIELD_HEX * 2;
+  const W = f.w + FIELD_HEX * 4;
+  const H = f.h + FIELD_HEX * 4;
+  const polys = useMemo(() => f.cells.map((c) => hexCorners(c.x, c.y, FIELD_HEX + 0.35).map((p) => p.join(',')).join(' ')), [f]);
+  const used = BLEND_ORDER.filter((t) => f.cells.some((c) => c.terrain === t));
+  const paint = (t: FTerrain) => (fieldArt(TILE_ART[t]) ? `url(#tp-${TILE_ART[t]})` : TERRAIN_INFO[t].color);
+  return (
+    <svg className="field-ground" viewBox={viewBox} aria-hidden="true">
+      <defs>
+        {used.map((t) => {
+          const url = fieldArt(TILE_ART[t]);
+          return url ? (
+            <pattern key={t} id={`tp-${TILE_ART[t]}`} patternUnits="userSpaceOnUse" width={FIELD_HEX * 4} height={FIELD_HEX * 4}>
+              <image href={url} width={FIELD_HEX * 4} height={FIELD_HEX * 4} preserveAspectRatio="xMidYMid slice" />
+            </pattern>
+          ) : null;
+        })}
+        <filter id="tb-soft" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation={FIELD_HEX * 0.38} />
+        </filter>
+        {used.map((t) => (
+          <mask key={t} id={`tm-${TILE_ART[t]}`} maskUnits="userSpaceOnUse" x={minX} y={minY} width={W} height={H}>
+            <g filter="url(#tb-soft)">
+              {f.cells.map((c, i) => (c.terrain === t ? <polygon key={i} points={polys[i]} fill="#fff" /> : null))}
+            </g>
+          </mask>
+        ))}
+      </defs>
+      {/* 바닥: 빈틈 없게 칸마다 칠함(경계선 없음) */}
+      {f.cells.map((c, i) => (
+        <polygon key={i} points={polys[i]} fill={paint(c.terrain)} />
+      ))}
+      {/* 지형마다 가장자리가 흐린 층을 차례로 덮어 옆 칸과 자연스럽게 섞음 */}
+      {used.map((t) => (
+        <rect key={t} x={minX} y={minY} width={W} height={H} fill={paint(t)} mask={`url(#tm-${TILE_ART[t]})`} />
+      ))}
+      {f.cells.map((c, i) => ((c.terrain === '숲' || c.terrain === '산') && !fieldArt(TILE_ART[c.terrain]) ? <TerrainMark key={`m${i}`} x={c.x} y={c.y} t={c.terrain} /> : null))}
+    </svg>
+  );
+});
 
 function TerrainMark({ x, y, t }: { x: number; y: number; t: FTerrain }) {
   return t === '산' ? (
