@@ -87,14 +87,14 @@ export interface PioneerIsland {
 
 /** 개척 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
 const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [number, number] }> = [
-  { id: 'p-cheongseok', name: '청석섬', res: '희토류', at: [250, 160] },
+  { id: 'p-cheongseok', name: '청석섬', res: '청광석', at: [250, 160] },
   { id: 'p-whale', name: '고래섬', res: '석유', at: [640, 120] },
   { id: 'p-storm', name: '폭풍섬', res: '티타늄', at: [120, 110] },
   { id: 'p-twin', name: '쌍둥이섬', res: '알루미늄', at: [560, 175] },
   { id: 'p-flame', name: '불꽃섬', res: '석유', at: [300, 470] },
-  { id: 'p-fog', name: '안개섬', res: '리튬', at: [30, 330] },
+  { id: 'p-fog', name: '안개섬', res: '청광석', at: [30, 330] },
   { id: 'p-southwind', name: '남풍섬', res: '석유', at: [440, 470] },
-  { id: 'p-coral', name: '산호환초', res: '리튬', at: [580, 450] },
+  { id: 'p-coral', name: '산호환초', res: '산호', at: [580, 450] },
   { id: 'p-turtle', name: '거북섬', res: '알루미늄', at: [760, 330] },
   { id: 'p-southcross', name: '남십자섬', res: '희토류', at: [170, 520] },
   { id: 'p-blackrock', name: '검은바위섬', res: '강철', at: [660, 30] },

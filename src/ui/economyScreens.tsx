@@ -1,10 +1,11 @@
 // 병과 팝업(부대 화면)과 공용 비용 표시. 내정 화면은 InteriorScreen, 무역은 DiplomacyScreen.
 import { useState } from 'react';
 import { UNITS } from '../data/catalog';
-import { RES_ICON, UNIT_COST, specialCost, type Res, type UnitCost } from '../data/economy';
+import { RES_ICON, type Res, type UnitCost } from '../data/economy';
+import { exclusiveByName, specialById } from '../data/specials';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
-import { buildMs, canProduce, produce } from '../game/economy';
+import { buildMs, canProduce, costOf, crystalReady, produce } from '../game/economy';
 import { fmt } from './common';
 import { timeLeft } from './officerScreens';
 import { UNIT_ICON } from './icons';
@@ -16,7 +17,7 @@ export function Cost({ c, stock, money }: { c: UnitCost; stock: Record<Res, numb
     <div className="cost">
       <span className={money < c.money ? 'lack' : ''}>💰{fmt(c.money)}</span>
       {Object.entries(c.res).map(([k, v]) => (
-        <span key={k} className={stock[k as Res] < v! ? 'lack' : ''}>
+        <span key={k} className={(stock[k as Res] ?? 0) < v! ? 'lack' : ''}>
           {RES_ICON[k as Res]}
           {v}
         </span>
@@ -28,16 +29,18 @@ export function Cost({ c, stock, money }: { c: UnitCost; stock: Record<Res, numb
 
 export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { unit: string; onClose: () => void }) {
   const me = countryById(state.player.countryId);
-  const special = unit === '★';
-  const name = special ? me.specialUnit.base : unit;
+  const [name, spId] = unit.split('|');
+  const sp = spId ? specialById(spId) : undefined;
+  const special = !!sp;
+  const ex = exclusiveByName(name);
   const info = UNITS.find((u) => u.name === name)!;
-  const c = special ? specialCost(name) : UNIT_COST[name];
-  const why = canProduce(state, name, special);
+  const c = costOf(state, name, spId);
+  const why = canProduce(state, name, spId);
   const [msg, setMsg] = useState('');
   return (
     <Modal
-      title={special ? me.specialUnit.name : name}
-      icon={special ? '🌟' : UNIT_ICON[name]}
+      title={sp ? sp.name : name}
+      icon={special ? '🌟' : ex ? '👑' : UNIT_ICON[name]}
       onClose={onClose}
       footer={
         <>
@@ -46,25 +49,36 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
             className="primary"
             disabled={!!why}
             onClick={() => {
-              actions.apply((s) => produce(s, name, special));
+              actions.apply((s) => produce(s, name, spId));
               setMsg('모집을 시작했어요.');
             }}
           >
-            {why ?? `🪖 모집 (${timeLeft(buildMs(state, name, special))})`}
+            {why ?? `🪖 모집 (${timeLeft(buildMs(state, name, spId))})`}
           </button>
         </>
       }
     >
       <p>
-        <span className="tag">{info.domain}</span> {special ? me.specialUnit.effect : info.role}
+        <span className="tag">{info.domain}</span> {sp ? sp.effect : info.role}
       </p>
+      {sp && (
+        <p className="small muted">
+          🌟 {name} 특화 유닛 · {name}와 같은 연구·등급에서 열려요(바탕 {name}도 계속 만들 수 있어요)
+          {crystalReady(state) ? ' · 💎 지금 만들면 청광석 1을 더 써서 청광 개량형(+15%)' : ''}
+        </p>
+      )}
+      {ex && (
+        <p className="small muted">
+          👑 독점 병과 · {ex.why} · 만드는 연방: {ex.only.map((id) => countryById(id).name).join(', ')}
+        </p>
+      )}
       <div className="kv2">
         <span>전투력</span>
         <b>💪 {c.power}</b>
         <span>병력</span>
         <b>🪖 +{fmt(c.troops)}</b>
         <span>보유</span>
-        <b>{state.economy.army[special ? me.specialUnit.name : name] ?? 0}부대</b>
+        <b>{state.economy.army[sp ? sp.name : name] ?? 0}부대</b>
         <span>열리는 등급</span>
         <b>{RANKS[info.rank].name}</b>
       </div>

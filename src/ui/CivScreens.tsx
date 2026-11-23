@@ -31,6 +31,7 @@ import {
   type Tech,
 } from '../data/civ';
 import { RES_ICON } from '../data/economy';
+import { specialsFor } from '../data/specials';
 import { HEX_SIZE, PIONEER_ISLANDS, hexCorners, hexKey } from '../data/hexmap';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
@@ -163,9 +164,9 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
   const done = C.hasTech(state, t.id);
   const now = c.cur[t.line] === t.id;
   const why = C.canResearch(state, t.id);
-  const special = countryById(state.player.countryId).specialUnit.name;
+  const me = state.player.countryId;
   const unlocks: string[] = [
-    ...(t.units ?? []).map((u) => `🪖 ${u === '★특별' ? special : u}`),
+    ...(t.units ?? []).flatMap((u) => [`🪖 ${u}`, ...specialsFor(me, u).map((d) => `🌟 ${d.name}`)]),
     ...(t.cards ?? []).map((k) => cardById(k)).filter(Boolean).map((k) => `🃏 ${k!.name}`),
     ...(t.districts ?? []).map((d) => `${districtById(d).icon} ${districtById(d).name}`),
     ...(t.agree ?? []).map((a) => `${agreeById(a).icon} ${agreeById(a).name} 협정`),
@@ -205,12 +206,11 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
         <p className="small muted">
           병과는 등급도 필요해요:{' '}
           {t.units
-            .filter((u) => u !== '★특별')
             .map((u) => {
               const r = unitRankOf(u);
               return `${u} ${RANKS[r].name}부터`;
             })
-            .join(' · ') || `${special}: 등급 조건 없음`}
+            .join(' · ')}
         </p>
       ) : null}
       {t.needs.length > 0 && <p className="small">먼저 할 연구: {t.needs.map((n) => `${techById(n)!.icon} ${techById(n)!.name}${C.hasTech(state, n) ? ' ✓' : ''}`).join(', ')}</p>}
@@ -462,7 +462,9 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
   const pad = HEX_SIZE * 1.2;
   const vb = `${Math.min(...xs) - pad} ${Math.min(...ys) - pad} ${Math.max(...xs) - Math.min(...xs) + pad * 2} ${Math.max(...ys) - Math.min(...ys) + pad * 2}`;
   const distAt = (k: string) => cc.districts.find((d) => d.tile === k);
+  const mineAt = (k: string) => (cc.mines ?? []).find((m) => m.tile === k);
   const selTile = sel ? tiles.find((t) => hexKey(t.q, t.r) === sel) : null;
+  const dep = sel ? C.depositAt(id, sel) : null;
   const target = C.loyaltyTarget(state, id);
   return (
     <Modal title={city.name} icon={city.capital ? '👑' : '🏙️'} onClose={onClose}>
@@ -481,15 +483,18 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           const k = hexKey(t.q, t.r);
           const ter = C.terrainOf(t.q, t.r);
           const d = distAt(k);
+          const m = mineAt(k);
+          const dp = C.depositAt(id, k);
           const pts = hexCorners(t.x, t.y, HEX_SIZE * 0.96)
             .map((p) => p.join(','))
             .join(' ');
           return (
             <g key={k} onClick={() => (setSel(k), setMsg(''))} style={{ cursor: 'pointer' }}>
               <polygon points={pts} fill={t.center ? '#94a3b8' : TERRAIN_COLOR[ter]} stroke={sel === k ? '#fde047' : '#0b1220'} strokeWidth={sel === k ? 1.2 : 0.4} />
-              <text x={t.x} y={t.y + 1.8} fontSize={d || t.center ? 5.4 : 4} textAnchor="middle" opacity={d && d.doneMs > state.worldMs ? 0.5 : 1}>
-                {t.center ? '🏛️' : d ? districtById(d.id).icon : TERRAIN_ICON[ter]}
+              <text x={t.x} y={t.y + 1.8} fontSize={d || t.center || dp ? 5.4 : 4} textAnchor="middle" opacity={(d && d.doneMs > state.worldMs) || (m && m.doneMs > state.worldMs) ? 0.5 : 1}>
+                {t.center ? '🏛️' : d ? districtById(d.id).icon : m ? '⛏️' : dp ? RES_ICON[dp] : TERRAIN_ICON[ter]}
               </text>
+              {dp && !d && <circle cx={t.x} cy={t.y} r={HEX_SIZE * 0.78} fill="none" stroke={m ? '#facc15' : '#fde68a'} strokeWidth={0.5} strokeDasharray={m ? undefined : '1 0.8'} />}
             </g>
           );
         })}
@@ -504,6 +509,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         <span>⛰️ 산</span>
         <span>🏺 유적</span>
         <span>🏛️ 도심</span>
+        <span>◌ 매장지 · ⛏️ 채굴장</span>
       </div>
       <p className="small">
         구역 {cc.districts.length}/{C.districtSlots(state, id)} ·{' '}
@@ -515,7 +521,37 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
             고른 칸: {selTile.center ? '도심' : C.terrainOf(selTile.q, selTile.r)}
             {C.terrainOf(selTile.q, selTile.r) === '바닷가' ? ` · 옆 바다 ${C.seaAround(selTile.q, selTile.r)}칸` : ''}
           </small>
-          {distAt(sel!) ? (
+          {dep && !distAt(sel!) && (
+            <div className="line-item">
+              <span className="li-ico">{mineAt(sel!) ? '⛏️' : RES_ICON[dep]}</span>
+              <span className="li-main">
+                <b>
+                  {RES_ICON[dep]} {dep} 매장지
+                </b>
+                <small>
+                  {mineAt(sel!)
+                    ? mineAt(sel!)!.doneMs > state.worldMs
+                      ? `채굴장 공사 중 · ${timeLeft(mineAt(sel!)!.doneMs - state.worldMs)}`
+                      : `채굴장 가동 중 · ${dep} 시간당 +${C.MINE_PER_HOUR}`
+                    : `채굴장을 지으면 ${dep} 시간당 +${C.MINE_PER_HOUR} · 💰${fmt(C.MINE_COST)} 🔩2 · ${C.MINE_HOURS}시간 (구역 칸 수와 따로)`}
+                </small>
+              </span>
+              {!mineAt(sel!) && (
+                <button
+                  className="primary"
+                  disabled={!!C.canMine(state, id, sel!)}
+                  title={C.canMine(state, id, sel!) ?? ''}
+                  onClick={() => {
+                    actions.apply((s) => C.buildMine(s, id, sel!));
+                    setMsg(`⛏️ ${dep} 채굴장 공사 시작! ${C.MINE_HOURS}시간 뒤 완공`);
+                  }}
+                >
+                  ⛏️ 짓기
+                </button>
+              )}
+            </div>
+          )}
+          {mineAt(sel!) ? null : distAt(sel!) ? (
             <p className="small">
               {districtById(distAt(sel!)!.id).icon} {districtById(distAt(sel!)!.id).name} · 이웃 보너스 {C.adjCount(id, sel!, distAt(sel!)!.id, cc)}개
             </p>
@@ -544,7 +580,10 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           )}
         </div>
       ) : (
-        <p className="small muted">칸을 누르면 지을 수 있는 구역이 나와요. 이웃 보너스가 큰 자리를 골라 보세요.</p>
+        <p className="small muted">
+          칸을 누르면 지을 수 있는 구역이 나와요. 이웃 보너스가 큰 자리를 골라 보세요. 매장지
+          {C.deposits(id).length ? ` ${C.deposits(id).map((x) => RES_ICON[x.res]).join('')}` : ''}에는 채굴장을 지을 수 있어요.
+        </p>
       )}
       {msg && <p className="small result">{msg}</p>}
     </Modal>

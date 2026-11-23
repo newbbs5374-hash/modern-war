@@ -36,6 +36,7 @@ import { Rng } from './rng';
 import { talkTick, type Promise_, type Talk } from './talk';
 import type { GameState } from './state';
 import { armyPower } from './economy';
+import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
 import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
 
@@ -127,6 +128,9 @@ export interface Mission {
   op?: number;
   /** 대전투를 지도 위 전투로(아니면 다섯 판) */
   field?: boolean;
+  /** 지도 위 대전투: 출발 때 채운 연료·탄약(0~1) */
+  fuel?: number;
+  ammo?: number;
 }
 
 export interface ActiveMission extends Mission {
@@ -953,6 +957,17 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
     // 직접 만든 부대가 많을수록 쉬워짐(6단계 생산)
     const army = Math.min(0.3, armyPower(ns) / 300);
     m.field = field;
+    if (field) {
+      // 연료·탄약: 창고의 석유·구리를 씀(모자라면 그만큼만 채우고 출발)
+      const st = { ...ns.economy.stock };
+      const fuel = Math.min(FIELD_FUEL_COST, Math.max(0, st.석유));
+      const ammo = Math.min(FIELD_AMMO_COST, Math.max(0, st.구리 ?? 0));
+      st.석유 -= fuel;
+      st.구리 = (st.구리 ?? 0) - ammo;
+      ns.economy = { ...ns.economy, stock: st };
+      m.fuel = Math.round((fuel / FIELD_FUEL_COST) * 100) / 100;
+      m.ammo = Math.round((ammo / FIELD_AMMO_COST) * 100) / 100;
+    }
     m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
     // 지도자는 6시간마다

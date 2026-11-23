@@ -1,6 +1,6 @@
 // 시험판 전용: 자원을 넉넉히 주고, 승급 조건을 바로 채워 승급 뒤 상황을 볼 수 있게 함.
 import { PROMOTION } from '../data/officers';
-import { RESOURCES } from '../data/economy';
+import { BASIC_RES, RESOURCES } from '../data/economy';
 import { DRILL_MAX } from './officer';
 import type { GameState } from './state';
 
@@ -25,7 +25,7 @@ export function grantTestResources(s: GameState): GameState {
       trust: 100,
       drills: DRILL_MAX,
       drillAnchorMs: s.worldMs,
-      testGrant: 1,
+      testGrant: 2,
     },
   };
 }
@@ -44,6 +44,12 @@ export function fillPromotion(s: GameState): GameState {
 
 /** 새 판·옛 저장에 한 번만: 자원 넉넉히 + 첫 승급 조건 */
 export function firstTestGrant(s: GameState): GameState {
+  if (s.officer.testGrant === 1) {
+    // 자원 3안(11-23) 전 저장: 새 자원 8종만 한 번 더 넉넉히
+    const stock = { ...s.economy.stock };
+    for (const r of RESOURCES) if (!BASIC_RES.includes(r)) stock[r] = (stock[r] ?? 0) + 1000;
+    return { ...s, economy: { ...s.economy, stock }, officer: { ...s.officer, testGrant: 2 } };
+  }
   if (s.officer.testGrant) return s;
   return fillPromotion(grantTestResources(s));
 }

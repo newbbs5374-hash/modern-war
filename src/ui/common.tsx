@@ -7,6 +7,7 @@ import { gameClock } from '../game/state';
 import { citiesOf, isAlive, pairKey, relationOf, type WorldEvent } from '../game/world';
 import { REL_COLORS } from './WorldMap';
 import { RANKS } from '../data/ranks';
+import { EXCLUSIVES, specialsOf } from '../data/specials';
 import { budgetPerDay, troopsPerDay, type GameState } from '../game/state';
 
 export const HOUR = 60 * 60 * 1000;
@@ -112,9 +113,18 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
       <p className="small">
         신앙: {FAITHS[c.faith].name}({c.faithStrength}) — {FAITHS[c.faith].trait}
       </p>
-      <p className="small">
-        특별 병과: {c.specialUnit.name}({c.specialUnit.base}) — {c.specialUnit.effect}
-      </p>
+      {specialsOf(c.id).map((d) => (
+        <p key={d.id} className="small">
+          🌟 특화 유닛 {d.slot}: {d.name}({d.base}) — {d.effect}
+        </p>
+      ))}
+      {EXCLUSIVES.some((x) => x.only.includes(c.id)) && (
+        <p className="small">
+          👑 독점 병과: {EXCLUSIVES.filter((x) => x.only.includes(c.id))
+            .map((x) => x.name)
+            .join(' · ')}
+        </p>
+      )}
       <p className="small">
         특수 능력: {c.ability.name} — {c.ability.effect}
       </p>

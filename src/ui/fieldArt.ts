@@ -1,6 +1,8 @@
 // 지도 위 전투 그림 칸. 대장이 만든 그림을 src/assets/field/ 에 정해진 이름으로 넣으면 바로 나옴.
 // 그림이 없으면 임시 그림(이모지·색 육각형)을 씀. 목록과 GPT 프롬프트는 src/assets/field/README.md
 import type { FKind, FTerrain } from '../battle/field';
+import { EXCLUSIVES, SPECIALS } from '../data/specials';
+import { countryById } from '../data/world';
 
 const FILES = import.meta.glob('../assets/field/*.{png,jpg,jpeg,webp,PNG,JPG,JPEG,WEBP}', {
   eager: true,
@@ -37,6 +39,11 @@ export const TILE_ART: Record<FTerrain, string> = {
   해안: 'tile-beach',
 };
 export const FX_ART = { explosion: 'fx-explosion', wreck: 'fx-wreck', landing: 'mark-landing' };
+/** 특화 유닛·독점 병과 그림 칸: unit-sp-us-2, unit-ex-lhd … 없으면 바탕 병과 그림 */
+export const spArt = (sp: string): string => {
+  const x = EXCLUSIVES.find((e) => e.name === sp);
+  return x ? `unit-ex-${x.key}` : `unit-sp-${sp}`;
+};
 
 /** 그림 칸 전체(설정 화면에서 무엇이 들어왔는지 보기) */
 export function fieldSlots(): Array<{ key: string; who: string }> {
@@ -50,5 +57,7 @@ export function fieldSlots(): Array<{ key: string; who: string }> {
     { key: FX_ART.explosion, who: '효과 · 폭발' },
     { key: FX_ART.wreck, who: '효과 · 부서진 자리' },
     { key: FX_ART.landing, who: '표시 · 상륙 거점' },
+    ...SPECIALS.map((d) => ({ key: spArt(d.id), who: `특화 · ${countryById(d.country).name} ${d.name}` })),
+    ...EXCLUSIVES.map((x) => ({ key: spArt(x.name), who: `독점 · ${x.name}` })),
   ];
 }

@@ -3,6 +3,7 @@ import { BLOCS, COUNTRIES } from '../data/world';
 import { HallList } from './victoryScreens';
 import { Flag } from './flag';
 import { LEADERS } from '../data/leaders';
+import { specialsOf } from '../data/specials';
 
 interface Props {
   onStart: (name: string, countryId: string, randomLeaders: boolean) => void;
@@ -58,7 +59,11 @@ export function StartScreen({ onStart, onImport }: Props) {
               );
             })}
             <div className="small">⭐ {c.ability.name}</div>
-            <div className="small muted">🪖 {c.specialUnit.name}</div>
+            <div className="small muted">
+              🌟 {specialsOf(c.id)
+                .map((d) => d.name)
+                .join(' · ')}
+            </div>
           </button>
         ))}
       </div>
