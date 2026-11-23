@@ -27,7 +27,7 @@ import { InteriorScreen } from './InteriorScreen';
 import { DiplomacyScreen } from './DiplomacyScreen';
 import { debugTalk } from '../game/talk';
 import { PortraitList } from './Portrait';
-import { FieldArtList } from './FieldArtList';
+import { FieldArtList, IconArtList } from './FieldArtList';
 import { civOf, debugAllResearch, debugCouncil, debugFinishDistricts, debugFinishResearch, setCouncilOn } from '../game/civ';
 
 export interface GameActions {
@@ -604,6 +604,9 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
       </Card>
       <Card title="🗺️ 지도 전투 그림 칸">
         <FieldArtList />
+      </Card>
+      <Card title="🎖️ 부대·훈련·자원·분쟁 섬 아이콘 칸">
+        <IconArtList />
       </Card>
     </>
   );

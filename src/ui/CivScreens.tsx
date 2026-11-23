@@ -45,6 +45,7 @@ import { Help, Meter, Modal, Tile } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 import { Tip } from './InteriorScreen';
+import { IslandIcon, ResIcon } from './iconArt';
 
 const H = 3600e3;
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -553,10 +554,10 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           </small>
           {dep && !distAt(sel!) && (
             <div className="line-item">
-              <span className="li-ico">{mineAt(sel!) ? '⛏️' : RES_ICON[dep]}</span>
+              <span className="li-ico">{mineAt(sel!) ? '⛏️' : <ResIcon res={dep} />}</span>
               <span className="li-main">
                 <b>
-                  {RES_ICON[dep]} {dep} 매장지
+                  <ResIcon res={dep} inline /> {dep} 매장지
                 </b>
                 <small>
                   {mineAt(sel!)
@@ -774,7 +775,7 @@ export function IslandPanel(props: ScreenProps) {
           return (
             <Tile
               key={p.id}
-              icon={lead.id ? FLAG[lead.id] : p.res === '항구' ? '⚓' : RES_ICON[p.res]}
+              icon={<IslandIcon id={p.id} badge={lead.id ? FLAG[lead.id] : p.res === '항구' ? '⚓' : <ResIcon res={p.res} inline />} />}
               label={p.name}
               sub={`나 ${Math.round(mineV)} · ${lead.id ? (lead.id === me ? '1등!' : countryById(lead.id).name.slice(0, 4)) : '주인 없음'}`}
               tone={lead.id === me ? 'gold' : undefined}
@@ -801,9 +802,16 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
   const fu = C.canFulfill(state, id);
   const [msg, setMsg] = useState('');
   return (
-    <Modal title={p.name} icon="🏝️" onClose={onClose}>
+    <Modal title={p.name} icon={<IslandIcon id={p.id} />} onClose={onClose}>
       <p className="small">
-        나는 자원: {p.res === '항구' ? '⚓ 큰 항구(국방예산 +3%)' : `${RES_ICON[p.res]} ${p.res} 시간당 ${ISLAND_RES_PER_HOUR}개`} · 1등이 되려면 {ISLAND_LEAD_MIN} 이상
+        나는 자원:{' '}
+        {p.res === '항구' ? (
+          '⚓ 큰 항구(국방예산 +3%)'
+        ) : (
+          <>
+            <ResIcon res={p.res} inline /> {p.res} 시간당 {ISLAND_RES_PER_HOUR}개
+          </>
+        )} · 1등이 되려면 {ISLAND_LEAD_MIN} 이상
       </p>
       <small className="stat-group-name">📊 영향력</small>
       {top.length === 0 && <p className="small muted">아직 아무도 사절을 보내지 않았어요.</p>}
