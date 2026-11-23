@@ -453,3 +453,21 @@ button.on { outline: 1px solid var(--amber); }
 .cab-min-art { object-fit: contain; display: block; }
 .cab-min-face { position: absolute; right: -6px; bottom: -6px; }
 .cab-min-banner { display: block; width: 100%; max-height: 140px; object-fit: contain; margin-bottom: 4px; }
+
+/* 11-23 대장 요청: 본부 화면 줄이기(레이더 절반 · 오른쪽 아이콘 작게·촘촘히 · 임무 칸 2/3) */
+.home-mini.radar { width: 64px; gap: 2px; }
+.radar-scope { width: 60px; height: 60px; border-width: 1px; box-shadow: 0 0 8px #45f59a44, inset 0 0 10px #000; }
+.radar-label { font-size: 9px !important; letter-spacing: 0.5px; }
+.bld-col { gap: 3px; top: 60px; }
+.bld-col .bld { width: 44px; height: 40px; }
+.bld-col .bld-ico { font-size: 16px; }
+.bld-col .bld small { font-size: 9px; }
+.bld-badge { min-width: 14px; height: 14px; font-size: 9px; top: 1px; right: 1px; }
+.home-side { width: 32%; gap: 4px; }
+.home-quests { padding: 4px; gap: 3px; }
+.hq-title { font-size: 9.5px; letter-spacing: 1px; }
+.hq { padding: 3px 4px; gap: 4px; font-size: 12px; border-radius: 6px; }
+.hq-main b { font-size: 9.5px; }
+.hq-main small { font-size: 8.5px; line-height: 1.2; }
+.hq-main .bar { margin-top: 2px; }
+.guide-hide { font-size: 10px; }
