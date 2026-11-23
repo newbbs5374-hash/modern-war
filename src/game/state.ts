@@ -13,6 +13,7 @@ import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
+import type { FleetState } from './fleet';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
@@ -76,6 +77,8 @@ export interface GameState {
   orders?: OrdersState;
   /** 첩보·특수 작전 */
   spy?: SpyState;
+  /** 함대 충돌 관전 기록 */
+  fleet?: FleetState;
 }
 
 export interface NewGameOptions {
