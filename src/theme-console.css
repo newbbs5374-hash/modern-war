@@ -425,3 +425,14 @@ button.on { outline: 1px solid var(--amber); }
 .asm-chance { background: transparent; border: 1px dashed var(--hud-dim); }
 .asm-ico { font-size: 24px; line-height: 1.1; }
 .asm-laws { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+
+/* 기자회견·청원·정상회담(11-23) */
+.press-q { font-size: 14px; margin: 4px 0 6px; padding: 6px 8px; border-left: 3px solid var(--hud); background: #0a1a12; }
+.press-as { display: flex; flex-direction: column; gap: 4px; }
+.press-as .pw-act { padding: 6px 8px; }
+.pet-row { cursor: default; }
+.pet-row button { flex: none; display: flex; flex-direction: column; align-items: center; min-height: 0; padding: 3px 6px; font-size: 12px; margin: 0; }
+.pet-row button small { font-size: 10px; }
+.sum-pick select { width: 100%; margin: 2px 0 4px; }
+.sum-ags { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.sum-ags .pw-act.on { outline: 2px solid var(--gold, #e6b800); }

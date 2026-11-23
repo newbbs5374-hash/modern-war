@@ -31,6 +31,7 @@ import { AgreePanel, CouncilPanel, FavorBox, IslandPanel } from './CivScreens';
 import { REL_COLORS } from './WorldMap';
 import { PersonFace } from './People';
 import { ForeignPeople, MinistryCards } from './CabinetUI';
+import { SummitPanel } from './MediaUI';
 
 type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
@@ -56,6 +57,7 @@ export function DiplomacyScreen(props: ScreenProps) {
       {tab === 'mofa' && (
         <>
           <MinistryCards state={props.state} actions={props.actions} ids={['mofa']} title="외교부" />
+          <SummitPanel {...props} />
           <ForeignPeople state={props.state} actions={props.actions} />
         </>
       )}
