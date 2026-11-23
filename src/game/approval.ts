@@ -14,6 +14,7 @@ import { incomeShare, isAlive, pairKey, relationOf } from './world';
 import type { GameState } from './state';
 import { originEff, originOf, type OriginEffKey } from './origin';
 import { cabApprovalRows, cabFieldRows, cabTaxSoft, cabTrust } from './cabinet';
+import { scheduleFieldRows } from './schedule';
 import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
@@ -188,6 +189,7 @@ export function fieldRows(s: GameState, f: FieldId): Rows {
   const o = originEff(s, ORIGIN_FIELD[f]);
   if (o) rows.push([`🎓 출신(${originOf(s)!.name})`, o]);
   if (f !== 'personal') rows.push(...cabFieldRows(s, f));
+  rows.push(...scheduleFieldRows(s, f));
   return rows;
 }
 /** 분야 점수(계산용, 반올림 안 함) */
@@ -246,7 +248,7 @@ export function approvalTroopMult(s: GameState): number {
 /** 잠깐 붙는 지지도 덤(사건·승리·연설). hours 동안 */
 export function addPresMod(s: GameState, why: string, v: number, hours: number): GameState {
   const p = presOf(s);
-  const mods = [...p.mods.filter((m) => m.untilMs > s.worldMs), { why, v, untilMs: s.worldMs + hours * H }].slice(-8);
+  const mods = [...p.mods.filter((m) => m.untilMs > s.worldMs), { why, v, untilMs: s.worldMs + hours * H }].slice(-12);
   return { ...s, pres: { ...p, mods } };
 }
 /** 지지도를 바로 움직임(사건 결과 등) */

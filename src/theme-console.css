@@ -403,3 +403,14 @@ button.on { outline: 1px solid var(--amber); }
 .cab-kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; align-items: baseline; }
 .cab-kv > span { color: var(--muted); white-space: nowrap; }
 .cab-kv > b { font-weight: 600; }
+
+/* 대통령 일정(11-23) */
+.sch-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0; }
+.sch-slot { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border: 1px dashed var(--hud-dim); }
+.sch-slot.on { border-style: solid; border-color: var(--hud); }
+.sch-slot small { font-size: 11px; }
+.sch-ico { font-size: 26px; line-height: 1.2; }
+.sch-msg { color: var(--hud); text-align: center; margin: 2px 0; }
+.sch-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; }
+.sch-acts .pw-act { padding: 6px; }
+.sch-acts .pw-act small { font-size: 10.5px; }
