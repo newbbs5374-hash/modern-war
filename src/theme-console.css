@@ -255,3 +255,12 @@ button.on { outline: 1px solid var(--amber); }
 .crisis .crisis-opt small { font-size: 11.5px; line-height: 1.35; }
 .hq.crisis-hq { border-color: var(--amber); animation: crisisPulse 1.6s ease-in-out infinite; }
 @keyframes crisisPulse { 50% { box-shadow: 0 0 10px var(--amber); } }
+
+/* 미리 명령 · 자리 비운 동안 */
+.order-row { display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #ffffff14; }
+.order-row input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.order-row span { display: flex; flex-direction: column; gap: 2px; }
+.order-row small { font-size: 11.5px; line-height: 1.35; }
+.away-rows .list-row b { text-align: right; max-width: 62%; }
+.away-good b { color: var(--green, #45f59a); }
+.away-bad b { color: #ff6b6b; }
