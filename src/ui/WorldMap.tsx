@@ -8,6 +8,7 @@ import {
 import { CITIES } from "../data/cities";
 import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from "../data/world";
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
+import { KR_INNER, KR_OUTLINE, KR_PROVINCES } from "../data/krProvinces";
 import {
   GEO,
   GEO_PATH,
@@ -132,9 +133,12 @@ const SEA = Object.fromEntries(
 function Fleets({
   world,
   colorOf,
+  zr = 1,
 }: {
   world: WorldState;
   colorOf: (id: string) => string;
+  /** 확대 배율에 맞춘 크기 비율(확대해도 배·전투기가 커지지 않게) */
+  zr?: number;
 }) {
   return (
     <g className="fleets" pointerEvents="none">
@@ -208,12 +212,12 @@ function Fleets({
               <g key={j}>
                 {j === 0 ? (
                   carrier ? (
-                    <Carrier s={0.7} color={color} />
+                    <Carrier s={0.7 * zr} color={color} />
                   ) : (
-                    <Escort s={0.8} color={color} />
+                    <Escort s={0.8 * zr} color={color} />
                   )
                 ) : (
-                  <Escort s={0.55} color={color} />
+                  <Escort s={0.55 * zr} color={color} />
                 )}
                 <animateMotion
                   dur={`${dur}s`}
@@ -227,7 +231,7 @@ function Fleets({
             ))}
             {Array.from({ length: jets }, (_, j) => (
               <g key={`j${j}`}>
-                <Jet s={0.65} color={color} />
+                <Jet s={0.65 * zr} color={color} />
                 <animateMotion
                   dur={`${jdur}s`}
                   begin={`${-j * 0.35 - (hash(c.id) % 7)}s`}
@@ -268,6 +272,11 @@ function Fleets({
 const MAX_K = 9;
 /** 처음 열 때 확대: 내 나라 둘레가 보이게 */
 const START_K = 2;
+// 나라 모양: 대한민국은 시·도 자료(더 자세함)로, 나머지는 세계 자료로
+const COAST: Record<string, string> = {
+  ...GEO_PATH,
+  kr: KR_OUTLINE,
+};
 type View = { k: number; x: number; y: number };
 
 /** 전략 지도(임시 도형). 섬 = 들쭉날쭉한 땅, 나라 = 색 네모, 도시 = 점(지금 주인 색), 함대·전투기가 움직임 */
@@ -406,6 +415,9 @@ export function WorldMap({
     ? `${(Math.max(0, Math.min(MW - MH, capX - MH / 2)) + X0).toFixed(1)} ${Y0} ${MH} ${MH}`
     : `${(X0 + cv.x).toFixed(1)} ${(Y0 + cv.y).toFixed(1)} ${vw(cv.k).toFixed(1)} ${vh(cv.k).toFixed(1)}`;
   const owner = world.owner;
+  // 확대해도 글씨·점·선이 같이 커지지 않게(처음 배율 기준으로 화면 크기 유지)
+  const z = mini ? 1 : Math.min(1, START_K / cv.k);
+  const zr = mini ? 1 : Math.pow(z, 0.75);
 
   const svg = (
     <svg
@@ -419,6 +431,7 @@ export function WorldMap({
       onPointerUp={onUp}
       onPointerCancel={onUp}
       onWheel={onWheel}
+      style={{ ["--z" as string]: z } as React.CSSProperties}
     >
       <defs>
         <radialGradient id="wm-sea" cx="50%" cy="50%" r="75%">
@@ -428,7 +441,7 @@ export function WorldMap({
         {/* 13개 나라 모양 안쪽만 칠하기 */}
         {COUNTRIES.map((c) => (
           <clipPath key={c.id} id={`wm-c-${c.id}`}>
-            <path d={GEO_PATH[c.id]} />
+            <path d={COAST[c.id]} />
           </clipPath>
         ))}
         <pattern
@@ -522,14 +535,40 @@ export function WorldMap({
       {COUNTRIES.map((c) => (
         <path
           key={c.id}
-          d={GEO_PATH[c.id]}
+          d={COAST[c.id]}
           fill="none"
           stroke={c.id === selectedId ? "#e2f3ff" : "#7dd3fc"}
           strokeOpacity={c.id === selectedId ? 0.9 : 0.45}
-          strokeWidth={c.id === selectedId ? 1 : 0.6}
+          strokeWidth={(c.id === selectedId ? 1 : 0.6) * zr}
           pointerEvents="none"
         />
       ))}
+      {/* 대한민국 시·도 경계 */}
+      {!mini && cv.k >= 2.9 && (
+        <path
+          d={KR_INNER}
+          fill="none"
+          stroke="#f8fafc"
+          strokeOpacity="0.65"
+          strokeWidth={0.45 * z}
+          strokeDasharray={`${1.6 * z} ${1 * z}`}
+          strokeLinejoin="round"
+          pointerEvents="none"
+        />
+      )}
+      {!mini &&
+        cv.k >= 3.5 &&
+        KR_PROVINCES.filter((p) => !p.metro).map((p) => (
+          <text
+            key={p.full}
+            x={p.x}
+            y={p.y}
+            textAnchor="middle"
+            className="map-prov"
+          >
+            {p.name}
+          </text>
+        ))}
       {/* 분쟁 섬(가상의 작은 섬)·고대 성지 */}
       {PIONEER_ISLANDS.map((p) => (
         <path
@@ -557,7 +596,7 @@ export function WorldMap({
           <text
             key={p.id}
             x={p.x}
-            y={p.y + 11}
+            y={p.y + 11 * z}
             textAnchor="middle"
             className="map-island"
           >
@@ -571,7 +610,7 @@ export function WorldMap({
           y={COUNTRY_LABEL[c.id].y}
           textAnchor="middle"
           className="map-label"
-          fontSize={mini ? 22 : c.cities.length >= 4 ? 11 : 6.5}
+          fontSize={mini ? 22 : (c.cities.length >= 4 ? 11 : 6.5) * z}
           opacity={isAlive(world, c.id) ? 1 : 0.4}
         >
           {c.id === playerCountryId ? "★ " : ""}
@@ -586,15 +625,15 @@ export function WorldMap({
             <circle
               cx={city.x}
               cy={city.y}
-              r={city.capital ? 3.8 : 2.8}
+              r={(city.capital ? 3.8 : 2.8) * zr}
               fill={colorOf(o)}
               stroke={occupied ? "#fff" : "#0c1a2b"}
-              strokeWidth={occupied ? 1.6 : 1}
+              strokeWidth={(occupied ? 1.6 : 1) * zr}
             />
             {!mini && (
               <text
                 x={city.x}
-                y={city.y - 5}
+                y={city.y - 5 * zr}
                 textAnchor="middle"
                 className="map-cityname"
               >
@@ -614,14 +653,14 @@ export function WorldMap({
       {!mini && (
         <text
           x={HOLY_HEX.x}
-          y={HOLY_HEX.y + 10}
+          y={HOLY_HEX.y + 10 * z}
           textAnchor="middle"
           className="map-island holy"
         >
           {HOLY_CITY.name}
         </text>
       )}
-      {!mini && <Fleets world={world} colorOf={colorOf} />}
+      {!mini && <Fleets world={world} colorOf={colorOf} zr={zr} />}
     </svg>
   );
 
