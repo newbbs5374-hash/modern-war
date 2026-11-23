@@ -14,6 +14,7 @@ import type { Report } from './report';
 import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
+import { remarksTick, type RemarkState } from './remarks';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
 import type { FleetState } from './fleet';
@@ -98,6 +99,8 @@ export interface GameState {
   fleet?: FleetState;
   /** 첫 판 안내 임무 */
   guide?: GuideState;
+  /** 정치인 발언(11-24) */
+  remarks?: RemarkState;
   /** 대통령식 내정: 지지도·탄핵 위기·기록(없으면 처음 쓸 때 채움) */
   pres?: PresState;
   /** 인물·부처(11-23) */
@@ -260,7 +263,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = civTick(cur, pairsBefore);
-    cur = mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)));
+    cur = remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

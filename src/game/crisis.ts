@@ -6,11 +6,14 @@ import type { Res } from '../data/economy';
 import { addFavorNote, civOf } from './civ';
 import { addPresMod } from './approval';
 import { ORIGIN_CRISES } from '../data/originContent';
+import { LEADERS } from '../data/leaders';
+import { PRESSURES, WORLD_MOVES, type PressureDef } from '../data/leaderMoves';
+import { TENSION_MAX } from './balance';
 import type { OriginId } from './origin';
 import { Rng } from './rng';
 import { pushReport } from './report';
 import type { GameState } from './state';
-import { isAlive, isRival, pairKey, type WorldEvent } from './world';
+import { isAlive, isRival, pairKey, relationOf, type WorldEvent } from './world';
 
 const H = 3600e3;
 export const CRISIS_FIRST_MS = 6 * H;
@@ -258,7 +261,7 @@ export const CRISES: CrisisDef[] = [
 ];
 /** 일반 사건 + 출신 전용 사건 */
 export const ALL_CRISES: CrisisDef[] = [...CRISES, ...ORIGIN_CRISES];
-export const crisisById = (id: string) => ALL_CRISES.find((c) => c.id === id)!;
+export const crisisById = (id: string): CrisisDef => ALL_CRISES.find((c) => c.id === id) ?? PRESSURES.find((c) => c.id === id)!;
 /** 이 지도자에게 나올 수 있는 사건 */
 export const crisesFor = (s: GameState) => ALL_CRISES.filter((d) => !d.origin || d.origin === s.player.origin);
 
@@ -278,13 +281,18 @@ export interface CrisisState {
   nextId: number;
   /** 최근에 나온 사건(같은 것이 바로 또 나오지 않게) */
   recent: string[];
+  /** 외국 지도자 압박 카드 다음 시각(11-24) */
+  pressMs?: number;
+  /** 세계 소식(다른 나라끼리) 다음 시각 */
+  newsMs?: number;
 }
 
-export const newCrisis = (worldMs: number): CrisisState => ({ nextMs: worldMs + CRISIS_FIRST_MS, open: null, solved: 0, log: [], nextId: 1, recent: [] });
+export const newCrisis = (worldMs: number): CrisisState => ({ nextMs: worldMs + CRISIS_FIRST_MS, open: null, solved: 0, log: [], nextId: 1, recent: [], pressMs: worldMs + 3 * H, newsMs: worldMs + 2 * H });
 export const crisisOf = (s: GameState): CrisisState => s.crisis ?? newCrisis(0);
 
 const nm = (id: string | null) => (id ? countryById(id).name : '');
-export const fill = (t: string, target: string | null) => t.replace(/\{X\}/g, nm(target));
+const leaderName = (id: string | null) => (id && LEADERS[id] ? `${countryById(id).name} ${LEADERS[id].title} ${LEADERS[id].name}` : '');
+export const fill = (t: string, target: string | null) => t.replace(/\{X\}/g, nm(target)).replace(/\{L\}/g, leaderName(target));
 
 /** 효과를 글로(예: "국방예산 -15,000 · 신뢰 +5") */
 export function fxText(fx: Fx[], target: string | null): string {
@@ -440,6 +448,81 @@ export function crisisTick(s: GameState): GameState {
     const nextMs = s.worldMs + rng.range(CRISIS_MIN_MS, CRISIS_MAX_MS);
     ns = { ...ns, crisis: { ...c, open, nextMs, nextId: c.nextId + 1, recent: [d.id, ...c.recent].slice(0, 5) } };
     ns = pushReport(ns, { icon: '⚡', text: `급한 일이 생겼습니다! ${d.title} — 본부에서 결정해 주세요.` });
+  }
+  return pressureTick(ns);
+}
+
+/* ───────── 외국 지도자 압박(11-24 대장 지시: 각 나라 지도자가 더 강하게) ───────── */
+export const PRESS_FIRST_MS = 3 * H;
+export const PRESS_MIN_MS = 4 * H;
+export const PRESS_MAX_MS = 7 * H;
+export const NEWS_MIN_MS = 2 * H;
+export const NEWS_MAX_MS = 4 * H;
+
+/** 지금 나에게 나올 수 있는 압박 카드와 무게(공격형 지도자·맞수·전쟁 상대일수록 자주) */
+export function pressuresFor(s: GameState): Array<{ d: PressureDef; w: number }> {
+  const me = s.player.countryId;
+  const w = s.world;
+  return PRESSURES.filter((d) => d.actor !== me && isAlive(w, d.actor) && (!d.onlyFor || d.onlyFor.includes(me)) && !d.notFor?.includes(me) && (!d.needRival || isRival(me, d.actor))).map((d) => {
+    const per = w.personalities?.[d.actor];
+    let wt = per === '공격형' ? 2 : per === '기회주의' ? 1.5 : 1;
+    if (isRival(me, d.actor)) wt *= 1.5;
+    if (relationOf(w, me, d.actor) === '전쟁') wt *= 1.5;
+    if (d.onlyFor) wt *= 1.5; // 우리 나라만 노린 카드
+    return { d, w: wt };
+  });
+}
+function pickW<T>(rng: Rng, list: Array<{ d: T; w: number }>): T | null {
+  const tot = list.reduce((a, x) => a + x.w, 0);
+  if (!tot) return null;
+  let r = rng.next() * tot;
+  for (const x of list) if ((r -= x.w) <= 0) return x.d;
+  return list[list.length - 1].d;
+}
+
+/** 압박 카드 열기 + 세계 소식 */
+export function pressureTick(s: GameState): GameState {
+  if (s.ending) return s;
+  let c = crisisOf(s);
+  let ns = s;
+  const pressMs = c.pressMs ?? s.worldMs + PRESS_FIRST_MS;
+  const newsMs = c.newsMs ?? s.worldMs + NEWS_MIN_MS;
+  if (c.pressMs === undefined || c.newsMs === undefined) {
+    c = { ...c, pressMs, newsMs };
+    ns = { ...ns, crisis: c };
+  }
+  const rng = new Rng((c.nextId * 40503 + s.world.seed * 7 + Math.floor(s.worldMs / H)) >>> 0);
+  if (!c.open && s.worldMs >= pressMs) {
+    const all = pressuresFor(ns);
+    const fresh = all.filter((x) => !c.recent.includes(x.d.id));
+    const d = pickW(rng, fresh.length ? fresh : all);
+    const next = s.worldMs + rng.range(PRESS_MIN_MS, PRESS_MAX_MS);
+    if (d) {
+      const open: CrisisOpen = { id: c.nextId, def: d.id, target: d.actor, untilMs: s.worldMs + CRISIS_ANSWER_MS };
+      c = { ...c, open, pressMs: next, nextId: c.nextId + 1, recent: [d.id, ...c.recent].slice(0, 8) };
+      // 압박 카드가 뜨면 일반 돌발 사건은 조금 뒤로
+      if (c.nextMs < s.worldMs + 2 * H) c.nextMs = s.worldMs + 2 * H;
+      ns = { ...ns, crisis: c };
+      ns = addEvent(ns, `${d.icon} ${fill(d.title, d.actor)} — ${countryById(d.actor).name}의 압박`);
+      ns = pushReport(ns, { icon: d.icon, text: `${leaderName(d.actor)}의 압박입니다! ${d.title} — 본부에서 대응을 정해 주세요.` });
+    } else {
+      c = { ...c, pressMs: next };
+      ns = { ...ns, crisis: c };
+    }
+  }
+  if (s.worldMs >= newsMs) {
+    const me = s.player.countryId;
+    const w = ns.world;
+    const ok = WORLD_MOVES.filter((m) => m.actor !== me && m.to !== me && isAlive(w, m.actor) && isAlive(w, m.to) && w.pairs[pairKey(m.actor, m.to)]);
+    const m = ok.length ? rng.pick(ok) : null;
+    if (m) {
+      const k = pairKey(m.actor, m.to);
+      const p = w.pairs[k];
+      const tension = p.rel === '전쟁' ? p.tension : Math.min(TENSION_MAX - 1, p.tension + m.tension);
+      const ev: WorldEvent = { t: s.worldMs, kind: '외교', text: `${m.icon} ${fill(m.text, m.actor)}`, mine: false };
+      ns = { ...ns, world: { ...w, pairs: { ...w.pairs, [k]: { ...p, tension } }, events: [ev, ...w.events].slice(0, 200) } };
+    }
+    ns = { ...ns, crisis: { ...crisisOf(ns), newsMs: s.worldMs + rng.range(NEWS_MIN_MS, NEWS_MAX_MS) } };
   }
   return ns;
 }
