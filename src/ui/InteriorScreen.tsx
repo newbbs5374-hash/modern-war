@@ -1,5 +1,6 @@
 // 내정 화면: 금고(나라 살림 한눈에) · 자원(설명·사용처·획득처) · 시설(분야별 3개 + 내정 업무)
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { CITIES } from '../data/cities';
 import {
   BUFF_EFF,
@@ -68,31 +69,68 @@ import { CityPanel, GovPanel, ResearchPanel } from './CivScreens';
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const sign = (v: number) => (v >= 0 ? `+${fmt(v)}` : `−${fmt(-v)}`);
 
-/** 누르면 말풍선이 뜨는 글자(어디서 어떻게 계산되는지) */
+/** 누르면 말풍선이 뜨는 글자(어디서 어떻게 계산되는지). 말풍선은 늘 게임 화면 안에 들어오게 자리를 잡음 */
 export function Tip({ label, title, rows, total }: { label: ReactNode; title: string; rows: Array<[string, string]>; total?: string }) {
   const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ style: CSSProperties; arrow: number; up: boolean } | null>(null);
+  useLayoutEffect(() => {
+    if (!open || !btn.current || !box.current) return;
+    const place = () => {
+      const b = btn.current!.getBoundingClientRect();
+      const frame = (btn.current!.closest('.frame') ?? document.documentElement).getBoundingClientRect();
+      const left0 = Math.max(frame.left, 0) + 8;
+      const right0 = Math.min(frame.right, window.innerWidth) - 8;
+      const w = Math.min(220, right0 - left0);
+      const h = box.current!.offsetHeight;
+      const left = Math.min(Math.max(b.left + b.width / 2 - w / 2, left0), right0 - w);
+      const up = b.bottom + 8 + h > window.innerHeight - 8 && b.top - 8 - h > 8;
+      const top = up ? b.top - 8 - h : b.bottom + 8;
+      setPos({ style: { left, top, width: w }, arrow: Math.min(Math.max(b.left + b.width / 2 - left, 12), w - 12), up });
+    };
+    place();
+    const close = () => setOpen(false);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [open]);
   return (
     <span className="tip">
-      <button className="tip-btn" onClick={(e) => (e.stopPropagation(), setOpen((v) => !v))}>
+      <button ref={btn} className="tip-btn" onClick={(e) => (e.stopPropagation(), setOpen((v) => !v), setPos(null))}>
         {label} <i>ⓘ</i>
       </button>
-      {open && (
-        <span className="tip-bubble" role="tooltip" onClick={() => setOpen(false)}>
-          <b>{title}</b>
-          {rows.map(([k, v]) => (
-            <span key={k} className="tip-row">
-              <span>{k}</span>
-              <strong>{v}</strong>
+      {open &&
+        createPortal(
+          <>
+            <span className="tip-shield" onClick={() => setOpen(false)} />
+            <span
+              ref={box}
+              className={`tip-bubble${pos?.up ? ' up' : ''}`}
+              role="tooltip"
+              style={{ ...(pos?.style ?? { left: 0, top: 0 }), visibility: pos ? 'visible' : 'hidden', ['--arrow' as string]: `${pos?.arrow ?? 18}px` }}
+              onClick={() => setOpen(false)}
+            >
+              <b>{title}</b>
+              {rows.map(([k, v]) => (
+                <span key={k} className="tip-row">
+                  <span>{k}</span>
+                  <strong>{v}</strong>
+                </span>
+              ))}
+              {total && (
+                <span className="tip-row tip-total">
+                  <span>합계</span>
+                  <strong>{total}</strong>
+                </span>
+              )}
             </span>
-          ))}
-          {total && (
-            <span className="tip-row tip-total">
-              <span>합계</span>
-              <strong>{total}</strong>
-            </span>
-          )}
-        </span>
-      )}
+          </>,
+          document.body,
+        )}
     </span>
   );
 }

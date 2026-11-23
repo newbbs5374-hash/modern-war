@@ -154,7 +154,7 @@ button.on { outline: 1px solid var(--amber); }
 /* 부관 보고: 무전 기록 */
 .aide-face { border-radius: 2px; border: 1px solid var(--amber); background: #0f1d15; box-shadow: 0 0 10px #ffb02033; }
 .aide-face .face-img { border-radius: 0; }
-.aide-bubble { background: #08120cf2; color: var(--text); border: 1px solid var(--hud-dim); border-left: 3px solid var(--amber); box-shadow: 0 6px 18px #000c; }
+.aide-bubble { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); background: #08120cc0; color: var(--text); border: 1px solid var(--hud-dim); border-left: 3px solid var(--amber); box-shadow: 0 6px 18px #000c; }
 .aide-bubble b { color: var(--amber); letter-spacing: 1px; }
 .aide-bubble b::before { content: '[무전] '; color: var(--hud); }
 .aide-bubble small { color: var(--muted); }
