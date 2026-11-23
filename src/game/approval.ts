@@ -16,6 +16,7 @@ import { originEff, originOf, type OriginEffKey } from './origin';
 import { cabApprovalRows, cabFieldRows, cabTaxSoft, cabTrust } from './cabinet';
 import { scheduleFieldRows } from './schedule';
 import { lawEff, lawRows } from './laws';
+import { mediaFieldRows } from './media';
 import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
@@ -191,6 +192,7 @@ export function fieldRows(s: GameState, f: FieldId): Rows {
   if (o) rows.push([`🎓 출신(${originOf(s)!.name})`, o]);
   if (f !== 'personal') rows.push(...cabFieldRows(s, f));
   rows.push(...scheduleFieldRows(s, f));
+  rows.push(...mediaFieldRows(s, f));
   if (f !== 'personal') rows.push(...lawRows(s, f));
   return rows;
 }

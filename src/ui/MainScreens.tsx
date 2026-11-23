@@ -20,6 +20,8 @@ import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
 import { GeneralCandidates, MinistryCards, TalentPanel } from './CabinetUI';
 import { SchedulePanel } from './ScheduleUI';
 import { AssemblyPanel } from './AssemblyUI';
+import { PetitionPanel, PressPanel } from './MediaUI';
+import { mediaOf } from '../game/media';
 import { assemblyOf } from '../game/assembly';
 import { liveLaws } from '../game/laws';
 import { scheduleOf } from '../game/schedule';
@@ -121,21 +123,26 @@ export function SocietyScreen(props: ScreenProps) {
   const { state } = props;
   const o = state.officer;
   const civ = civOf(state);
-  const [raw, setTab] = useTab<SocietyTab | 'fac'>('society', 'city');
-  const tabs: TabDef<SocietyTab | 'fac'>[] = [
-    { id: 'mins', label: '부처', icon: '🏛️' },
+  const [raw, setTab] = useTab<SocietyTab>('society', 'city');
+  const tabs: TabDef<SocietyTab>[] = [
+    { id: 'mins', label: '부처·시설', icon: '🏛️', badge: choreIn(props, SOCIETY_BUILDINGS) ? '!' : null },
     { id: 'city', label: '도시', icon: '🏘️' },
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
     { id: 'tech', label: '사회 연구', icon: '📜', badge: !civ.cur.soc && needPick(state) ? '!' : null },
     { id: 'politics', label: '정계', icon: '🗳️', badge: o.chiefRival || o.dismissDeadlineMs !== null || (!assemblyOf(state).vote && !liveLaws(state).length) ? '!' : null },
-    { id: 'fac', label: '복지·과학', icon: '🏥', badge: choreIn(props, SOCIETY_BUILDINGS) ? '!' : null },
+    { id: 'press', label: '언론·청원', icon: '🎙️', badge: mediaOf(state).petitions.length || (state.worldMs >= mediaOf(state).pressMs ? '!' : null) },
   ];
   const tab = pickTab(tabs, raw);
   return (
     <>
       <FieldBar state={state} field="society" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
-      {tab === 'mins' && <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis']} title="사회 부처" />}
+      {tab === 'mins' && (
+        <>
+          <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis']} title="사회 부처" />
+          <FacilityPanel {...props} only={SOCIETY_BUILDINGS} />
+        </>
+      )}
       {tab === 'city' && <CityPanel {...props} />}
       {tab === 'gov' && <GovPanel {...props} />}
       {tab === 'tech' && <ResearchPanel {...props} fixed="soc" />}
@@ -145,7 +152,12 @@ export function SocietyScreen(props: ScreenProps) {
           <RivalsPanel {...props} />
         </>
       )}
-      {tab === 'fac' && <FacilityPanel {...props} only={SOCIETY_BUILDINGS} />}
+      {tab === 'press' && (
+        <>
+          <PressPanel {...props} />
+          <PetitionPanel {...props} />
+        </>
+      )}
     </>
   );
 }
