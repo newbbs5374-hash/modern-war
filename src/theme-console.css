@@ -694,3 +694,30 @@ select.wide, button.wide { width: 100%; }
 .dom-chain-steps .dom-ico { font-size: 24px; }
 .homeland-tag { font-size: 12px; }
 .dom-ico img { width: 44px; height: 44px; object-fit: contain; display: block; }
+
+/* ── 나라 큰 팝업(11-24): 위 지도 · 아래 탭. PC는 왼쪽 지도 · 오른쪽 탭 ── */
+.modal.modal-big { width: min(860px, 100%); max-height: 94vh; }
+.cdetail { display: flex; flex-direction: column; gap: 8px; }
+.cmap svg { width: 100%; height: 200px; display: block; border-radius: 12px; border: 1px solid #677d94; background: #1e3a52; }
+.cmap-name { fill: #f8fafc; font-weight: 700; paint-order: stroke; stroke: #0f172a; stroke-width: 0.6px; }
+.cmap-isle { fill: #fde68a; paint-order: stroke; stroke: #0f172a; stroke-width: 0.5px; }
+.cmap-city { cursor: pointer; }
+.cmap-legend { margin-top: 4px; min-height: 18px; }
+.cdetail-tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-bottom: 6px; }
+.cdetail-tabs button { min-height: 34px; padding: 2px 0; font-size: 12px; white-space: nowrap; }
+.cdetail-tabs button.on { background: var(--hud); color: #0f172a; }
+.cfacts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 12.5px; margin: 6px 0; }
+.cfacts span { background: #0003; border-radius: 8px; padding: 4px 7px; }
+.cleader { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+.cleader .leader-big { width: 64px; height: 64px; border-radius: 12px; overflow: hidden; flex: none; }
+.cleader .leader-big img { width: 100%; height: 100%; object-fit: cover; }
+.cdef, .cres, .crel { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+.cdef span, .cres span { background: #0003; border-radius: 8px; padding: 3px 7px; }
+.crel-chip { border: 1px solid; border-radius: 8px; padding: 2px 6px; background: #0003; }
+.crel-chip.dead { opacity: .45; }
+@media (min-width: 760px) {
+  .cdetail { flex-direction: row; align-items: flex-start; }
+  .cdetail .cmap { flex: 1.1; position: sticky; top: 0; }
+  .cdetail .cmap svg { height: 360px; }
+  .cdetail-side { flex: 1; min-width: 0; }
+}

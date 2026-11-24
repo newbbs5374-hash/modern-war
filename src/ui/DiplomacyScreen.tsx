@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { LEADERS } from '../data/leaders';
 import { RESOURCES, SELL_RATE, type Res } from '../data/economy';
 import { BLOCS, COUNTRIES, countryById, type Relation } from '../data/world';
-import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, canDiplo, diploChance, diploReady, doDiplo, type DiploAct } from '../game/command';
+import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, diploReady } from '../game/command';
 import {
   CONTRACT_MAX,
   CONTRACT_QTY,
@@ -20,19 +20,20 @@ import {
   tradePrice,
 } from '../game/economy';
 import { citiesOf, isAlive, pairKey, relationOf } from '../game/world';
-import { CountryInfo, RelTag, TensionBar, fmt } from './common';
+import { RelTag, TensionBar, fmt } from './common';
 import { FLAG, Flag } from './flag';
 import { Chip, Help, Modal, Tabs, useTab } from './kit';
 import { timeLeft } from './officerScreens';
 import { FieldBar } from './PresUI';
 import type { ScreenProps } from './screens';
 import { civOf } from '../game/civ';
-import { AgreePanel, CouncilPanel, FavorBox, IslandPanel } from './CivScreens';
+import { AgreePanel, CouncilPanel, IslandPanel } from './CivScreens';
 import { REL_COLORS } from './WorldMap';
 import { PersonFace } from './People';
 import { ForeignPeople, MinistryCards } from './CabinetUI';
 import { SummitPanel } from './MediaUI';
 import { DeployPanel } from './DeployPanel';
+import { CountryDetail } from './CountryDetail';
 
 type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
@@ -69,7 +70,7 @@ export function DiplomacyScreen(props: ScreenProps) {
       {tab === 'council' && <CouncilPanel {...props} />}
       {tab === 'nations' && <NationsPanel {...props} onPick={setSel} />}
       {tab === 'rel' && <RelationsPanel {...props} onPick={setSel} />}
-      {sel && <CountryModal {...props} id={sel} onClose={() => setSel(null)} />}
+      {sel && <CountryDetail {...props} id={sel} onClose={() => setSel(null)} />}
     </>
   );
 }
@@ -337,44 +338,3 @@ function RelationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) 
   );
 }
 
-/* ───────── 나라 팝업: 정보 + 외교 행동 ───────── */
-function CountryModal({ state, actions, id, onClose }: ScreenProps & { id: string; onClose: () => void }) {
-  const [msg, setMsg] = useState('');
-  const me = state.player.countryId;
-  const top = state.player.rankIndex >= COMMAND_TOP;
-  return (
-    <Modal title={countryById(id).name} icon={FLAG[id]} onClose={onClose}>
-      {top && id !== me && (
-        <div className="buttons">
-          {(['선전포고', '휴전 제안', '연합 제안'] as DiploAct[]).map((act) => {
-            const why = canDiplo(state, id, act);
-            return (
-              <button
-                key={act}
-                style={{ flex: 1, marginTop: 0 }}
-                className={act === '선전포고' ? 'danger' : 'primary'}
-                disabled={!!why}
-                title={why ?? ''}
-                onClick={() => {
-                  if (act === '선전포고' && !window.confirm(`${countryById(id).name}에 선전포고할까요?`)) return;
-                  setMsg(
-                    actions.applyWith((s) => {
-                      const r = doDiplo(s, id, act);
-                      return { state: r.state, out: r.text };
-                    }) ?? '',
-                  );
-                }}
-              >
-                {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : '🤝'} {act}
-                <small>{why ?? (act === '선전포고' ? '' : `성공 ${Math.round(diploChance(state, id, act) * 100)}%`)}</small>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {msg && <p className="small result">{msg}</p>}
-      <FavorBox state={state} id={id} />
-      <CountryInfo id={id} state={state} />
-    </Modal>
-  );
-}

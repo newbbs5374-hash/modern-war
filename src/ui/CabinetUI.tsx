@@ -83,7 +83,7 @@ export function PersonFace({ p, size = 44 }: { p: Person; size?: number }) {
   );
 }
 
-function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Person; onOpen: () => void; right?: React.ReactNode }) {
+export function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Person; onOpen: () => void; right?: React.ReactNode }) {
   const seat = p.seat ? `${ministryById(p.seat.id).short} ${p.seat.kind === 'min' ? '장관' : '차관'}` : p.post ? postById(p.post).name : null;
   const hearing = cabinetOf(state).hearing?.pid === p.id;
   return (
