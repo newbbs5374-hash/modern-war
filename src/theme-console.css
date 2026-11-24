@@ -857,3 +857,23 @@ select.wide, button.wide { width: 100%; }
 /* 11-24 아이콘 그림 16장 들어감: 그림은 덜 흐리게, 오른쪽은 조금 크게 */
 .bottom button:not(.active) .ico:has(.ui-ico) { filter: grayscale(0.2) drop-shadow(0 1px 2px #000a); opacity: 0.9; }
 .bld-col .bld-ico:has(.ui-ico), .bld-col .bld-ico .ui-ico { width: 32px; height: 32px; }
+
+/* 11-24 대장 요청: 개인 → 승리(모든 승리 조건 한곳) */
+.tiles.c2 { grid-template-columns: repeat(2, 1fr); }
+.win-tiles .itile { min-height: 0; padding: 8px 6px; }
+.win-tiles .itile .meter { width: 100%; margin-top: 3px; }
+.win-tiles .itile .badge { font-size: 10px; font-style: normal; }
+
+/* 11-24 대장 요청: 시설·연구·체제 카드 안 가속 버튼 */
+.boost-mini { display: flex; gap: 3px; justify-content: center; z-index: 4; }
+.boost-mini button { min-height: 0; padding: 2px 4px; font-size: 11px; line-height: 1.2; border-radius: 6px; white-space: nowrap; }
+.boost-mini button small { font-size: 9px; margin-left: 1px; opacity: .9; }
+.boost-mini button.gold { background: #8a6a1e; border-color: #ffb020; color: #fff; }
+.bcard-cell { position: relative; display: flex; flex-direction: column; min-width: 0; }
+.bcard-cell > .bcard { flex: 1; width: 100%; }
+.bcard-cell > .bcard.has-boost { padding-bottom: 26px; }
+.bcard-cell > .boost-mini { position: absolute; left: 3px; right: 3px; bottom: 4px; }
+.tt-boost { position: static; }
+.tt-boost button { padding: 1px 3px; font-size: 10px; }
+.tt-boost button small { display: none; }
+.civ-gov-boost { display: flex; justify-content: flex-end; margin-top: 4px; }

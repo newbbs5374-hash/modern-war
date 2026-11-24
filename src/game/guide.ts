@@ -26,7 +26,7 @@ const total = (s: GameState, k: keyof ReturnType<typeof goalsOf>['total']) => go
 
 export const GUIDE: GuideStep[] = [
   { id: 'salary', icon: '💵', title: '봉급 받기', say: '본부의 "봉급 받기"를 눌러 쌓인 봉급을 받아 보세요.', go: { screen: 'home' }, done: (s) => total(s, 'salary') > 0, reward: { boosts: 2 } },
-  { id: 'train', icon: '🎯', title: '훈련 한 번 하기', say: '개인 → 훈련에서 아무 훈련이나 하나 끝내 보세요. 스탯이 올라요.', go: { screen: 'training' }, done: (s) => sum(s.officer.mastery) > 0, reward: { ruby: 5 } },
+  { id: 'train', icon: '🎯', title: '훈련 한 번 하기', say: '국방 → 훈련에서 아무 훈련이나 하나 끝내 보세요. 스탯이 올라요.', go: { screen: 'training' }, done: (s) => sum(s.officer.mastery) > 0, reward: { ruby: 5 } },
   { id: 'recruit', icon: '🪖', title: '부대 모집하기', say: '국방 → 부대에서 보병을 모집해 보세요. 시간이 지나면 완성돼요.', go: { screen: 'forces' }, done: (s) => sum(s.economy.army) > 0 || s.economy.queue.length > 0, reward: { boosts: 2 } },
   { id: 'mission', icon: '🎖️', title: '임무 하나 끝내기', say: '국방 → 작전 → 임무에서 임무를 골라 끝내 보세요. 임무로 명성이 쌓이면 호칭이 올라요.', go: { screen: 'ops', key: 'ops', tab: 'mission' }, done: (s) => total(s, 'merit') > 0, reward: { ruby: 5 } },
   { id: 'chore', icon: '🏗️', title: '내정 일 시키기', say: '경제 → 시설 현황에서 일을 하나 시켜 보세요. 나라가 튼튼해져요.', go: { screen: 'nation', key: 'nation', tab: 'fac' }, done: (s) => !!s.economy.chore || total(s, 'chore') > 0, reward: { salary: 500 } },

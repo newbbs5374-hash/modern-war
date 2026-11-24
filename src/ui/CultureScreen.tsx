@@ -1,4 +1,4 @@
-// 🎭 문화 탭(11-23): 시설 · 걸작 · 행사 · 세계 · 승리
+// 🎭 문화 탭(11-23): 시설 · 걸작 · 행사 · 세계 (승리 조건은 11-24 개인 → 승리로 옮김)
 import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { Card, fmt } from './common';
@@ -19,7 +19,7 @@ import {
 } from '../game/culture';
 import { RES_ICON, type Res } from '../data/economy';
 
-export type CultureTab = 'venue' | 'works' | 'event' | 'world' | 'win';
+export type CultureTab = 'venue' | 'works' | 'event' | 'world';
 
 /** 시설 그림(src/assets/icons/icon-cul-<시설>-<단계>.webp), 없으면 이모지 */
 export function VenueArt({ id, level, big }: { id: VenueId; level: number; big?: boolean }) {
@@ -43,15 +43,16 @@ export function CultureScreen(props: ScreenProps) {
   const { state } = props;
   const c = cultureOf(state);
   const p = cultureProgress(state);
-  const [tab, setTab] = useTab<CultureTab>('culture', 'venue');
+  const [raw, setTab] = useTab<CultureTab>('culture', 'venue');
   const evOn = c.event && state.worldMs < c.event.endMs;
   const tabs: TabDef<CultureTab>[] = [
     { id: 'venue', label: '시설', icon: '🏛️', badge: c.builds.length || null },
     { id: 'works', label: '걸작', icon: '🏺', badge: WORK_KINDS.some((k) => !canAddWork(state, k.id)) ? '!' : null },
     { id: 'event', label: '행사', icon: '🎉', badge: evOn ? '●' : null },
     { id: 'world', label: '세계', icon: '🌏' },
-    { id: 'win', label: '승리', icon: '🏆', badge: c.winSinceMs != null ? '!' : null },
   ];
+  // 옛 '승리' 탭을 기억하고 있으면 첫 탭으로(승리는 개인 → 승리로 옮김)
+  const tab: CultureTab = tabs.some((t) => t.id === raw) ? raw : 'venue';
   return (
     <>
       <div className="cul-bar">
@@ -76,7 +77,6 @@ export function CultureScreen(props: ScreenProps) {
       {tab === 'works' && <WorksPanel {...props} />}
       {tab === 'event' && <EventPanel {...props} />}
       {tab === 'world' && <WorldPanel {...props} />}
-      {tab === 'win' && <CultureWinPanel {...props} />}
       {c.log.length > 0 && (
         <details className="fold">
           <summary>📜 문화 소식</summary>

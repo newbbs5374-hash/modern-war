@@ -53,8 +53,8 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
 ];
 
 /** 새 큰 탭 안의 작은 탭 이름 */
-export type PersonalTab = 'profile' | 'train' | 'aides' | 'talent' | 'plan' | 'agenda' | 'album';
-export type DefenseTab = 'ops' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
+export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'plan' | 'agenda' | 'album';
+export type DefenseTab = 'ops' | 'train' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
 export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'press' | 'opinion';
 export type EconomyTab = 'vault' | 'res' | 'ind' | 'trade' | 'tax' | 'facall' | 'proj';
@@ -82,7 +82,7 @@ export function legacyRoute(screen: string, tab?: string): { screen: Screen; set
     case 'forces':
       return { screen: 'defense', set: [['defense', 'forces']] };
     case 'training':
-      return { screen: 'personal', set: [['personal', 'train']] };
+      return { screen: 'defense', set: [['defense', 'train']] };
     case 'nation':
       if (t === 'res') return { screen: 'economy', set: [['economy', 'res']] };
       if (t === 'fac') return { screen: 'economy', set: [['economy', 'facall']] };
@@ -93,6 +93,10 @@ export function legacyRoute(screen: string, tab?: string): { screen: Screen; set
     case 'diplo':
       if (t === 'trade') return { screen: 'economy', set: [['economy', 'trade']] };
       return { screen: 'diplo', set: t ? [['diplo', t]] : [] };
+    case 'culture':
+      // 승리 조건은 개인 → 승리로 옮김(11-24)
+      if (t === 'win') return { screen: 'personal', set: [['personal', 'win']] };
+      return { screen: 'culture', set: t ? [['culture', t]] : [] };
     case 'shop':
       return { screen: 'shop', set: t ? [['shop', t]] : [] };
     default:

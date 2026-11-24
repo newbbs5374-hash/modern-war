@@ -1,4 +1,5 @@
 // 가속권: 기다리는 모든 일(임무·심부름·내정 일·시설 공사·부대 생산·대전투 준비·청문회·
+// 체제 혼란도 줄일 수 있음(11-24).
 // 연구·도시 구역·채굴장·문화 시설·첩보 공작·장군 교육·부처 업무·법안 표결·파병 이동) 시간을 줄임.
 // 한 장 = 실제 30분. 가속권이 모자라면 모자란 장수만큼 루비로 냄(1장 = 💎5, 상점 값과 같음, 11-24).
 import type { GameState } from './state';
@@ -30,7 +31,8 @@ export type BoostTarget =
   | { kind: 'school'; id: number }
   | { kind: 'task'; min: string }
   | { kind: 'vote' }
-  | { kind: 'deploy'; id: number };
+  | { kind: 'deploy'; id: number }
+  | { kind: 'chaos' };
 
 export const boostsOf = (s: GameState) => s.officer.boosts ?? 0;
 
@@ -71,6 +73,10 @@ function endOf(s: GameState, t: BoostTarget): number | undefined {
       return (s.cabinet?.tasks as Record<string, { endMs: number } | undefined> | undefined)?.[t.min]?.endMs;
     case 'vote':
       return s.assembly?.vote?.endMs;
+    case 'chaos': {
+      const u = s.civ?.chaosUntil ?? 0;
+      return u > s.worldMs ? u : undefined;
+    }
     case 'deploy': {
       const d = s.deploy?.list.find((x) => x.id === t.id);
       return d ? (d.returnMs ?? d.arriveMs) : undefined;
@@ -147,6 +153,8 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
     const tasks = s.cabinet.tasks as Record<string, { task: string; endMs: number }>;
     ns = { ...ns, cabinet: { ...s.cabinet, tasks: { ...tasks, [t.min]: { ...tasks[t.min], endMs: minus(tasks[t.min].endMs) } } } };
   }
+  // 체제 혼란(11-24): 줄인 만큼 일찍 끝남
+  if (t.kind === 'chaos' && s.civ) ns = { ...ns, civ: { ...s.civ, chaosUntil: minus(s.civ.chaosUntil) } };
   if (t.kind === 'vote' && s.assembly?.vote) ns = { ...ns, assembly: { ...s.assembly, vote: { ...s.assembly.vote, endMs: minus(s.assembly.vote.endMs) } } };
   if (t.kind === 'deploy' && s.deploy)
     ns = { ...ns, deploy: { ...s.deploy, list: s.deploy.list.map((x) => (x.id !== t.id ? x : x.returnMs ? { ...x, returnMs: minus(x.returnMs) } : { ...x, arriveMs: minus(x.arriveMs) })) } };

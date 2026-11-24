@@ -1,12 +1,17 @@
 // 승리 조건 진행 카드 · 엔딩 · 명예의 전당
 import { RANKS } from '../data/ranks';
-import { HOLD_DAYS, holdLeft, loadHall, recordHall, victoryProgress, VICTORY_RANK, type HallEntry } from '../game/victory';
+import { ALLIED_SHARE, ALONE_SHARE, HOLD_DAYS, holdLeft, loadHall, recordHall, victoryProgress, VICTORY_RANK, type HallEntry } from '../game/victory';
 import { timeLeft } from './officerScreens';
 import { Card } from './common';
 import { FLAG } from './flag';
 import { PEACE_COST, PEACE_FAVOR, PEACE_HOLD_DAYS, canProposePeace, peaceLeft, peaceName, peaceOf, peaceProgress, proposePeace } from '../game/peace';
 import type { ScreenProps } from './screens';
 import { cultureProgress, cultureWinLeft } from '../game/culture';
+import { useState } from 'react';
+import { Meter as KitMeter, Tile } from './kit';
+import { CultureWinPanel } from './CultureScreen';
+import { COUNTRIES } from '../data/world';
+import { isAlive, relationOf } from '../game/world';
 
 function Meter({ have, need }: { have: number; need: number }) {
   return (
@@ -35,7 +40,7 @@ export function VictoryCard({ state, actions }: ScreenProps) {
   );
 }
 
-/** ④ 문화 승리(자세한 건 문화 탭) */
+/** ④ 문화 승리(자세한 건 개인 → 승리) */
 function CulturePart({ state }: { state: ScreenProps['state'] }) {
   const p = cultureProgress(state);
   const left = cultureWinLeft(state);
@@ -127,5 +132,112 @@ export function HallList({ list = loadHall() }: { list?: HallEntry[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/* ───────── 👤 개인 → 🏆 승리(11-24 대장 요청: 모든 승리 조건을 한곳에서) ───────── */
+const ALONE_PCT = Math.round(ALONE_SHARE * 100);
+type WinId = 'conquer' | 'allied' | 'peace' | 'culture';
+
+/** 승리 4가지의 진행률(0~1)과 지키는 중 남은 시간 */
+export function winLines(s: ScreenProps['state']) {
+  const p = victoryProgress(s);
+  const pr = peaceProgress(s);
+  const cp = cultureProgress(s);
+  const hold = holdLeft(s);
+  const conquerOn = hold !== null && p.mine >= p.needAlone;
+  const alliedOn = hold !== null && !conquerOn;
+  const pl = peaceLeft(s);
+  const cl = cultureWinLeft(s);
+  const r = (a: number, b: number) => Math.max(0, Math.min(1, a / Math.max(1, b)));
+  return [
+    { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)`, now: `${p.mine} / ${p.needAlone}`, pct: r(p.mine, p.needAlone), left: conquerOn ? hold : null },
+    { id: 'allied' as WinId, icon: '🤝', name: '연합 승리', goal: `우리+연합국 도시 ${p.needAllied}개`, now: `${p.allied} / ${p.needAllied}`, pct: r(p.allied, p.needAllied), left: alliedOn ? hold : null },
+    { id: 'peace' as WinId, icon: '🕊️', name: '평화 승리', goal: `평화 헌장 서명 ${pr.need}나라`, now: `${pr.have} / ${pr.need}`, pct: pl !== null ? 1 : r(pr.have, pr.need), left: pl },
+    {
+      id: 'culture' as WinId,
+      icon: '🎨',
+      name: '문화 승리',
+      goal: `문화 우세 ${cp.need}나라 + 5단계 시설 ${cp.needTop}곳`,
+      now: `${cp.have}/${cp.need} · ${Math.min(cp.top, cp.needTop)}/${cp.needTop}`,
+      pct: (r(cp.have, cp.need) + r(cp.top, cp.needTop) + (cp.rankOk ? 1 : 0)) / 3,
+      left: cl,
+    },
+  ];
+}
+
+/** 지키는 중인 승리가 있으면 '!' */
+export const winBadge = (s: ScreenProps['state']) => (winLines(s).some((l) => l.left !== null) ? '!' : null);
+
+export function VictoryPanel(props: ScreenProps) {
+  const { state, actions } = props;
+  const lines = winLines(state);
+  const best = [...lines].sort((a, b) => (b.left !== null ? 2 : b.pct) - (a.left !== null ? 2 : a.pct))[0];
+  const [pick, setPick] = useState<WinId>(best.id);
+  const ready = state.player.rankIndex >= VICTORY_RANK;
+  const p = victoryProgress(state);
+  const me = state.player.countryId;
+  const allies = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id) && relationOf(state.world, me, c.id) === '연합');
+  return (
+    <>
+      <Card title="🏆 승리 조건" right={<small className="muted">넷 중 하나만 이루면 승리</small>}>
+        <p className="small">
+          {ready ? (
+            <span className="ok">✅ 「{RANKS[VICTORY_RANK].name}」 호칭이라 이제 승리할 수 있어요.</span>
+          ) : (
+            <span className="warn">🔒 승리는 「{RANKS[VICTORY_RANK].name}」 호칭이 된 뒤에 이뤄져요. 그 전에도 미리 준비해 둘 수 있어요.</span>
+          )}
+        </p>
+        <div className="tiles c2 win-tiles">
+          {lines.map((l) => (
+            <Tile
+              key={l.id}
+              icon={l.icon}
+              label={l.name}
+              sub={l.left !== null ? `지키는 중 · ${timeLeft(l.left)} 남음` : l.now}
+              badge={l.left !== null ? '!' : l.id === best.id ? '가까움' : null}
+              tone={pick === l.id ? 'gold' : undefined}
+              onClick={() => setPick(l.id)}
+            >
+              <KitMeter value={l.pct} max={1} tone={l.left !== null ? 'green' : 'gold'} />
+              <small className="muted">{Math.round(l.pct * 100)}%</small>
+            </Tile>
+          ))}
+        </div>
+        <p className="small muted">조건을 채운 채 {HOLD_DAYS}일 동안 지키면 이겨요. 아래 칸을 누르면 자세히 볼 수 있어요.</p>
+      </Card>
+      {pick === 'conquer' && (
+        <Card title="⚔️ 정복 승리" right={<small className="muted">혼자 세계 도시 {ALONE_PCT}%</small>}>
+          <div className="small">
+            우리 도시 {p.mine} / {p.needAlone} <span className="muted">(세계 {p.total}개)</span>
+            <Meter have={p.mine} need={p.needAlone} />
+            {p.captured.length ? <>점령한 도시: {p.captured.join(', ')}</> : <span className="muted">아직 점령한 도시가 없어요.</span>}
+          </div>
+          <p className="small muted">국방 → 작전에서 대전투로 적 도시를 차지하세요. 점령지는 가끔 반란이 일어나니 부대와 복지로 지키세요.</p>
+        </Card>
+      )}
+      {pick === 'allied' && (
+        <Card title="🤝 연합 승리" right={<small className="muted">우리+연합국 도시 {Math.round(ALLIED_SHARE * 100)}%</small>}>
+          <div className="small">
+            우리 + 연합국 도시 {p.allied} / {p.needAllied}
+            <Meter have={p.allied} need={p.needAllied} />
+            연합국: {allies.length ? allies.map((c, i) => (
+                  <span key={c.id}>
+                    {i ? ' · ' : ''}
+                    {FLAG[c.id]} {c.name}
+                  </span>
+                )) : <span className="muted">아직 없어요</span>}
+          </div>
+          <p className="small muted">외교 → 협정·외교관계에서 호감을 쌓아 연합을 맺으면 연합국 도시도 함께 세요.</p>
+        </Card>
+      )}
+      {pick === 'peace' && (
+        <Card title="🕊️ 평화 승리" right={<small className="muted">헌장 {PEACE_HOLD_DAYS}일 지키기</small>}>
+          <PeacePart state={state} onPropose={() => actions.apply(proposePeace)} />
+        </Card>
+      )}
+      {pick === 'culture' && <CultureWinPanel state={state} />}
+      <HallList />
+    </>
   );
 }

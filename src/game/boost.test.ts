@@ -78,3 +78,17 @@ describe('가속 버튼 넓히기(11-24)', () => {
     expect(boostLeft(useBoost(s, sp, 999), sp)).toBe(0);
   });
 });
+
+describe('카드 안 가속(11-24)', () => {
+  test('체제 혼란도 가속권으로 줄이고 바로 끝냄', async () => {
+    const { civOf, chaos } = await import('./civ');
+    let s = newGame('t', 'kr', 0, { seed: 1 });
+    s = { ...s, civ: { ...civOf(s), chaosUntil: s.worldMs + 24 * 3600e3 } };
+    const tg = { kind: 'chaos' } as const;
+    expect(boostLeft(s, tg)).toBe(24 * 3600e3);
+    expect(boostLeft(useBoost(s, tg, 1), tg)).toBe(24 * 3600e3 - BOOST_MS);
+    const all = useBoost(s, tg, 999);
+    expect(chaos(all)).toBe(false);
+    expect(boostsOf(all)).toBe(TEST_BOOSTS - 48);
+  });
+});
