@@ -5,6 +5,7 @@ import type { GameState } from '../game/state';
 import { AIDE_ICON } from './icons';
 import { Face, aideKeys } from './Portrait';
 import { PersonFace } from './People';
+import { secretaryKeys, secretaryOf } from '../data/secretary';
 
 export const REPORT_SHOW_MS = 2000;
 
@@ -27,12 +28,12 @@ export function AideReport({ state, onNext }: { state: GameState; onNext: () => 
         {aide ? (
           <PersonFace who={{ kind: 'aide', id: aide.id }} keys={aideKeys(aide)} fallback={AIDE_ICON[aide.specialty]} />
         ) : (
-          <Face keys={aideKeys(aide)} fallback="🧑‍✈️" />
+          <Face keys={secretaryKeys(state.player.countryId)} fallback="👩‍💼" />
         )}
         <i>{r.icon}</i>
       </span>
       <button className="aide-bubble" onClick={onNext}>
-        <b>{aide ? `${aide.specialty} 부관 ${aide.name}` : '부관 보고'}</b>
+        <b>{aide ? `${aide.specialty} 부관 ${aide.name}` : `수행비서 ${secretaryOf(state.player.countryId).name}`}</b>
         <p>
           {title}, {r.text}
         </p>

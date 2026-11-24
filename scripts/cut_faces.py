@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """나라별 얼굴 그림 자르기(11/24).
 
-대장이 만든 sheet-<나라>-<번호>.png(3×3 또는 2×2)를 칸마다 잘라
+대장이 만든 sheet-<나라>-<번호>.png(4×4 · 3×3 · 2×2, 수행비서는 한 사람 그림)를 칸마다 잘라
 src/assets/portraits/face-<묶음>-<성별>-<나이대>-<번호>.webp(256px)로 저장하고,
 같은 나라 안에서 너무 닮은 얼굴 쌍을 알려 줘요(다시 만들 칸 목록).
 
@@ -46,7 +46,8 @@ def main():
     out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / 'src/assets/portraits'
     out.mkdir(parents=True, exist_ok=True)
     sheets = []
-    for jf in ('scripts/face-sheets.json', 'scripts/face-sheets-2.json'):  # 2 = 추가 22장(sheet-<나라>-6~8)
+    # 2 = 추가 22장(sheet-<나라>-6~8) · 3 = 수행비서(secretary-<나라>, 한 사람) · 젊은 부관(sheet-<나라>-y1…) · 4×4 장관급(sheet-<나라>-9~13)
+    for jf in ('scripts/face-sheets.json', 'scripts/face-sheets-2.json', 'scripts/face-sheets-3.json'):
         if (ROOT / jf).exists():
             sheets += json.loads((ROOT / jf).read_text())
     done, missing, hashes = 0, [], {}
@@ -63,7 +64,7 @@ def main():
         cell = s / g
         for i, file in enumerate(sh['cells']):
             r, c = divmod(i, g)
-            m = cell * TRIM
+            m = cell * TRIM if g > 1 else 0
             box = (round(c * cell + m), round(r * cell + m), round((c + 1) * cell - m), round((r + 1) * cell - m))
             face = img.crop(box).resize((SIZE, SIZE), Image.LANCZOS)
             face.save(out / f'{file}.webp', 'WEBP', quality=86, method=6)
