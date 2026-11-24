@@ -801,3 +801,7 @@ select.wide, button.wide { width: 100%; }
 .gfac-ico { font-size: 20px; text-align: center; }
 .gfac button { font-size: 10.5px; padding: 3px 6px; line-height: 1.1; }
 .gfac small { font-size: 9.5px; }
+
+.stat-ico { display: inline-block; vertical-align: -2px; object-fit: contain; }
+.cdetail-banner { width: 100%; max-height: 110px; object-fit: cover; display: block; margin-bottom: 4px; border: 1px solid var(--hud-dim); }
+.gfac-ico img { width: 26px; height: 26px; object-fit: contain; }

@@ -319,6 +319,10 @@ export const FACTIONS: Array<{ id: Faction; icon: string; bonus: string }> = [
 export const FACTION_BONUS_AT = 3;
 
 export type Trait = '청렴' | '야심' | '충직' | '인기인' | '강경파' | '원칙주의' | '실용주의' | '신중파' | '협상가' | '혁신가' | '현장형' | '냉철';
+/** 성향 그림 이름표(icon-trait-<영문>.png, 11-24) */
+export const TRAIT_SLUG: Record<Trait, string> = {
+  청렴: 'clean', 야심: 'ambition', 충직: 'loyal', 인기인: 'popular', 강경파: 'hawk', 원칙주의: 'principle', 실용주의: 'pragmatic', 신중파: 'careful', 협상가: 'negotiator', 혁신가: 'innovator', 현장형: 'field', 냉철: 'cool',
+};
 export const TRAITS: Record<Trait, { icon: string; text: string }> = {
   청렴: { icon: '🤍', text: '스캔들이 없고 청문회에 유리 · 회유·빼 가기에 안 넘어감' },
   야심: { icon: '🔥', text: '능력 +15% · 대신 충성이 잘 떨어짐' },

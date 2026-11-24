@@ -23,7 +23,7 @@ import { PersonModal, PersonRow } from './CabinetUI';
 import { FavorBox } from './CivScreens';
 import { CountryInfo, RelTag, fmt } from './common';
 import { FLAG } from './flag';
-import { ResIcon } from './iconArt';
+import { ResIcon, iconArt } from './iconArt';
 import { Modal } from './kit';
 import { PersonFace } from './People';
 import type { ScreenProps } from './screens';
@@ -189,6 +189,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
 
   return (
     <Modal title={c.name} icon={FLAG[id]} onClose={onClose} big>
+      {iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />}
       <div className="cdetail">
         <CountryMap state={state} id={id} />
         <div className="cdetail-side">
