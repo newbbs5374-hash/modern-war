@@ -1,5 +1,6 @@
 // 도시 상징(로고·문장·휘장). 그림은 src/assets/logos/logo-<key>.webp (96px) 이름으로 넣으면 도시 카드에 바로 나옴.
 // 아래 file 은 위키미디어 공용(commons.wikimedia.org)의 파일 이름. 11/24 라이선스 확인: CC BY-SA 3.0 2개(런던·버밍엄, 출처 표기 필요) 말고는 모두 공공 저작물(Public domain)·CC0.
+// 받는 법: scripts/fetch_city_logos.py (출처표 src/assets/logos/CREDITS.md)
 // 그림이 없는 도시(중국·인도 일부·이란 일부·튀르키예 일부·북한)는 코드로 그린 방패 표지가 나옴.
 
 export interface CityLogoSrc {
@@ -9,6 +10,8 @@ export interface CityLogoSrc {
   lic?: 'PD' | 'CC0' | 'CC BY-SA 3.0';
   /** 어떤 표지인지 */
   kind?: '로고' | '휘장' | '문장' | '인장' | '시기';
+  /** CC BY-SA 그림은 만든 이를 밝혀야 함 */
+  by?: string;
 }
 
 export const CITY_LOGO: Record<string, CityLogoSrc> = {
@@ -53,8 +56,8 @@ export const CITY_LOGO: Record<string, CityLogoSrc> = {
   함부르크: { key: 'hamburg', file: 'DEU Hamburg COA.svg', lic: 'PD', kind: '문장' },
   도쿄: { key: 'tokyo', file: 'Emblem of Tokyo Metropolis.svg', lic: 'PD', kind: '휘장' },
   후쿠오카: { key: 'fukuoka', file: 'Emblem of Fukuoka, Fukuoka.svg', lic: 'PD', kind: '휘장' },
-  런던: { key: 'london', file: 'Coat of Arms of The City of London.svg', lic: 'CC BY-SA 3.0', kind: '문장' },
-  버밍엄: { key: 'birmingham', file: 'Coat of arms of Birmingham.svg', lic: 'CC BY-SA 3.0', kind: '문장' },
+  런던: { key: 'london', file: 'Coat of Arms of The City of London.svg', lic: 'CC BY-SA 3.0', kind: '문장', by: 'Sodacan' },
+  버밍엄: { key: 'birmingham', file: 'Coat of arms of Birmingham.svg', lic: 'CC BY-SA 3.0', kind: '문장', by: 'JimmyGuano' },
   뉴델리: { key: 'newdelhi' },
   콜카타: { key: 'kolkata' },
   벵갈루루: { key: 'bengaluru' },

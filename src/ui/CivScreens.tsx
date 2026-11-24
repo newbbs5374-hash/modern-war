@@ -1019,7 +1019,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
             )}
             {CITY_LOGO[city.name]?.file && (
               <p className="muted">
-                상징: {CITY_LOGO[city.name].kind} · 위키미디어 공용 「{CITY_LOGO[city.name].file}」 ({CITY_LOGO[city.name].lic === 'PD' ? '공공 저작물' : CITY_LOGO[city.name].lic})
+                상징: {CITY_LOGO[city.name].kind} · 위키미디어 공용 「{CITY_LOGO[city.name].file}」 ({CITY_LOGO[city.name].lic === 'PD' ? '공공 저작물' : CITY_LOGO[city.name].lic}{CITY_LOGO[city.name].by ? ` · 만든 이 ${CITY_LOGO[city.name].by}` : ''})
               </p>
             )}
             <p className="stat-group-name">이 도시가 나라에 주는 힘 (민심·점령 반영 ×{r1(share)})</p>
