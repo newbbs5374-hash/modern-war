@@ -88,6 +88,8 @@ export interface HomeTerrain {
   marks: Array<{ name: string; x: number; y: number }>;
   /** 1도 = 몇 칸(본부 좌표) */
   scale: number;
+  /** 세계 좌표(realGeo, 1도=6) → 본부 좌표: 본부 = (세계 − t) × s */
+  view: { tx: number; ty: number; s: number };
 }
 
 const CACHE = new Map<string, HomeTerrain>();
@@ -223,7 +225,7 @@ export function homeTerrain(countryId: string): HomeTerrain {
       break;
     }
   }
-  const out = { land, inner, provs, onLand, seaLoop, cityPos, far, marks, scale: s * 6 };
+  const out = { land, inner, provs, onLand, seaLoop, cityPos, far, marks, scale: s * 6, view: { tx, ty, s } };
   CACHE.set(countryId, out);
   return out;
 }

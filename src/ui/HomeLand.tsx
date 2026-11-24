@@ -20,6 +20,48 @@ import groundSea from '../assets/field/home-ground-sea.webp';
 import groundShallow from '../assets/field/home-ground-shallow.webp';
 import groundUrban from '../assets/field/home-ground-urban.webp';
 import groundSand from '../assets/city/city-ground-beach.webp';
+// 실사 자료(11/24 C2): 나라마다 NASA 야간 불빛·지형 음영 그림 + Natural Earth 실제 도로·철도·강(scripts/gen_homegeo.py)
+import HOME_BOUNDS from '../assets/home/bounds.json';
+import { GEO } from '../data/realGeo';
+
+const HOME_IMG = import.meta.glob('../assets/home/*.webp', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const HOME_GEO_FILES = import.meta.glob('../assets/home/geo-*.json', { import: 'default' }) as Record<string, () => Promise<HomeGeo>>;
+export interface HomeGeo {
+  road: string;
+  road2: string;
+  rail: string;
+  river: string;
+  /** 가까이 보는 나라의 밤 불빛 점(밝기 3단계, 빈 문자열이면 그림 사용) */
+  dots: [string, string, string];
+}
+const homeImg = (kind: 'night' | 'relief', id: string): string | null => HOME_IMG[`../assets/home/${kind}-${id}.webp`] ?? null;
+/** 그림 범위(경도·위도) → 세계 좌표 사각형 */
+function boundsRect(id: string): { x: number; y: number; w: number; h: number } | null {
+  const b = (HOME_BOUNDS as Record<string, number[]>)[id];
+  if (!b) return null;
+  const [lon0, lat0, lon1, lat1] = b;
+  const l = lon0 < GEO.L0 ? lon0 + 360 : lon0;
+  return { x: (l - GEO.L0) * GEO.PX, y: (GEO.B1 - lat1) * GEO.PX, w: (lon1 - lon0) * GEO.PX, h: (lat1 - lat0) * GEO.PX };
+}
+const GEO_CACHE = new Map<string, HomeGeo>();
+function useHomeGeo(id: string): HomeGeo | null {
+  const [g, setG] = useState<HomeGeo | null>(() => GEO_CACHE.get(id) ?? null);
+  useEffect(() => {
+    const hit = GEO_CACHE.get(id);
+    if (hit) return setG(hit);
+    const load = HOME_GEO_FILES[`../assets/home/geo-${id}.json`];
+    if (!load) return setG(null);
+    let live = true;
+    load().then((d) => {
+      GEO_CACHE.set(id, d);
+      if (live) setG(d);
+    });
+    return () => {
+      live = false;
+    };
+  }, [id]);
+  return g;
+}
 
 const W = 390;
 const H = 640;
@@ -79,8 +121,16 @@ export function HomeLand(props: {
   onDayMode: (m: DayMode) => void;
   onCity: (id: string) => void;
   focus?: string | null;
+  /** 도시 크기(0~1): 인구·건물 단계가 클수록 불빛이 넓고 밝음 */
+  cityGrowth?: Record<string, number>;
 }) {
-  const { countryId, world, atWar, dayMode, onDayMode, onCity, focus } = props;
+  const { countryId, world, atWar, dayMode, onDayMode, onCity, focus, cityGrowth } = props;
+  const geo = useHomeGeo(countryId);
+  const vw = homeTerrain(countryId).view;
+  const worldT = `translate(${(-vw.tx * vw.s).toFixed(2)},${(-vw.ty * vw.s).toFixed(2)}) scale(${vw.s.toFixed(4)})`;
+  const imgRect = boundsRect(countryId);
+  const nightImg = homeImg('night', countryId);
+  const reliefImg = homeImg('relief', countryId);
   const r = rng(hash(countryId));
   // 땅 = 수도 둘레 실제 해안선(homeTerrain.ts)
   const terrain = homeTerrain(countryId);
@@ -305,7 +355,16 @@ export function HomeLand(props: {
           <path d={land} fill="url(#g-shallow)" stroke="#5fd0dc" strokeWidth="34" strokeOpacity="0.15" filter="url(#g-soft)" />
           <path d={land} fill="url(#g-sand)" stroke="url(#g-sand)" strokeWidth="12" />
           <path d={land} fill="url(#g-grass)" />
-          <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.3" />
+          {reliefImg && imgRect ? (
+            <g clipPath={`url(#home-land-${countryId})`} pointerEvents="none">
+              <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.12" />
+              <g transform={worldT}>
+                <image href={reliefImg} x={imgRect.x} y={imgRect.y} width={imgRect.w} height={imgRect.h} preserveAspectRatio="none" opacity="0.95" />
+              </g>
+            </g>
+          ) : (
+            <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.3" />
+          )}
           <path d={land} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="1 5" />
           {/* 빼앗긴 도: 점령한 나라 색 + 빗금 */}
           <defs>
@@ -322,10 +381,26 @@ export function HomeLand(props: {
               </g>
             ))}
           {terrain.inner && <path d={terrain.inner} fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.2" strokeDasharray="6 4" pointerEvents="none" />}
-          <g clipPath={`url(#home-land-${countryId})`}>
-          <path d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#2b7fa3" strokeWidth="4" strokeLinecap="round" />
-          <path className="river-flow" d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#e0f2fe" strokeWidth="1.4" strokeDasharray="3 9" strokeLinecap="round" />
-          </g>
+          {geo ? (
+            <g clipPath={`url(#home-land-${countryId})`} pointerEvents="none">
+              <g transform={worldT}>
+                {/* 실제 강 */}
+                <path d={geo.river} fill="none" stroke="#2b7fa3" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                <path className="river-flow" d={geo.river} fill="none" stroke="#e0f2fe" strokeWidth="0.9" strokeDasharray="3 9" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                {/* 실제 국도(작은 나라만)·철도·고속도로 */}
+                {geo.road2 && <path d={geo.road2} fill="none" stroke="#e7dcc0" strokeOpacity="0.55" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+                <path d={geo.rail} fill="none" stroke="#3b3f46" strokeOpacity="0.75" strokeWidth="1.3" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                <path d={geo.rail} fill="none" stroke="#f1f5f9" strokeOpacity="0.8" strokeWidth="0.7" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+                <path d={geo.road} fill="none" stroke="#3a3d42" strokeOpacity="0.55" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                <path d={geo.road} fill="none" stroke="#f3c969" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              </g>
+            </g>
+          ) : (
+            <g clipPath={`url(#home-land-${countryId})`}>
+              <path d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#2b7fa3" strokeWidth="4" strokeLinecap="round" />
+              <path className="river-flow" d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#e0f2fe" strokeWidth="1.4" strokeDasharray="3 9" strokeLinecap="round" />
+            </g>
+          )}
           {forests.map(([x, y], i) => (
             <g key={`f${i}`} className="tree" style={{ animationDelay: `${-i * 0.4}s`, transformOrigin: `${x}px ${y + 6}px` }}>
               {art.trees.length ? (
@@ -353,7 +428,25 @@ export function HomeLand(props: {
             ),
           )}
           {/* 밤: 땅과 바다를 어둡게(불빛·차량은 그 위) */}
-          <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#0b1638" opacity={night * 0.55} pointerEvents="none" />
+          <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#0b1638" opacity={night * (nightImg ? 0.72 : 0.55)} pointerEvents="none" />
+          {/* 밤: 실제 야간 위성 불빛(NASA) + 고속도로 가로등 */}
+          {nightOn && geo && geo.dots[0] ? (
+            <g pointerEvents="none" opacity={night} transform={worldT}>
+              <path d={geo.road} fill="none" stroke="#ffb54a" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d={geo.dots[0]} stroke="#ffcf7a" strokeOpacity="0.55" strokeWidth="1.3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d={geo.dots[1]} stroke="#ffd98f" strokeOpacity="0.85" strokeWidth="1.7" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d={geo.dots[2]} stroke="#fff3d1" strokeWidth="2.1" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d={geo.dots[2]} stroke="#ffb347" strokeOpacity="0.18" strokeWidth="7" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            </g>
+          ) : nightOn && nightImg && imgRect && (
+            <g pointerEvents="none" opacity={night}>
+              <image href={nightImg} transform={worldT} x={imgRect.x} y={imgRect.y} width={imgRect.w} height={imgRect.h} preserveAspectRatio="none" filter="url(#g-soft)" opacity="0.8" style={{ mixBlendMode: 'screen' }} />
+              <g transform={worldT}>
+                <image href={nightImg} x={imgRect.x} y={imgRect.y} width={imgRect.w} height={imgRect.h} preserveAspectRatio="none" />
+                {geo && <path d={geo.road} fill="none" stroke="#ffb54a" strokeOpacity="0.45" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+              </g>
+            </g>
+          )}
 
           {/* 도로와 차량 */}
           {roads.map((rd) => (
@@ -436,7 +529,11 @@ export function HomeLand(props: {
                     );
                   })}
                 {c.capital && art.landmark && <image href={art.landmark} x={x - 30} y={y - 64} width="60" height="60" />}
-                {nightOn && <circle cx={x} cy={y - 4} r={c.capital ? 110 : 24} fill="url(#glow)" opacity={night * 0.75} />}
+                {nightOn && st !== '공격받음' && st !== '점령당함' && (
+                  <circle cx={x} cy={y - 4} r={(c.capital ? 110 : 24) * (0.7 + 0.8 * (cityGrowth?.[c.id] ?? 0.4))} fill="url(#glow)" opacity={night * (0.45 + 0.5 * (cityGrowth?.[c.id] ?? 0.4))} />
+                )}
+                {/* 전쟁: 공격받거나 빼앗긴 도시는 불이 꺼짐(등화관제) */}
+                {nightOn && (st === '공격받음' || st === '점령당함') && <circle cx={x} cy={y} r={c.capital ? 120 : 40} fill="#020617" opacity={night * 0.55} />}
                 {st === '점령당함' ? (
                   <g transform={`translate(${x + 8},${y - 34})`}>
                     <line x1="0" y1="0" x2="0" y2="26" stroke="#e5e7eb" strokeWidth="1.2" />
