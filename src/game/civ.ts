@@ -67,7 +67,9 @@ import {
   type Tech,
 } from '../data/civ';
 import { BASIC_RES, CITY_RES, COMPOSITE_PER_INDUSTRY, LUXURIES, PROCESSED, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
-import { HEX_DIRS, PIONEER_ISLANDS, TILES, TILE_AT, hexKey, type Tile } from '../data/hexmap';
+import { HEX_DIRS, PIONEER_ISLANDS, hexKey } from '../data/hexmap';
+import { cityMap, isSeaCell, type CityTile } from '../data/cityMap';
+import { CITY_EFF_CAP, KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, type CityEff, type Landmark } from '../data/krCities';
 import { COUNTRIES, countryById } from '../data/world';
 import { facBonus } from './facility';
 import { Rng } from './rng';
@@ -106,6 +108,8 @@ export interface CityCiv {
   districts: DistrictState[];
   /** 채굴장(지도 칸 매장지 위, 자원 3안) */
   mines?: MineState[];
+  /** 실제 시설 발전 단계(11/24, 대한민국 도시). 없으면 처음 단계 */
+  marks?: Record<string, { lv: number; doneMs: number }>;
 }
 export interface MineState {
   tile: string;
@@ -312,6 +316,8 @@ export function researchBreakdown(s: GameState): Array<[string, number]> {
   if (og) rows.push([`🎓 출신(${originOf(s)!.name})`, og]);
   const cr = cabResearch(s);
   if (cr) rows.push(['🔬 과학기술부', cr]);
+  const ce = cityEffTotal(s).research;
+  if (ce) rows.push(['🏙️ 도시 특성·실제 시설·군사 연구시설', ce]);
   const inst = instSum(s.world, me, 'lab') + instSum(s.world, me, 'univ');
   if (inst) rows.push(['🏛️ 도시 기관(연구소·대학)', inst]);
   rows.push(...lawRows(s, 'research'));
@@ -744,11 +750,9 @@ export function sanctionMult(s: GameState, id: string): number {
 
 // ── 도시 구역 · 민심 · 인구 ──
 
-const tilesOfCity = new Map<string, Tile[]>();
-export function cityTiles(cityId: string): Tile[] {
-  let t = tilesOfCity.get(cityId);
-  if (!t) tilesOfCity.set(cityId, (t = TILES.filter((x) => x.place === cityId)));
-  return t;
+/** 도시 화면 칸(11/24부터 도시마다 따로, 예전의 약 4.5배) */
+export function cityTiles(cityId: string): CityTile[] {
+  return cityMap(cityId).tiles;
 }
 export type Terrain = '평지' | '산' | '유적' | '바닷가';
 const hash = (q: number, r: number) => {
@@ -756,25 +760,31 @@ const hash = (q: number, r: number) => {
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
-/** 옆 칸이 바다인지: 바다에 닿은 도시에서, 그 도시 칸 바깥이면 바다(도시 화면은 도시 칸만 섬처럼 보여 줌) */
+const citySeed = (id: string) => [...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 3);
+/** 옆 칸이 바다인지: 도시 칸도 이웃 땅도 아닌 칸(대한민국 도시는 실제 바다) */
 function seaNear(place: string, q: number, r: number): boolean {
   if (!isCoastalCity(place)) return false;
-  return TILE_AT.get(hexKey(q, r))?.place !== place;
+  return isSeaCell(cityMap(place), q, r);
 }
-/** 바닷가 칸: 실제로 바다에 닿은 도시의 가장자리 칸(11-24, 예전엔 옛 육각 세계지도 기준이라 내륙 도시도 바닷가가 있었음) */
-export function isCoast(q: number, r: number): boolean {
-  return seaAround(q, r) > 0;
+/** 바닷가 칸: 실제로 바다에 닿은 도시의 가장자리 칸 */
+export function isCoast(cityId: string, q: number, r: number): boolean {
+  return seaAround(cityId, q, r) > 0;
 }
-export function seaAround(q: number, r: number): number {
-  const place = TILE_AT.get(hexKey(q, r))?.place;
-  if (!place) return 0;
-  return HEX_DIRS.filter((d) => seaNear(place, q + d.q, r + d.r)).length;
+export function seaAround(cityId: string, q: number, r: number): number {
+  if (!cityMap(cityId).at.has(hexKey(q, r))) return 0;
+  return HEX_DIRS.filter((d) => seaNear(cityId, q + d.q, r + d.r)).length;
 }
-/** 칸 지형(정해진 규칙이라 늘 같음): 바닷가 · 산 15% · 유적 5% · 나머지 평지 */
-export function terrainOf(q: number, r: number): Terrain {
-  if (isCoast(q, r)) return '바닷가';
-  const h = hash(q, r);
-  return h < 0.15 ? '산' : h < 0.2 ? '유적' : '평지';
+/** 칸 지형(정해진 규칙이라 늘 같음): 바닷가 · 산 15% · 유적 5% · 나머지 평지. 이웃 칸끼리 조금 닮게(산줄기) */
+export function terrainOf(cityId: string, q: number, r: number): Terrain {
+  if (isCoast(cityId, q, r)) return '바닷가';
+  const sd = citySeed(cityId);
+  const at = (a: number, b: number) => hash(a * 3 + sd, b * 5 - sd);
+  let h = at(q, r) * 2;
+  for (const d of HEX_DIRS) h += at(q + d.q, r + d.r) * 0.5;
+  h /= 5;
+  // 고르게 섞은 값은 가운데로 몰리므로 끝쪽을 산·유적으로
+  if (q === 0 && r === 0) return '평지';
+  return h > 0.65 ? '산' : at(r, q) < 0.04 ? '유적' : '평지';
 }
 const parse = (k: string) => k.split(',').map(Number) as [number, number];
 
@@ -789,14 +799,16 @@ export function districtSlots(s: GameState, cityId: string): number {
   return DISTRICT_SLOTS[cityById(cityId).size] + (hasTech(s, 's-federal') ? 1 : 0);
 }
 export function districtUnlocked(s: GameState, id: DistrictId): boolean {
-  return !!districtById(id).free || TECHS.some((t) => t.districts?.includes(id) && hasTech(s, t.id));
+  const d = districtById(id);
+  if (d.tech) return hasTech(s, d.tech);
+  return !!d.free || TECHS.some((t) => t.districts?.includes(id) && hasTech(s, t.id));
 }
 export function canDistrict(s: GameState, cityId: string, tile: string, id: DistrictId): string | null {
   const d = districtById(id);
-  const tech = TECHS.find((t) => t.districts?.includes(id));
+  const tech = d.tech ? techById(d.tech) : TECHS.find((t) => t.districts?.includes(id));
   if (!districtUnlocked(s, id)) return `${tech?.name ?? '연구'} 연구 필요`;
   if (s.world.owner[cityId] !== s.player.countryId) return '우리 도시가 아니에요';
-  if (id === 'harbor' && !isCoastalCity(cityId)) return '바다에 닿지 않은 도시예요';
+  if ((id === 'harbor' || d.coastal) && !isCoastalCity(cityId)) return '바다에 닿지 않은 도시예요';
   const cc = cityCiv(s, cityId);
   if (cc.districts.length >= districtSlots(s, cityId)) return `이 도시는 구역 ${districtSlots(s, cityId)}개까지`;
   const t = cityTiles(cityId).find((x) => hexKey(x.q, x.r) === tile);
@@ -804,8 +816,9 @@ export function canDistrict(s: GameState, cityId: string, tile: string, id: Dist
   if (t.center) return '도심 칸에는 못 지어요';
   if (cc.districts.some((x) => x.tile === tile)) return '이미 구역이 있어요';
   if ((cc.mines ?? []).some((x) => x.tile === tile)) return '채굴장이 있는 칸이에요';
+  if (markAt(cityId, tile)) return `${markAt(cityId, tile)!.name} 자리예요`;
   if (cc.districts.some((x) => x.id === id) && id !== 'housing' && id !== 'industry') return `${d.name}은 도시마다 1개`;
-  const ter = terrainOf(t.q, t.r);
+  const ter = terrainOf(cityId, t.q, t.r);
   if (d.where === '바닷가 칸' && ter !== '바닷가') return '바닷가 칸에만 지어요';
   if (d.where === '평지 칸' && ter !== '평지') return '평지 칸에만 지어요';
   if (d.where === '평지·바닷가 칸' && ter !== '평지' && ter !== '바닷가') return '산·유적 칸에는 못 지어요';
@@ -837,7 +850,7 @@ export const MINE_PER_HOUR = 1;
 export const MINE_COST = 1500;
 export const MINE_RES: Partial<Record<Res, number>> = { 강철: 2 };
 export const MINE_HOURS = 2;
-const MINE_COUNT: Record<number, number> = { 2: 1, 3: 2, 4: 3 };
+const MINE_COUNT: Record<number, number> = { 2: 3, 3: 4, 4: 5 };
 const FALLBACK_DEPOSITS: Res[] = ['강철', '구리', '석유', '알루미늄'];
 const depositCache = new Map<string, Array<{ tile: string; res: Res }>>();
 /** 도시 칸 위 매장지(정해진 규칙이라 늘 같음). 도시에서 나는 자원이 먼저, 없으면 흔한 자원 */
@@ -848,8 +861,8 @@ export function deposits(cityId: string): Array<{ tile: string; res: Res }> {
   const n = MINE_COUNT[city.size] ?? 1;
   const own = Object.keys(CITY_RES[city.name] ?? {}) as Res[];
   const cand = cityTiles(cityId)
-    .filter((t) => !t.center)
-    .map((t) => ({ t, h: hash(t.q * 7 + 3, t.r * 13 + 5) + (terrainOf(t.q, t.r) === '산' ? -0.3 : 0) + (terrainOf(t.q, t.r) === '바닷가' ? 0.4 : 0) }))
+    .filter((t) => !t.center && !markAt(cityId, hexKey(t.q, t.r)) && hexDist0(t) >= 2)
+    .map((t) => ({ t, h: hash(t.q * 7 + 3, t.r * 13 + 5) + (terrainOf(cityId, t.q, t.r) === '산' ? -0.3 : 0) + (terrainOf(cityId, t.q, t.r) === '바닷가' ? 0.4 : 0) }))
     .sort((a, b) => a.h - b.h)
     .slice(0, n);
   const out = cand.map(({ t }, i) => ({
@@ -913,19 +926,35 @@ export function adjCount(cityId: string, tile: string, id: DistrictId, cc: CityC
   const [q, r] = parse(tile);
   const near = HEX_DIRS.map((d) => ({ q: q + d.q, r: r + d.r }));
   const distAt = (k: string) => cc.districts.find((x) => x.tile === k)?.id;
-  const onLand = (h: { q: number; r: number }) => TILE_AT.get(hexKey(h.q, h.r))?.place === cityId;
+  const m = cityMap(cityId);
+  const onLand = (h: { q: number; r: number }) => m.at.has(hexKey(h.q, h.r));
+  const is = (h: { q: number; r: number }, ...ids: DistrictId[]) => ids.includes(distAt(hexKey(h.q, h.r)) as DistrictId);
   const sea = (h: { q: number; r: number }) => seaNear(cityId, h.q, h.r);
   switch (id) {
     case 'harbor':
       return near.filter(sea).length;
     case 'lab':
-      return near.filter((h) => onLand(h) && ['산', '유적'].includes(terrainOf(h.q, h.r))).length;
+      return near.filter((h) => onLand(h) && ['산', '유적'].includes(terrainOf(cityId, h.q, h.r))).length;
     case 'industry':
-      return near.filter((h) => onLand(h) && (distAt(hexKey(h.q, h.r)) === 'industry' || terrainOf(h.q, h.r) === '산')).length;
+      return near.filter((h) => onLand(h) && (distAt(hexKey(h.q, h.r)) === 'industry' || terrainOf(cityId, h.q, h.r) === '산')).length;
     case 'airfield':
       return near.filter((h) => distAt(hexKey(h.q, h.r)) === 'industry').length;
     case 'housing':
       return near.filter((h) => sea(h) || distAt(hexKey(h.q, h.r)) === 'housing').length;
+    case 'adl':
+      return near.filter((h) => is(h, 'lab', 'adl')).length;
+    case 'shipyard':
+      return near.filter((h) => sea(h) || is(h, 'industry')).length;
+    case 'arms':
+      return near.filter((h) => is(h, 'industry', 'arms')).length;
+    case 'missile':
+      return near.filter((h) => sea(h) || is(h, 'adl')).length;
+    case 'drone':
+      return near.filter((h) => is(h, 'lab', 'industry')).length;
+    case 'cyber':
+      return near.filter((h) => is(h, 'lab', 'adl')).length;
+    case 'aero':
+      return near.filter((h) => is(h, 'airfield', 'lab')).length;
   }
 }
 /** 다 지은 구역 목록(내 도시만) */
@@ -965,6 +994,10 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   let house = 0;
   for (const d of cc.districts) if (d.id === 'housing' && d.doneMs <= s.worldMs) house += 10 + 2 * adjCount(cityId, d.tile, 'housing', cc);
   if (house) rows.push(['🏘️ 주거 구역', house]);
+  const own = Math.round(cityOwnLoyalty(s, cityId) * 10) / 10;
+  if (own) rows.push(['🏙️ 도시 특성·실제 시설', own]);
+  const all = Math.round(cityEffTotal(s).loyaltyAll * 10) / 10;
+  if (all) rows.push(['🌾 문화·생태 도시(전국)', all]);
   const eff = effSum(s, 'loyalty');
   if (eff) rows.push(['연구·카드', eff]);
   const peace = Math.min(12, 3 * activeAgreements(s).length);
@@ -1026,27 +1059,244 @@ export function cityTotals(s: GameState): { mult: number; popBonus: number; pop:
   return { mult: m / w, popBonus: pb / w, pop, avgLoyalty: loy / w };
 }
 
+// ── 실제 시설 · 도시 특성 · 군사 연구시설 → 내정(11/24 대장 요청 "관계를 재점검하여 내정에 영향") ──
+
+const hexDist0 = (t: { q: number; r: number }) => (Math.abs(t.q) + Math.abs(t.r) + Math.abs(t.q + t.r)) / 2;
+const markCache = new Map<string, Array<Landmark & { tile: string }>>();
+/** 도시의 실제 시설(대한민국 도시): 실제 위치에서 가장 가까운 칸에 하나씩 */
+export function cityMarks(cityId: string): Array<Landmark & { tile: string }> {
+  const hit = markCache.get(cityId);
+  if (hit) return hit;
+  const info = KR_CITY_INFO[cityById(cityId).name];
+  const m = cityMap(cityId);
+  const out: Array<Landmark & { tile: string }> = [];
+  if (info && m.geo) {
+    const used = new Set(['0,0']);
+    for (const lm of info.landmarks) {
+      const p = m.geo(...lm.at);
+      let best: CityTile | null = null;
+      let bd = Infinity;
+      for (const t of m.tiles) {
+        const k = hexKey(t.q, t.r);
+        if (used.has(k)) continue;
+        const d = Math.hypot(t.x - p.x, t.y - p.y);
+        if (d < bd) {
+          bd = d;
+          best = t;
+        }
+      }
+      if (!best) continue;
+      const k = hexKey(best.q, best.r);
+      used.add(k);
+      out.push({ ...lm, tile: k });
+    }
+  }
+  markCache.set(cityId, out);
+  return out;
+}
+export function markAt(cityId: string, tile: string): (Landmark & { tile: string }) | null {
+  return cityMarks(cityId).find((x) => x.tile === tile) ?? null;
+}
+/** 실제 시설의 지금 단계(올리는 중이면 아직 예전 단계) */
+export function markLevel(s: GameState, cityId: string, id: string): number {
+  const lm = cityMarks(cityId).find((x) => x.id === id);
+  const st = civOf(s).cities[cityId]?.marks?.[id];
+  if (!st) return lm?.lv ?? 0;
+  return st.doneMs <= s.worldMs ? st.lv : st.lv - 1;
+}
+export const markUpCost = (lv: number) => ({ cost: 2500 * lv, res: { 강철: 2 * lv } as Partial<Record<Res, number>>, hours: 1.5 * lv });
+export function canUpgradeMark(s: GameState, cityId: string, id: string): string | null {
+  const lm = cityMarks(cityId).find((x) => x.id === id);
+  if (!lm) return '없는 시설이에요';
+  if (s.world.owner[cityId] !== s.player.countryId) return '우리 도시가 아니에요';
+  const st = civOf(s).cities[cityId]?.marks?.[id];
+  if (st && st.doneMs > s.worldMs) return '발전 공사 중이에요';
+  const lv = markLevel(s, cityId, id);
+  if (lv >= MARK_MAX) return '가장 높은 단계예요';
+  const c = markUpCost(lv);
+  if (s.nations[s.player.countryId].treasury < c.cost) return `국방예산 ${c.cost.toLocaleString()} 필요`;
+  for (const [r, v] of Object.entries(c.res)) if ((s.economy.stock[r as Res] ?? 0) < v!) return `${r} ${v}개 필요`;
+  return null;
+}
+export function upgradeMark(s: GameState, cityId: string, id: string): GameState {
+  if (canUpgradeMark(s, cityId, id)) return s;
+  const lv = markLevel(s, cityId, id);
+  const c = markUpCost(lv);
+  const me = s.player.countryId;
+  const stock = { ...s.economy.stock };
+  for (const [r, v] of Object.entries(c.res)) stock[r as Res] -= v!;
+  const ns: GameState = { ...s, economy: { ...s.economy, stock }, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - c.cost } } };
+  const name = cityMarks(cityId).find((x) => x.id === id)!.name;
+  return withCiv(ns, (cv) => {
+    const cc = (cv.cities[cityId] ??= defaultCity(s, cityById(cityId)));
+    cc.marks = { ...(cc.marks ?? {}), [id]: { lv: lv + 1, doneMs: s.worldMs + c.hours * H } };
+    clog(cv, `🏗️ ${cityById(cityId).name} ${name} ${lv + 1}단계 발전 공사 시작(${c.hours}시간)`);
+  });
+}
+
+type EffSet = Required<Omit<CityEff, 'loyalty'>> & { pDom: Record<'육' | '해' | '공', number> };
+const zeroEff = (): EffSet => ({ budget: 0, res: 0, research: 0, loyaltyAll: 0, army: 0, navy: 0, air: 0, power: 0, mission: 0, pDom: { 육: 0, 해: 0, 공: 0 } });
+function addEff(t: EffSet, e: CityEff, k: number) {
+  for (const key of ['budget', 'res', 'research', 'loyaltyAll', 'army', 'navy', 'air', 'power', 'mission'] as const) t[key] += (e[key] ?? 0) * k;
+}
+/** 도시 하나가 나라에 주는 힘: [도시 특성, 실제 시설, 군사 연구시설] (민심·점령 반영 전) */
+export function cityParts(s: GameState, cityId: string): { trait: CityEff; marks: CityEff; mil: CityEff & { pDom?: Record<'육' | '해' | '공', number> } } {
+  const city = cityById(cityId);
+  const info = KR_CITY_INFO[city.name];
+  const marks: Required<CityEff> = { budget: 0, res: 0, research: 0, loyalty: 0, loyaltyAll: 0, army: 0, navy: 0, air: 0, power: 0, mission: 0 };
+  for (const lm of cityMarks(cityId)) {
+    const lv = markLevel(s, cityId, lm.id);
+    for (const [k, v] of Object.entries(MARK_KIND[lm.kind].per)) marks[k as keyof CityEff] += (v ?? 0) * lv * MARK_SCALE;
+  }
+  const mil: CityEff & { pDom: Record<'육' | '해' | '공', number> } = { pDom: { 육: 0, 해: 0, 공: 0 } };
+  const cc = civOf(s).cities[cityId];
+  for (const d of cc?.districts ?? []) {
+    if (d.doneMs > s.worldMs) continue;
+    const def = districtById(d.id);
+    if (!def.mil) continue;
+    const adj = adjCount(cityId, d.tile, d.id, cc!);
+    const e = def.mil;
+    const add = (k: keyof CityEff, v: number) => (mil[k] = (mil[k] ?? 0) + v);
+    if (e.research) add('research', e.research + (d.id === 'adl' ? 0.03 : d.id === 'drone' ? 0.02 : 0) * adj);
+    if (e.army) add('army', e.army + (d.id === 'arms' ? 0.02 * adj : 0));
+    if (e.navy) add('navy', e.navy + (d.id === 'shipyard' ? 0.02 * adj : 0));
+    if (e.air) add('air', e.air + (d.id === 'aero' ? 0.02 * adj : 0));
+    if (e.mission) add('mission', e.mission + (d.id === 'cyber' ? 0.01 * adj : 0));
+    if (e.res) add('res', e.res);
+    if (e.power) {
+      const p = e.power + (d.id === 'missile' ? 0.005 * adj : 0);
+      if (e.powerDom) mil.pDom[e.powerDom] += p;
+      else add('power', p);
+    }
+  }
+  return { trait: info?.trait.eff ?? {}, marks, mil };
+}
+/** 도시 하나가 실제로 주는 몫: 민심이 낮으면 줄고 점령지는 절반 */
+export function cityShare(s: GameState, cityId: string): number {
+  const c = cityById(cityId);
+  return loyaltyMult(cityCiv(s, cityId).loyalty) * (c.home === s.player.countryId ? 1 : 0.5);
+}
+/** 계산 기억(같은 문명 상태·시각·땅 주인이면 다시 안 셈) */
+const effMemo = new WeakMap<object, { ms: number; owner: object; me: string; v: EffSet }>();
+/** 내 도시 전체가 나라에 주는 힘(상한 CITY_EFF_CAP) */
+export function cityEffTotal(s: GameState): EffSet {
+  const key = (s.civ ?? s) as object;
+  const hit = effMemo.get(key);
+  if (hit && hit.ms === s.worldMs && hit.owner === s.world.owner && hit.me === s.player.countryId) return hit.v;
+  const v = cityEffCalc(s);
+  effMemo.set(key, { ms: s.worldMs, owner: s.world.owner, me: s.player.countryId, v });
+  return v;
+}
+function cityEffCalc(s: GameState): EffSet {
+  const t = zeroEff();
+  const me = s.player.countryId;
+  for (const c of CITIES) {
+    if (s.world.owner[c.id] !== me) continue;
+    if (!KR_CITY_INFO[c.name] && !civOf(s).cities[c.id]?.districts.length) continue;
+    const k = cityShare(s, c.id);
+    const p = cityParts(s, c.id);
+    addEff(t, p.trait, k);
+    addEff(t, p.marks, k);
+    addEff(t, p.mil, k);
+    if (p.mil.pDom) for (const d of ['육', '해', '공'] as const) t.pDom[d] += p.mil.pDom[d] * k;
+  }
+  for (const key of Object.keys(CITY_EFF_CAP) as Array<keyof typeof CITY_EFF_CAP>) t[key] = Math.min(CITY_EFF_CAP[key], t[key]);
+  for (const d of ['육', '해', '공'] as const) t.pDom[d] = Math.min(CITY_EFF_CAP.power, t.pDom[d]);
+  t.loyaltyAll = Math.min(8, t.loyaltyAll);
+  return t;
+}
+/** 그 도시만 받는 민심(도시 특성·실제 시설) */
+function cityOwnLoyalty(s: GameState, cityId: string): number {
+  const p = cityParts(s, cityId);
+  return Math.min(15, (p.trait.loyalty ?? 0) + (p.marks.loyalty ?? 0));
+}
+/** 도시 인구(만 명): 대한민국은 실제 인구에서, 다른 나라는 크기로 어림. 게임 인구가 자란 만큼 늘어남 */
+export function cityPeople(s: GameState, cityId: string): number {
+  const c = cityById(cityId);
+  const base = KR_CITY_INFO[c.name]?.pop ?? ({ 2: 90, 3: 260, 4: 800 } as Record<number, number>)[c.size] ?? 100;
+  const grown = cityCiv(s, cityId).pop - (c.size - 1);
+  return Math.round(base * (1 + 0.08 * grown));
+}
+
+/** 옛 저장(도시 칸이 세계 육각 지도 좌표였음): 새 도시 칸에 맞게 구역·채굴장 자리를 옮김. 못 옮긴 채굴장은 값을 돌려줌 */
+export function migrateCityTiles(s: GameState): GameState {
+  const c = s.civ;
+  if (!c) return s;
+  let refund = 0;
+  let changed = false;
+  const cities: Record<string, CityCiv> = {};
+  for (const [id, cc0] of Object.entries(c.cities)) {
+    if (!CITIES.some((x) => x.id === id)) continue;
+    const m = cityMap(id);
+    const cc: CityCiv = { ...cc0, districts: [...cc0.districts], mines: [...(cc0.mines ?? [])] };
+    const used = new Set<string>();
+    const ok = (k: string) => m.at.has(k) && !m.at.get(k)!.center && !markAt(id, k) && !used.has(k);
+    const fits = (k: string, did: DistrictId) => {
+      const t = m.at.get(k)!;
+      const w = districtById(did).where;
+      const ter = terrainOf(id, t.q, t.r);
+      return w === '아무 칸' || (w === '바닷가 칸' ? ter === '바닷가' : w === '평지 칸' ? ter === '평지' : ter === '평지' || ter === '바닷가');
+    };
+    const deps = deposits(id);
+    // 그대로 맞는 것 먼저 자리 잡기
+    const keepD = cc.districts.map((d) => ok(d.tile) && fits(d.tile, d.id));
+    cc.districts.forEach((d, i) => keepD[i] && used.add(d.tile));
+    const keepM = cc.mines!.map((mm) => deps.some((x) => x.tile === mm.tile && x.res === mm.res) && !used.has(mm.tile));
+    cc.mines!.forEach((mm, i) => keepM[i] && used.add(mm.tile));
+    const byNear = [...m.tiles].sort((a, b) => hexDist0(a) - hexDist0(b) || a.r - b.r || a.q - b.q).map((t) => hexKey(t.q, t.r));
+    const depTiles = new Set(deps.map((x) => x.tile));
+    cc.districts = cc.districts.flatMap((d, i) => {
+      if (keepD[i]) return [d];
+      changed = true;
+      const k = byNear.find((x) => ok(x) && !depTiles.has(x) && fits(x, d.id));
+      if (!k) return [];
+      used.add(k);
+      return [{ ...d, tile: k }];
+    });
+    cc.mines = cc.mines!.flatMap((mm, i) => {
+      if (keepM[i]) return [mm];
+      changed = true;
+      const dp = deps.find((x) => x.res === mm.res && !used.has(x.tile)) ?? deps.find((x) => !used.has(x.tile));
+      if (!dp) {
+        refund += MINE_COST;
+        return [];
+      }
+      used.add(dp.tile);
+      return [{ ...mm, tile: dp.tile, res: dp.res }];
+    });
+    cities[id] = cc;
+  }
+  if (!changed) return s;
+  const me = s.player.countryId;
+  const ns: GameState = { ...s, civ: { ...c, cities } };
+  if (refund && ns.nations[me]) ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + refund } };
+  return ns;
+}
+
 // ── 기존 계산에 붙는 배율(국방예산·자원·모집·전투력·임무) ──
 
 const islandPort = (s: GameState) => myIslands(s).filter((id) => PIONEER_ISLANDS.find((p) => p.id === id)!.res === '항구').length * 0.03;
 export function civBudgetMult(s: GameState): number {
   const t = cityTotals(s);
-  return Math.max(0.3, (1 + effSum(s, 'budget') + instSum(s.world, s.player.countryId, 'bank') + t.popBonus + industryBonus(s) + islandPort(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1));
+  return Math.max(0.3, (1 + effSum(s, 'budget') + instSum(s.world, s.player.countryId, 'bank') + t.popBonus + industryBonus(s) + islandPort(s) + cityEffTotal(s).budget) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1));
 }
 export function civResMult(s: GameState): number {
   const t = cityTotals(s);
-  return Math.max(0.3, (1 + effSum(s, 'res') + instSum(s.world, s.player.countryId, 'nuke') + industryBonus(s)) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s) * cabRes(s) * (1 + lawEff(s, 'res'));
+  return Math.max(0.3, (1 + effSum(s, 'res') + instSum(s.world, s.player.countryId, 'nuke') + industryBonus(s) + cityEffTotal(s).res) * t.mult * (chaos(s) ? 1 - GOV_CHAOS : 1)) * splitEco(s) * cabRes(s) * (1 + lawEff(s, 'res'));
 }
 /** 모집 빠르기 배율(시간을 이 값으로 나눔) */
 export function civBuildSpeed(s: GameState, unit: string): number {
   const dom = domOf(unit);
-  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + instSum(s.world, s.player.countryId, dom === '해' ? 'navy' : dom === '공' ? 'air' : 'army') + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s) * cabBuild(s) * (1 + lawEff(s, 'build'));
+  const ce = cityEffTotal(s);
+  return Math.max(0.5, 1 + effDom(s, 'build', dom) + districtBuild(s, dom) + (dom === '해' ? ce.navy : dom === '공' ? ce.air : ce.army) + instSum(s.world, s.player.countryId, dom === '해' ? 'navy' : dom === '공' ? 'air' : 'army') + originEff(s, 'build') + (dom === '해' ? originEff(s, 'buildNavy') : 0)) * (chaos(s) ? 1 - GOV_CHAOS : 1) * splitBuild(s) * cabBuild(s) * (1 + lawEff(s, 'build'));
 }
 export function civPowerMult(s: GameState, unit: string): number {
-  return Math.max(0.5, 1 + effDom(s, 'power', domOf(unit)) + facBonus(s, '우주기지'));
+  const ce = cityEffTotal(s);
+  const dom = domOf(unit);
+  return Math.max(0.5, 1 + effDom(s, 'power', dom) + facBonus(s, '우주기지') + ce.power + ce.pDom[dom]);
 }
 export function civMission(s: GameState): number {
-  return effSum(s, 'mission') + facBonus(s, '정보본부') + instSum(s.world, s.player.countryId, 'intel');
+  return effSum(s, 'mission') + facBonus(s, '정보본부') + instSum(s.world, s.player.countryId, 'intel') + cityEffTotal(s).mission;
 }
 
 /** 병과가 열렸는지: 지도자 등급 + 연구 둘 다(11-22 결정). 등급은 economy가 먼저 봄 */

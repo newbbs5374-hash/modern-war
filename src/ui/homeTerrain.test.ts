@@ -17,10 +17,10 @@ describe('본부 지도 실제 땅', () => {
       expect(t.onLand(...t.cityPos[cap.id]), cap.name).toBe(true);
     }
   });
-  it('한국은 시·도 경계·바다 배 길·여수 표기가 있음', () => {
+  it('한국은 시·도 경계·바다 배 길이 있고, 여수는 표기 대신 실제 도시(11/24)', () => {
     const t = homeTerrain('kr');
     expect(t.inner.length).toBeGreaterThan(50);
     expect(t.seaLoop).not.toBeNull();
-    expect(t.marks.map((m) => m.name)).toContain('여수');
+    expect(t.marks).toHaveLength(0);
   });
 });

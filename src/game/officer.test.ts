@@ -57,7 +57,7 @@ describe('장교', () => {
       s = advance(s, 24 * H);
     }
     expect(s.officer.stats['사격']).toBeLessThanOrEqual(statCap(s.player.rankIndex));
-  });
+  }, 20000); // 20일치 흘리기라 오래 걸림
   it('임무: 게시판 3개 → 시작 → 시간이 지나야 결과, 공훈이 쌓임', () => {
     let s = newGame('t', 'kr', 0, { seed: 3 });
     const b = boardNow(s);

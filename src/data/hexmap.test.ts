@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CITY_HEX, HEX_DIRS, ISLAND_TILES, PIONEER_ISLANDS, SIZE_TILES, TILES, TILE_AT, citySizes, disk, hexDist, hexKey, hexToPixel, pixelToHex } from './hexmap';
+import { CITY_HEX, HEX_DIRS, ISLAND_TILES, PIONEER_ISLANDS, SIZE_TILES, TILES, TILE_AT, citySizes, citySizesOf, disk, hexDist, hexKey, hexToPixel, pixelToHex } from './hexmap';
 import { COUNTRIES } from './world';
 
 describe('육각 타일 지도', () => {
@@ -11,11 +11,11 @@ describe('육각 타일 지도', () => {
     expect(citySizes(2)).toEqual([3, 2]);
   });
   it('나라 타일 수 = 도시 묶음 합(겹침 없음), 표와 같음', () => {
-    const want: Record<string, number> = { ru: 472, us: 398, cn: 398, in: 263, ir: 226, tr: 135, ua: 135, jp: 98, de: 98, uk: 98, kr: 98, kp: 98, il: 98 };
+    const want: Record<string, number> = { ru: 472, us: 398, cn: 398, in: 263, ir: 226, tr: 135, ua: 135, jp: 98, de: 98, uk: 98, kr: 520, kp: 98, il: 98 };
     for (const c of COUNTRIES) {
       const n = TILES.filter((t) => t.home === c.id).length;
       expect(n).toBe(want[c.id]);
-      expect(n).toBe(citySizes(c.cities.length).reduce((a, s) => a + SIZE_TILES[s], 0));
+      expect(n).toBe(citySizesOf(c.id, c.cities.length).reduce((a, s) => a + SIZE_TILES[s], 0));
     }
     expect(new Set(TILES.map((t) => `${t.q},${t.r}`)).size).toBe(TILES.length);
     for (const [id, h] of Object.entries(CITY_HEX)) expect(TILES.filter((t) => t.place === id)).toHaveLength(SIZE_TILES[h.size]);

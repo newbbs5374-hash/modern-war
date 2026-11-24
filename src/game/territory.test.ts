@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CITIES } from '../data/cities';
+import { CITIES, cityById } from '../data/cities';
 import { COUNTRIES } from '../data/world';
 import { newWorld } from './world';
 import { inProv, landCount, landOwners, noteCapture, provinces, provincesOf } from './territory';
@@ -8,7 +8,8 @@ describe('도(주·성) 땅', () => {
   it('13개 나라 모두 도가 있고, 도시마다 자기 도가 있음', () => {
     for (const c of COUNTRIES) expect(provincesOf(c.id).length).toBeGreaterThan(c.id === 'il' ? 3 : 5);
     for (const city of CITIES) {
-      const own = provinces().filter((p) => p.seat === city.id);
+      // 같은 도에 도시가 둘이면(전남 여수·순천) 한 도시만 다스림: 그 도의 주인이 같은 나라면 됨
+      const own = provinces().filter((p) => p.seat === city.id || (inProv(p, city.x, city.y) && cityById(p.seat).home === city.home));
       expect(own.length, city.name).toBeGreaterThan(0);
     }
   });
