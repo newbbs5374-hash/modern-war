@@ -1,0 +1,522 @@
+[
+ {
+  "sheet": "sheet-kr-6",
+  "grid": 3,
+  "cells": [
+   "face-kr-m-50-15",
+   "face-kr-m-50-18",
+   "face-kr-m-50-21",
+   "face-kr-m-60-15",
+   "face-kr-m-60-18",
+   "face-kr-f-50-12",
+   "face-kr-f-50-15",
+   "face-kr-f-60-08",
+   "face-kr-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-kr-7",
+  "grid": 3,
+  "cells": [
+   "face-kr-m-50-19",
+   "face-kr-m-60-13",
+   "face-kr-m-60-16",
+   "face-kr-f-50-10",
+   "face-kr-f-50-13",
+   "face-kr-f-60-06",
+   "face-kr-m-50-17",
+   "face-kr-m-50-20",
+   "face-kr-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-kr-8",
+  "grid": 2,
+  "cells": [
+   "face-kr-m-60-17",
+   "face-kr-f-50-11",
+   "face-kr-f-50-14",
+   "face-kr-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-kp-6",
+  "grid": 3,
+  "cells": [
+   "face-kp-m-50-15",
+   "face-kp-m-50-18",
+   "face-kp-m-50-21",
+   "face-kp-m-60-15",
+   "face-kp-m-60-18",
+   "face-kp-f-50-12",
+   "face-kp-f-50-15",
+   "face-kp-f-60-08",
+   "face-kp-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-kp-7",
+  "grid": 3,
+  "cells": [
+   "face-kp-m-50-19",
+   "face-kp-m-60-13",
+   "face-kp-m-60-16",
+   "face-kp-f-50-10",
+   "face-kp-f-50-13",
+   "face-kp-f-60-06",
+   "face-kp-m-50-17",
+   "face-kp-m-50-20",
+   "face-kp-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-kp-8",
+  "grid": 2,
+  "cells": [
+   "face-kp-m-60-17",
+   "face-kp-f-50-11",
+   "face-kp-f-50-14",
+   "face-kp-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-jp-6",
+  "grid": 3,
+  "cells": [
+   "face-jp-m-50-15",
+   "face-jp-m-50-18",
+   "face-jp-m-50-21",
+   "face-jp-m-60-15",
+   "face-jp-m-60-18",
+   "face-jp-f-50-12",
+   "face-jp-f-50-15",
+   "face-jp-f-60-08",
+   "face-jp-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-jp-7",
+  "grid": 3,
+  "cells": [
+   "face-jp-m-50-19",
+   "face-jp-m-60-13",
+   "face-jp-m-60-16",
+   "face-jp-f-50-10",
+   "face-jp-f-50-13",
+   "face-jp-f-60-06",
+   "face-jp-m-50-17",
+   "face-jp-m-50-20",
+   "face-jp-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-jp-8",
+  "grid": 2,
+  "cells": [
+   "face-jp-m-60-17",
+   "face-jp-f-50-11",
+   "face-jp-f-50-14",
+   "face-jp-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-cn-6",
+  "grid": 3,
+  "cells": [
+   "face-cn-m-50-15",
+   "face-cn-m-50-18",
+   "face-cn-m-50-21",
+   "face-cn-m-60-15",
+   "face-cn-m-60-18",
+   "face-cn-f-50-12",
+   "face-cn-f-50-15",
+   "face-cn-f-60-08",
+   "face-cn-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-cn-7",
+  "grid": 3,
+  "cells": [
+   "face-cn-m-50-19",
+   "face-cn-m-60-13",
+   "face-cn-m-60-16",
+   "face-cn-f-50-10",
+   "face-cn-f-50-13",
+   "face-cn-f-60-06",
+   "face-cn-m-50-17",
+   "face-cn-m-50-20",
+   "face-cn-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-cn-8",
+  "grid": 2,
+  "cells": [
+   "face-cn-m-60-17",
+   "face-cn-f-50-11",
+   "face-cn-f-50-14",
+   "face-cn-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-us-6",
+  "grid": 3,
+  "cells": [
+   "face-us-we-m-50-08",
+   "face-us-we-m-50-11",
+   "face-us-we-m-60-09",
+   "face-us-we-f-50-07",
+   "face-us-bl-m-50-05",
+   "face-us-bl-f-60-02",
+   "face-us-hi-m-60-03",
+   "face-us-as-m-50-02",
+   "face-us-we-m-50-09"
+  ]
+ },
+ {
+  "sheet": "sheet-us-7",
+  "grid": 3,
+  "cells": [
+   "face-us-we-m-60-07",
+   "face-us-we-f-50-05",
+   "face-us-we-f-60-04",
+   "face-us-bl-m-60-03",
+   "face-us-hi-m-50-04",
+   "face-us-hi-f-50-03",
+   "face-us-we-m-50-10",
+   "face-us-we-m-60-08",
+   "face-us-we-f-50-06"
+  ]
+ },
+ {
+  "sheet": "sheet-us-8",
+  "grid": 2,
+  "cells": [
+   "face-us-bl-m-50-04",
+   "face-us-bl-f-50-03",
+   "face-us-hi-m-50-05",
+   "face-us-hi-f-60-02"
+  ]
+ },
+ {
+  "sheet": "sheet-uk-6",
+  "grid": 3,
+  "cells": [
+   "face-uk-m-50-15",
+   "face-uk-m-50-18",
+   "face-uk-m-50-21",
+   "face-uk-m-60-15",
+   "face-uk-m-60-18",
+   "face-uk-f-50-12",
+   "face-uk-f-50-15",
+   "face-uk-f-60-08",
+   "face-uk-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-uk-7",
+  "grid": 3,
+  "cells": [
+   "face-uk-m-50-19",
+   "face-uk-m-60-13",
+   "face-uk-m-60-16",
+   "face-uk-f-50-10",
+   "face-uk-f-50-13",
+   "face-uk-f-60-06",
+   "face-uk-m-50-17",
+   "face-uk-m-50-20",
+   "face-uk-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-uk-8",
+  "grid": 2,
+  "cells": [
+   "face-uk-m-60-17",
+   "face-uk-f-50-11",
+   "face-uk-f-50-14",
+   "face-uk-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-de-6",
+  "grid": 3,
+  "cells": [
+   "face-de-m-50-15",
+   "face-de-m-50-18",
+   "face-de-m-50-21",
+   "face-de-m-60-15",
+   "face-de-m-60-18",
+   "face-de-f-50-12",
+   "face-de-f-50-15",
+   "face-de-f-60-08",
+   "face-de-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-de-7",
+  "grid": 3,
+  "cells": [
+   "face-de-m-50-19",
+   "face-de-m-60-13",
+   "face-de-m-60-16",
+   "face-de-f-50-10",
+   "face-de-f-50-13",
+   "face-de-f-60-06",
+   "face-de-m-50-17",
+   "face-de-m-50-20",
+   "face-de-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-de-8",
+  "grid": 2,
+  "cells": [
+   "face-de-m-60-17",
+   "face-de-f-50-11",
+   "face-de-f-50-14",
+   "face-de-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-ru-6",
+  "grid": 3,
+  "cells": [
+   "face-ru-m-50-15",
+   "face-ru-m-50-18",
+   "face-ru-m-50-21",
+   "face-ru-m-60-15",
+   "face-ru-m-60-18",
+   "face-ru-f-50-12",
+   "face-ru-f-50-15",
+   "face-ru-f-60-08",
+   "face-ru-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-ru-7",
+  "grid": 3,
+  "cells": [
+   "face-ru-m-50-19",
+   "face-ru-m-60-13",
+   "face-ru-m-60-16",
+   "face-ru-f-50-10",
+   "face-ru-f-50-13",
+   "face-ru-f-60-06",
+   "face-ru-m-50-17",
+   "face-ru-m-50-20",
+   "face-ru-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-ru-8",
+  "grid": 2,
+  "cells": [
+   "face-ru-m-60-17",
+   "face-ru-f-50-11",
+   "face-ru-f-50-14",
+   "face-ru-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-ua-6",
+  "grid": 3,
+  "cells": [
+   "face-ua-m-50-15",
+   "face-ua-m-50-18",
+   "face-ua-m-50-21",
+   "face-ua-m-60-15",
+   "face-ua-m-60-18",
+   "face-ua-f-50-12",
+   "face-ua-f-50-15",
+   "face-ua-f-60-08",
+   "face-ua-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-ua-7",
+  "grid": 3,
+  "cells": [
+   "face-ua-m-50-19",
+   "face-ua-m-60-13",
+   "face-ua-m-60-16",
+   "face-ua-f-50-10",
+   "face-ua-f-50-13",
+   "face-ua-f-60-06",
+   "face-ua-m-50-17",
+   "face-ua-m-50-20",
+   "face-ua-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-ua-8",
+  "grid": 2,
+  "cells": [
+   "face-ua-m-60-17",
+   "face-ua-f-50-11",
+   "face-ua-f-50-14",
+   "face-ua-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-in-6",
+  "grid": 3,
+  "cells": [
+   "face-in-m-50-15",
+   "face-in-m-50-18",
+   "face-in-m-50-21",
+   "face-in-m-60-15",
+   "face-in-m-60-18",
+   "face-in-f-50-12",
+   "face-in-f-50-15",
+   "face-in-f-60-08",
+   "face-in-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-in-7",
+  "grid": 3,
+  "cells": [
+   "face-in-m-50-19",
+   "face-in-m-60-13",
+   "face-in-m-60-16",
+   "face-in-f-50-10",
+   "face-in-f-50-13",
+   "face-in-f-60-06",
+   "face-in-m-50-17",
+   "face-in-m-50-20",
+   "face-in-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-in-8",
+  "grid": 2,
+  "cells": [
+   "face-in-m-60-17",
+   "face-in-f-50-11",
+   "face-in-f-50-14",
+   "face-in-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-ir-6",
+  "grid": 3,
+  "cells": [
+   "face-ir-m-50-15",
+   "face-ir-m-50-18",
+   "face-ir-m-50-21",
+   "face-ir-m-60-15",
+   "face-ir-m-60-18",
+   "face-ir-f-50-12",
+   "face-ir-f-50-15",
+   "face-ir-f-60-08",
+   "face-ir-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-ir-7",
+  "grid": 3,
+  "cells": [
+   "face-ir-m-50-19",
+   "face-ir-m-60-13",
+   "face-ir-m-60-16",
+   "face-ir-f-50-10",
+   "face-ir-f-50-13",
+   "face-ir-f-60-06",
+   "face-ir-m-50-17",
+   "face-ir-m-50-20",
+   "face-ir-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-ir-8",
+  "grid": 2,
+  "cells": [
+   "face-ir-m-60-17",
+   "face-ir-f-50-11",
+   "face-ir-f-50-14",
+   "face-ir-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-il-6",
+  "grid": 3,
+  "cells": [
+   "face-il-m-50-15",
+   "face-il-m-50-18",
+   "face-il-m-50-21",
+   "face-il-m-60-15",
+   "face-il-m-60-18",
+   "face-il-f-50-12",
+   "face-il-f-50-15",
+   "face-il-f-60-08",
+   "face-il-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-il-7",
+  "grid": 3,
+  "cells": [
+   "face-il-m-50-19",
+   "face-il-m-60-13",
+   "face-il-m-60-16",
+   "face-il-f-50-10",
+   "face-il-f-50-13",
+   "face-il-f-60-06",
+   "face-il-m-50-17",
+   "face-il-m-50-20",
+   "face-il-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-il-8",
+  "grid": 2,
+  "cells": [
+   "face-il-m-60-17",
+   "face-il-f-50-11",
+   "face-il-f-50-14",
+   "face-il-f-60-07"
+  ]
+ },
+ {
+  "sheet": "sheet-tr-6",
+  "grid": 3,
+  "cells": [
+   "face-tr-m-50-15",
+   "face-tr-m-50-18",
+   "face-tr-m-50-21",
+   "face-tr-m-60-15",
+   "face-tr-m-60-18",
+   "face-tr-f-50-12",
+   "face-tr-f-50-15",
+   "face-tr-f-60-08",
+   "face-tr-m-50-16"
+  ]
+ },
+ {
+  "sheet": "sheet-tr-7",
+  "grid": 3,
+  "cells": [
+   "face-tr-m-50-19",
+   "face-tr-m-60-13",
+   "face-tr-m-60-16",
+   "face-tr-f-50-10",
+   "face-tr-f-50-13",
+   "face-tr-f-60-06",
+   "face-tr-m-50-17",
+   "face-tr-m-50-20",
+   "face-tr-m-60-14"
+  ]
+ },
+ {
+  "sheet": "sheet-tr-8",
+  "grid": 2,
+  "cells": [
+   "face-tr-m-60-17",
+   "face-tr-f-50-11",
+   "face-tr-f-50-14",
+   "face-tr-f-60-07"
+  ]
+ }
+]

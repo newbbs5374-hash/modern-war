@@ -62,3 +62,22 @@ describe('얼굴 그림 장(3×3)', () => {
     expect(sh.every((s) => s.cells.length === s.grid * s.grid)).toBe(true);
   });
 });
+
+describe('추가 얼굴 22장(11-24)', () => {
+  it('나라마다 22장 더(9·9·4 = 3장), 기존 번호와 안 겹치고 기존 얼굴 번호는 그대로', async () => {
+    const F = await import('./faces');
+    const sh = F.faceSheetsExtra();
+    expect(sh.length).toBe(39);
+    const files = sh.flatMap((s) => s.cells.map((c) => c.file));
+    expect(files.length).toBe(286);
+    expect(new Set(files).size).toBe(286);
+    const base = new Set(F.allFaceFiles(false));
+    expect(files.some((f) => base.has(f))).toBe(false);
+    expect(F.allFaceFiles(true).length).toBe(806);
+    for (let i = 0; i < 26; i++) expect(F.faceFile('kr', 'm', i, true)).toBe(F.faceFile('kr', 'm', i, false));
+    expect(F.faceFile('kr', 'm', 26, true)).toBe('face-kr-m-50-15');
+    expect(F.faceFile('kr', 'm', 33, true)).toBe('face-kr-m-60-13');
+    expect(sh[0].sheet).toBe('sheet-kr-6');
+    expect(sh.every((s) => s.cells.length === s.grid * s.grid)).toBe(true);
+  });
+});

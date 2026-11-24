@@ -45,7 +45,10 @@ def main():
     src = Path(sys.argv[1])
     out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / 'src/assets/portraits'
     out.mkdir(parents=True, exist_ok=True)
-    sheets = json.loads((ROOT / 'scripts/face-sheets.json').read_text())
+    sheets = []
+    for jf in ('scripts/face-sheets.json', 'scripts/face-sheets-2.json'):  # 2 = 추가 22장(sheet-<나라>-6~8)
+        if (ROOT / jf).exists():
+            sheets += json.loads((ROOT / jf).read_text())
     done, missing, hashes = 0, [], {}
     for sh in sheets:
         p = find(src, sh['sheet'])
