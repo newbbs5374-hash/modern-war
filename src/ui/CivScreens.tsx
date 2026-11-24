@@ -1,5 +1,6 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
+import { BoostBar } from './BoostBar';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -71,6 +72,7 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
     const st = t ? C.techStage(state, t.id) : 0;
     const allDone = !t && (l === 'mil' ? MIL_TECHS : SOC_TECHS).every((x) => c.done.includes(x.id));
     return (
+      <div className="civ-cur-wrap">
       <button className={`civ-cur ${t || allDone ? '' : 'idle'}`} onClick={() => (setLine(l), t && setPick(t))}>
         <span className="civ-cur-ico">{t ? <ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} /> : l === 'mil' ? '⚙️' : '📜'}</span>
         <span className="civ-cur-main">
@@ -93,6 +95,8 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
           )}
         </span>
       </button>
+      {t && <BoostBar state={state} apply={actions.apply} target={{ kind: 'research', line: l }} compact />}
+      </div>
     );
   };
   return (
@@ -342,7 +346,7 @@ function TechTree({ state, list, onPick }: ScreenProps & { list: Tech[]; onPick:
   );
 }
 
-function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose: () => void; onGo: (id: string) => void }) {
+function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech; onClose: () => void; onGo: (id: string) => void }) {
   const c = C.civOf(state);
   const done = C.hasTech(state, t.id);
   const now = c.cur[t.line] === t.id;
@@ -364,7 +368,10 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
         done ? (
           <span className="good">✓ 끝낸 연구</span>
         ) : now ? (
-          <span className="muted">연구 중이에요</span>
+          <span className="tech-now">
+            <span className="muted">연구 중이에요</span>
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'research', line: t.line }} />
+          </span>
         ) : (
           <button className="primary wide" disabled={!!why} onClick={() => (onGo(t.id), onClose())}>
             {why ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간`)}
@@ -752,6 +759,24 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         구역 {cc.districts.length}/{C.districtSlots(state, id)} ·{' '}
         {cc.districts.map((d) => `${districtById(d.id).icon}${d.doneMs > state.worldMs ? `(${timeLeft(d.doneMs - state.worldMs)})` : ''}`).join(' ') || '아직 없음'}
       </p>
+      {cc.districts
+        .filter((d) => d.doneMs > state.worldMs)
+        .map((d) => (
+          <div key={d.tile} className="list-row small">
+            <span>
+              🏗️ {districtById(d.id).icon} {districtById(d.id).name} 공사 중
+            </span>
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'district', city: id, tile: d.tile }} compact />
+          </div>
+        ))}
+      {(cc.mines ?? [])
+        .filter((m) => m.doneMs > state.worldMs)
+        .map((m) => (
+          <div key={m.tile} className="list-row small">
+            <span>⛏️ {m.res} 채굴장 공사 중</span>
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'mine', city: id, tile: m.tile }} compact />
+          </div>
+        ))}
       {selTile ? (
         <div className="civ-build">
           <small className="stat-group-name">

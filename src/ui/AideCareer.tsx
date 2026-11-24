@@ -1,4 +1,5 @@
 // 부관 → 장군: 인연·충성 막대, 장군 교육, 병과를 골라 임명. 장교 탭 부관 팝업과 인물 창이 함께 씀.
+import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { GENERAL_FIELDS } from '../data/officers';
 import {
@@ -74,9 +75,12 @@ export function AideCareer({ state, a, apply, onDone }: { state: GameState; a: A
     <div className="career-box">
       <small className="muted">⭐ 장군으로 키우기</small>
       {a.school ? (
-        <p className="small center">
-          🎓 장군 교육 중 · {timeLeft(a.school.endMs - state.worldMs)} 남음(그동안 전투·임무에 못 나가요)
-        </p>
+        <>
+          <p className="small center">
+            🎓 장군 교육 중 · {timeLeft(a.school.endMs - state.worldMs)} 남음(그동안 전투·임무에 못 나가요)
+          </p>
+          <BoostBar state={state} apply={apply} target={{ kind: 'school', id: a.id }} />
+        </>
       ) : !a.schooled ? (
         <>
           <p className="small">

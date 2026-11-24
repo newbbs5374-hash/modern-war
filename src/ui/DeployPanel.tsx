@@ -1,4 +1,5 @@
 // 외교 → 파병: 내가 만든 부대를 연합국·친한 나라로 보냄(game/deploy.ts)
+import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { COUNTRIES, countryById } from '../data/world';
 import {
@@ -79,6 +80,7 @@ export function DeployPanel({ state, actions }: ScreenProps) {
                   <br />
                   <small>{st}</small>
                 </span>
+                {(x.returnMs || state.worldMs < x.arriveMs) && <BoostBar state={state} apply={actions.apply} target={{ kind: 'deploy', id: x.id }} compact />}
                 {!x.returnMs && <button onClick={() => actions.apply((s) => recallTroops(s, x.id))}>불러들이기</button>}
               </div>
             );
