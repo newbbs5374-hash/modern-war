@@ -191,6 +191,7 @@ export function appointGeneral(s: GameState, id: number, field: GeneralField): G
       from: '부관 임명',
       bond: a.bond,
       specialty: a.specialty,
+      faceKey: a.faceKey,
       seenMs: ns.worldMs,
     };
     o.generals.push(g);

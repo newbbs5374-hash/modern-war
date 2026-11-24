@@ -4,7 +4,8 @@
 // 장관·장군·부관 자리 수, 만들 수 있는 병과, 잠금은 호칭과 상관없이 처음부터 모두 열려 있어요(player.rankIndex = 가장 높은 단계로 고정).
 import { RANKS, TITLES, rankOfTier, type Title } from '../data/ranks';
 import { eureka } from './civ';
-import { makeAide, note, type OfficerState } from './officer';
+import { note, type OfficerState } from './officer';
+import { starterAide } from './aidePick';
 import { Rng } from './rng';
 import { rivalBlock } from './rivals';
 import type { GameState } from './state';
@@ -51,7 +52,7 @@ export function syncTitle(s: GameState, quiet = false): GameState {
   if (ns.officer.aides.length === 0) {
     const o = structuredClone(ns.officer);
     const rng = new Rng(o.seed);
-    const a = makeAide(o, rng);
+    const a = starterAide(ns, o, rng);
     o.aides.push(a);
     o.seed = rng.seed;
     ns = { ...ns, officer: o };
