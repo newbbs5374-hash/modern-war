@@ -5,7 +5,7 @@ import { GOV_FACILITIES } from '../data/govFacilities';
 import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar } from './BoostBar';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
@@ -54,7 +54,8 @@ import { smoothPath, type Seg } from './smoothHex';
 import { CityLogo } from './CityLogo';
 import { CITY_LOGO } from '../data/cityLogos';
 import { useDragScroll } from './dragScroll';
-import { RING, SKY_ASPECT, SKY_R, eraLabelAt, layoutSky, skyPath } from './techSky';
+import { CARD_H, CARD_W, COL_GAP, cardPath, colX, layoutCards } from './techCards';
+import { CARD_ORDER } from './techCardOrder';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
 import * as C from '../game/civ';
@@ -65,7 +66,7 @@ import { Help, Meter, Modal, Tile } from './kit';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 import { Tip } from './InteriorScreen';
-import { ArtIcon, IslandIcon, ResIcon, cardArtKey, eraArtKey, govArtKey, iconArt, islandArtUrl, techArtKey } from './iconArt';
+import { ArtIcon, IslandIcon, ResIcon, UnitIcon, cardArtKey, eraArtKey, govArtKey, iconArt, islandArtUrl, techArtKey } from './iconArt';
 
 const H = 3600e3;
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -130,7 +131,7 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
               <b>3단계 연구</b>: 기술 하나는 1단계 → 2단계 → 3단계로 나눠 연구해요. 3단계를 모두 끝내야 기술이 완성되고 병과·카드·구역이 열려요. 다른 연구로 바꿔도 끝낸 단계와 쌓인 점수는 그대로 남아요.
             </p>
             <p>
-              <b>성좌판</b>: 가운데 별에서 바깥으로 갈수록 다음 시대 연구예요. 선으로 이어진 안쪽 별이 "먼저 해야 하는 연구"예요. 청록 선은 끝남, 주황 선은 지금 열 수 있음, 흐린 점선은 아직 멀었음. 두 손가락으로 벌리거나 ＋ 버튼으로 크게 보고, 밀어서 옮겨요. 별을 누르면 자세히 보여요.
+              <b>연구 트리</b>: 왼쪽에서 오른쪽으로 갈수록 다음 시대 연구예요. 선으로 이어진 왼쪽 카드가 "먼저 해야 하는 연구"예요. 청록 선은 끝남, 주황 선은 지금 열 수 있음, 흐린 점선은 아직 멀었음. 옆으로 밀어서 보고, 카드를 누르면 자세히 보여요. 카드 아래 작은 아이콘은 그 연구가 여는 병과·카드·구역·협정이에요.
             </p>
             <p>연구는 두 줄이에요. <b>군사 기술</b>은 병과와 무기 강화를, <b>사회 제도</b>는 정책 카드·협정·도시 구역을 열어요. 두 줄은 동시에 하나씩 진행돼요.</p>
             <p>
@@ -189,92 +190,28 @@ function StagePips({ n, cur }: { n: number; cur?: boolean }) {
   );
 }
 
-/** 연구 성좌판: 가운데 시작 별 → 시대 고리 1~4로 뻗는 별자리(용흔 성좌 판 참고). 선은 미리 겹치지 않게 배치(techSky.ts). */
-const SKY_PAD = 40;
-const SKY_W = (SKY_R + SKY_PAD) * 2;
-const SKY_H = (SKY_R * SKY_ASPECT + SKY_PAD) * 2;
-const SKY_DUST = (() => {
-  let s = 7;
-  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  return Array.from({ length: 90 }, () => [r() * SKY_W - SKY_W / 2, r() * SKY_H - SKY_H / 2, 0.4 + r() * 1.1, 0.25 + r() * 0.5]);
-})();
+/** 연구 카드 트리: 왼쪽(도약기) → 오른쪽(대양기)으로 이어지는 가로 스킬트리. 카드 = 아이콘 + 이름 + 여는 것 아이콘. 선은 미리 겹치지 않게 배치(techCards.ts) */
+const TT_PAD = { x: 14, top: 30, bottom: 30 };
+/** 이 연구가 여는 것(작은 아이콘용) */
+function techUnlockIcons(t: Tech): Array<{ key: string; node: ReactNode; label: string }> {
+  const out: Array<{ key: string; node: ReactNode; label: string }> = [];
+  for (const u of t.units ?? []) out.push({ key: `u-${u}`, node: <UnitIcon unit={u} />, label: u });
+  for (const k of t.cards ?? []) {
+    const cd = cardById(k);
+    if (cd) out.push({ key: `c-${k}`, node: <ArtIcon k={cardArtKey(k)} emoji={cd.icon} alt={cd.name} />, label: `${cd.name} 카드` });
+  }
+  for (const d of t.districts ?? []) out.push({ key: `d-${d}`, node: <>{districtById(d).icon}</>, label: districtById(d).name });
+  for (const d of DISTRICTS.filter((x) => x.tech === t.id)) out.push({ key: `d-${d.id}`, node: <>{d.icon}</>, label: d.name });
+  for (const a of t.agree ?? []) out.push({ key: `a-${a}`, node: <>{agreeById(a).icon}</>, label: `${agreeById(a).name} 협정` });
+  if (t.eff) out.push({ key: 'eff', node: <>📈</>, label: '능력 강화' });
+  return out;
+}
 function TechTree({ state, list, onPick }: ScreenProps & { list: Tech[]; onPick: (t: Tech) => void }) {
   const c = C.civOf(state);
-  const L = useMemo(() => layoutSky(list), [list]);
   const line = list[0]?.line ?? 'mil';
+  const L = useMemo(() => layoutCards(list, CARD_ORDER[line]), [list, line]);
   const box = useRef<HTMLDivElement>(null);
-  const [cam, setCam] = useState<{ s: number; x: number; y: number } | null>(null);
-  const fit = useRef(1);
-  const drag = useRef<{ pts: Map<number, [number, number]>; moved: number; start?: { s: number; x: number; y: number; d: number; mx: number; my: number } }>({ pts: new Map(), moved: 0 });
-  // 처음 열 때·창 크기가 바뀔 때 판 전체가 보이게
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const go = () => {
-      const f = Math.min(el.clientWidth / SKY_W, el.clientHeight / SKY_H);
-      fit.current = f;
-      setCam((v) => (v && Math.abs(v.s - f) > 1e-3 && v.s !== fit.current ? v : { s: f, x: 0, y: 0 }));
-    };
-    go();
-    const ro = new ResizeObserver(go);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  useLayoutEffect(() => setCam({ s: fit.current, x: 0, y: 0 }), [line]);
-  const clamp = (v: { s: number; x: number; y: number }) => {
-    const s = Math.max(fit.current, Math.min(fit.current * 3.2, v.s));
-    const mx = (SKY_W * s) / 2, my = (SKY_H * s) / 2;
-    return { s, x: Math.max(-mx, Math.min(mx, v.x)), y: Math.max(-my, Math.min(my, v.y)) };
-  };
-  const zoomAt = (k: number, px = 0, py = 0) =>
-    setCam((v) => {
-      if (!v) return v;
-      const n = clamp({ ...v, s: v.s * k });
-      const r = n.s / v.s;
-      return clamp({ s: n.s, x: px - (px - v.x) * r, y: py - (py - v.y) * r });
-    });
-  const rel = (e: { clientX: number; clientY: number }): [number, number] => {
-    const b = box.current!.getBoundingClientRect();
-    return [e.clientX - b.left - b.width / 2, e.clientY - b.top - b.height / 2];
-  };
-  const down = (e: React.PointerEvent) => {
-    const d = drag.current;
-    d.pts.set(e.pointerId, rel(e));
-    if (d.pts.size === 1) d.moved = 0;
-    const ps = [...d.pts.values()];
-    const mx = ps.reduce((a, p) => a + p[0], 0) / ps.length, my = ps.reduce((a, p) => a + p[1], 0) / ps.length;
-    const dd = ps.length > 1 ? Math.hypot(ps[0][0] - ps[1][0], ps[0][1] - ps[1][1]) : 0;
-    if (cam) d.start = { ...cam, d: dd, mx, my };
-  };
-  const move = (e: React.PointerEvent) => {
-    const d = drag.current;
-    if (!d.pts.has(e.pointerId) || !d.start) return;
-    const p = rel(e);
-    const old = d.pts.get(e.pointerId)!;
-    d.moved += Math.hypot(p[0] - old[0], p[1] - old[1]);
-    d.pts.set(e.pointerId, p);
-    if (d.moved > 6) (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    const ps = [...d.pts.values()];
-    const mx = ps.reduce((a, q) => a + q[0], 0) / ps.length, my = ps.reduce((a, q) => a + q[1], 0) / ps.length;
-    const st = d.start;
-    let s = st.s;
-    if (ps.length > 1 && st.d > 0) s = st.s * (Math.hypot(ps[0][0] - ps[1][0], ps[0][1] - ps[1][1]) / st.d);
-    const n = clamp({ s, x: 0, y: 0 });
-    const r = n.s / st.s;
-    setCam(clamp({ s: n.s, x: mx - (st.mx - st.x) * r, y: my - (st.my - st.y) * r }));
-  };
-  const up = (e: React.PointerEvent) => {
-    const d = drag.current;
-    d.pts.delete(e.pointerId);
-    const ps = [...d.pts.values()];
-    if (ps.length && cam) d.start = { ...cam, d: 0, mx: ps[0][0], my: ps[0][1] };
-  };
-  const tap = (t: Tech) => {
-    if (drag.current.moved > 6) return;
-    onPick(t);
-  };
-  const v = cam ?? { s: fit.current, x: 0, y: 0 };
-  const z = v.s / fit.current; // 1 = 전체 보기
+  useDragScroll(box);
   const stateOf = (t: Tech) => {
     if (C.hasTech(state, t.id)) return 'done';
     if (c.cur[t.line] === t.id) return 'now';
@@ -283,104 +220,94 @@ function TechTree({ state, list, onPick }: ScreenProps & { list: Tech[]; onPick:
   };
   const st: Record<string, string> = Object.fromEntries(list.map((t) => [t.id, stateOf(t)]));
   const lineCls = (from: string, to: string) => {
-    const a = from ? st[from] === 'done' : true;
+    const a = st[from] === 'done';
     const b = st[to];
     return b === 'done' ? 'done' : b === 'now' && a ? 'now' : a ? 'open' : 'far';
   };
   const order = { far: 0, open: 1, done: 2, now: 3 } as Record<string, number>;
-  const edges = [...L.edges].map((e) => ({ ...e, cls: lineCls(e.from, e.to) })).sort((a, b) => order[a.cls] - order[b.cls]);
-  // 글씨: 화면에서 늘 9.5px. 겹치면 덜 중요한 별 글씨는 숨김(연구 중 → 열 수 있음 → 끝남 → 아직 순), 확대할수록 더 보임
-  const shown = useMemo(() => {
-    const f = 9.5 / Math.max(v.s, 0.45); // 판 좌표로 본 글씨 크기
-    const pri = { now: 0, open: 1, done: 2, far: 3 } as Record<string, number>;
-    const boxes: Array<[number, number, number, number]> = Object.values(L.nodes).map((n) => [n.x - 19, n.y - 19, n.x + 19, n.y + 19]);
-    const ok = new Map<string, boolean>(); // 별 id → 글씨를 위에 둘지
-    for (const t of [...list].sort((a, b) => pri[st[a.id]] - pri[st[b.id]])) {
-      const n = L.nodes[t.id];
-      if (!n) continue;
-      const w = (t.name.length + (st[t.id] === 'now' ? 3 : 0)) * f * 0.92;
-      const hit = (b: number[]) => boxes.some((o) => b[0] < o[2] && o[0] < b[2] && b[1] < o[3] && o[1] < b[3]);
-      const below: [number, number, number, number] = [n.x - w / 2, n.y + 22, n.x + w / 2, n.y + 22 + f * 1.15];
-      const above: [number, number, number, number] = [n.x - w / 2, n.y - 22 - f * 1.15, n.x + w / 2, n.y - 22];
-      const b = !hit(below) ? below : !hit(above) ? above : st[t.id] === 'now' ? below : null;
-      if (!b) continue;
-      boxes.push(b);
-      ok.set(t.id, b === above);
-    }
-    return ok;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [L, Math.round(v.s * 20), list.map((t) => st[t.id]).join()]);
-  const showLab = (t: Tech) => shown.has(t.id);
+  const edges = L.edges.map((e) => ({ ...e, cls: lineCls(e.from, e.to) })).sort((a, b) => order[a.cls] - order[b.cls]);
+  const W = L.width + TT_PAD.x * 2;
+  const Hh = L.height + TT_PAD.top + TT_PAD.bottom;
   const doneN = list.filter((t) => st[t.id] === 'done').length;
+  // 처음 열 때·줄을 바꿀 때: 지금 연구(없으면 열 수 있는 첫 카드)가 보이게
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const focus = list.find((t) => st[t.id] === 'now') ?? list.find((t) => st[t.id] === 'open');
+    const n = focus && L.nodes[focus.id];
+    if (!n) return el.scrollTo({ left: 0, top: 0 });
+    el.scrollTo({ left: Math.max(0, n.x + TT_PAD.x - 16), top: Math.max(0, n.y + TT_PAD.top - el.clientHeight / 2) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [line]);
   return (
-    <section className="card sky-card">
-      <div className="sky-box" ref={box} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onWheel={(e) => zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, ...rel(e))}>
-        <div className="sky-board" style={{ width: SKY_W, height: SKY_H, transform: `translate(-50%,-50%) translate(${v.x}px,${v.y}px) scale(${v.s})`, ['--z' as string]: z, ['--s' as string]: v.s }}>
-          <svg className="sky-lines" width={SKY_W} height={SKY_H} viewBox={`${-SKY_W / 2} ${-SKY_H / 2} ${SKY_W} ${SKY_H}`} aria-hidden>
-            {SKY_DUST.map(([x, y, r, o], i) => (
-              <circle key={i} cx={x} cy={y} r={r} className="sky-dust" opacity={o} />
-            ))}
-            {([1, 2, 3, 4] as const).map((era) => (
-              <g key={era} className="sky-ring">
-                <ellipse cx={0} cy={0} rx={RING[era]} ry={RING[era] * SKY_ASPECT} />
-              </g>
-            ))}
-            {edges.map((e) => (
-              <path key={`${e.from}>${e.to}`} d={skyPath(e.pts)} className={e.cls} />
-            ))}
-          </svg>
-          {([1, 2, 3, 4] as const).map((era) => {
-            const [x, y] = eraLabelAt(L, era);
+    <section className="card tt-card">
+      <div className="tt-head">
+        <b>{line === 'mil' ? '⚙️ 군사 기술' : '📜 사회 제도'}</b>
+        <small className="muted">
+          {doneN}/{list.length} · 옆으로 밀어서 보기
+        </small>
+        <span className="tt-legend">
+          <span className="lg-done">■ 끝남</span> <span className="lg-now">■ 연구 중</span> <span className="lg-open">■ 열 수 있음</span> <span className="lg-far">■ 아직</span>
+        </span>
+      </div>
+      <div className="tt-box" ref={box}>
+        <div className="tt-board" style={{ width: W, height: Hh }}>
+          {L.eras.map((e, i) => {
+            const x0 = colX(e.from) + TT_PAD.x - COL_GAP / 2;
+            const x1 = colX(e.to) + CARD_W + TT_PAD.x + COL_GAP / 2;
             return (
-              <span key={era} className="sky-era" style={{ left: x + SKY_W / 2, top: y + SKY_H / 2 }}>
-                {ERAS[era].icon} {ERAS[era].name}
-              </span>
+              <div key={e.era} className={`tt-era ${i % 2 ? 'odd' : ''}`} style={{ left: Math.max(0, x0), width: Math.min(W, x1) - Math.max(0, x0) }}>
+                <span>
+                  <ArtIcon k={eraArtKey(e.era)} emoji={ERAS[e.era as Tech['era']].icon} cls="inline" /> {ERAS[e.era as Tech['era']].name}
+                </span>
+              </div>
             );
           })}
-          <span className="sky-root" style={{ left: SKY_W / 2, top: SKY_H / 2 }}>
-            <i>{line === 'mil' ? '⚙️' : '📜'}</i>
-            <b>{line === 'mil' ? '군사 기술' : '사회 제도'}</b>
-            <small>
-              {doneN}/{list.length}
-            </small>
-          </span>
+          <svg className="tt-lines" width={W} height={Hh} viewBox={`${-TT_PAD.x} ${-TT_PAD.top} ${W} ${Hh}`} aria-hidden>
+            {edges.map((e) => (
+              <path key={`${e.from}>${e.to}`} d={cardPath(e.pts)} className={e.cls} />
+            ))}
+          </svg>
           {list.map((t) => {
             const n = L.nodes[t.id];
             if (!n) return null;
             const s = st[t.id];
             const stage = C.techStage(state, t.id);
             const prog = s === 'now' ? C.techProgress(state, t) : 0;
+            const icons = techUnlockIcons(t);
             return (
               <button
                 key={t.id}
-                className={`sky-star s-${s} ${shown.get(t.id) ? 'lab-up' : ''}`}
+                className={`tt-node s-${s}`}
                 data-tech={t.id}
-                style={{ left: n.x + SKY_W / 2, top: n.y + SKY_H / 2 }}
-                onClick={() => tap(t)}
+                style={{ left: n.x + TT_PAD.x, top: n.y + TT_PAD.top - CARD_H / 2, width: CARD_W, height: CARD_H }}
+                onClick={() => onPick(t)}
                 aria-label={t.name}
               >
-                <span className="sky-orb">
+                <span className="tt-ico">
                   <ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} />
-                  {s !== 'done' && c.eureka.includes(t.id) && <i className="sky-eu">💡</i>}
+                  {s !== 'done' && c.eureka.includes(t.id) && <i className="tt-eu">💡</i>}
                 </span>
-                {s !== 'done' && (stage > 0 || s === 'now') && <StagePips n={stage} cur={s === 'now'} />}
-                {showLab(t) && (
-                  <span className="sky-lab">
-                    {t.name}
-                    {s === 'now' && <small> {Math.round(prog * 100)}%</small>}
+                <span className="tt-body">
+                  <b className="tt-name">{t.name}</b>
+                  <span className="tt-un">
+                    {s === 'done' ? (
+                      <i className="tt-ok">✓</i>
+                    ) : (
+                      <StagePips n={stage} cur={s === 'now'} />
+                    )}
+                    {icons.slice(0, 4).map((u) => (
+                      <i key={u.key} className="tt-u" title={u.label}>
+                        {u.node}
+                      </i>
+                    ))}
+                    {icons.length > 4 && <small>+{icons.length - 4}</small>}
                   </span>
-                )}
+                </span>
+                {s === 'now' && <span className="tt-prog" style={{ width: `${Math.round(prog * 100)}%` }} />}
               </button>
             );
           })}
-        </div>
-        <div className="sky-zoom" onPointerDown={(e) => e.stopPropagation()}>
-          <button onClick={() => zoomAt(1.4)} aria-label="크게">＋</button>
-          <button onClick={() => zoomAt(1 / 1.4)} aria-label="작게">－</button>
-          <button onClick={() => setCam({ s: fit.current, x: 0, y: 0 })} aria-label="전체 보기">⤢</button>
-        </div>
-        <div className="sky-legend">
-          <span className="lg-done">● 끝남</span> <span className="lg-now">● 연구 중</span> <span className="lg-open">● 열 수 있음</span> <span className="lg-far">● 아직</span>
         </div>
       </div>
     </section>

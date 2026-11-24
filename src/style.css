@@ -944,50 +944,53 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .fleets .rotor { animation: rotor-spin 0.25s linear infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes rotor-spin { to { transform: rotate(360deg); } }
 
-/* 연구 나무: 선행 → 후속 선 · 3단계 (11-24) */
-/* 연구 성좌판 (용흔 성좌 판 참고): 밤하늘 · 빛나는 별 · 확대/이동 */
-.sky-card { padding: 6px; }
-.sky-box { position: relative; height: min(70vh, 600px); overflow: hidden; border-radius: 10px; touch-action: none; user-select: none;
-  background: radial-gradient(ellipse at 50% 50%, #1d3550 0%, #14233a 45%, #0b1424 100%); box-shadow: inset 0 0 0 1px #3fb8c955; }
-.sky-board { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; will-change: transform; }
-.sky-lines { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-.sky-dust { fill: #dbe8ff; }
-.sky-ring ellipse { fill: none; stroke: #9fc3e6; stroke-opacity: .16; stroke-width: 1; stroke-dasharray: 2 5; }
-.sky-lines path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.sky-lines path.far { stroke: #9fb0c2; opacity: .3; stroke-dasharray: 3 5; stroke-width: 1.4; }
-.sky-lines path.open { stroke: var(--amber, #ffb020); opacity: .8; }
-.sky-lines path.done { stroke: #5fe0f0; opacity: .95; filter: drop-shadow(0 0 2px #5fe0f0aa); }
-.sky-lines path.now { stroke: var(--amber, #ffb020); stroke-width: 3; filter: drop-shadow(0 0 4px #ffb020cc); }
-.sky-era { position: absolute; transform: translate(-50%, -50%); font-size: calc(9px / max(var(--s, 1), .45)); color: #bcd3ea; opacity: .75; white-space: nowrap; pointer-events: none;
-  background: #0b1424cc; padding: 0 6px; border-radius: 8px; }
-.sky-root { position: absolute; transform: translate(-50%, -50%); width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; align-content: center; gap: 0;
-  background: radial-gradient(circle, #fff6d8 0%, #ffcf5a 35%, #ffb02033 70%, transparent 72%); color: #2a1a00; pointer-events: none; text-align: center; }
-.sky-root i { font-style: normal; font-size: 22px; line-height: 1; }
-.sky-root b { font-size: 11px; line-height: 1.1; }
-.sky-root small { font-size: 10px; }
-.sky-star { position: absolute; transform: translate(-50%, -50%); width: 40px; height: 40px; padding: 0; border: 0; background: none; cursor: pointer; }
-.sky-orb { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: #0f1b2c; border: 2px solid #7f93a8;
-  box-shadow: 0 0 0 2px #0b1424; overflow: visible; }
-.sky-orb > img, .sky-orb .art-ico { width: 34px; height: 34px; object-fit: contain; border-radius: 50%; }
-.sky-orb { font-size: 17px; line-height: 1; }
-.sky-eu { position: absolute; right: -6px; top: -7px; font-style: normal; font-size: 11px; }
-.sky-star .stage-pips { position: absolute; left: 50%; bottom: -4px; margin: 0; transform: translateX(-50%); }
-.sky-lab { position: absolute; left: 50%; top: calc(100% + 5px); transform: translateX(-50%); white-space: nowrap; font-size: calc(9.5px / max(var(--s, 1), .45)); line-height: 1.15; color: #e6eef8;
-  text-shadow: 0 0 3px #0b1424, 0 0 3px #0b1424, 0 1px 2px #000; pointer-events: none; font-weight: 600; }
-.sky-star.lab-up .sky-lab { top: auto; bottom: calc(100% + 3px); }
-.sky-lab small { color: var(--amber, #ffb020); font-size: .92em; }
-.sky-star.s-done .sky-orb { border-color: #5fe0f0; background: #12324a; box-shadow: 0 0 0 2px #0b1424, 0 0 10px 2px #5fe0f0aa; }
-.sky-star.s-now .sky-orb { border-color: var(--amber, #ffb020); box-shadow: 0 0 0 2px #0b1424, 0 0 14px 4px #ffb020bb; animation: skyPulse 1.6s ease-in-out infinite; }
-.sky-star.s-now { z-index: 2; }
-.sky-star.s-open .sky-orb { border-color: #ffd27a; box-shadow: 0 0 0 2px #0b1424, 0 0 6px 1px #ffd27a77; }
-.sky-star.s-far .sky-orb { filter: brightness(.55) saturate(.4); border-style: dashed; }
-.sky-star.s-far .sky-lab { opacity: .7; }
-@keyframes skyPulse { 50% { box-shadow: 0 0 0 2px #0b1424, 0 0 20px 7px #ffb020dd; } }
-.sky-zoom { position: absolute; right: 6px; top: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 3; }
-.sky-zoom button { width: 30px; height: 30px; padding: 0; border-radius: 8px; background: #0b1424cc; color: #e6eef8; border: 1px solid #3fb8c988; font-size: 16px; }
-.sky-legend { position: absolute; left: 6px; bottom: 5px; right: 6px; font-size: 9.5px; color: #bcd3ea; pointer-events: none; z-index: 3; }
-.sky-legend span { margin-right: 6px; }
-.sky-legend .lg-done { color: #5fe0f0; } .sky-legend .lg-now { color: #ffb020; } .sky-legend .lg-open { color: #ffd27a; } .sky-legend .lg-far { color: #8899aa; }
+/* 연구 카드 트리 (11-24): 왼쪽 → 오른쪽 가로 스킬트리 · 작은 가로 카드 · 시안 4 강철 회청 + 작전 콘솔 각진 칸 */
+.tt-card { padding: 6px; }
+.tt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 0 2px 5px; }
+.tt-head b { font-size: 13px; }
+.tt-head small { font-size: 10.5px; }
+.tt-legend { flex-basis: 100%; font-size: 10px; }
+.tt-legend span { margin-right: 6px; }
+.tt-legend .lg-done { color: #5fe0f0; } .tt-legend .lg-now { color: #ffb020; } .tt-legend .lg-open { color: #ffd27a; } .tt-legend .lg-far { color: #9aa8b6; }
+.tt-box { position: relative; height: min(66vh, 560px); overflow: auto; overscroll-behavior: contain; border: 1px solid #3fb8c955; border-radius: 4px;
+  background: linear-gradient(180deg, #2a3440, #26303b); cursor: grab; user-select: none; -webkit-user-select: none; scrollbar-width: thin; }
+.tt-box.dragging { cursor: grabbing; }
+.tt-box.dragging .tt-node { pointer-events: none; }
+.tt-board { position: relative; }
+.tt-era { position: absolute; top: 0; bottom: 0; background: #ffffff05; border-left: 1px dashed #3fb8c933; pointer-events: none; }
+.tt-era.odd { background: #00000014; }
+.tt-era:first-child { border-left: 0; }
+.tt-era span { position: sticky; top: 0; display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0 8px; padding: 2px 8px 2px 6px; font-size: 11px; font-weight: 700; color: #cfe7ee;
+  background: #1f2832e6; border: 1px solid #3fb8c966; border-left: 3px solid var(--hud, #3fb8c9); border-radius: 2px; }
+.tt-era span .art-ico.inline { width: 16px; height: 16px; }
+.tt-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.tt-lines path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tt-lines path.far { stroke: #8e9eae; opacity: .45; stroke-dasharray: 4 4; stroke-width: 1.5; }
+.tt-lines path.open { stroke: #ffd27a; opacity: .85; }
+.tt-lines path.done { stroke: #5fe0f0; opacity: .95; }
+.tt-lines path.now { stroke: var(--amber, #ffb020); stroke-width: 3; filter: drop-shadow(0 0 3px #ffb020aa); }
+.tt-node { position: absolute; display: flex; align-items: center; gap: 5px; padding: 3px 5px 3px 3px; text-align: left; color: var(--text, #f1f5f9); cursor: pointer; overflow: hidden;
+  background: linear-gradient(180deg, #4a5866, #3d4a57); border: 1px solid #6d7f91; border-radius: 3px; clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px)); }
+.tt-node:active { filter: brightness(1.15); }
+.tt-ico { position: relative; flex: 0 0 36px; width: 36px; height: 36px; display: grid; place-items: center; font-size: 19px; line-height: 1; background: radial-gradient(circle at 50% 40%, #7d8e9f, #4b5967); border: 1px solid #8a9bab; border-radius: 3px; }
+.tt-ico > img, .tt-ico .art-ico { width: 34px; height: 34px; object-fit: contain; }
+.tt-eu { position: absolute; right: -3px; top: -4px; font-style: normal; font-size: 11px; }
+.tt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tt-name { font-size: 11.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-un { display: flex; align-items: center; gap: 2px; height: 17px; }
+.tt-un .stage-pips { margin: 0 3px 0 0; gap: 2px; }
+.tt-un .stage-pips i { width: 6px; height: 6px; }
+.tt-u { font-style: normal; display: grid; place-items: center; width: 17px; height: 17px; font-size: 11px; line-height: 1; background: #1f283299; border: 1px solid #5b6a7999; border-radius: 2px; overflow: hidden; }
+.tt-u img, .tt-u .art-ico { width: 16px; height: 16px; object-fit: contain; }
+.tt-u .art-ico-wrap { display: contents; }
+.tt-u .art-ico-tag { display: none; }
+.tt-un small { font-size: 10px; color: var(--muted, #b4c0cc); }
+.tt-ok { font-style: normal; color: #5fe0f0; font-weight: 700; font-size: 12px; margin-right: 3px; }
+.tt-prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--amber, #ffb020); }
+.tt-node.s-done { border-color: #5fe0f0; background: linear-gradient(180deg, #2f5966, #284b57); }
+.tt-node.s-now { border-color: var(--amber, #ffb020); background: linear-gradient(180deg, #5d5340, #4a4334); box-shadow: inset 0 0 0 1px #ffb020; z-index: 2; }
+.tt-node.s-open { border-color: #ffd27a; }
+.tt-node.s-far { filter: saturate(.45); opacity: .72; border-style: dashed; }
 .stage-pips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
 .itile .stage-pips { margin: 2px 0 0; }
 .stage-pips i { width: 7px; height: 7px; border-radius: 50%; background: #2c3640; border: 1px solid #9fb0c2; }
