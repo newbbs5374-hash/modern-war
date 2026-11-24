@@ -1,10 +1,11 @@
 // 인물·부처의 시간 흐름(인재 명단 채우기·청문회 결과·부처 업무·충성·빼 가기·은퇴·스캔들·장관 다툼)과 부처 업무 시작.
+import { ALL_STATS } from '../data/stats2';
+import { GENERAL_NEEDS, NEEDS } from '../data/needs';
 import { BASIC_RES } from '../data/economy';
 import { COUNTRIES } from '../data/world';
 import { CITIES } from '../data/cities';
 import { ministryById, type MinistryId } from '../data/cabinet';
 import { postById } from '../data/staff';
-import { STAT_IDS } from '../data/officers';
 import { addPresMod } from './approval';
 import {
   postEff,
@@ -22,6 +23,8 @@ import {
   viceOf,
   type CabinetState,
   type Person,
+  avgStats,
+  needPower,
 } from './cabinet';
 import { addFavorNote, civOf, favorOf } from './civ';
 import { note, withOfficer } from './officer';
@@ -442,23 +445,24 @@ export function cabinetTick(s: GameState, tickMs: number): GameState {
 }
 
 /** 스탯 합(카드에 보여 줄 종합) */
-export const statTotal = (p: Person) => STAT_IDS.reduce((a, id) => a + p.stats[id], 0);
+/** 스탯 18개 합 */
+export const statTotal = (p: Person) => ALL_STATS.reduce((a, id) => a + (p.stats[id] ?? 0), 0);
 /** 자리에 맞는 후보 3명(후보 비교 창) */
 export function bestFor(s: GameState, min: MinistryId, n = 3): Person[] {
   const c = cabinetOf(s);
   const m = ministryById(min);
   return c.people
     .filter((p) => p.group === '내각' && !(p.seat?.kind === 'min') && !p.post)
-    .sort((a, b) => scoreFor(b, m.stats, m.spec) - scoreFor(a, m.stats, m.spec))
+    .sort((a, b) => needPower(b, NEEDS[min], m.spec) - needPower(a, NEEDS[min], m.spec))
     .slice(0, n);
 }
-const scoreFor = (p: Person, stats: readonly string[], spec: readonly string[]) => stats.reduce((a, id) => a + (p.stats[id as keyof Person['stats']] ?? 0), 0) * (spec.includes(p.spec) ? 1.3 : 1);
 
 /* ───────── 인물을 장군으로(11-23) ───────── */
 
-/** 사람 스탯으로 정한 장군 능력 1~10(통솔·전술·포격 평균) */
-export function personGeneralSkill(p: Person): number {
-  const v = (p.stats['통솔'] + p.stats['전술'] + p.stats['포격']) / 3;
+/** 사람 스탯으로 정한 장군 능력 1~10(병과마다 중요한 스탯, 없으면 지휘·전술·통솔) */
+export function personGeneralSkill(p: Person, field?: GeneralField): number {
+  const n = GENERAL_NEEDS[field ?? '합참'];
+  const v = avgStats(p, n.main) * 0.8 + (p.stats[n.sub] ?? 0) * 0.2;
   const spec = ['육군통', '해군통', '공군통', '정보통', '군수통'].includes(p.spec) ? 1 : 0;
   return clamp(Math.round(v / 3.2 + spec), 1, 10);
 }

@@ -3,7 +3,7 @@
 // 대통령이 임명하는 국무총리·권력기관장·독립기관장을 참고했어요. 계산은 src/game/cabinet.ts(postPower·postEff)
 // 대통령실 참모는 실제로도 국회 인사청문회를 거치지 않아요 → 바로 임명.
 import type { SpecId } from './cabinet';
-import type { StatId } from './officers';
+import type { AnyStat } from './stats2';
 
 export type OfficeId = 'sec' | 'pol' | 'nsc' | 'pss' | 'gov';
 export interface Office {
@@ -87,39 +87,39 @@ export interface Post {
   /** 급(장관급·차관급 등, 보여 주기용) */
   level: string;
   role: string;
-  stats: StatId[];
+  stats: AnyStat[];
   spec: SpecId[];
   eff: Partial<Record<PostEff, number>>;
 }
 
 export const POSTS: Post[] = [
   // ── 비서실 ──
-  { id: 'chief', office: 'sec', icon: '🗝️', name: '비서실장', level: '장관급', role: '대통령실 살림·일정·참모 조율', stats: ['정치', '통솔'], spec: ['행정통'], eff: { cabLoyal: 3, trust: 0.5 } },
-  { id: 'polit', office: 'sec', icon: '🗳️', name: '정무수석', level: '차관급', role: '국회·정당과 소통', stats: ['정치', '정보'], spec: ['행정통', '홍보통'], eff: { trust: 2 } },
-  { id: 'civil', office: 'sec', icon: '⚖️', name: '민정수석', level: '차관급', role: '공직 감찰·민심 동향', stats: ['정보', '정치'], spec: ['행정통', '정보통'], eff: { scandal: 0.3, trust: 0.5 } },
-  { id: 'press', office: 'sec', icon: '📣', name: '홍보소통수석', level: '차관급', role: '언론·국민 소통', stats: ['정치', '정보'], spec: ['홍보통'], eff: { approval: 1.5, speech: 0.08 } },
-  { id: 'society', office: 'sec', icon: '🤲', name: '시민사회수석', level: '차관급', role: '시민단체·종교계·노동계', stats: ['정치', '통솔'], spec: ['복지통', '행정통'], eff: { loyalty: 1, approval: 0.5 } },
-  { id: 'hr', office: 'sec', icon: '🗂️', name: '인사수석', level: '차관급', role: '고위 공직자 인사 검증', stats: ['정보', '정치'], spec: ['행정통', '정보통'], eff: { recruit: 0.08 } },
-  { id: 'spokes', office: 'sec', icon: '🎙️', name: '대변인', level: '1급', role: '대통령의 말 전하기·브리핑', stats: ['정치', '체력'], spec: ['홍보통'], eff: { approval: 1 } },
+  { id: 'chief', office: 'sec', icon: '🗝️', name: '비서실장', level: '장관급', role: '대통령실 살림·일정·참모 조율', stats: ['정치', '행정'], spec: ['행정통'], eff: { cabLoyal: 3, trust: 0.5 } },
+  { id: 'polit', office: 'sec', icon: '🗳️', name: '정무수석', level: '차관급', role: '국회·정당과 소통', stats: ['정치', '언변'], spec: ['행정통', '홍보통'], eff: { trust: 2 } },
+  { id: 'civil', office: 'sec', icon: '⚖️', name: '민정수석', level: '차관급', role: '공직 감찰·민심 동향', stats: ['법률', '정보'], spec: ['행정통', '정보통'], eff: { scandal: 0.3, trust: 0.5 } },
+  { id: 'press', office: 'sec', icon: '📣', name: '홍보소통수석', level: '차관급', role: '언론·국민 소통', stats: ['언변', '매력'], spec: ['홍보통'], eff: { approval: 1.5, speech: 0.08 } },
+  { id: 'society', office: 'sec', icon: '🤲', name: '시민사회수석', level: '차관급', role: '시민단체·종교계·노동계', stats: ['매력', '청렴'], spec: ['복지통', '행정통'], eff: { loyalty: 1, approval: 0.5 } },
+  { id: 'hr', office: 'sec', icon: '🗂️', name: '인사수석', level: '차관급', role: '고위 공직자 인사 검증', stats: ['행정', '정보'], spec: ['행정통', '정보통'], eff: { recruit: 0.08 } },
+  { id: 'spokes', office: 'sec', icon: '🎙️', name: '대변인', level: '1급', role: '대통령의 말 전하기·브리핑', stats: ['언변', '매력'], spec: ['홍보통'], eff: { approval: 1 } },
   // ── 정책실 ──
-  { id: 'policy', office: 'pol', icon: '📑', name: '정책실장', level: '장관급', role: '국정 과제·부처 조율', stats: ['정치', '군수'], spec: ['경제통', '행정통'], eff: { taskTime: 0.06, econ: 1, soc: 1 } },
-  { id: 'econ', office: 'pol', icon: '📈', name: '경제수석', level: '차관급', role: '경제·재정·산업 정책', stats: ['군수', '정치'], spec: ['경제통'], eff: { budget: 0.02, econ: 1.5 } },
-  { id: 'social', office: 'pol', icon: '🏥', name: '사회수석', level: '차관급', role: '복지·교육·고용', stats: ['정치', '군수'], spec: ['복지통'], eff: { growth: 0.04, soc: 1.5 } },
-  { id: 'sci', office: 'pol', icon: '🤖', name: '과학기술수석', level: '차관급', role: 'AI·과학기술·국방과학', stats: ['정보', '전술'], spec: ['과학자'], eff: { research: 0.05 } },
+  { id: 'policy', office: 'pol', icon: '📑', name: '정책실장', level: '장관급', role: '국정 과제·부처 조율', stats: ['행정', '경제'], spec: ['경제통', '행정통'], eff: { taskTime: 0.06, econ: 1, soc: 1 } },
+  { id: 'econ', office: 'pol', icon: '📈', name: '경제수석', level: '차관급', role: '경제·재정·산업 정책', stats: ['경제', '행정'], spec: ['경제통'], eff: { budget: 0.02, econ: 1.5 } },
+  { id: 'social', office: 'pol', icon: '🏥', name: '사회수석', level: '차관급', role: '복지·교육·고용', stats: ['행정', '매력'], spec: ['복지통'], eff: { growth: 0.04, soc: 1.5 } },
+  { id: 'sci', office: 'pol', icon: '🤖', name: '과학기술수석', level: '차관급', role: 'AI·과학기술·국방과학', stats: ['과학', '정보'], spec: ['과학자'], eff: { research: 0.05 } },
   // ── 국가안보실 ──
-  { id: 'nsa', office: 'nsc', icon: '🛡️', name: '국가안보실장', level: '장관급', role: '외교·안보 총괄·위기 대응', stats: ['전술', '정보'], spec: ['외교통', '정보통', '육군통'], eff: { sec: 2, diplo: 1 } },
-  { id: 'nsa1', office: 'nsc', icon: '🌐', name: '안보실 1차장', level: '차관급', role: '외교·통일·정상외교', stats: ['정치', '정보'], spec: ['외교통'], eff: { favor: 2, diplo: 1 } },
-  { id: 'nsa2', office: 'nsc', icon: '🎖️', name: '안보실 2차장', level: '차관급', role: '국방·군사 대비', stats: ['통솔', '전술'], spec: ['육군통', '해군통', '공군통'], eff: { troop: 0.02, sec: 1 } },
+  { id: 'nsa', office: 'nsc', icon: '🛡️', name: '국가안보실장', level: '장관급', role: '외교·안보 총괄·위기 대응', stats: ['전술', '외교'], spec: ['외교통', '정보통', '육군통'], eff: { sec: 2, diplo: 1 } },
+  { id: 'nsa1', office: 'nsc', icon: '🌐', name: '안보실 1차장', level: '차관급', role: '외교·통일·정상외교', stats: ['외교', '언변'], spec: ['외교통'], eff: { favor: 2, diplo: 1 } },
+  { id: 'nsa2', office: 'nsc', icon: '🎖️', name: '안보실 2차장', level: '차관급', role: '국방·군사 대비', stats: ['지휘', '전술'], spec: ['육군통', '해군통', '공군통'], eff: { troop: 0.02, sec: 1 } },
   // ── 경호처 ──
   { id: 'guard', office: 'pss', icon: '🕶️', name: '경호처장', level: '차관급', role: '대통령 경호·정적 공작 막기', stats: ['은밀', '체력'], spec: ['정보통', '육군통'], eff: { sec: 1, mission: 0.02 } },
   // ── 국무총리·기관장 ──
-  { id: 'pm', office: 'gov', icon: '🏛️', name: '국무총리', level: '총리', role: '내각 총괄(국회 동의 필요)', stats: ['정치', '통솔'], spec: ['행정통', '경제통'], eff: { minPower: 0.06, trust: 0.5 } },
-  { id: 'pros', office: 'gov', icon: '🔍', name: '검찰총장', level: '장관급', role: '수사·기소(청문회)', stats: ['정보', '정치'], spec: ['행정통', '정보통'], eff: { scandal: 0.15, soc: 1 } },
-  { id: 'police', office: 'gov', icon: '🚓', name: '경찰청장', level: '차관급', role: '치안 유지(청문회)', stats: ['통솔', '체력'], spec: ['행정통'], eff: { loyalty: 1.5 } },
-  { id: 'tax', office: 'gov', icon: '🧾', name: '국세청장', level: '차관급', role: '세금 걷기(청문회)', stats: ['군수', '정보'], spec: ['경제통'], eff: { budget: 0.02, taxSoft: 0.06 } },
-  { id: 'audit', office: 'gov', icon: '📋', name: '감사원장', level: '장관급', role: '나랏돈·공무원 감사(국회 동의)', stats: ['정보', '정치'], spec: ['행정통', '경제통'], eff: { trust: 1, scandal: 0.1 } },
-  { id: 'bok', office: 'gov', icon: '🏦', name: '한국은행 총재', level: '장관급', role: '돈의 가치·금리(청문회)', stats: ['군수', '정보'], spec: ['경제통'], eff: { econ: 2, taxSoft: 0.05 } },
-  { id: 'dapa', office: 'gov', icon: '🏗️', name: '방위사업청장', level: '차관급', role: '무기 사 오기·만들기', stats: ['군수', '전술'], spec: ['군수통', '과학자'], eff: { build: 0.03 } },
+  { id: 'pm', office: 'gov', icon: '🏛️', name: '국무총리', level: '총리', role: '내각 총괄(국회 동의 필요)', stats: ['행정', '정치'], spec: ['행정통', '경제통'], eff: { minPower: 0.06, trust: 0.5 } },
+  { id: 'pros', office: 'gov', icon: '🔍', name: '검찰총장', level: '장관급', role: '수사·기소(청문회)', stats: ['법률', '정보'], spec: ['행정통', '정보통'], eff: { scandal: 0.15, soc: 1 } },
+  { id: 'police', office: 'gov', icon: '🚓', name: '경찰청장', level: '차관급', role: '치안 유지(청문회)', stats: ['통솔', '행정'], spec: ['행정통'], eff: { loyalty: 1.5 } },
+  { id: 'tax', office: 'gov', icon: '🧾', name: '국세청장', level: '차관급', role: '세금 걷기(청문회)', stats: ['경제', '법률'], spec: ['경제통'], eff: { budget: 0.02, taxSoft: 0.06 } },
+  { id: 'audit', office: 'gov', icon: '📋', name: '감사원장', level: '장관급', role: '나랏돈·공무원 감사(국회 동의)', stats: ['법률', '청렴'], spec: ['행정통', '경제통'], eff: { trust: 1, scandal: 0.1 } },
+  { id: 'bok', office: 'gov', icon: '🏦', name: '한국은행 총재', level: '장관급', role: '돈의 가치·금리(청문회)', stats: ['경제', '과학'], spec: ['경제통'], eff: { econ: 2, taxSoft: 0.05 } },
+  { id: 'dapa', office: 'gov', icon: '🏗️', name: '방위사업청장', level: '차관급', role: '무기 사 오기·만들기', stats: ['군수', '과학'], spec: ['군수통', '과학자'], eff: { build: 0.03 } },
 ];
 export const postById = (id: PostId) => POSTS.find((p) => p.id === id)!;
 export const postsOf = (office: OfficeId) => POSTS.filter((p) => p.office === office);

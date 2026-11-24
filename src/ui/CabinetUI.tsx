@@ -1,7 +1,9 @@
 // 인물·부처 화면(11-23): 인재 명단·내 사람·인물 도감 / 부처 카드·부처 정보창 / 인물 창 / 사람을 장군으로.
 // 웬만하면 한 화면: 목록은 한 줄 카드, 자세한 건 팝업.
 import { useState } from 'react';
-import { STAT_IDS } from '../data/officers';
+import { GENERAL_NEEDS, NEEDS } from '../data/needs';
+import { ORIGIN_SHAPE2 } from '../data/stats2';
+import { FitTag, NeedBox, PeopleGrid, Stats18, originLine } from './PersonCards';
 import {
   FACTIONS,
   GRADES,
@@ -46,6 +48,7 @@ import {
   vet,
   viceOf,
   type Person,
+  fitPct,
 } from '../game/cabinet';
 import { appointPersonGeneral, bestFor, canPersonGeneral, canTask, hearingChance, personGeneralSkill, startTask, statTotal, taskHours } from '../game/cabinetOps';
 import { FIELD_ICON, GENERAL_TITLE, freeFields, type GeneralField } from '../game/loyal';
@@ -126,7 +129,6 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
   const pals = p.pals.map((id) => c.people.find((x) => x.id === id)).filter(Boolean) as Person[];
   const foes = p.foes.map((id) => c.people.find((x) => x.id === id)).filter(Boolean) as Person[];
   const recWhy = canRecruit(state, p.id);
-  const best = Math.max(...STAT_IDS.map((id) => p.stats[id]));
   return (
     <Modal title={p.name} icon={<PersonFace p={p} size={30} />} onClose={onClose}>
       <p className="small">
@@ -135,14 +137,10 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
         {p.grade}
         {p.title ? ` · ${p.title}` : ''}
       </p>
-      <div className="cab-stats">
-        {STAT_IDS.map((id) => (
-          <span key={id} className={p.stats[id] === best ? 'top' : ''}>
-            <small>{id}</small>
-            <b>{p.stats[id]}</b>
-          </span>
-        ))}
-      </div>
+      <Stats18 p={p} />
+      <p className="small muted" style={{ margin: '2px 0 4px' }}>
+        {o.icon} {o.name} 출신: {originLine(p.origin, ORIGIN_SHAPE2[p.origin])}
+      </p>
       <div className="cab-kv small">
         <span>🎯 특화</span>
         <b>{p.spec}</b>
@@ -210,7 +208,7 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
         <div className="cab-pick">
           {MINISTRIES.map((m) => {
             const why = pick === 'min' ? canAppointMinister(state, p.id, m.id) : canAppointVice(state, p.id, m.id);
-            const fit = m.spec.includes(p.spec);
+            const fit = fitPct(p, NEEDS[m.id], m.spec) >= 65;
             return (
               <button
                 key={m.id}
@@ -221,6 +219,7 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
                 <span>{m.icon}</span>
                 <small>{m.short}</small>
                 <small className={fit ? 'gold-t' : 'muted'}>{pct(personPower(p, m.id))}</small>
+                <FitTag p={p} need={NEEDS[m.id]} spec={m.spec} />
               </button>
             );
           })}
@@ -240,7 +239,7 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
                 ? `시험판이라 청문회 없이 바로 장관이 돼요. 장관 ${ministerCount(c)}/${ministerSlots(state.player.rankIndex)}석`
                 : `장관은 인사청문회(실제 30분)를 거쳐요. 통과 확률 ${pct(hearingChance(state, p))} · 장관 ${ministerCount(c)}/${ministerSlots(state.player.rankIndex)}석`
               : '차관은 청문회 없이 바로 앉고, 부처 힘에 40%를 보태요.'}{' '}
-            숫자는 그 부처에서 낼 힘(100% = 보통 장관), 노란색은 특화가 맞는 곳.
+            위 숫자는 그 부처에서 낼 힘(100% = 보통 장관), 아래 %는 적합도(주 스탯·성향·출신·특화). 노란색은 잘 맞는 곳.
           </p>
         </div>
       ) : null}
@@ -261,11 +260,12 @@ function GeneralPick({ state, actions, p, onDone }: Pick<ScreenProps, 'state' | 
           <button key={f} disabled={!!why} title={why ?? ''} onClick={() => (actions.apply((s) => appointPersonGeneral(s, p.id, f)), onDone())}>
             <span>{FIELD_ICON[f]}</span>
             <small>{GENERAL_TITLE[f]}</small>
+            <FitTag p={p} need={GENERAL_NEEDS[f]} spec={[]} />
           </button>
         );
       })}
       <p className="small muted" style={{ gridColumn: '1 / -1' }}>
-        장군 능력 {personGeneralSkill(p)}/10(통솔·전술·포격으로 정함) · 장군 {state.officer.generals.length}/{slots}자리 · 빈 병과 {free.length}곳. 장군이 되면 내각 명단에서 빠져요.
+        장군 능력 {personGeneralSkill(p)}/10(병과마다 보는 스탯이 달라요: 합참 지휘·전술, 육군 지휘·통솔, 해군 지휘·포격, 공군 지휘·과학, 정보 정보·은밀, 군수 군수·행정). %는 병과 적합도 · 장군 {state.officer.generals.length}/{slots}자리 · 빈 병과 {free.length}곳. 장군이 되면 내각 명단에서 빠져요.
       </p>
     </div>
   );
@@ -293,7 +293,7 @@ export function TalentPanel(props: ScreenProps) {
         icon="👥"
         right={
           <Help title="인재·인물">
-            <p>나라 안팎에 약 100명이 나와요. 모두 지도자와 같은 스탯 9개와 특화·성향·숨은 특성·파벌을 가져요.</p>
+            <p>나라 안팎에 약 100명이 나와요. 모두 스탯 18개(현장 전투·군사 지휘·국정 운영·정보·기술·인품 5갈래)와 특화·성향·숨은 특성·파벌을 가져요.</p>
             <p>📋 인재 명단: 실제 1시간마다 새 후보 2명(최대 20명). 국방예산으로 영입해요. 🔵우수·🟡전설은 드물어요.</p>
             <p>🏛️ 내 사람: 영입한 사람을 대통령실 참모·기관장·장관·차관·장군으로 앉혀요(시험판은 청문회 없음). 특화가 맞는 부처에서 힘이 30% 더 나요.</p>
             <p>💞 궁합: 친한 사람끼리 같이 앉으면 힘 +10%, 앙숙끼리 앉으면 가끔 다퉈요. 파벌이 3자리 넘게 모이면 덤, 한 파벌이 60% 넘으면 지지도·신뢰도가 떨어져요.</p>
@@ -322,21 +322,18 @@ export function TalentPanel(props: ScreenProps) {
       </Card>
       {view === 'pool' && (
         <div className="cab-list">
-          {pool.map((p) => (
-            <PersonRow
-              key={p.id}
-              state={state}
-              p={p}
-              onOpen={() => setOpen(p.id)}
-              right={
-                <>
-                  <b>{statTotal(p)}</b>
-                  <small>💵{fmt(recruitCost(state, p))}</small>
-                </>
-              }
-            />
-          ))}
-          {!pool.length && <p className="empty">새 후보가 곧 와요(1시간마다 2명).</p>}
+          <PeopleGrid
+            state={state}
+            list={pool}
+            onOpen={setOpen}
+            empty="새 후보가 곧 와요(1시간마다 2명)."
+            badge={(p) => (
+              <>
+                <b>Σ{statTotal(p)}</b>
+                <small>💵{fmt(recruitCost(state, p))}</small>
+              </>
+            )}
+          />
           <button className="wide" disabled={ruby < REFRESH_RUBY} onClick={() => actions.apply(refreshPool)}>
             🔄 명단 새로 받기 <small>💎{REFRESH_RUBY}</small>
           </button>
@@ -344,10 +341,7 @@ export function TalentPanel(props: ScreenProps) {
       )}
       {view === 'mine' && (
         <div className="cab-list">
-          {mine.map((p) => (
-            <PersonRow key={p.id} state={state} p={p} onOpen={() => setOpen(p.id)} />
-          ))}
-          {!mine.length && <p className="empty">아직 영입한 사람이 없어요. 인재 명단에서 골라 보세요.</p>}
+          <PeopleGrid state={state} list={mine} onOpen={setOpen} empty="아직 영입한 사람이 없어요. 인재 명단에서 골라 보세요." />
         </div>
       )}
       {view === 'book' && (
@@ -361,11 +355,7 @@ export function TalentPanel(props: ScreenProps) {
             ))}
           </div>
           <div className="cab-list">
-            {c.people
-              .filter((p) => p.group === group)
-              .map((p) => (
-                <PersonRow key={p.id} state={state} p={p} onOpen={() => setOpen(p.id)} />
-              ))}
+            <PeopleGrid key={group} state={state} list={c.people.filter((p) => p.group === group)} onOpen={setOpen} />
           </div>
         </>
       )}
@@ -452,13 +442,10 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
       <div className="cab-kv small">
         <span>🎯 맡은 일</span>
         <b>{m.effText}</b>
-        <span>📊 보는 스탯</span>
-        <b>
-          {m.stats.join('·')} · 특화 {m.spec.join('·')}
-        </b>
         <span>💪 부처 힘</span>
         <b>{pct(ministryPower(state, id))} (장관 + 차관 40%)</b>
       </div>
+      <NeedBox need={NEEDS[id]} spec={m.spec} title="장관 고를 때 중요한 것" />
       <h4 className="cab-h">장관</h4>
       {seat(mn, 'min')}
       <h4 className="cab-h">차관</h4>
@@ -468,7 +455,7 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
           <h4 className="cab-h">추천 후보(내 사람 중)</h4>
           {cands.map((p) => (
             <div key={p.id} className="cab-cand">
-              <PersonRow state={state} p={p} onOpen={() => setWho(p.id)} right={<b>{pct(personPower(p, id, c))}</b>} />
+              <PersonRow state={state} p={p} onOpen={() => setWho(p.id)} right={<><b>{pct(personPower(p, id, c))}</b><FitTag p={p} need={NEEDS[id]} spec={m.spec} /></>} />
               <span className="cab-cand-acts">
                 {!mn && (
                   <button disabled={!!canAppointMinister(state, p.id, id)} title={canAppointMinister(state, p.id, id) ?? ''} onClick={() => apply((s) => appointMinister(s, p.id, id))}>

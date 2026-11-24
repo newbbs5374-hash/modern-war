@@ -34,6 +34,7 @@ import { ForeignPeople, MinistryCards } from './CabinetUI';
 import { SummitPanel } from './MediaUI';
 import { DeployPanel } from './DeployPanel';
 import { CountryDetail } from './CountryDetail';
+import { AdviceBar } from './AdviceBar';
 
 type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
 export function DiplomacyScreen(props: ScreenProps) {
@@ -44,6 +45,7 @@ export function DiplomacyScreen(props: ScreenProps) {
   return (
     <>
       <FieldBar state={props.state} field="diplo" />
+      <AdviceBar state={props.state} apply={props.actions.apply} field="diplo" go={(t) => setTab(t as Tab)} />
       <Tabs
         value={tab}
         onChange={setTab}
