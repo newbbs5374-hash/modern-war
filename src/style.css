@@ -1040,3 +1040,20 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 @keyframes wm-front-march { to { stroke-dashoffset: -10; } }
 .wm-hit { animation: wm-hit-pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes wm-hit-pulse { 0% { opacity: 1; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.6); } }
+
+/* 도시 카드: 왼쪽 상징 칸 + 오른쪽 주요 정보 (11-24) */
+.civ-city { flex-direction: row; align-items: center; gap: 8px; }
+.civ-city-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.civ-city-top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.civ-city-top small { margin-left: 2px; font-size: 11px; opacity: 0.85; }
+.civ-city-nick { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
+.civ-city-facts { display: flex; flex-wrap: wrap; gap: 2px 6px; font-size: 10.5px; }
+.city-logo { flex: none; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; border: 2px solid #94a3b8; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+.city-logo img { width: 86%; height: 86%; object-fit: contain; }
+.city-logo-svg { width: 88%; height: 88%; }
+.city-info-name { display: inline-flex; align-items: center; gap: 6px; }
+.city-scroll.zoomed { cursor: grab; }
+.city-scroll.zoomed.dragging { cursor: grabbing; user-select: none; }
+.civ-cities { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.civ-city { min-width: 0; padding: 7px 6px; }
+.civ-city .city-logo { width: 42px !important; height: 42px !important; }

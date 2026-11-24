@@ -51,6 +51,9 @@ import { KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, effText, type CityEff } 
 import { CITY_INST, instById } from '../data/institutions';
 import { SIZE_NAME } from '../data/hexmap';
 import { smoothPath, type Seg } from './smoothHex';
+import { CityLogo } from './CityLogo';
+import { CITY_LOGO } from '../data/cityLogos';
+import { useDragScroll } from './dragScroll';
 import { RING, SKY_ASPECT, SKY_R, eraLabelAt, layoutSky, skyPath } from './techSky';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
@@ -682,22 +685,40 @@ export function CityPanel(props: ScreenProps) {
         {mine.map((city) => {
           const cc = C.cityCiv(state, city.id);
           const building = cc.districts.filter((d) => d.doneMs > state.worldMs).length;
+          const stg = cityStage(state, city.id);
           return (
             <button key={city.id} className={`civ-city ${cc.loyalty < LOYALTY_OK ? 'low' : ''}`} onClick={() => setPick(city.id)}>
-              <span className="civ-city-top">
-                <b>
-                  {city.capital ? '👑 ' : ''}
-                  {isHometown(city.name) ? '🏡 ' : ''}
-                  {city.name}
-                </b>
-                <span>{loyaltyFace(cc.loyalty)}</span>
+              <CityLogo name={city.name} country={city.home} capital={city.capital} />
+              <span className="civ-city-body">
+                <span className="civ-city-top">
+                  <b>
+                    {city.capital ? '👑 ' : ''}
+                    {isHometown(city.name) ? '🏡 ' : ''}
+                    {city.name}
+                  </b>
+                  <span title={`민심 ${Math.round(cc.loyalty)}`}>
+                    {loyaltyFace(cc.loyalty)}
+                    <small>{Math.round(cc.loyalty)}</small>
+                  </span>
+                </span>
+                <small className="civ-city-nick">
+                  {KR_CITY_INFO[city.name] ? `${KR_CITY_INFO[city.name].trait.icon} ${KR_CITY_INFO[city.name].nick}` : `${SIZE_NAME[city.size]} · ${countryById(city.home).name}`}
+                  {city.home !== me ? ' · 점령지' : ''}
+                </small>
+                <Meter value={cc.loyalty} max={100} tone={cc.loyalty >= LOYALTY_OK ? 'green' : 'red'} />
+                <span className="civ-city-facts">
+                  <span title="도시 단계">
+                    {stg.stage.icon}
+                    {stg.stage.name}
+                  </span>
+                  <span title="인구">👪{people(C.cityPeople(state, city.id))}</span>
+                  <span title="구역">
+                    🏗️{cc.districts.length}/{C.districtSlots(state, city.id)}
+                    {building ? '⏳' : ''}
+                  </span>
+                  {cityMarkCount(city.id) > 0 && <span title="실제 시설">🏛️{cityMarkCount(city.id)}</span>}
+                </span>
               </span>
-              <Meter value={cc.loyalty} max={100} tone={cc.loyalty >= LOYALTY_OK ? 'green' : 'red'} />
-              <small className="muted">
-                {cityStage(state, city.id).stage.icon}{cityStage(state, city.id).stage.name} · {KR_CITY_INFO[city.name] ? `${KR_CITY_INFO[city.name].trait.icon} ` : ''}👪{people(C.cityPeople(state, city.id))} · {cc.districts.map((d) => districtById(d.id).icon).join('') || '구역 없음'} {cc.districts.length}/{C.districtSlots(state, city.id)}
-                {building ? ' 🏗️' : ''}
-                {city.home !== me ? ' · 점령지' : ''}
-              </small>
             </button>
           );
         })}
@@ -706,6 +727,8 @@ export function CityPanel(props: ScreenProps) {
     </>
   );
 }
+
+const cityMarkCount = (id: string) => C.cityMarks(id).length;
 
 /** 도시 칸 바깥 테두리 → 굽이진 해안선 */
 function cityCoast(tiles: Array<{ q: number; r: number; x: number; y: number }>): string {
@@ -765,6 +788,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
   const [then, setThen] = useState(false);
   const [dayMode, setDayMode] = useState<DayMode>('자동');
   const scrollRef = useRef<HTMLDivElement>(null);
+  useDragScroll(scrollRef, zoom > 1);
   // 확대하면 도심이 가운데 오게
   useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -950,7 +974,8 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
       <div className="city-info">
         <button className="city-info-top" onClick={() => setOpen(!open)}>
-          <span>
+          <span className="city-info-name">
+            <CityLogo name={city.name} country={city.home} capital={city.capital} size={36} />
             {info ? `${info.trait.icon} ${info.nick}` : `${SIZE_NAME[city.size]} · ${tiles.length}칸`}
           </span>
           <small>{open ? '접기 ▲' : '도시 정보 ▼'}</small>
@@ -992,6 +1017,11 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
                 {(CITY_INST[city.name] ?? []).map((i) => `${instById(i).icon}${instById(i).name}`).join(' · ') || '없음'}
               </p>
             )}
+            {CITY_LOGO[city.name]?.file && (
+              <p className="muted">
+                상징: {CITY_LOGO[city.name].kind} · 위키미디어 공용 「{CITY_LOGO[city.name].file}」 ({CITY_LOGO[city.name].lic === 'PD' ? '공공 저작물' : CITY_LOGO[city.name].lic})
+              </p>
+            )}
             <p className="stat-group-name">이 도시가 나라에 주는 힘 (민심·점령 반영 ×{r1(share)})</p>
             <ul className="city-eff">
               {info && <li>⭐ 도시 특성: {effText(scaled(parts.trait, share)) || '없음'}</li>}
@@ -1028,7 +1058,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         </button>
       </div>
       <small className="muted city-zoom-hint">
-        {then ? `취임 첫날 모습(인구 약 ${people(cityPeopleAtStart(state, id))}). 다시 누르면 지금 모습.` : zoom > 1 ? '밀어서 둘러보기 · 시설 이름 보임' : '확대하면 시설 이름이 보여요'}
+        {then ? `취임 첫날 모습(인구 약 ${people(cityPeopleAtStart(state, id))}). 다시 누르면 지금 모습.` : zoom > 1 ? '마우스로 잡고 끌거나 손가락으로 밀어서 둘러보기 · 시설 이름 보임' : '2배·3배로 확대하면 잡고 끌어서 둘러볼 수 있어요'}
       </small>
       <div ref={scrollRef} className={`city-scroll ${zoom > 1 ? 'zoomed' : ''}`}>
         <CityView
