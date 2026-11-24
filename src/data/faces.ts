@@ -67,6 +67,8 @@ export interface FacePerson {
   face?: number;
   /** 우선순위가 높을수록 겹치지 않는 얼굴을 먼저 받음(자리에 앉은 사람 등) */
   rank: number;
+  /** 한 화면에 같이 나오는 무리(같은 무리 안에서는 얼굴이 절대 겹치지 않게) */
+  screen?: string;
 }
 
 /**
@@ -74,9 +76,14 @@ export interface FacePerson {
  * 새 사람은 나이대가 맞는 빈 얼굴 → 다른 나이대 빈 얼굴 → (다 쓰면) 가장 적게 쓴 얼굴.
  * 결과: id → 얼굴 번호
  */
+/** 사람 번호·얼굴 번호로 섞는 값 */
+const mix = (id: number, k: number) => (Math.imul(id * 2654435761 + k * 40503, 2246822519) >>> 0) % 100003;
+
 export function assignFaces(people: FacePerson[]): Map<number, number> {
   const out = new Map<number, number>();
   const used = new Map<string, number[]>();
+  /** 묶음·성별·화면 → 그 화면에서 쓴 얼굴 */
+  const onScreen = new Map<string, Set<number>>();
   const order = [...people].sort((a, b) => b.rank - a.rank || a.id - b.id);
   for (const p of order) {
     const tag = faceTag(p.country, p.eth);
@@ -84,18 +91,28 @@ export function assignFaces(people: FacePerson[]): Map<number, number> {
     const size = deckSize(tag, p.sex);
     const cnt = used.get(key) ?? new Array(size).fill(0);
     used.set(key, cnt);
-    let i = p.face !== undefined && p.face >= 0 && p.face < size && cnt[p.face] === 0 ? p.face : -1;
+    const sk = `${key}|${p.screen ?? ''}`;
+    const scr = onScreen.get(sk) ?? new Set<number>();
+    onScreen.set(sk, scr);
+    const want: FaceBand = p.age >= 60 ? '60' : '50';
+    // 빈 얼굴은 사람마다 다른 순서로(명단을 새로 받아도 방금 나간 얼굴이 같은 자리에 다시 나오지 않게)
+    const free = cnt
+      .map((c, k) => (c === 0 ? k : -1))
+      .filter((k) => k >= 0)
+      .sort((x, y) => mix(p.id, x) - mix(p.id, y));
+    const okOld = p.face !== undefined && p.face >= 0 && p.face < size && !scr.has(p.face) && (cnt[p.face] === 0 || free.length === 0);
+    let i = okOld ? p.face! : -1;
+    if (i < 0) i = free.find((k) => deckSlot(tag, p.sex, k).band === want) ?? free[0] ?? -1;
     if (i < 0) {
-      const want: FaceBand = p.age >= 60 ? '60' : '50';
-      const free = cnt.map((c, k) => (c === 0 ? k : -1)).filter((k) => k >= 0);
-      i = free.find((k) => deckSlot(tag, p.sex, k).band === want) ?? free[0] ?? -1;
-      if (i < 0) {
-        const min = Math.min(...cnt);
-        const same = cnt.map((c, k) => (c === min ? k : -1)).filter((k) => k >= 0);
-        i = same.find((k) => deckSlot(tag, p.sex, k).band === want) ?? same[0];
-      }
+      // 얼굴을 다 썼으면: 같은 화면에 없는 얼굴 중 가장 적게 쓴 것(나이대 맞는 쪽 먼저)
+      const cand = cnt.map((_, k) => k).filter((k) => !scr.has(k));
+      const pool = cand.length ? cand : cnt.map((_, k) => k);
+      const min = Math.min(...pool.map((k) => cnt[k]));
+      const same = pool.filter((k) => cnt[k] === min);
+      i = same.find((k) => deckSlot(tag, p.sex, k).band === want) ?? same[0];
     }
     cnt[i]++;
+    scr.add(i);
     out.set(p.id, i);
   }
   return out;
