@@ -31,6 +31,7 @@ import { NEEDS } from '../data/needs';
 import { FitTag, NeedBox } from './PersonCards';
 import { useTab } from './kit';
 import type { ScreenProps } from './screens';
+import { RecommendButton } from './RecommendUI';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -76,6 +77,7 @@ export function StaffPanel(props: ScreenProps) {
         <p className="small muted" style={{ margin: '0 0 4px' }}>
           {sum.length ? `📈 ${sum.join(' · ')}` : '아직 비어 있어요. 내 사람을 자리에 앉혀 보세요.'}
         </p>
+        <RecommendButton state={state} actions={actions} />
         <div className="seg cab-seg">
           <button className={view === 'tree' ? 'on' : ''} onClick={() => setView('tree')}>
             🌳 나무
