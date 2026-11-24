@@ -28,8 +28,8 @@ export function portraitUrl(...keys: (string | undefined | null)[]): string | nu
   return null;
 }
 
-/** 부관(이름 그림 → 분야 그림 → 기본 부관 그림) */
-export const aideKeys = (a?: { name: string; specialty: string } | null) => (a ? [`aide-${a.name}`, AIDE_FILE[a.specialty], 'aide'] : ['aide']);
+/** 부관(나라별 얼굴 → 이름 그림 → 분야 그림 → 기본 부관 그림). 11-24부터 임명한 부관은 나라별 얼굴(faceKey) */
+export const aideKeys = (a?: { name: string; specialty: string; faceKey?: string } | null) => (a ? [a.faceKey, `aide-${a.name}`, AIDE_FILE[a.specialty], 'aide'] : ['aide']);
 
 /** 사진이 있으면 사진, 없으면 fallback */
 export function Face({ keys, fallback, className = '' }: { keys: (string | undefined | null)[]; fallback: ReactNode; className?: string }) {

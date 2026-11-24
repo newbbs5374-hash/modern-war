@@ -57,6 +57,8 @@ import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
 import { PersonFace } from './People';
 import { AideCareer, BondLoyalty } from './AideCareer';
+import { AidePickModal } from './AidePick';
+import { dismissAide } from '../game/aidePick';
 import { FIELD_ICON, branchSummary, generalEffectText, loyaltyOf } from '../game/loyal';
 import { BLOCK_AT, PLOT_MIN, ROLE_INFO } from '../game/rivals';
 import { TrainIcon } from './iconArt';
@@ -468,6 +470,7 @@ export function AidesPanel({ state, actions }: ScreenProps) {
   const r = state.player.rankIndex;
   const slots = aideSlots(r);
   const [pickId, setPickId] = useState<number | null>(null);
+  const [hire, setHire] = useState(false);
   const [msg, setMsg] = useState('');
   const pick = o.aides.find((a) => a.id === pickId) ?? null;
   const empty = Math.max(0, slots - o.aides.length);
@@ -497,15 +500,16 @@ export function AidesPanel({ state, actions }: ScreenProps) {
           );
         })}
         {Array.from({ length: empty }).map((_, i) => (
-          <Tile key={`e${i}`} icon="➕" label="빈자리" sub="임무 성공·모병 훈련에서 합류" />
+          <Tile key={`e${i}`} icon="➕" label="부관 임명" sub="병과별 후보 중 고르기" onClick={() => setHire(true)} />
         ))}
-        {slots === 0 && <p className="empty">신임 지도자가 되면 첫 부관이 합류해요.</p>}
       </div>
-      {slots > 0 && (
-        <p className="small muted center" style={{ marginTop: 6 }}>
-          부관은 전투에 함께 나가고(레벨만큼 강함) 특기마다 분대에 효과를 줘요. 💗인연과 🫡충성을 키워 장군 교육을 보내면 장군으로 임명할 수 있어요.
-        </p>
-      )}
+      <button className="wide" style={{ marginTop: 6 }} onClick={() => setHire(true)}>
+        🧑‍✈️ 부관 후보 보기 · 임명/교대 <small>조건 없음</small>
+      </button>
+      <p className="small muted center" style={{ marginTop: 6 }}>
+        병과(저격·의무·통신·공병·정찰)마다 특화된 후보 4명 중에서 골라 바로 임명해요. 부관은 전투에 함께 나가고(레벨만큼 강함) 병과마다 분대에 효과를 줘요. 💗인연과 🫡충성을 키워 장군 교육을 보내면 장군으로 임명할 수 있어요.
+      </p>
+      {hire && <AidePickModal state={state} actions={actions} onClose={() => setHire(false)} />}
       {pick && <AideModal aide={pick} state={state} actions={actions} msg={msg} setMsg={setMsg} onClose={() => setPickId(null)} />}
     </>
   );
@@ -536,10 +540,12 @@ function AideModal({
     <Modal title={`${a.name} 부관`} icon={<PersonFace who={{ kind: 'aide', id: a.id }} keys={aideKeys(a)} fallback={AIDE_ICON[a.specialty]} className="modal-face" />} onClose={onClose}>
       <div className="ichips">
         <Chip icon="🏷️" value={a.specialty} />
+        {a.trait && <Chip icon="✨" value={a.trait} />}
         <Chip icon="⬆️" value={`Lv.${a.level}`} />
         <Chip icon="💗" value={Math.round(a.bond)} label="인연" />
         <Chip icon="🫡" value={Math.round(loyaltyOf(a))} label="충성" />
       </div>
+      {a.career && <p className="small muted">📜 {a.career}{a.age ? ` · ${a.age}세` : ''}</p>}
       <BondLoyalty a={a} />
       <div className="promo-line" style={{ marginTop: 6 }}>
         <small>경험</small>
@@ -598,6 +604,11 @@ function AideModal({
         </>
       )}
       <AideCareer state={state} a={a} apply={actions.apply} onDone={(t) => (setMsg(t), t.startsWith('⭐') && onClose())} />
+      {!a.school && (
+        <button className="wide" style={{ marginTop: 6 }} onClick={() => window.confirm(`${a.name} 부관을 원래 부대로 돌려보낼까요? 자리가 비면 새 후보를 바로 임명할 수 있어요.`) && (actions.apply((s) => dismissAide(s, a.id)), onClose())}>
+          👋 부관 돌려보내기(자리 비우기)
+        </button>
+      )}
       {msg && <p className="small result">{msg}</p>}
       <div className="stories">
         <small className="muted">💬 인연 이야기 {told}/3</small>
@@ -626,7 +637,7 @@ export function GeneralsPanel({ state, actions }: ScreenProps) {
       {o.generals.map((g) => (
         <div key={g.id} className="line-item">
           <span className="li-ico">
-            <PersonFace who={{ kind: 'general', id: g.id }} keys={[`aide-${g.name}`]} fallback={FIELD_ICON[g.field as keyof typeof FIELD_ICON] ?? '⭐'} />
+            <PersonFace who={{ kind: 'general', id: g.id }} keys={[g.faceKey, `aide-${g.name}`]} fallback={FIELD_ICON[g.field as keyof typeof FIELD_ICON] ?? '⭐'} />
           </span>
           <span className="li-main">
             <b>
