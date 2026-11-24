@@ -693,3 +693,4 @@ select.wide, button.wide { width: 100%; }
 .dom-chain-steps li small { font-size: 11px; color: var(--muted); }
 .dom-chain-steps .dom-ico { font-size: 24px; }
 .homeland-tag { font-size: 12px; }
+.dom-ico img { width: 44px; height: 44px; object-fit: contain; display: block; }
