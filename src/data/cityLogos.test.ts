@@ -12,3 +12,10 @@ describe('도시 상징', () => {
     for (const c of CITIES.filter((x) => x.home === 'kr')) expect(CITY_LOGO[c.name].file, c.name).toBeTruthy();
   });
 });
+
+describe('도시 상징 그림 파일', () => {
+  it('파일 이름이 정해진 도시는 그림이 모두 들어 있음', () => {
+    const have = new Set(Object.keys(import.meta.glob('../assets/logos/*.webp')).map((k) => k.replace(/^.*\/logo-/, '').replace(/\.webp$/, '')));
+    for (const [name, v] of Object.entries(CITY_LOGO)) if (v.file) expect(have.has(v.key), name).toBe(true);
+  });
+});
