@@ -15,10 +15,10 @@ const rich = (s: GameState): GameState => ({
   economy: { ...s.economy, stock: Object.fromEntries(Object.keys(s.economy.stock).map((k) => [k, 500])) as GameState['economy']['stock'] },
 });
 
-describe('대한민국 10개 도시', () => {
-  it('서울·부산·대구·광주·대전·전주·강릉·제주·여수·순천, 모두 실제 정보와 시설이 있음', () => {
+describe('대한민국 11개 도시', () => {
+  it('서울·부산·대구·광주·대전·전주·강릉·제주·여수·순천·익산, 모두 실제 정보와 시설이 있음', () => {
     const kr = CITIES.filter((c) => c.home === 'kr').map((c) => c.name);
-    expect(kr).toEqual(['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천']);
+    expect(kr).toEqual(['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천', '익산']);
     for (const n of kr) expect(KR_CITY_INFO[n].landmarks.length).toBeGreaterThan(4);
   });
   it('도시 칸은 예전의 약 4.5배이고, 실제 바다에 닿은 도시만 바닷가가 있음', () => {
@@ -79,5 +79,23 @@ describe('대한민국 10개 도시', () => {
     expect(cityMap('kr-0').at.has(cc.districts[0].tile)).toBe(true);
     expect(cc.mines).toHaveLength(1);
     expect(C.deposits('kr-0').some((d) => d.tile === cc.mines![0].tile)).toBe(true);
+  });
+});
+
+describe('대장 고향 익산·여수·순천(11-24)', () => {
+  it('고향은 민심 덤이 있고, 고향 전용 시설을 빈 터에서 3단계까지 지음', () => {
+    let s = rich(newGame('t', 'kr', 0, { seed: 4 }));
+    const iksan = CITIES.find((c) => c.name === '익산')!;
+    expect(C.loyaltyReasons(s, iksan.id).some(([k]) => k.includes('고향'))).toBe(true);
+    for (const n of ['익산', '여수', '순천']) expect(KR_CITY_INFO[n].landmarks.filter((m) => m.home)).toHaveLength(5);
+    expect(C.ownsHomeBelt(s)).toBe(true);
+    const h = C.cityMarks(iksan.id).find((m) => m.id === 'h-nco')!;
+    expect(C.markLevel(s, iksan.id, h.id)).toBe(0);
+    const before = C.cityParts(s, iksan.id).marks.army ?? 0;
+    s = C.upgradeMark(s, iksan.id, h.id);
+    s = advance(s, 3 * 3600e3);
+    expect(C.markLevel(s, iksan.id, h.id)).toBe(1);
+    expect(C.cityParts(s, iksan.id).marks.army ?? 0).toBeGreaterThan(before);
+    expect(C.markMax(iksan.id, h.id)).toBe(3);
   });
 });

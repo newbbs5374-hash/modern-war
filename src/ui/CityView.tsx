@@ -55,7 +55,7 @@ export interface CityCell {
   deposit?: string | null;
   mined?: boolean;
   /** 실제 시설: 아이콘·단계 */
-  mark?: { icon: string; lv: number; color: string; nature?: boolean };
+  mark?: { icon: string; lv: number; color: string; nature?: boolean; home?: boolean };
 }
 /** 글씨(구·군 이름, 시설 이름). x,y는 땅 좌표 */
 export interface CityLabel {
@@ -454,9 +454,20 @@ function shade(hex: string, f: number): string {
 }
 
 /** 실제 시설: 단계만큼 높아지는 건물 + 아이콘 */
-function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: string; lv: number; color: string; nature?: boolean } }) {
+function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: string; lv: number; color: string; nature?: boolean; home?: boolean } }) {
   const u = w / 10;
   const h = (2.2 + m.lv * 1.1) * u;
+  // 고향 전용 시설 빈 터(아직 안 지음): 점선 터 + 공사 표지
+  if (m.lv === 0)
+    return (
+      <g>
+        <ellipse cx={x} cy={y + 0.6 * u} rx={3.6 * u} ry={1.6 * u} fill="#fde68a" opacity={0.25} stroke="#fbbf24" strokeWidth={0.3 * u} strokeDasharray={`${0.8 * u} ${0.6 * u}`} />
+        <circle cx={x} cy={y - 1.6 * u} r={1.7 * u} fill="#0f172a" stroke="#fbbf24" strokeWidth={0.25 * u} />
+        <text x={x} y={y - 1.0 * u} fontSize={2.0 * u} textAnchor="middle">
+          🏗️
+        </text>
+      </g>
+    );
   if (m.nature)
     return (
       <g>
@@ -473,7 +484,7 @@ function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: stri
       <ellipse cx={x} cy={y + 0.6 * u} rx={3.6 * u} ry={1.5 * u} fill={m.color} opacity={0.35} />
       <Box x={x - 1.4 * u} y={y + 0.4 * u} w={2.4 * u} d={1.4 * u} h={h * 0.7} c={m.color} win />
       <Box x={x + 1.4 * u} y={y + 1 * u} w={2 * u} d={1.2 * u} h={h} c={shade(m.color, 0.85)} win />
-      <circle cx={x} cy={y - h - 1.6 * u} r={1.7 * u} fill="#0f172a" stroke="#fde68a" strokeWidth={0.25 * u} />
+      <circle cx={x} cy={y - h - 1.6 * u} r={1.7 * u} fill="#0f172a" stroke={m.home ? '#f59e0b' : '#fde68a'} strokeWidth={(m.home ? 0.45 : 0.25) * u} />
       <text x={x} y={y - h - 1.0 * u} fontSize={2.0 * u} textAnchor="middle">
         {m.icon}
       </text>

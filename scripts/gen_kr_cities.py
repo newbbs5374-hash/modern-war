@@ -1,4 +1,4 @@
-# 대한민국 10개 도시의 도시 화면 칸(실제 행정구역 모양)을 만든다.
+# 대한민국 11개 도시의 도시 화면 칸(실제 행정구역 모양)을 만든다.
 # 자료: southkorea/southkorea-maps kostat 2013 시군구(skorea_municipalities_geo_simple.json), 시도(skorea_provinces_geo_simple.json)
 # 사용: python3 scripts/gen_kr_cities.py muni.json prov.json src/data/krCityShapes.ts
 import json, math, sys
@@ -19,8 +19,10 @@ CITIES = [
     ('kr-5', 169, lambda c, n: c in ('35011', '35012'), (127.148, 35.824)),
     ('kr-6', 169, lambda c, n: c == '32030', (128.876, 37.752)),
     ('kr-7', 169, lambda c, n: c in ('39010', '39020'), (126.531, 33.4996)),
-    ('kr-8', 169, lambda c, n: c == '36020', (127.662, 34.760)),
-    ('kr-9', 169, lambda c, n: c == '36030', (127.487, 34.950)),
+    # 11-24 대장 고향(여수·순천·익산)은 중도시 271칸
+    ('kr-8', 271, lambda c, n: c == '36020', (127.662, 34.760)),
+    ('kr-9', 271, lambda c, n: c == '36030', (127.487, 34.950)),
+    ('kr-10', 271, lambda c, n: c == '35030', (126.957, 35.948)),
 ]
 SQ3 = math.sqrt(3)
 
@@ -98,7 +100,7 @@ for cid, target, pick, center in CITIES:
     }
     print(cid, len(tl), 'hex', round(h, 5), 'gu', len(gus), 'out-land', len(outland))
 
-ts = '// 대한민국 10개 도시 화면 칸: 실제 행정구역(통계청 2013 시군구, southkorea/southkorea-maps) 모양. scripts/gen_kr_cities.py로 만듦.\n'
+ts = '// 대한민국 11개 도시 화면 칸: 실제 행정구역(통계청 2013 시군구, southkorea/southkorea-maps) 모양. scripts/gen_kr_cities.py로 만듦.\n'
 ts += '// k = 칸 크기(경도·위도 단위), cs = cos(위도), c = 도심 [경도,위도], gu = 구·군 이름, t = "q,r,구번호;…", o = 도시 밖 둘레 땅 칸 "q,r;…"(나머지는 바다)\n'
 ts += 'export const KR_CITY_SHAPES: Record<string, { k: number; cs: number; c: [number, number]; gu: string[]; t: string; o: string }> = ' + json.dumps(out, ensure_ascii=False) + ';\n'
 open(sys.argv[3], 'w').write(ts)

@@ -147,7 +147,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'kr', name: '한국', continent: 'asien', intro: '작지만 반도체와 무기 수출이 강한 나라. 포병이 정밀함',
-    cities: ['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천'],
+    cities: ['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천', '익산'],
     economy: 25, budget: 22, military: 45, difficulty: '어려움',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '자주포 포병대', base: '포병', effect: '쏘고 바로 이동 · 정확도 +30%' },

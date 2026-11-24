@@ -12,7 +12,7 @@ describe('세계 데이터', () => {
     expect(COUNTRIES).toHaveLength(13);
     for (const c of COUNTRIES) {
       expect(c.cities.length).toBeGreaterThanOrEqual(2);
-      expect(c.cities.length).toBeLessThanOrEqual(10);
+      expect(c.cities.length).toBeLessThanOrEqual(11);
     }
     expect(COUNTRIES.find((c) => c.id === 'ru')!.cities).toHaveLength(10);
     expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(5);
