@@ -693,7 +693,7 @@ select.wide, button.wide { width: 100%; }
 .dom-chain-steps li small { font-size: 11px; color: var(--muted); }
 .dom-chain-steps .dom-ico { font-size: 24px; }
 .homeland-tag { font-size: 12px; }
-.dom-ico img { width: 44px; height: 44px; object-fit: contain; display: block; }
+.dom-ico img { width: 54px; height: 54px; object-fit: contain; display: block; }
 
 /* ── 나라 큰 팝업(11-24): 위 지도 · 아래 탭. PC는 왼쪽 지도 · 오른쪽 탭 ── */
 .modal.modal-big { width: min(860px, 100%); max-height: 94vh; }
