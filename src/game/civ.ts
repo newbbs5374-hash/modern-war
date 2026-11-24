@@ -986,6 +986,12 @@ function industryBonus(s: GameState): number {
 }
 
 /** 그 도시 민심 목표와 이유 */
+/** 다른 파일이 도시 민심 이유 줄을 더함(생산 줄·일자리 chains.ts). 순환 import를 피하려고 등록 방식 */
+type CityRowFn = (s: GameState, cityId: string) => Array<[string, number]>;
+const cityRowFns: CityRowFn[] = [];
+export function registerCityLoyaltyRows(fn: CityRowFn) {
+  cityRowFns.push(fn);
+}
 export function loyaltyReasons(s: GameState, cityId: string): Array<[string, number]> {
   const c = cityById(cityId);
   const me = s.player.countryId;
@@ -1024,6 +1030,7 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   const cl = Math.round(cabLoyalty(s) * 10) / 10;
   if (cl) rows.push(['🏘️ 행안부·복지부', cl]);
   rows.push(...lawRows(s, 'loyalty'));
+  for (const fn of cityRowFns) rows.push(...fn(s, cityId));
   return rows;
 }
 export function loyaltyTarget(s: GameState, cityId: string): number {

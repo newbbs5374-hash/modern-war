@@ -1,7 +1,7 @@
 // 도시 확대 화면: 섬을 비스듬히 내려다본 모습. 땅은 눕혀 그리고, 건물·산·숲은 칸 위에 세워 그림.
 // 규칙(칸 고르기)은 육각 칸 그대로. 그림은 src/assets/city/ 에 정해진 이름(city-*.png)으로 넣으면 바로 나옴.
 // 그림이 없으면 상자 모양 임시 건물로 그림. 명령문: /mnt/project-files/guides/city-art-prompts.md
-import { memo, useMemo, type ReactElement } from 'react';
+import { createContext, memo, useContext, useMemo, type ReactElement } from 'react';
 import { HEX_SIZE, hexCorners } from '../data/hexmap';
 
 const FILES = import.meta.glob('../assets/city/*.{png,jpg,jpeg,webp,PNG,JPG,JPEG,WEBP}', {
@@ -12,6 +12,13 @@ const FILES = import.meta.glob('../assets/city/*.{png,jpg,jpeg,webp,PNG,JPG,JPEG
 const URLS: Record<string, string> = {};
 for (const [path, url] of Object.entries(FILES)) URLS[path.split('/').pop()!.replace(/\.[^.]+$/, '')] = url;
 export const cityArt = (key: string): string | null => URLS[key] ?? null;
+/** 도시 단계(0~6) → 건물 그림 단계(1~3): city-<종류>-<단계>.png 가 있으면 그것을 씀 */
+export const artTier = (stage: number) => (stage <= 1 ? 1 : stage <= 3 ? 2 : 3);
+
+/** 낮밤(0 낮 ~ 1 밤)·도시 단계: 상자 건물 색과 높이에 씀 */
+const Look = createContext({ night: 0, stage: 3 });
+/** 도시 단계별 높이 배율: 도심·아파트가 단계마다 높아짐 */
+const heightOf = (kind: 'center' | 'apt', stage: number) => (kind === 'center' ? 0.6 + 0.22 * stage : 0.7 + 0.15 * stage);
 
 export type CityThing =
   | 'center'
@@ -108,9 +115,17 @@ interface Props {
   labels?: CityLabel[];
   /** 확대 배율(1 = 화면 너비) */
   zoom?: number;
+  /** 도시 단계 0(마을)~6(세계 도시): 건물 높이·차 수 */
+  stage?: number;
+  /** 0 낮 ~ 1 밤: 밤엔 창문 불빛·가로등 */
+  night?: number;
+  /** 대형 사업 공사 크레인을 세울 칸 */
+  cranes?: string[];
+  /** 도심에서 퍼지는 길과 오가는 차 */
+  traffic?: boolean;
 }
 
-export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid, inland, around, borders, rivers, labels, zoom = 1 }: Props) {
+export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid, inland, around, borders, rivers, labels, zoom = 1, stage = 3, night = 0, cranes, traffic }: Props) {
   const xs = cells.map((c) => c.x);
   const ys = cells.map((c) => c.y);
   const x0 = Math.min(...xs) - S * 1.6;
@@ -123,7 +138,32 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
   const grounds = Array.from(new Set(cells.map((c) => c.ground)));
   const paint = (g: CityGround) => (GROUND_ART[g] && cityArt(GROUND_ART[g]!) ? `url(#cg-${uid}-${g})` : GROUND[g]);
   const flat = `scale(1 ${K})`;
+  const look = useMemo(() => ({ night, stage }), [night, stage]);
+  const craneSet = useMemo(() => new Set(cranes ?? []), [cranes]);
+  const urbanCells = useMemo(() => cells.filter((c) => c.thing === 'apt' || c.thing === 'suburb' || c.thing === 'center' || c.thing === 'mark' || c.thing === 'housing'), [cells]);
+  // 도심 → 가까운 시가지로 뻗은 길(단계가 높을수록 많음)
+  const roads = useMemo(() => {
+    if (!traffic) return [];
+    const ctr = cells.find((c) => c.thing === 'center');
+    if (!ctr) return [];
+    const far = urbanCells
+      .filter((c) => c !== ctr)
+      .map((c) => ({ c, d: Math.hypot(c.x - ctr.x, c.y - ctr.y), a: Math.atan2(c.y - ctr.y, c.x - ctr.x) }))
+      .sort((a, b) => b.d - a.d);
+    // 방향이 겹치지 않게 먼 곳부터 고름
+    const out: Array<{ d: string; len: number; a: number }> = [];
+    const n = Math.min(10, 3 + stage);
+    for (const f of far) {
+      if (out.length >= n) break;
+      if (out.some((o) => Math.abs(Math.atan2(Math.sin(f.a - o.a), Math.cos(f.a - o.a))) < 0.45)) continue;
+      const mx = (ctr.x + f.c.x) / 2 + (f.c.y - ctr.y) * 0.12;
+      const my = (ctr.y + f.c.y) / 2 - (f.c.x - ctr.x) * 0.12;
+      out.push({ d: `M${ctr.x.toFixed(1)},${(ctr.y * K).toFixed(1)} Q${mx.toFixed(1)},${(my * K).toFixed(1)} ${f.c.x.toFixed(1)},${(f.c.y * K).toFixed(1)}`, len: f.d, a: f.a });
+    }
+    return out;
+  }, [cells, urbanCells, traffic, stage]);
   return (
+    <Look.Provider value={look}>
     <svg className="city-view" viewBox={vb} role="img" aria-label="도시 모습" style={zoom > 1 ? { width: `${zoom * 100}%`, maxHeight: 'none' } : undefined}>
       <defs>
         <linearGradient id={`cv-sea-${uid}`} x1="0" y1="0" x2="0" y2="1">
@@ -142,6 +182,18 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
         <filter id={`cv-shadow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation={S * 0.18} />
         </filter>
+        <filter id={`cv-dark-${uid}`}>
+          <feComponentTransfer>
+            <feFuncR type="linear" slope={1 - 0.6 * night} />
+            <feFuncG type="linear" slope={1 - 0.58 * night} />
+            <feFuncB type="linear" slope={1 - 0.45 * night} />
+          </feComponentTransfer>
+        </filter>
+        <radialGradient id={`cv-glow-${uid}`}>
+          <stop offset="0" stopColor="#ffcf73" stopOpacity="0.9" />
+          <stop offset="0.5" stopColor="#ff9f43" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#ff9f43" stopOpacity="0" />
+        </radialGradient>
         {grounds.map((g) => {
           const url = GROUND_ART[g] && cityArt(GROUND_ART[g]!);
           return url ? (
@@ -216,6 +268,33 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
           <polygon key={`t${c.key}`} points={hexPts(c.x, c.y, S)} fill="transparent" onClick={() => onPick(c.key)} style={{ cursor: 'pointer' }} />
         ))}
       </g>
+      {/* 밤: 어둡게 덮고, 시가지에 불빛 번짐 */}
+      {night > 0.02 && (
+        <g pointerEvents="none">
+          <rect x={x0 - 50} y={-5000} width={x1 - x0 + 100} height={10000} fill="#081226" opacity={0.62 * night} />
+          <g style={{ mixBlendMode: 'screen' }} opacity={night}>
+            {urbanCells.map((c) => (
+              <ellipse key={`g${c.key}`} cx={c.x} cy={c.y * K} rx={S * (c.thing === 'center' ? 3.4 : c.thing === 'suburb' ? 1.4 : 2)} ry={S * (c.thing === 'center' ? 2 : c.thing === 'suburb' ? 0.8 : 1.15)} fill={`url(#cv-glow-${uid})`} />
+            ))}
+          </g>
+        </g>
+      )}
+      {/* 길과 차 */}
+      {roads.length > 0 && (
+        <g pointerEvents="none">
+          {roads.map((r, i) => (
+            <g key={`r${i}`}>
+              <path d={r.d} fill="none" stroke={night > 0.5 ? '#3a3326' : '#4b5058'} strokeWidth={S * 0.32} strokeLinecap="round" opacity={0.75} />
+              <path d={r.d} fill="none" stroke={night > 0.5 ? '#fbbf24' : '#e5e7eb'} strokeOpacity={0.35 + 0.3 * night} strokeWidth={S * 0.05} strokeDasharray={`${S * 0.3} ${S * 0.3}`} />
+              {Array.from({ length: Math.min(3, 1 + Math.floor(stage / 2)) }, (_, j) => (
+                <circle key={j} r={S * 0.13} fill={night > 0.5 ? (j % 2 ? '#fde68a' : '#f87171') : j % 2 ? '#f8fafc' : '#60a5fa'}>
+                  <animateMotion dur={`${(5 + r.len / (S * 3) + j * 1.7).toFixed(1)}s`} begin={`${-(i * 1.3 + j * 2.1).toFixed(1)}s`} repeatCount="indefinite" path={r.d} keyPoints={j % 2 ? '1;0' : '0;1'} keyTimes="0;1" calcMode="linear" />
+                </circle>
+              ))}
+            </g>
+          ))}
+        </g>
+      )}
       {/* 세운 것들: 뒤(위)부터 앞(아래)으로 */}
       <g pointerEvents="none">
         {things.map((c) => {
@@ -223,22 +302,20 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
           const w = S * SIZE[c.thing!];
           const gx = c.x;
           const gy = c.y * K;
-          const url = cityArt(`city-${c.thing}`);
+          const url = cityArt(`city-${c.thing}-${artTier(stage)}`) ?? cityArt(`city-${c.thing}`);
+          const crane = c.building || craneSet.has(c.key);
           return (
             <g key={c.key} opacity={c.building ? 0.55 : 1}>
               <ellipse cx={gx} cy={gy + w * 0.06} rx={w * 0.42} ry={w * 0.16} fill="#000" opacity={0.28} filter={`url(#cv-shadow-${uid})`} />
               {c.thing === 'mark' && c.mark ? (
                 <Mark x={gx} y={gy} w={w} m={c.mark} />
               ) : url ? (
-                <image href={url} x={gx - w / 2} y={gy - w * 0.78} width={w} height={w} />
+                <image href={url} x={gx - w / 2} y={gy - w * 0.78} width={w} height={w} filter={night > 0.02 ? `url(#cv-dark-${uid})` : undefined} />
               ) : (
                 <Fallback kind={c.thing!} x={gx} y={gy} w={w} />
               )}
-              {c.building && (
-                <text x={gx} y={gy - w * 0.3} fontSize={S * 0.9} textAnchor="middle">
-                  🏗️
-                </text>
-              )}
+              {night > 0.3 && url && LIT[c.thing!] && <Lights x={gx} y={gy} w={w} n={Math.round(LIT[c.thing!]! * (0.8 + stage * 0.15))} seed={c.x * 31 + c.y * 17} night={night} />}
+              {crane && <Crane x={gx} y={gy} w={w} night={night} />}
             </g>
           );
         })}
@@ -268,8 +345,57 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
         ))}
       </g>
     </svg>
+    </Look.Provider>
   );
 });
+
+/** 밤 창문 불빛 개수(그림 건물 위에 점으로 켬) */
+const LIT: Partial<Record<CityThing, number>> = { center: 26, apt: 16, suburb: 5, housing: 9, industry: 5, lab: 7, harbor: 5, mark: 8, airfield: 4, shipyard: 5, arms: 4, cyber: 6, aero: 4, drone: 4, adl: 4, missile: 3 };
+function Lights({ x, y, w, n, seed, night }: { x: number; y: number; w: number; n: number; seed: number; night: number }) {
+  let t = Math.abs(Math.round(seed * 1000)) >>> 0;
+  const rnd = () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+  const out: ReactElement[] = [];
+  for (let i = 0; i < n; i++) {
+    const px = x + (rnd() - 0.5) * w * 0.62;
+    // 가운데가 높은 건물: 가운데일수록 위까지 불이 켜짐
+    const top = w * (0.62 - Math.abs(px - x) / w);
+    const py = y - w * 0.06 - rnd() * top;
+    out.push(<rect key={i} x={px} y={py} width={w * 0.055} height={w * 0.06} fill={rnd() < 0.25 ? '#fff7d6' : '#fcd34d'} opacity={(0.55 + rnd() * 0.45) * night} />);
+  }
+  return <g style={{ mixBlendMode: 'screen' }}>{out}</g>;
+}
+
+/** 공사 크레인(대형 사업·건설 중): 밤엔 꼭대기 빨간 불이 깜빡임 */
+function Crane({ x, y, w, night }: { x: number; y: number; w: number; night: number }) {
+  const u = w / 10;
+  const tx = x + 2.6 * u;
+  const top = y - 9 * u;
+  return (
+    <g>
+      <path d={`M${tx - 0.4 * u},${y + 0.6 * u} V${top} M${tx + 0.4 * u},${y + 0.6 * u} V${top}`} stroke="#f59e0b" strokeWidth={0.22 * u} />
+      {Array.from({ length: 8 }, (_, i) => (
+        <line key={i} x1={tx - 0.4 * u} x2={tx + 0.4 * u} y1={y - i * 1.15 * u} y2={y - (i + 1) * 1.15 * u} stroke="#f59e0b" strokeWidth={0.12 * u} />
+      ))}
+      <path d={`M${tx - 2 * u},${top} H${tx - 7 * u} M${tx + 0.4 * u},${top} H${tx + 2.4 * u}`} stroke="#f59e0b" strokeWidth={0.3 * u} />
+      <path d={`M${tx},${top - 1.2 * u} L${tx - 6 * u},${top} M${tx},${top - 1.2 * u} L${tx + 2.2 * u},${top}`} stroke="#d97706" strokeWidth={0.1 * u} />
+      <rect x={tx + 1.4 * u} y={top - 0.1 * u} width={1.2 * u} height={0.9 * u} fill="#57534e" />
+      <line x1={tx - 5 * u} x2={tx - 5 * u} y1={top} y2={y - 3.4 * u} stroke="#cbd5e1" strokeWidth={0.07 * u}>
+        <animate attributeName="y2" values={`${y - 3.4 * u};${y - 5.2 * u};${y - 3.4 * u}`} dur="6s" repeatCount="indefinite" />
+      </line>
+      <rect x={tx - 5.5 * u} y={y - 3.4 * u} width={u} height={0.6 * u} fill="#64748b">
+        <animate attributeName="y" values={`${y - 3.4 * u};${y - 5.2 * u};${y - 3.4 * u}`} dur="6s" repeatCount="indefinite" />
+      </rect>
+      <circle cx={tx} cy={top - 1.3 * u} r={0.35 * u} fill="#ef4444" opacity={0.4 + 0.6 * night}>
+        <animate attributeName="opacity" values="1;0.15;1" dur="1.6s" repeatCount="indefinite" />
+      </circle>
+    </g>
+  );
+}
 
 /** 글씨가 겹치지 않게: 시설 이름은 아래 → 위 → 안 보이게 */
 function placeLabels(list: CityLabel[]): Array<CityLabel & { py: number }> {
@@ -287,18 +413,41 @@ function placeLabels(list: CityLabel[]): Array<CityLabel & { py: number }> {
 }
 
 /** 비스듬히 본 상자 하나(앞면·옆면·지붕) */
-function Box({ x, y, w, d, h, c, roof, win }: { x: number; y: number; w: number; d: number; h: number; c: string; roof?: string; win?: boolean }) {
-  const r = roof ?? shade(c, 1.25);
+function Box({ x, y, w, d, h, c: c0, roof, win }: { x: number; y: number; w: number; d: number; h: number; c: string; roof?: string; win?: boolean }) {
+  const { night } = useContext(Look);
+  const dark = 1 - 0.6 * night;
+  const c = night > 0.02 ? hexOf(shade(c0, dark)) : c0;
+  const r = roof ? (night > 0.02 ? shade(roof, dark) : roof) : shade(c, 1.25);
   const out: ReactElement[] = [];
   out.push(<rect key="f" x={x - w / 2} y={y - h} width={w} height={h} fill={c} />);
   out.push(<path key="t" d={`M${x - w / 2},${y - h} L${x - w / 2 + d * 0.5},${y - h - d} L${x + w / 2 + d * 0.5},${y - h - d} L${x + w / 2},${y - h} Z`} fill={r} />);
   out.push(<path key="s" d={`M${x + w / 2},${y - h} L${x + w / 2 + d * 0.5},${y - h - d} L${x + w / 2 + d * 0.5},${y - d} L${x + w / 2},${y} Z`} fill={shade(c, 0.72)} />);
   if (win && h > w * 0.9) {
-    for (let yy = y - h + w * 0.35; yy < y - w * 0.2; yy += w * 0.42) out.push(<line key={`w${yy}`} x1={x - w * 0.36} x2={x + w * 0.36} y1={yy} y2={yy} stroke="#e0f2fe" strokeOpacity={0.45} strokeWidth={w * 0.1} />);
+    // 밤: 창문마다 불이 켜짐(몇 칸은 꺼짐)
+    const lit = night > 0.3;
+    let i = 0;
+    for (let yy = y - h + w * 0.35; yy < y - w * 0.2; yy += w * 0.42, i++)
+      out.push(
+        <line
+          key={`w${yy}`}
+          x1={x - w * 0.36}
+          x2={x + w * 0.36}
+          y1={yy}
+          y2={yy}
+          stroke={lit ? (i % 3 === 1 ? '#fff7d6' : '#fcd34d') : '#e0f2fe'}
+          strokeOpacity={lit ? 0.55 + 0.4 * night : 0.45}
+          strokeWidth={w * 0.1}
+          strokeDasharray={lit ? `${w * 0.14} ${w * (i % 2 ? 0.1 : 0.16)}` : undefined}
+        />,
+      );
   }
   return <g>{out}</g>;
 }
 
+function hexOf(rgb: string): string {
+  const m = rgb.match(/\d+/g)!.map(Number);
+  return '#' + m.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
 function shade(hex: string, f: number): string {
   const n = (i: number) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) * f)));
   return `rgb(${n(0)},${n(1)},${n(2)})`;
@@ -338,18 +487,29 @@ function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: stri
 /** 그림이 오기 전 임시 모습 */
 function Fallback({ kind, x, y, w }: { kind: CityThing; x: number; y: number; w: number }) {
   const u = w / 10;
+  const { stage, night } = useContext(Look);
   switch (kind) {
-    case 'center':
+    case 'center': {
+      const H = heightOf('center', stage);
       return (
         <g>
-          <Box x={x - 2.6 * u} y={y - 1.2 * u} w={1.6 * u} d={1.4 * u} h={5.5 * u} c="#4f7f8f" win />
-          <Box x={x + 0.2 * u} y={y - 1.8 * u} w={1.9 * u} d={1.6 * u} h={7.6 * u} c="#5b93a6" win />
-          <Box x={x + 2.8 * u} y={y - 1 * u} w={1.6 * u} d={1.4 * u} h={4.6 * u} c="#6a8a99" win />
-          <Box x={x - 1.2 * u} y={y + 0.4 * u} w={1.4 * u} d={1.2 * u} h={3.6 * u} c="#78909c" win />
+          {stage >= 5 && <Box x={x - 4.2 * u} y={y - 0.2 * u} w={1.4 * u} d={1.2 * u} h={6.4 * H * u} c="#3f6f86" win />}
+          {stage >= 4 && <Box x={x + 4.2 * u} y={y + 0.2 * u} w={1.4 * u} d={1.2 * u} h={5.2 * H * u} c="#56808f" win />}
+          <Box x={x - 2.6 * u} y={y - 1.2 * u} w={1.6 * u} d={1.4 * u} h={5.5 * H * u} c="#4f7f8f" win />
+          <Box x={x + 0.2 * u} y={y - 1.8 * u} w={1.9 * u} d={1.6 * u} h={7.6 * H * u} c="#5b93a6" win />
+          {stage >= 6 && (
+            <>
+              <line x1={x + 0.2 * u} x2={x + 0.2 * u} y1={y - 1.8 * u - 7.6 * H * u} y2={y - 1.8 * u - 7.6 * H * u - 3 * u} stroke="#cbd5e1" strokeWidth={0.25 * u} />
+              <circle cx={x + 0.2 * u} cy={y - 1.8 * u - 7.6 * H * u - 3 * u} r={0.35 * u} fill="#ef4444" opacity={0.5 + 0.5 * night} />
+            </>
+          )}
+          <Box x={x + 2.8 * u} y={y - 1 * u} w={1.6 * u} d={1.4 * u} h={4.6 * H * u} c="#6a8a99" win />
+          <Box x={x - 1.2 * u} y={y + 0.4 * u} w={1.4 * u} d={1.2 * u} h={3.6 * H * u} c="#78909c" win />
           <Box x={x + 1.6 * u} y={y + 1.2 * u} w={3.2 * u} d={1.4 * u} h={1.6 * u} c="#e7e2d6" />
-          <ellipse cx={x + 1.9 * u} cy={y - 0.6 * u} rx={1.1 * u} ry={0.9 * u} fill="#f5f1e6" />
+          <ellipse cx={x + 1.9 * u} cy={y - 0.6 * u} rx={1.1 * u} ry={0.9 * u} fill={night > 0.3 ? '#fde68a' : '#f5f1e6'} />
         </g>
       );
+    }
     case 'industry':
       return (
         <g>
@@ -406,15 +566,26 @@ function Fallback({ kind, x, y, w }: { kind: CityThing; x: number; y: number; w:
           <Box x={x + 1.2 * u} y={y + 2 * u} w={1.2 * u} d={0.8 * u} h={0.8 * u} c="#eab308" />
         </g>
       );
-    case 'apt':
+    case 'apt': {
+      // 단계가 낮으면 낮은 빌라·상가, 높을수록 고층 단지
+      const H = heightOf('apt', stage);
+      if (stage <= 1)
+        return (
+          <g>
+            <Box x={x - 1.8 * u} y={y} w={2 * u} d={1.4 * u} h={2.6 * u} c="#d6cdb8" win />
+            <Box x={x + 1.4 * u} y={y - 0.6 * u} w={2 * u} d={1.4 * u} h={3 * u} c="#cbd5e1" win />
+            <Box x={x - 0.2 * u} y={y + 1.8 * u} w={2 * u} d={1.2 * u} h={1.6 * u} c="#e7e0d0" roof="#64748b" />
+          </g>
+        );
       return (
         <g>
-          <Box x={x - 2.2 * u} y={y - 0.2 * u} w={1.5 * u} d={1.2 * u} h={6 * u} c="#cbd5e1" win />
-          <Box x={x} y={y - 0.8 * u} w={1.5 * u} d={1.2 * u} h={7 * u} c="#d6dce4" win />
-          <Box x={x + 2.2 * u} y={y + 0.2 * u} w={1.5 * u} d={1.2 * u} h={5.4 * u} c="#c4ccd6" win />
-          <Box x={x - 0.8 * u} y={y + 1.8 * u} w={1.5 * u} d={1.2 * u} h={4.2 * u} c="#dde3ea" win />
+          <Box x={x - 2.2 * u} y={y - 0.2 * u} w={1.5 * u} d={1.2 * u} h={6 * H * u} c="#cbd5e1" win />
+          <Box x={x} y={y - 0.8 * u} w={1.5 * u} d={1.2 * u} h={7 * H * u} c="#d6dce4" win />
+          <Box x={x + 2.2 * u} y={y + 0.2 * u} w={1.5 * u} d={1.2 * u} h={5.4 * H * u} c="#c4ccd6" win />
+          <Box x={x - 0.8 * u} y={y + 1.8 * u} w={1.5 * u} d={1.2 * u} h={4.2 * H * u} c="#dde3ea" win />
         </g>
       );
+    }
     case 'adl':
       return (
         <g>

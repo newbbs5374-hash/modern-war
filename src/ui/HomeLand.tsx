@@ -123,8 +123,10 @@ export function HomeLand(props: {
   focus?: string | null;
   /** 도시 크기(0~1): 인구·건물 단계가 클수록 불빛이 넓고 밝음 */
   cityGrowth?: Record<string, number>;
+  /** 도시 위 표시: 특구·대형 사업 공사(🏗️) 아이콘 */
+  cityTags?: Record<string, string>;
 }) {
-  const { countryId, world, atWar, dayMode, onDayMode, onCity, focus, cityGrowth } = props;
+  const { countryId, world, atWar, dayMode, onDayMode, onCity, focus, cityGrowth, cityTags } = props;
   const geo = useHomeGeo(countryId);
   const vw = homeTerrain(countryId).view;
   const worldT = `translate(${(-vw.tx * vw.s).toFixed(2)},${(-vw.ty * vw.s).toFixed(2)}) scale(${vw.s.toFixed(4)})`;
@@ -561,6 +563,11 @@ export function HomeLand(props: {
                   </g>
                 )}
                 </g>
+                {cityTags?.[c.id] && (
+                  <text x={x} y={y - (c.capital ? 44 : 22)} textAnchor="middle" className="homeland-city small homeland-tag">
+                    {cityTags[c.id]}
+                  </text>
+                )}
                 <text x={x} y={y + (c.capital ? 20 : 12)} textAnchor="middle" className={c.capital ? 'homeland-city' : 'homeland-city small'}>
                   {c.capital ? '★ ' : ''}
                   {c.name}

@@ -37,6 +37,12 @@ import { specialsFor } from '../data/specials';
 import { EDGE_DIR, HEX_DIRS, HEX_SIZE, PIONEER_ISLANDS, hexCorners, hexDist, hexKey } from '../data/hexmap';
 import { CityView, type CityCell, type CityLabel, type CityThing } from './CityView';
 import { cityMap } from '../data/cityMap';
+import { CITY_STAGES, cityPeopleAtStart, cityStage, stageOfPeople } from '../game/growth';
+import { busyProjects, projectById } from '../game/projects';
+import { zoneById } from '../game/zones';
+import { domOf } from '../game/domestic';
+import { cityJobs } from '../game/chains';
+import { nightLevel, type DayMode } from './HomeLand';
 import { KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, effText, type CityEff } from '../data/krCities';
 import { CITY_INST, instById } from '../data/institutions';
 import { SIZE_NAME } from '../data/hexmap';
@@ -683,7 +689,7 @@ export function CityPanel(props: ScreenProps) {
               </span>
               <Meter value={cc.loyalty} max={100} tone={cc.loyalty >= LOYALTY_OK ? 'green' : 'red'} />
               <small className="muted">
-                {KR_CITY_INFO[city.name] ? `${KR_CITY_INFO[city.name].trait.icon} ` : ''}👪{people(C.cityPeople(state, city.id))} · {cc.districts.map((d) => districtById(d.id).icon).join('') || '구역 없음'} {cc.districts.length}/{C.districtSlots(state, city.id)}
+                {cityStage(state, city.id).stage.icon}{cityStage(state, city.id).stage.name} · {KR_CITY_INFO[city.name] ? `${KR_CITY_INFO[city.name].trait.icon} ` : ''}👪{people(C.cityPeople(state, city.id))} · {cc.districts.map((d) => districtById(d.id).icon).join('') || '구역 없음'} {cc.districts.length}/{C.districtSlots(state, city.id)}
                 {building ? ' 🏗️' : ''}
                 {city.home !== me ? ' · 점령지' : ''}
               </small>
@@ -750,6 +756,9 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
   const [msg, setMsg] = useState('');
   const [zoom, setZoom] = useState(1);
   const [open, setOpen] = useState(false);
+  // 그때와 지금: 취임 첫날 모습으로 잠깐 되돌려 보기
+  const [then, setThen] = useState(false);
+  const [dayMode, setDayMode] = useState<DayMode>('자동');
   const scrollRef = useRef<HTMLDivElement>(null);
   // 확대하면 도심이 가운데 오게
   useLayoutEffect(() => {
@@ -783,8 +792,15 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
     [id],
   );
   const now = state.worldMs;
-  const markLv = (mid: string) => C.markLevel(state, id, mid);
+  const markLv = (mid: string) => (then ? (marks.find((m) => m.id === mid)?.lv ?? 0) : C.markLevel(state, id, mid));
+  const view = then ? { ...cc, pop: city.size - 1, districts: [], mines: [], marks: undefined } : cc;
+  const peopleNow = C.cityPeople(state, id);
+  const stg = then ? stageOfPeople(cityPeopleAtStart(state, id)) : cityStage(state, id);
+  const night = nightLevel(dayMode);
+  const myProjects = then ? [] : busyProjects(state).filter(([, p]) => p.cityId === id);
+  const zone = then ? undefined : zoneById(domOf(state).zones[id] ?? '');
   const cells = useMemo((): CityCell[] => {
+    const cc = view;
     const base = tiles.map((t) => {
       const k = hexKey(t.q, t.r);
       const ground = C.terrainOf(id, t.q, t.r);
@@ -827,7 +843,17 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
     });
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, cc.districts, cc.mines, cc.marks, cc.pop, Math.floor(now / 60000)]);
+  }, [id, then, cc.districts, cc.mines, cc.marks, cc.pop, Math.floor(now / 60000)]);
+  // 대형 사업 공사 중: 도심 가까운 시가지에 크레인
+  const cranes = useMemo(() => {
+    if (!myProjects.length) return [];
+    return cells
+      .filter((c) => c.thing === 'apt' || c.thing === 'suburb')
+      .sort((a, b) => (a as CityCell & { dist: number }).dist - (b as CityCell & { dist: number }).dist)
+      .slice(0, myProjects.length * 2)
+      .filter((_, i) => i % 2 === 0)
+      .map((c) => c.key);
+  }, [cells, myProjects.length]);
   const labels = useMemo((): CityLabel[] => {
     const out: CityLabel[] = [];
     if (map.gu && map.gu.length > 1) {
@@ -881,6 +907,40 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           👪 <b>{people(C.cityPeople(state, id))}</b> <small className="muted">(발전 {cc.pop}/{C.popCap(state, id)})</small>
         </span>
         <Tip label="이유" title="민심 목표" rows={C.loyaltyReasons(state, id).map(([k, v]) => [k, signed(Math.round(v))])} total={`${Math.round(target)}`} />
+      </div>
+      <div className="city-stage">
+        <span className="city-stage-badge">
+          {stg.stage.icon} <b>{stg.stage.name}</b>
+          <small> {stg.stage.lv + 1}/{CITY_STAGES.length}단계</small>
+        </span>
+        {stg.next ? (
+          <span className="city-stage-bar" title={`${stg.next.name}까지 ${people(Math.max(0, stg.next.min - (then ? cityPeopleAtStart(state, id) : peopleNow)))} 명`}>
+            <i style={{ width: `${Math.round(stg.frac * 100)}%` }} />
+            <small>
+              {stg.next.icon} {stg.next.name}까지 {Math.round(stg.frac * 100)}%
+            </small>
+          </span>
+        ) : (
+          <small className="muted">가장 높은 단계예요</small>
+        )}
+        {zone && (
+          <span className="city-stage-tag" title={zone.text}>
+            {zone.icon} {zone.name}
+          </span>
+        )}
+        {!then && state.world.owner[id] === state.player.countryId && (() => {
+          const j = cityJobs(state, id);
+          return (
+            <span className={`city-stage-tag ${j.loyalty < 0 ? 'bad' : ''}`} title={`일자리 ${j.jobs} · 일손 ${j.workers} → 민심 ${signed(j.loyalty)}. 실제 시설 단계·구역·특구·대형 사업이 일자리를 만들어요.`}>
+              💼 {j.label} {signed(j.loyalty)}
+            </span>
+          );
+        })()}
+        {myProjects.map(([pid, p]) => (
+          <span key={pid} className="city-stage-tag" title={`${p.stage + 1}/3단계 공사 중`}>
+            🏗️ {projectById(pid).icon} {projectById(pid).name}
+          </span>
+        ))}
       </div>
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
       <div className="city-info">
@@ -939,8 +999,16 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
             {z === 1 ? '전체' : `${z}배`}
           </button>
         ))}
-        <small className="muted">{zoom > 1 ? '밀어서 둘러보기 · 시설 이름 보임' : '확대하면 시설 이름이 보여요'}</small>
+        <button className={`city-dn ${night > 0.5 ? 'on' : ''}`} title={`낮·밤: ${dayMode}`} onClick={() => setDayMode(dayMode === '자동' ? (night > 0.5 ? '낮' : '밤') : dayMode === '낮' ? '밤' : '낮')}>
+          {night > 0.5 ? '🌙' : '☀️'}
+        </button>
+        <button className={`city-then ${then ? 'on' : ''}`} onClick={() => setThen(!then)}>
+          {then ? '📅 취임 첫날' : '📅 그때와 지금'}
+        </button>
       </div>
+      <small className="muted city-zoom-hint">
+        {then ? `취임 첫날 모습(인구 약 ${people(cityPeopleAtStart(state, id))}). 다시 누르면 지금 모습.` : zoom > 1 ? '밀어서 둘러보기 · 시설 이름 보임' : '확대하면 시설 이름이 보여요'}
+      </small>
       <div ref={scrollRef} className={`city-scroll ${zoom > 1 ? 'zoomed' : ''}`}>
         <CityView
           cells={cells}
@@ -954,6 +1022,10 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           rivers={rivers}
           labels={labels}
           zoom={zoom}
+          stage={stg.stage.lv}
+          night={night}
+          cranes={cranes}
+          traffic
         />
       </div>
       <div className="legend small muted">

@@ -12,6 +12,6 @@ describe('도시 모습', () => {
     const html = renderToStaticMarkup(createElement(CityView, { cells, coast: 'M0,0L10,0L10,10Z', sel: '0,0', onPick: () => {}, uid: 't' }));
     expect(html).toContain('<svg');
     expect(html).toContain('🛢️');
-    expect(html).toContain('🏗️');
+    expect(html).toContain('#f59e0b'); // 공사 중이면 크레인(노란 철골)
   });
 });
