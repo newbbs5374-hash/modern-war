@@ -114,7 +114,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   if (!plan) {
     return (
       <Card title="전투">
-        <p className="small muted">지금 싸울 전투가 없어요. 국방 → 작전에서 임무를 고르거나, 개인 → 훈련에서 훈련을 시작하세요.</p>
+        <p className="small muted">지금 싸울 전투가 없어요. 국방 → 작전에서 임무를 고르거나, 국방 → 훈련에서 훈련을 시작하세요.</p>
         <button onClick={() => go('ops')}>작전 화면으로</button>
       </Card>
     );

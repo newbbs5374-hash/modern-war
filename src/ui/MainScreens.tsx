@@ -33,6 +33,7 @@ import { cabinetOf, postCount } from '../game/cabinet';
 import { POSTS } from '../data/staff';
 import { StaffPanel } from './StaffUI';
 import { AdviceBar } from './AdviceBar';
+import { VictoryPanel, winBadge } from './victoryScreens';
 
 /** 시설 31개를 효과가 닿는 화면으로 나눔(11-24 새 16개: 산업·민간 인프라는 경제, 복지·과학은 사회) */
 export const DEFENSE_BUILDINGS: readonly BuildingId[] = ['철도망', '군항', '공군기지', '방공포대', '훈련소', '비축창고', '정보본부', '우주기지'];
@@ -61,7 +62,7 @@ export function PersonalScreen(props: ScreenProps) {
   const errandsDone = o.aides.filter((a) => a.errand && state.worldMs >= a.errand.endMs).length;
   const tabs: TabDef<PersonalTab>[] = [
     { id: 'profile', label: '프로필', icon: '🪪' },
-    { id: 'train', label: '훈련', icon: '🎯' },
+    { id: 'win', label: '승리', icon: '🏆', badge: winBadge(state) },
     { id: 'aides', label: '대통령실', icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
@@ -76,7 +77,7 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'profile' && (
         <LeaderCard {...props} />
       )}
-      {tab === 'train' && <TrainingScreen {...props} />}
+      {tab === 'win' && <VictoryPanel {...props} />}
       {tab === 'aides' && <StaffTab {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
       {tab === 'plan' && <SchedulePanel {...props} />}
@@ -117,6 +118,7 @@ export function DefenseScreen(props: ScreenProps) {
   const civ = civOf(state);
   const tabs: TabDef<DefenseTab>[] = [
     { id: 'ops', label: '작전', icon: '🗺️', badge: ready ? '!' : null },
+    { id: 'train', label: '훈련', icon: '🎯' },
     { id: 'forces', label: '부대', icon: '🪖' },
     { id: 'command', label: `지휘부 ${o.generals.length}/${generalSlots(r)}`, icon: '⭐' },
     { id: 'spy', label: '정보전', icon: '🕵️', badge: spyOf(state).active.length || null },
@@ -130,6 +132,7 @@ export function DefenseScreen(props: ScreenProps) {
       <AdviceBar state={state} apply={props.actions.apply} field="defense" go={(t) => setTab(t as DefenseTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'ops' && <OpsScreen {...props} />}
+      {tab === 'train' && <TrainingScreen {...props} />}
       {tab === 'forces' && <ForcesScreen {...props} />}
       {tab === 'command' && (
         <>

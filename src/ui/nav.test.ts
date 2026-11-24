@@ -11,7 +11,8 @@ describe('대통령식 메뉴(본부 + 5칸)', () => {
     expect(legacyRoute('officer', 'aides').set).toContainEqual(['personal', 'aides']);
     expect(legacyRoute('officer', 'generals').set).toContainEqual(['defense', 'command']);
     expect(legacyRoute('officer', 'rivals').set).toContainEqual(['society', 'politics']);
-    expect(legacyRoute('training').set).toContainEqual(['personal', 'train']);
+    expect(legacyRoute('training').set).toContainEqual(['defense', 'train']);
+    expect(legacyRoute('culture', 'win').set).toContainEqual(['personal', 'win']);
     expect(legacyRoute('forces').set).toContainEqual(['defense', 'forces']);
     expect(legacyRoute('nation', 'home').set).toContainEqual(['economy', 'vault']);
     expect(legacyRoute('nation', 'city').set).toContainEqual(['society', 'city']);

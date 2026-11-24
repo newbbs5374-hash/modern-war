@@ -4,7 +4,7 @@ import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
 import { GOV_FACILITIES } from '../data/govFacilities';
 import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
-import { BoostBar } from './BoostBar';
+import { BoostBar, BoostMini } from './BoostBar';
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -206,7 +206,7 @@ function techUnlockIcons(t: Tech): Array<{ key: string; node: ReactNode; label: 
   if (t.eff) out.push({ key: 'eff', node: <>📈</>, label: '능력 강화' });
   return out;
 }
-function TechTree({ state, list, onPick }: ScreenProps & { list: Tech[]; onPick: (t: Tech) => void }) {
+function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]; onPick: (t: Tech) => void }) {
   const c = C.civOf(state);
   const line = list[0]?.line ?? 'mil';
   const L = useMemo(() => layoutCards(list, CARD_ORDER[line]), [list, line]);
@@ -296,17 +296,28 @@ function TechTree({ state, list, onPick }: ScreenProps & { list: Tech[]; onPick:
                     ) : (
                       <StagePips n={stage} cur={s === 'now'} />
                     )}
-                    {icons.slice(0, 4).map((u) => (
+                    {icons.slice(0, s === 'now' ? 1 : 4).map((u) => (
                       <i key={u.key} className="tt-u" title={u.label}>
                         {u.node}
                       </i>
                     ))}
-                    {icons.length > 4 && <small>+{icons.length - 4}</small>}
+                    {s !== 'now' && icons.length > 4 && <small>+{icons.length - 4}</small>}
                   </span>
                 </span>
                 {s === 'now' && <span className="tt-prog" style={{ width: `${Math.round(prog * 100)}%` }} />}
               </button>
             );
+          })}
+          {list
+            .filter((t) => st[t.id] === 'now' && L.nodes[t.id])
+            .map((t) => {
+              const n = L.nodes[t.id];
+              // 연구 중 카드 안 오른쪽 아래(11-24): ⏩ 30분 · ⚡ 바로
+              return (
+                <span key={`b-${t.id}`} style={{ position: 'absolute', zIndex: 5, right: W - (n.x + TT_PAD.x + CARD_W) + 4, top: n.y + TT_PAD.top + CARD_H / 2 - 21 }}>
+                  <BoostMini state={state} apply={actions.apply} target={{ kind: 'research', line: t.line }} cls="tt-boost" />
+                </span>
+              );
           })}
         </div>
       </div>
@@ -449,6 +460,11 @@ export function GovPanel(props: ScreenProps) {
               {C.chaos(state) ? ` · ⚠️ 혼란 ${timeLeft(c.chaosUntil - state.worldMs)}` : ''}
             </small>
             <button onClick={() => setChoose(true)}>체제 바꾸기</button>
+          </div>
+        )}
+        {gov && C.chaos(state) && (
+          <div className="civ-gov-boost">
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'chaos' }} compact />
           </div>
         )}
       </section>

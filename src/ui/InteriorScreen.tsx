@@ -55,7 +55,7 @@ import {
 } from '../game/economy';
 import { budgetBreakdown, budgetPerDay, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
-import { BoostBar } from './BoostBar';
+import { BoostBar, BoostMini } from './BoostBar';
 import { CountryInfo, RelTag, fmt, leaderText } from './common';
 import { FLAG } from './flag';
 import { FACILITY_ICON, UNIT_ICON } from './icons';
@@ -558,7 +558,8 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
           const ready = !canUpgrade(state, b.id);
           const empty = st.level < 1;
           return (
-            <button key={b.id} className={`bcard ${buff ? 'buff' : ''} ${ready ? 'ready' : ''} ${empty ? 'empty' : ''}`} onClick={() => onPick(b.id)}>
+            <div key={b.id} className="bcard-cell">
+            <button className={`bcard ${buff ? 'buff' : ''} ${ready ? 'ready' : ''} ${empty ? 'empty' : ''} ${building ? 'has-boost' : ''}`} onClick={() => onPick(b.id)}>
               {buff && <i className="badge">⚡</i>}
               <FacArt id={b.id} level={st.level} />
               <b>{b.id}</b>
@@ -579,6 +580,8 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
                 <small className="muted">최고</small>
               )}
             </button>
+            {building && <BoostMini state={state} apply={actions.apply} target={{ kind: 'build', fac: b.id }} />}
+            </div>
           );
         })}
       </div>

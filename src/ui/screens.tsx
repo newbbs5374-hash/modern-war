@@ -199,7 +199,7 @@ export function HomeScreen(props: ScreenProps) {
               </span>
             </span>
           </button>
-          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'personal', 'train')}>
+          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'defense', 'train')}>
             <span>📅</span>
             <span className="hq-main">
               <b>

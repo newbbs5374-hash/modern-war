@@ -27,3 +27,23 @@ export function BoostBar({ state, apply, target, compact }: { state: GameState; 
     </div>
   );
 }
+
+/** 카드 안에 넣는 작은 가속 버튼(11-24): 시설·연구·체제 카드. 카드 누르기와 겹치지 않게 막음 */
+export function BoostMini({ state, apply, target, cls }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; target: BoostTarget; cls?: string }) {
+  if (boostLeft(state, target) <= 0) return null;
+  const can = boostsAffordable(state);
+  const need = boostsToFinish(state, target);
+  const one = boostPrice(state, 1);
+  const all = boostPrice(state, need);
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
+  return (
+    <span className={`boost-mini ${cls ?? ''}`} onClick={stop} onPointerDown={stop}>
+      <button disabled={can < 1} onClick={() => apply((s) => useBoost(s, target, 1))} title={`30분 줄이기 · ${priceText(one)}`} aria-label="30분 가속">
+        ⏩<small>{priceText(one)}</small>
+      </button>
+      <button className="gold" disabled={can < need} onClick={() => apply((s) => useBoost(s, target, need))} title={`바로 끝내기 · ${priceText(all)}`} aria-label="바로 끝내기">
+        ⚡<small>{priceText(all)}</small>
+      </button>
+    </span>
+  );
+}
