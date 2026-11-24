@@ -133,7 +133,7 @@ export function DefenseScreen(props: ScreenProps) {
       {tab === 'forces' && <ForcesScreen {...props} />}
       {tab === 'command' && (
         <>
-          <MinistryCards state={state} actions={props.actions} ids={['mnd', 'nis']} title="국방 부처" />
+          <MinistryCards state={state} actions={props.actions} ids={['mnd', 'nis', 'mpva']} title="국방 부처" />
           {generalSlots(r) === 0 ? <p className="empty">🔒 장군 자리는 「{RANKS[5].name}」 호칭부터 열려요(최대 6자리: 합참의장 + 병과 5).</p> : <GeneralsPanel {...props} />}
           {generalSlots(r) > o.generals.length && <GeneralCandidates state={state} actions={props.actions} />}
         </>
@@ -168,7 +168,8 @@ export function SocietyScreen(props: ScreenProps) {
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'mins' && (
         <>
-          <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis', 'moj', 'moe']} title="사회 부처" />
+          <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis', 'moj', 'moe', 'mogef', 'mcst']} title="사회 부처" />
+          <MinistryCards state={state} actions={props.actions} ids={['mpm', 'moleg', 'mfds']} title="국무총리 소속 처" />
           <FacilityPanel {...props} only={SOCIETY_BUILDINGS} />
         </>
       )}
@@ -215,14 +216,14 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'tax' && (
         <>
           <BudgetSeasonCard {...props} />
-          <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel']} title="기획재정부·고용노동부" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel', 'mss']} title="기획재정·고용·중소기업" />
           <PolicyPanel {...props} />
         </>
       )}
       {tab === 'res' && <ResourcePanel {...props} />}
       {tab === 'ind' && (
         <>
-          <MinistryCards state={props.state} actions={props.actions} ids={['moti', 'molit', 'mofs']} title="산업·국토·해양 부처" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['moti', 'molit', 'mofs', 'mafra', 'mcee']} title="산업·국토·해양·농업·에너지 부처" />
           <FacilityPanel {...props} only={ECONOMY_BUILDINGS} />
         </>
       )}

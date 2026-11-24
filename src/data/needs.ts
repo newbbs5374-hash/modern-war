@@ -52,6 +52,32 @@ export const NEEDS: Record<string, Need> = {
   audit: N(['법률', '청렴'], '행정', ['원칙주의', '청렴'], ['prosecutor', 'lawyer']),
   bok: N(['경제', '과학'], '청렴', ['신중파'], ['econ', 'professor']),
   dapa: N(['군수', '과학'], '지휘', ['실용주의', '혁신가'], ['exec', 'soldier']),
+  // 11-24 새 부·처
+  mafra: N(['경제', '행정'], '과학', ['실용주의', '현장형'], ['mayor', 'commoner']),
+  mcee: N(['과학', '경제'], '행정', ['혁신가', '원칙주의'], ['scientist', 'professor']),
+  mss: N(['경제', '과학'], '언변', ['혁신가', '실용주의'], ['exec', 'chaebol']),
+  mpva: N(['행정', '청렴'], '통솔', ['충직', '원칙주의'], ['soldier', 'general']),
+  mogef: N(['행정', '매력'], '언변', ['청렴', '현장형'], ['activist', 'doctor']),
+  mcst: N(['매력', '언변'], '외교', ['인기인', '혁신가'], ['athlete', 'broadcaster']),
+  mpm: N(['행정', '청렴'], '정보', ['원칙주의', '신중파'], ['mayor', 'prosecutor']),
+  moleg: N(['법률', '행정'], '청렴', ['원칙주의', '신중파'], ['lawyer', 'prosecutor']),
+  mfds: N(['과학', '청렴'], '행정', ['원칙주의', '냉철'], ['doctor', 'scientist']),
+  // 11-24 청 15곳
+  mma: N(['행정', '통솔'], '청렴', ['원칙주의', '청렴'], ['soldier', 'mayor']),
+  nfa: N(['통솔', '체력'], '행정', ['현장형', '충직'], ['soldier', 'commoner']),
+  kcs: N(['법률', '경제'], '정보', ['원칙주의', '냉철'], ['prosecutor', 'econ']),
+  pps: N(['군수', '행정'], '경제', ['청렴', '실용주의'], ['exec', 'econ']),
+  kcg: N(['통솔', '지휘'], '체력', ['현장형', '강경파'], ['admiral', 'commando']),
+  kasa: N(['과학', '행정'], '군수', ['혁신가'], ['scientist', 'professor']),
+  kfs: N(['행정', '청렴'], '체력', ['현장형', '청렴'], ['mayor', 'commoner']),
+  rda: N(['과학', '경제'], '행정', ['혁신가', '실용주의'], ['scientist', 'professor']),
+  kma: N(['과학', '정보'], '행정', ['냉철', '신중파'], ['scientist', 'professor']),
+  kipo: N(['과학', '법률'], '경제', ['원칙주의', '혁신가'], ['lawyer', 'scientist']),
+  kdca: N(['과학', '행정'], '언변', ['신중파', '청렴'], ['doctor', 'scientist']),
+  oka: N(['외교', '매력'], '언변', ['협상가', '인기인'], ['diplomat', 'religious']),
+  sma: N(['경제', '행정'], '외교', ['실용주의', '야심'], ['exec', 'mayor']),
+  macc: N(['행정', '경제'], '군수', ['실용주의', '현장형'], ['mayor', 'exec']),
+  kh: N(['과학', '매력'], '청렴', ['원칙주의', '청렴'], ['professor', 'religious']),
 };
 
 /** 장군 자리 */

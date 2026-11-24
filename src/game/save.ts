@@ -1,7 +1,7 @@
 // 저장/불러오기. 브라우저 안(localStorage)에 저장하고, 백업용 "저장 코드"로 내보내고 들여올 수 있다.
 // 나중에 서버 저장으로 바꿀 때는 이 파일만 고치면 된다.
 
-import { migrateStats2 } from './cabinet';
+import { migrateBureau, migrateStats2 } from './cabinet';
 import { COUNTRIES } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { CITIES } from '../data/cities';
@@ -110,6 +110,7 @@ export function parseSave(text: string): GameState | null {
     if (!s.civ || !Array.isArray(s.civ.done) || !s.civ.council) s.civ = newCiv(s);
     if (s.civ.lastSwapMs === null) s.civ.lastSwapMs = -Infinity;
     if (s.cabinet?.people) migrateStats2(s.cabinet); // 11/24 스탯 18개: 옛 인물에 새 스탯 채움
+    if (s.cabinet?.people) migrateBureau(s.cabinet, s.player.countryId, s.worldMs); // 11/24 관료 56명
     s = migrateCityTiles(s); // 11/24 도시 칸 4.5배·실제 모양: 옛 구역 자리 옮기기
     if (typeof o.boosts !== 'number') o.boosts = TEST_BOOSTS; // 시험판: 옛 저장에도 가속권 지급
     return firstTestGrant(s); // 시험판: 옛 저장에도 자원 넉넉히(한 번만)

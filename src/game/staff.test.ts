@@ -12,8 +12,10 @@ function hire(s: GameState, n: number): GameState {
 }
 
 describe('대통령실 참모진·기관장(11-24)', () => {
-  it('자리는 22개, 실장은 자기 실에 있음', () => {
-    expect(POSTS.length).toBe(22);
+  it('자리는 37개(청 18 포함), 실장은 자기 실에 있음', () => {
+    expect(POSTS.length).toBe(37);
+    expect(POSTS.filter((p) => p.office === 'agency').length).toBe(18);
+    for (const p of POSTS) if (p.office === 'agency') expect(p.parent).toBeTruthy();
     expect(new Set(POSTS.map((p) => p.id)).size).toBe(POSTS.length);
     for (const o of OFFICES) if (o.head) expect(POSTS.find((p) => p.id === o.head)!.office).toBe(o.id);
   });
@@ -71,7 +73,7 @@ describe('부처 15곳(11-24)', () => {
   it('새 부처 6곳: 장관 앉히고 업무 끝내면 결과가 나옴', async () => {
     const { MINISTRIES, ministerSlots } = await import('../data/cabinet');
     const { startTask, cabinetTick } = await import('./cabinetOps');
-    expect(MINISTRIES.length).toBe(15);
+    expect(MINISTRIES.length).toBe(24);
     expect(ministerSlots(10)).toBe(15);
     let s = hire(rich(newGame('t', 'kr', 0, { seed: 21 })), 8);
     const ids = ['mou', 'moj', 'moe', 'molit', 'mofs', 'moel'] as const;

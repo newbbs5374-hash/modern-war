@@ -28,6 +28,7 @@ import {
 } from '../data/cabinet';
 import { EFF_CAP, GUARD_COUNTER_AT, HEAD_BOOST, OFFICES, POSTS, postById, type PostEff, type PostId } from '../data/staff';
 import { Rng } from './rng';
+import { govFacEff } from './govFac';
 import type { GameState } from './state';
 
 const H = 3600e3;
@@ -96,6 +97,8 @@ export interface CabinetState {
   log: string[];
   /** 분야별 마지막으로 조언 따른 때(11-24) */
   advice?: Partial<Record<string, number>>;
+  /** 부처·청 소속 시설 단계(11-24) */
+  fac?: Record<string, number>;
 }
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -113,8 +116,10 @@ export interface GenOpt {
 }
 
 /** 미국 사람 갈래(11-24): 얼굴이 많이 남은 갈래일수록 잘 뽑힘 → 한 갈래만 얼굴이 모자라지 않게 */
-function usEthFor(c: CabinetState, sex: 'm' | 'f', rng: Rng): UsEth {
-  const free = US_ETH.map((e) => Math.max(0, deckSize(`us-${e}`, sex) - c.people.filter((p) => p.country === 'us' && p.sex === sex && (p.eth ?? 'we') === e).length));
+function usEthFor(c: CabinetState, sex: 'm' | 'f', rng: Rng, group?: Group): UsEth {
+  // 관료·공공기관은 자기 명단 안에서만 얼굴이 겹치지 않으면 되니 그 명단만 셈(11-24)
+  const own = group === '관료' || group === '공공';
+  const free = US_ETH.map((e) => Math.max(0, deckSize(`us-${e}`, sex) - c.people.filter((p) => p.country === 'us' && p.sex === sex && (p.eth ?? 'we') === e && (!own || p.group === group)).length));
   const sum = free.reduce((a, b) => a + b, 0);
   if (sum <= 0) return pickUsEth(rng);
   let r = rng.next() * sum;
@@ -143,7 +148,7 @@ export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number,
   // 10%는 출신과 다른 특화(숨은 재능)
   const spec = rng.chance(0.1) ? rng.pick(['경제통', '외교통', '행정통', '복지통', '과학자', '홍보통', '육군통', '해군통', '공군통', '정보통', '군수통'] as SpecId[]) : rng.pick(info.spec);
   const hidden: Hidden | null = rng.chance(0.3) ? rng.pick(HIDDEN_IDS) : null;
-  const nm = makeNameEth(o.country, sex, rng, taken, o.country === 'us' ? usEthFor(c, sex, rng) : undefined);
+  const nm = makeNameEth(o.country, sex, rng, taken, o.country === 'us' ? usEthFor(c, sex, rng, o.group) : undefined);
   fillStats2(stats, origin, total, age, c.seed * 7919 + c.nextId);
   return {
     id: c.nextId++,
@@ -186,6 +191,19 @@ export function fillStats2(stats: Partial<Record<AnyStat, number>>, origin: Pers
   }
 }
 /** 옛 저장 인물: 새 스탯이 없으면 채움 */
+/** 옛 저장: 관료 56명이 없으면 더함 */
+export function migrateBureau(c: CabinetState, me: string, worldMs: number): void {
+  if (c.people.some((p) => p.group === '관료' || p.title === '부처 1급 실장')) return;
+  const rng = new Rng((c.seed ^ 0xb00) >>> 0 || 1);
+  const taken = new Set(c.people.map((p) => p.name));
+  for (const t of BUREAU_TITLES)
+    for (let i = 0; i < t.n; i++) {
+      const p = genPerson(c, rng, { country: me, group: t.group, origin: rng.pick(t.origin), age: t.age, title: t.title }, worldMs, taken);
+      p.known = true;
+      c.people.push(p);
+    }
+  giveFaces(c);
+}
 export function migrateStats2(c: CabinetState): void {
   for (const p of c.people) {
     if (typeof p.stats.지휘 === 'number') continue;
@@ -211,6 +229,15 @@ function linkPeople(list: Person[], rng: Rng, pairs: number) {
   }
 }
 
+/** 관료 34명 + 공공기관 22명(11-24 대장 요청 5번: 부처 42곳에 맞춰 인물 약 150명). 영입할 수 있음 */
+const BUREAU_TITLES: Array<{ group: Group; title: string; origin: PersonOrigin[]; n: number; age: [number, number] }> = [
+  { group: '관료', title: '부처 1급 실장', origin: ['mayor', 'econ', 'lawyer', 'exec'], n: 12, age: [50, 60] },
+  { group: '관료', title: '청 차장', origin: ['soldier', 'prosecutor', 'scientist', 'mayor'], n: 12, age: [50, 60] },
+  { group: '관료', title: '전직 차관', origin: ['mayor', 'diplomat', 'econ', 'lawyer'], n: 10, age: [55, 68] },
+  { group: '공공', title: '공기업 사장', origin: ['exec', 'econ', 'chaebol'], n: 8, age: [52, 66] },
+  { group: '공공', title: '국책 연구원장', origin: ['scientist', 'professor', 'doctor'], n: 8, age: [50, 66] },
+  { group: '공공', title: '시장·군수', origin: ['mayor', 'commoner', 'partisan'], n: 6, age: [48, 64] },
+];
 const NPC_TITLES: Array<{ group: Group; title: string; origin: PersonOrigin[]; n: number; age: [number, number] }> = [
   { group: '정계', title: '국회의장', origin: ['partisan', 'lawyer'], n: 1, age: [58, 70] },
   { group: '정계', title: '여당 대표', origin: ['partisan'], n: 1, age: [52, 66] },
@@ -224,6 +251,7 @@ const NPC_TITLES: Array<{ group: Group; title: string; origin: PersonOrigin[]; n
   { group: '시민', title: '대학 총장', origin: ['professor', 'scientist', 'doctor'], n: 2, age: [56, 70] },
   { group: '시민', title: '노조 위원장', origin: ['activist', 'commoner'], n: 2, age: [45, 62] },
   { group: '군', title: '야전 사령관', origin: ['general', 'soldier', 'admiral', 'commando'], n: 6, age: [50, 60] },
+  ...BUREAU_TITLES,
 ];
 
 /** 판을 시작할 때(또는 옛 저장을 처음 열 때) 인물 약 100명 중 나라 안·밖 인물을 만듦 */
@@ -348,6 +376,12 @@ export function postPower(s: GameState, id: PostId): number {
     const h = postHolder(c, office.head);
     if (h) v *= 1 + personPostPower(h, office.head) * HEAD_BOOST;
   }
+  // 청장: 위 부 장관이 유능하면 힘 + (장관 힘 1당 +10%, 최대 +15%)
+  const par = postById(id).parent;
+  if (par) {
+    const m = ministerOf(c, par);
+    if (m) v *= 1 + Math.min(0.15, personPower(m, par, c) * 0.1);
+  }
   return v;
 }
 /** 대통령실·기관장 효과 합(자리 여럿이 같은 효과면 더함, 최대치 있음) */
@@ -360,6 +394,9 @@ export function postEff(s: GameState, key: PostEff): number {
     const k = postById(p.post).eff[key];
     if (k) v += k * postPower(s, p.post);
   }
+  v += govFacEff(s, key);
+  if (key === 'taskTime') v += ministryPower(s, 'mpm') * 0.04;
+  if (key === 'recruit') v += ministryPower(s, 'mpm') * 0.05;
   const cap = EFF_CAP[key];
   return cap !== undefined ? Math.min(cap, v) : v;
 }
@@ -391,15 +428,15 @@ export function factionTilt(s: GameState): Faction | null {
 const seatedTrait = (s: GameState, t: Trait) => (s.cabinet ? seated(s.cabinet) : []).filter((p) => p.trait === t).length;
 
 export const cabBuild = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.06 + ministryPower(s, 'molit') * 0.03 + postEff(s, 'build') + buffSum(s, 'build') + (factionOn(s, '군부파') ? 0.06 : 0);
-export const cabTroop = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.05 + postEff(s, 'troop');
+export const cabTroop = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.05 + ministryPower(s, 'mpva') * 0.03 + postEff(s, 'troop');
 export const cabSpy = (s: GameState) => ministryPower(s, 'nis') * 0.05;
 export const cabMission = (s: GameState) => ministryPower(s, 'nis') * 0.03 + postEff(s, 'mission');
-export const cabFavor = (s: GameState) => ministryPower(s, 'mofa') * 6 + ministryPower(s, 'mou') * 3 + ministryPower(s, 'mofs') * 1 + postEff(s, 'favor') + (factionOn(s, '온건파') ? 5 : 0);
-export const cabBudget = (s: GameState) => 1 + ministryPower(s, 'mof') * 0.06 + postEff(s, 'budget') + (factionOn(s, '경제파') ? 0.05 : 0);
+export const cabFavor = (s: GameState) => ministryPower(s, 'mofa') * 6 + ministryPower(s, 'mou') * 3 + ministryPower(s, 'mofs') * 1 + ministryPower(s, 'mcst') * 2 + postEff(s, 'favor') + (factionOn(s, '온건파') ? 5 : 0);
+export const cabBudget = (s: GameState) => 1 + ministryPower(s, 'mof') * 0.06 + ministryPower(s, 'mss') * 0.02 + postEff(s, 'budget') + (factionOn(s, '경제파') ? 0.05 : 0);
 export const cabTaxSoft = (s: GameState) => Math.min(0.7, ministryPower(s, 'mof') * 0.25 + ministryPower(s, 'moel') * 0.1 + postEff(s, 'taxSoft'));
-export const cabRes = (s: GameState) => 1 + ministryPower(s, 'moti') * 0.08 + ministryPower(s, 'molit') * 0.03 + ministryPower(s, 'mofs') * 0.04 + buffSum(s, 'res');
-export const cabLoyalty = (s: GameState) => ministryPower(s, 'mois') * 4 + ministryPower(s, 'mohw') * 2 + postEff(s, 'loyalty') + (factionOn(s, '개혁파') ? 3 : 0);
-export const cabGrowth = (s: GameState) => ministryPower(s, 'mohw') * 0.12 + ministryPower(s, 'moe') * 0.05 + postEff(s, 'growth');
+export const cabRes = (s: GameState) => 1 + ministryPower(s, 'moti') * 0.08 + ministryPower(s, 'molit') * 0.03 + ministryPower(s, 'mofs') * 0.04 + ministryPower(s, 'mcee') * 0.05 + ministryPower(s, 'mafra') * 0.02 + buffSum(s, 'res');
+export const cabLoyalty = (s: GameState) => ministryPower(s, 'mois') * 4 + ministryPower(s, 'mohw') * 2 + ministryPower(s, 'mafra') * 2 + postEff(s, 'loyalty') + (factionOn(s, '개혁파') ? 3 : 0);
+export const cabGrowth = (s: GameState) => ministryPower(s, 'mohw') * 0.12 + ministryPower(s, 'moe') * 0.05 + ministryPower(s, 'mogef') * 0.08 + ministryPower(s, 'mfds') * 0.04 + postEff(s, 'growth');
 export const cabResearch = (s: GameState) => ministryPower(s, 'msit') * 0.15 + ministryPower(s, 'moe') * 0.06 + postEff(s, 'research');
 export const cabSpeech = (s: GameState) => ministryPower(s, 'kocis') * 0.2 + postEff(s, 'speech');
 /** 지지도 목표 덤 [이유, 값] */
@@ -407,6 +444,8 @@ export function cabApprovalRows(s: GameState): Array<[string, number]> {
   const rows: Array<[string, number]> = [];
   const k = ministryPower(s, 'kocis') * 3;
   if (k) rows.push(['📺 문화홍보처', k]);
+  const ct = ministryPower(s, 'mcst') * 2;
+  if (ct) rows.push(['🎭 문화체육관광부', Math.round(ct * 10) / 10]);
   const pop = seatedTrait(s, '인기인') + (s.cabinet ? seated(s.cabinet) : []).filter((p) => p.hidden === '언론 인기').length * 2;
   if (pop) rows.push(['🌟 인기 있는 각료', pop]);
   const tilt = factionTilt(s);
@@ -427,13 +466,21 @@ export function cabFieldRows(s: GameState, f: 'defense' | 'diplo' | 'society' | 
   if (hawk && f === 'defense') rows.push(['⚔️ 강경파 각료', 2 * hawk]);
   if (hawk && f === 'diplo') rows.push(['⚔️ 강경파 각료', -2 * hawk]);
   if (f === 'diplo' && ministryPower(s, 'mou')) rows.push(['🕊️ 통일부', Math.round(ministryPower(s, 'mou') * 2 * 10) / 10]);
+  const NEW_FIELD: Array<[typeof f, MinistryId, string, number]> = [
+    ['defense', 'mpva', '🎗️ 국가보훈부', 2],
+    ['economy', 'mss', '🚀 중소벤처기업부', 2],
+    ['society', 'mfds', '💊 식약처', 1.5],
+    ['society', 'mogef', '👨‍👩‍👧 성평등가족부', 1.5],
+    ['society', 'mcee', '🌍 기후에너지환경부', 1],
+  ];
+  for (const [ff, id, name, w] of NEW_FIELD) if (f === ff && ministryPower(s, id)) rows.push([name, Math.round(ministryPower(s, id) * w * 10) / 10]);
   if (f === 'economy' && ministryPower(s, 'moel')) rows.push(['👷 고용노동부', Math.round(ministryPower(s, 'moel') * 2 * 10) / 10]);
   const pe = postEff(s, ({ defense: 'sec', diplo: 'diplo', society: 'soc', economy: 'econ' } as const)[f]);
   if (pe) rows.push(['🏢 대통령실·기관장', Math.round(pe * 10) / 10]);
   return rows;
 }
 /** 신뢰도 목표 덤(파벌 쏠림) */
-export const cabTrust = (s: GameState) => (factionTilt(s) ? -5 : 0) + Math.round(ministryPower(s, 'moj') * 1.5 * 10) / 10 + Math.round(postEff(s, 'trust') * 10) / 10;
+export const cabTrust = (s: GameState) => (factionTilt(s) ? -5 : 0) + Math.round((ministryPower(s, 'moj') + ministryPower(s, 'moleg')) * 1.5 * 10) / 10 + Math.round(postEff(s, 'trust') * 10) / 10;
 export const counterOn = (s: GameState) => buffSum(s, 'counter') > 0 || guardOn(s);
 
 /* ───────── 영입 · 임명 ───────── */
@@ -453,7 +500,7 @@ export function cabLog(c: CabinetState, text: string) {
 
 export function canRecruit(s: GameState, id: number): string | null {
   const p = personById(s, id);
-  if (!p || p.group !== '인재') return '명단에 없는 사람';
+  if (!p || (p.group !== '인재' && p.group !== '관료' && p.group !== '공공')) return '명단에 없는 사람';
   const cost = recruitCost(s, p);
   if ((s.nations[s.player.countryId]?.treasury ?? 0) < cost) return `국방예산 ${cost.toLocaleString('ko-KR')} 필요`;
   return null;

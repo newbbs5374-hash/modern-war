@@ -294,6 +294,75 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
       ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust + 3 * k) } };
       text = `신뢰도 +${Math.round(3 * k)}`;
       break;
+    case 'mpm:exam': {
+      const rng = new Rng(c.seed ^ 0x51a7);
+      const p = genPerson(c, rng, { country: me, group: '인재', grade: '우수', age: [32, 50], origin: rng.pick(['mayor', 'econ', 'lawyer', 'prosecutor'] as const) }, now, takenNames(c));
+      p.known = true;
+      c.people.push(p);
+      c.seed = (c.seed + rng.seed) >>> 0;
+      giveFaces(c);
+      text = `인재 명단에 🔵우수 후보 ${p.name}`;
+      break;
+    }
+    default: {
+      // 11-24 새 부처: 업무 결과를 자료(fx)로 계산
+      const fx = ministryById(min).tasks.find((x) => x.id === taskId)?.fx;
+      if (!fx) break;
+      const out: string[] = [];
+      const R = (v: number) => Math.round(v * 10) / 10;
+      for (const [key, v, hours] of fx.buff ?? []) {
+        addBuff(c, key, v * k, now + hours * H, name);
+        const label = { build: '모집', res: '자원', secScore: '안보', diploScore: '외교 위상', econScore: '경제 지수', socScore: '사회 안정', counter: '방첩' }[key];
+        out.push(key === 'res' || key === 'build' ? `${label} +${Math.round(v * k * 100)}%(${hours}시간)` : key === 'counter' ? `${label}(${hours}시간)` : `${label} +${R(v * k)}(${hours}시간)`);
+      }
+      if (fx.pres) {
+        ns = addPresMod(ns, `${ministryById(min).icon} ${name}`, fx.pres[0] * k, fx.pres[1]);
+        out.push(`지지도 +${R(fx.pres[0] * k)}(${fx.pres[1]}시간)`);
+      }
+      if (fx.trust) {
+        ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust + fx.trust * k) } };
+        out.push(`신뢰도 +${R(fx.trust * k)}`);
+      }
+      if (fx.fame) {
+        ns = { ...ns, officer: { ...ns.officer, fame: ns.officer.fame + Math.round(fx.fame * k) } };
+        out.push(`명성 +${Math.round(fx.fame * k)}`);
+      }
+      if (fx.intel) {
+        ns = { ...ns, officer: { ...ns.officer, intel: ns.officer.intel + Math.round(fx.intel * k) } };
+        out.push(`정보 +${Math.round(fx.intel * k)}`);
+      }
+      if (fx.treasuryH) {
+        const got = Math.round(budgetPerDay(s, me) * fx.treasuryH * (fx.treasuryH > 0 ? k : 1));
+        ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: Math.max(0, ns.nations[me].treasury + got) } } };
+        out.push(`금고 ${got >= 0 ? '+' : ''}${got.toLocaleString('ko-KR')}`);
+      }
+      if (fx.stockLow) {
+        const stock = { ...ns.economy.stock };
+        const low = [...BASIC_RES].sort((a, b) => (stock[a] ?? 0) - (stock[b] ?? 0)).slice(0, fx.stockLow[0]);
+        const q = Math.round(fx.stockLow[1] * k);
+        for (const r of low) stock[r] = (stock[r] ?? 0) + q;
+        ns = { ...ns, economy: { ...ns.economy, stock } };
+        out.push(`${low.join('·')} +${q}`);
+      }
+      if (fx.cityLoyal) {
+        const civ = structuredClone(civOf(ns));
+        for (const ct of CITIES) if (s.world.owner[ct.id] === me && civ.cities[ct.id]) civ.cities[ct.id].loyalty = clamp(civ.cities[ct.id].loyalty + fx.cityLoyal * k);
+        ns = { ...ns, civ };
+        out.push(`모든 도시 민심 +${R(fx.cityLoyal * k)}`);
+      }
+      if (fx.research) {
+        const civ = structuredClone(civOf(ns));
+        const add = fx.research * k;
+        civ.bank = { mil: civ.bank.mil + add, soc: civ.bank.soc + add };
+        ns = { ...ns, civ };
+        out.push(`연구 두 줄에 ${R(add)}시간치`);
+      }
+      if (fx.cabLoyal) {
+        for (const p of c.people) if (p.group === '내각') p.loyalty = Math.min(100, p.loyalty + fx.cabLoyal * k);
+        out.push(`내 사람 충성 +${R(fx.cabLoyal * k)}`);
+      }
+      text = out.join(' · ');
+    }
   }
   const c2 = ns.cabinet!;
   delete c2.tasks[min];
