@@ -10,6 +10,10 @@ import { fmt } from './common';
 import { Flag } from './flag';
 import { PersonFace } from './People';
 import { NAV, SCREEN_TITLES, type Screen } from './nav';
+import { UiIcon, fmtK } from './uiIcon';
+import { citiesOf } from '../game/world';
+import { moodLabel, presOf } from '../game/approval';
+import { PresModal } from './PresUI';
 
 interface Props {
   state: GameState;
@@ -30,6 +34,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
  */
 export function Shell({ state, screen, speed, go, back, children, overlay }: Props) {
   const [walletOpen, setWalletOpen] = useState(false);
+  const [presOpen, setPresOpen] = useState(false);
   const me = countryById(state.player.countryId);
   const rank = titleOf(state);
   const clock = gameClock(state.worldMs);
@@ -46,13 +51,24 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           : id === 'drill'
             ? drillsNow(state.officer, state.worldMs).count
             : 0;
+  const n = state.nations[me.id];
+  const pres = presOf(state);
+  // 맨 위 줄 = 주요 자원만(k 단위). 누르면 말풍선에 전부.
   const wallet = (
-    <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="보유 재화 보기">
-      <span>💵 {fmt(state.player.salary)}</span>
-      <span>🎫 {fmt(state.officer.boosts ?? 0)}</span>
-      <span>💎 {fmt(rubyOf(state))}</span>
+    <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
+      <span>💰{fmtK(n.treasury)}</span>
+      <span>🪖{fmtK(n.troops)}</span>
+      <span>💵{fmtK(state.player.salary)}</span>
+      <span>💎{fmtK(rubyOf(state))}</span>
     </button>
   );
+  const nationRows: Array<{ icon: string; name: string; where: string; v: string; tone?: string }> = [
+    { icon: '🙂', name: '지지도', where: pres.impeachMs !== null ? '⚠️ 탄핵 위기' : '국민이 나를 지지하는 정도', v: String(Math.round(pres.approval)), tone: moodLabel(pres.approval).tone },
+    { icon: '🤝', name: '신뢰도', where: state.officer.dismissDeadlineMs !== null ? '⚠️ 해임 위기' : '윗선·동료가 나를 믿는 정도', v: String(Math.round(state.officer.trust)), tone: moodLabel(state.officer.trust).tone },
+    { icon: '💰', name: '국방예산', where: '부대 모집·시설·외교에 써요', v: fmt(n.treasury) },
+    { icon: '🪖', name: '병력', where: '우리나라 전체 병력', v: fmt(n.troops) },
+    { icon: '🏙️', name: '도시', where: '우리나라가 가진 도시', v: String(citiesOf(state.world, me.id).length) },
+  ];
   const gear = (
     <button className="icon-btn" onClick={() => go('settings')} aria-label="설정">
       ⚙️
@@ -93,7 +109,19 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           </button>
         )}
         {walletOpen && (
-          <div className="bubble" role="dialog" aria-label="보유 재화" onClick={() => setWalletOpen(false)}>
+          <div className="bubble res-bubble" role="dialog" aria-label="자원 현황" onClick={() => setWalletOpen(false)}>
+            <b className="bubble-head">🏛️ 나라</b>
+            {nationRows.map((r) => (
+              <div key={r.name} className={`bubble-row ${r.tone ?? ''}`}>
+                <span className="bubble-ico">{r.icon}</span>
+                <div>
+                  <b>{r.name}</b>
+                  <small>{r.where}</small>
+                </div>
+                <strong>{r.v}</strong>
+              </div>
+            ))}
+            <b className="bubble-head">👤 내 재화</b>
             {CURRENCIES.map((c) => (
               <div key={c.id} className="bubble-row">
                 <span className="bubble-ico">{c.icon}</span>
@@ -104,6 +132,9 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
                 <strong>{fmt(amount(c.id))}</strong>
               </div>
             ))}
+            <button className="bubble-more" onClick={() => setPresOpen(true)}>
+              📊 국정 현황 자세히
+            </button>
           </div>
         )}
       </header>
@@ -113,18 +144,21 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
       </main>
 
       {overlay}
+      {presOpen && <PresModal state={state} onClose={() => setPresOpen(false)} />}
 
       <nav className="bottom">
-        {NAV.map((n) => (
+        {NAV.map((nv) => (
           <button
-            key={n.screen}
-            className={[screen === n.screen ? 'active' : '', n.main ? 'main' : '', n.locked ? 'locked' : ''].join(' ').trim()}
-            onClick={() => go(n.screen)}
-            aria-label={n.locked ? `${n.label} · ${n.locked}` : n.label}
+            key={nv.screen}
+            className={[screen === nv.screen ? 'active' : '', nv.main ? 'main' : '', nv.locked ? 'locked' : ''].join(' ').trim()}
+            onClick={() => go(nv.screen)}
+            aria-label={nv.locked ? `${nv.label} · ${nv.locked}` : nv.label}
           >
-            <span className="ico">{n.icon}</span>
-            <small>{n.label}</small>
-            {n.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
+            <span className="ico">
+              <UiIcon label={nv.label} emoji={nv.icon} />
+            </span>
+            <small>{nv.label}</small>
+            {nv.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
           </button>
         ))}
       </nav>

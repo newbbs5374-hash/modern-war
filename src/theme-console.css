@@ -819,3 +819,34 @@ select.wide, button.wide { width: 100%; }
 .cloud-pick { display: grid; gap: 8px; margin: 10px 0; }
 .cloud-pick button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
 .cloud-pick small { font-weight: 400; opacity: 0.8; }
+
+/* ───────── 11-24 대장 요청: 본부 화면 정리 ─────────
+   위 자원 칸 줄 없앰 → 맨 위 줄에 주요 자원(k), 누르면 말풍선에 전부.
+   주요 임무는 왼쪽 위(작은 여백), 오른쪽 아이콘은 상자 없이 그림만(오른쪽 위 정렬). */
+.wallet { gap: 3px; padding: 2px 0; flex-shrink: 0; }
+.wallet span { padding: 2px 4px; font-size: 12px; display: inline-flex; align-items: center; gap: 1px; }
+.wallet span:last-child { color: #7cd4ff; }
+.res-bubble { width: 300px; max-height: 70vh; overflow-y: auto; }
+.res-bubble .bubble-row { padding: 4px 6px; }
+.res-bubble .bubble-row.red strong { color: #ff7a6f; }
+.res-bubble .bubble-row.gold strong { color: var(--gold); }
+.res-bubble .bubble-row.green strong { color: #7ee2a8; }
+.bubble-head { display: block; font-size: 11px; color: var(--hud); letter-spacing: 1px; padding: 4px 6px 0; }
+.bubble-more { width: 100%; margin-top: 4px; font-size: 12px; padding: 6px; }
+
+.home-side { top: 6px; left: 6px; }
+.home-side .home-mini.radar { margin-top: 2px; }
+
+.bld-col { top: 6px; right: 4px; gap: 4px; align-items: flex-end; }
+.bld-col .bld { width: 46px; height: auto; background: none; border: 0; border-radius: 0; box-shadow: none; gap: 0; }
+.bld-col .bld-ico { width: 30px; height: 30px; display: grid; place-items: center; font-size: 24px; background: none; border: 0; box-shadow: none; }
+.bld-col .bld-ico .ui-ico { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 2px 3px #000c); }
+.bld-col .bld-ico .ui-emo { filter: drop-shadow(0 2px 3px #000c); line-height: 1; }
+.bld-col .bld small { font-size: 9.5px; color: #fff; font-weight: 700; text-shadow: 0 1px 2px #000, 0 0 4px #000, 0 0 6px #000; }
+.bld-col .bld-badge { top: -3px; right: 4px; }
+
+.bottom .ico { display: grid; place-items: center; height: 28px; }
+.bottom .ico .ui-ico { width: 28px; height: 28px; object-fit: contain; }
+.bottom .ico .ui-emo { line-height: 1; }
+.res-bubble .bubble-row b { font-size: 13px; }
+.res-bubble .bubble-row small { font-size: 10.5px; line-height: 1.25; }

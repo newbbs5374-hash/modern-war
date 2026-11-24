@@ -37,8 +37,7 @@ import { DiplomacyScreen } from './DiplomacyScreen';
 import { DefenseScreen, EconomyScreen, PersonalScreen, SocietyScreen } from './MainScreens';
 import { routeTo } from './nav';
 import { SettingsScreen } from './SettingsScreen';
-import { PresModal } from './PresUI';
-import { moodLabel, presOf } from '../game/approval';
+import { UiIcon } from './uiIcon';
 
 export interface GameActions {
   claim: () => void;
@@ -74,7 +73,6 @@ export function HomeScreen(props: ScreenProps) {
   const me = countryById(state.player.countryId);
   const pending = state.player.pendingSalary;
   const cap = pendingCap(state);
-  const n = state.nations[me.id];
   const wars = COUNTRIES.filter((c) => c.id !== me.id && isAlive(state.world, c.id) && relationOf(state.world, me.id, c.id) === '전쟁');
   const latest = state.world.events.find((e) => e.mine);
   const fallen = !isAlive(state.world, me.id);
@@ -87,7 +85,6 @@ export function HomeScreen(props: ScreenProps) {
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
-  const [presOpen, setPresOpen] = useState(false);
   const [brfOpen, setBrfOpen] = useState(false);
   const [talkOpen, setTalkOpen] = useState(false);
   const [crisisOpen, setCrisisOpen] = useState(false);
@@ -139,39 +136,9 @@ export function HomeScreen(props: ScreenProps) {
       {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
       {ordersOpen && <OrdersModal state={state} apply={actions.apply} onClose={() => setOrdersOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
-      {presOpen && <PresModal state={state} onClose={() => setPresOpen(false)} />}
       {brfOpen && <BriefingModal state={state} onClose={() => setBrfOpen(false)} goTab={goTab} />}
 
-      <div className="home-res">
-        <button className={`ichip pres-chip ${moodLabel(presOf(state).approval).tone ?? ''}`} onClick={() => setPresOpen(true)} aria-label="지지도, 국정 현황 보기">
-          <span>🙂</span>
-          <b>{Math.round(presOf(state).approval)}</b>
-          <small>지지도{presOf(state).impeachMs !== null ? ' ⚠️' : ''}</small>
-        </button>
-        <button className={`ichip pres-chip ${moodLabel(state.officer.trust).tone ?? ''}`} onClick={() => setPresOpen(true)} aria-label="신뢰도, 국정 현황 보기">
-          <span>🤝</span>
-          <b>{Math.round(state.officer.trust)}</b>
-          <small>신뢰도{state.officer.dismissDeadlineMs !== null ? ' ⚠️' : ''}</small>
-        </button>
-        <Chip icon="💰" value={fmt(n.treasury)} label="국방예산" />
-        <Chip icon="🪖" value={fmt(n.troops)} label="병력" />
-        <Chip icon="🏙️" value={citiesOf(state.world, me.id).length} label="도시" />
-      </div>
-
       <div className="home-side">
-        <button className="home-mini radar" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 레이더(세계 지도)">
-          <span className="radar-scope">
-            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
-            <i className="ring r1" />
-            <i className="ring r2" />
-            <i className="cross" />
-            <i className="sweep" />
-          </span>
-          <small className={`radar-label ${wars.length > 0 || tension >= 60 ? 'hot' : ''}`}>
-            ◤ 세계 레이더 · {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
-          </small>
-        </button>
-
         <div className="home-quests">
           <b className="hq-title">📌 주요 임무</b>
           {gstep && !guideOf(state).hidden && (
@@ -261,6 +228,19 @@ export function HomeScreen(props: ScreenProps) {
             </div>
           )}
         </div>
+        <button className="home-mini radar" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 레이더(세계 지도)">
+          <span className="radar-scope">
+            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
+            <i className="ring r1" />
+            <i className="ring r2" />
+            <i className="cross" />
+            <i className="sweep" />
+          </span>
+          <small className={`radar-label ${wars.length > 0 || tension >= 60 ? 'hot' : ''}`}>
+            ◤ 세계 레이더 · {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
+          </small>
+        </button>
+
       </div>
 
       <div className="bld-col">
@@ -271,7 +251,7 @@ export function HomeScreen(props: ScreenProps) {
             onClick={sp.on}
             aria-label={sp.label}
           >
-            <span className="bld-ico">{sp.locked ? '🔒' : sp.icon}</span>
+            <span className="bld-ico">{sp.locked ? <span className="ui-emo">🔒</span> : <UiIcon label={sp.label} emoji={sp.icon} />}</span>
             <small>{sp.label}</small>
             {sp.badge != null && sp.badge !== 0 && !sp.locked && <i className="bld-badge">{sp.badge}</i>}
           </button>
