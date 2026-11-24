@@ -53,11 +53,11 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
 ];
 
 /** 새 큰 탭 안의 작은 탭 이름 */
-export type PersonalTab = 'profile' | 'train' | 'aides' | 'talent' | 'plan';
+export type PersonalTab = 'profile' | 'train' | 'aides' | 'talent' | 'plan' | 'agenda' | 'album';
 export type DefenseTab = 'ops' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
 export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
-export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'press';
-export type EconomyTab = 'vault' | 'res' | 'ind' | 'trade' | 'tax' | 'facall';
+export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'press' | 'opinion';
+export type EconomyTab = 'vault' | 'res' | 'ind' | 'trade' | 'tax' | 'facall' | 'proj';
 
 function remember(key: string, tab: string) {
   try {

@@ -1,5 +1,10 @@
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
 // 지금 있던 기능은 하나도 빼지 않고, 맡은 분야 탭 안의 작은 탭으로 옮겼어요.
+import { AgendaPanel, AlbumPanel, BudgetSeasonCard, CodesPanel, GroupsPanel, ProjectsPanel } from './DomesticUI';
+import { domOf } from '../game/domestic';
+import { canFinish, AGENDA, pledgeSlots } from '../game/agenda';
+import { GROUPS, groupSat } from '../game/groups';
+import { busyProjects } from '../game/projects';
 import { BUILDINGS, type BuildingId } from '../data/economy';
 import { spyOf } from '../game/spy';
 import { civOf } from '../game/civ';
@@ -59,6 +64,8 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'aides', label: '대통령실', icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
+    { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
+    { id: 'album', label: '사진첩', icon: '📸' },
   ];
   const tab = pickTab(tabs, raw);
   return (
@@ -72,6 +79,8 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'aides' && <StaffTab {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
       {tab === 'plan' && <SchedulePanel {...props} />}
+      {tab === 'agenda' && <AgendaPanel {...props} />}
+      {tab === 'album' && <AlbumPanel {...props} />}
     </>
   );
 }
@@ -147,6 +156,7 @@ export function SocietyScreen(props: ScreenProps) {
     { id: 'tech', label: '사회 연구', icon: '📜', badge: !civ.cur.soc && needPick(state) ? '!' : null },
     { id: 'politics', label: '정계', icon: '🗳️', badge: o.chiefRival || o.dismissDeadlineMs !== null || (!assemblyOf(state).vote && !liveLaws(state).length) ? '!' : null },
     { id: 'press', label: '언론·청원', icon: '🎙️', badge: mediaOf(state).petitions.length || (state.worldMs >= mediaOf(state).pressMs ? '!' : null) },
+    { id: 'opinion', label: '여론', icon: '👥', badge: GROUPS.some((g) => groupSat(state, g.id) <= 25) ? '!' : null },
   ];
   const tab = pickTab(tabs, raw);
   return (
@@ -165,6 +175,7 @@ export function SocietyScreen(props: ScreenProps) {
       {tab === 'politics' && (
         <>
           <AssemblyPanel {...props} />
+          <CodesPanel {...props} />
           <RivalsPanel {...props} />
         </>
       )}
@@ -174,6 +185,7 @@ export function SocietyScreen(props: ScreenProps) {
           <PetitionPanel {...props} />
         </>
       )}
+      {tab === 'opinion' && <GroupsPanel {...props} />}
     </>
   );
 }
@@ -188,6 +200,7 @@ export function EconomyScreen(props: ScreenProps) {
     { id: 'ind', label: '산업 시설', icon: '🏭', badge: choreIn(props, ECONOMY_BUILDINGS) ? '!' : null },
     { id: 'trade', label: '무역', icon: '🚢' },
     { id: 'facall', label: '시설 현황', icon: '🏗️', badge: choreDone(props) ? '!' : null },
+    { id: 'proj', label: '국가 사업', icon: '🚄', badge: busyProjects(props.state).some(([, p]) => p.endMs <= props.state.worldMs) ? '!' : null },
   ];
   const tab = pickTab(tabs, raw);
   return (
@@ -197,6 +210,7 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'vault' && <TreasuryPanel {...props} />}
       {tab === 'tax' && (
         <>
+          <BudgetSeasonCard {...props} />
           <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel']} title="기획재정부·고용노동부" />
           <PolicyPanel {...props} />
         </>
@@ -210,6 +224,15 @@ export function EconomyScreen(props: ScreenProps) {
       )}
       {tab === 'trade' && <TradePanel {...props} />}
       {tab === 'facall' && <FacilityPanel {...props} />}
+      {tab === 'proj' && <ProjectsPanel {...props} />}
     </>
   );
+}
+
+/** 국정 과제 배지: 완수할 수 있는 과제 수, 공약을 더 고를 수 있으면 ! */
+function agendaBadge(state: ScreenProps['state']): string | number | null {
+  const a = domOf(state).agenda;
+  if (a.pledges.length < pledgeSlots(state)) return '!';
+  const n = AGENDA.filter((b) => a.pledges.includes(b.id)).flatMap((b) => b.tasks.flat()).filter((t) => !canFinish(state, t.id)).length;
+  return n || null;
 }

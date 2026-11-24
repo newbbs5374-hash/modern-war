@@ -617,3 +617,62 @@ button.on { outline: 1px solid var(--amber); }
 .cl-war.hot { background: rgba(239, 68, 68, 0.22); color: #fca5a5; }
 .cl-war-line { margin-top: 2px; }
 .cl-war-line.hot b { color: #fca5a5; }
+
+/* 내정 확장(11-24): 국정 과제·여론·기본법·국가 사업·특구·예산·사진첩 */
+.dom-ico { font-size: 30px; line-height: 1.1; }
+.dom-warn { color: #ff8a65; }
+.dom-branches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.dom-branch, .dom-group, .dom-code, .dom-proj, .dom-zone { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px; margin: 0; min-height: 0; border: 1px solid var(--hud-dim); background: #465564; position: relative; text-align: center; }
+.dom-branch b, .dom-group b, .dom-code b, .dom-proj b, .dom-zone b { font-size: 12.5px; }
+.dom-branch small, .dom-group small, .dom-code small, .dom-proj small, .dom-zone small { font-size: 10.5px; color: var(--muted); }
+.dom-branch.on, .dom-code.on, .dom-zone.on, .dom-proj.on { border-color: var(--hud); }
+.dom-branch.sel { background: #2f6f7a; }
+.dom-proj.done { border-color: var(--amber); background: #5a5236; }
+.dom-tree { display: flex; flex-direction: column; gap: 0; }
+.dom-tier { position: relative; padding: 4px 0 8px; }
+.dom-tier + .dom-tier::before { content: '▼'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); color: var(--hud); font-size: 11px; }
+.dom-tier.locked { opacity: 0.55; }
+.dom-tier-head { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.dom-tasks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.dom-task { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 5px 3px; border: 1px solid var(--hud-dim); background: #465564; }
+.dom-task.done { border-color: var(--hud); background: #2f5f68; }
+.dom-task b { font-size: 12px; line-height: 1.2; }
+.dom-task small { font-size: 10.5px; color: var(--muted); }
+.dom-task .dom-eff { color: var(--amber); }
+.dom-task button { width: 100%; min-height: 0; padding: 3px 2px; font-size: 11.5px; margin: 0; }
+.dom-task .meter, .dom-group .meter, .dom-proj .meter { width: 100%; }
+.dom-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.dom-group.t-red { border-color: #ef4444; }
+.dom-group.t-green { border-color: var(--hud); }
+.dom-group.t-gold { border-color: var(--amber); }
+.dom-codes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.dom-projects { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.dom-projects .dom-ico { font-size: 26px; }
+.dom-zones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.dom-rows { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; margin: 6px 0; }
+.dom-rows > div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); }
+.dom-rows .dom-sum { border-top: 1px solid var(--hud); border-bottom: 0; font-weight: 600; }
+.dom-acts { display: flex; flex-direction: column; gap: 4px; }
+.dom-opts, .dom-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.dom-opt { display: flex; flex-direction: column; gap: 2px; padding: 6px; border: 1px solid var(--hud-dim); background: #465564; }
+.dom-opt.on { border-color: var(--hud); }
+.dom-opt small { font-size: 11px; }
+.dom-opt button { min-height: 0; padding: 4px; font-size: 11.5px; margin: 2px 0 0; }
+.dom-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; }
+.dom-stage { padding: 5px; border: 1px solid var(--hud-dim); text-align: center; display: flex; flex-direction: column; }
+.dom-stage.on { border-color: var(--amber); }
+.dom-stage.done { border-color: var(--hud); background: #2f5f68; }
+.dom-stage small { font-size: 10.5px; color: var(--muted); }
+.dom-list { padding-left: 16px; font-size: 12.5px; }
+.dom-paper { background: #f4efe2; color: #1f2933; padding: 8px 10px; font-family: 'Noto Serif KR', serif; }
+.dom-paper-head { border-bottom: 3px double #1f2933; font-weight: 700; font-size: 13px; margin-bottom: 4px; letter-spacing: 1px; }
+.dom-paper h3 { font-size: 16px; margin: 4px 0; }
+.dom-paper .small { color: #334155; }
+.dom-album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.dom-shot { display: flex; flex-direction: column; gap: 2px; padding: 2px; margin: 0; min-height: 0; background: #f8fafc; border: 0; color: #1f2933; }
+.dom-shot small { font-size: 10.5px; line-height: 1.2; }
+.dom-scene { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.dom-scene.ph { display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.dom-scene.big { aspect-ratio: 16 / 10; }
+.dom-scene.big.ph { font-size: 60px; }
+select.wide, button.wide { width: 100%; }
