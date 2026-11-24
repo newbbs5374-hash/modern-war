@@ -1,5 +1,6 @@
 // 화면 부품: 팝업 · 도움말(?) · 접기 · 탭 · 아이콘 타일 · 막대
 import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 export function Modal({ title, icon, onClose, children, footer, big }: { title: string; icon?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; big?: boolean }) {
   useEffect(() => {
@@ -7,7 +8,9 @@ export function Modal({ title, icon, onClose, children, footer, big }: { title: 
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [onClose]);
-  return (
+  // 팝업은 늘 화면 맨 위(body)에 그린다. 카드(.card)의 각진 모서리(clip-path) 안에 그리면
+  // 팝업이 카드 크기로 잘려 제목·'시작' 버튼이 안 보였음(11/24 임무 팝업).
+  return createPortal(
     <div className="modal-back" onClick={onClose}>
       <div className={big ? 'modal modal-big' : 'modal'} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
@@ -20,7 +23,8 @@ export function Modal({ title, icon, onClose, children, footer, big }: { title: 
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
