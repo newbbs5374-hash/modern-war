@@ -510,7 +510,7 @@ export function FacilityPanel(props: ScreenProps & { only?: readonly BuildingId[
   );
 }
 
-function FacilityGroup({ state, fac, onPick, only }: ScreenProps & { fac: Facility; onPick: (id: BuildingId) => void; only?: readonly BuildingId[] }) {
+function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fac: Facility; onPick: (id: BuildingId) => void; only?: readonly BuildingId[] }) {
   const e = state.economy;
   const all = BUILDINGS.filter((b) => b.fac === fac);
   const list = all.filter((b) => !only || only.includes(b.id));
@@ -523,6 +523,16 @@ function FacilityGroup({ state, fac, onPick, only }: ScreenProps & { fac: Facili
         </span>
         <small className="muted">경험 {fmt(e.facilities[fac].exp)}</small>
       </div>
+      {list
+        .filter((b) => e.buildings[b.id].buildEndMs > state.worldMs)
+        .map((b) => (
+          <div key={b.id} className="list-row small">
+            <span>
+              🏗️ {b.id} 공사 중 · {timeLeft(e.buildings[b.id].buildEndMs - state.worldMs)}
+            </span>
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'build', fac: b.id }} compact />
+          </div>
+        ))}
       <div className="tiles c3">
         {list.map((b) => {
           const st = e.buildings[b.id];

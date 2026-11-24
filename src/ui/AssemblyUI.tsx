@@ -1,4 +1,5 @@
 // 사회 → 정계: 국회(법안 카드 3장·표결·살아 있는 법) + 재신임 국민투표. 한 화면.
+import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { CONF_FAME, CONF_RUBY, assemblyOf, billChance, billRows, canSubmit, confChance, submitBill } from '../game/assembly';
 import { LAW_DAYS, LAW_MAX, billById, liveLaws, type BillId } from '../game/laws';
@@ -32,9 +33,12 @@ export function AssemblyPanel({ state, actions }: ScreenProps) {
         }
       >
         {a.vote ? (
-          <p className="small asm-vote">
-            🗳️ {billById(a.vote.id).icon} {billById(a.vote.id).name} 표결 중 · {timeLeft(Math.max(0, a.vote.endMs - state.worldMs))} 남음 · 통과 {pct(a.vote.chance)}
-          </p>
+          <>
+            <p className="small asm-vote">
+              🗳️ {billById(a.vote.id).icon} {billById(a.vote.id).name} 표결 중 · {timeLeft(Math.max(0, a.vote.endMs - state.worldMs))} 남음 · 통과 {pct(a.vote.chance)}
+            </p>
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'vote' }} />
+          </>
         ) : (
           <p className="small muted">법안을 하나 골라 국회에 내세요 · 새 카드까지 {timeLeft(Math.max(0, a.offerMs - state.worldMs))}</p>
         )}

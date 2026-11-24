@@ -945,18 +945,49 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 @keyframes rotor-spin { to { transform: rotate(360deg); } }
 
 /* 연구 나무: 선행 → 후속 선 · 3단계 (11-24) */
-.tech-tree { position: relative; }
-.tech-tree .civ-era-row { position: relative; z-index: 1; margin-bottom: 14px; }
-.tech-tree .tiles.c5 { row-gap: 16px; column-gap: 8px; }
-.tech-lines { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: visible; }
-.tech-lines path { fill: none; stroke-width: 2; stroke-linecap: round; }
-.tech-lines path.far { stroke: #9fb0c2; opacity: .35; stroke-dasharray: 3 4; }
-.tech-lines path.open { stroke: var(--amber, #ffb020); opacity: .85; }
-.tech-lines path.done { stroke: #39b3c6; opacity: .9; }
-.tech-lines path.now { stroke: var(--amber, #ffb020); stroke-width: 3; filter: drop-shadow(0 0 3px #ffb020aa); }
-.tt-cell { display: flex; min-width: 0; }
-.tt-cell > .itile { flex: 1; width: 100%; }
-.tech-tree .itile.locked { opacity: 1; filter: brightness(.6) saturate(.6); }
+/* 연구 성좌판 (용흔 성좌 판 참고): 밤하늘 · 빛나는 별 · 확대/이동 */
+.sky-card { padding: 6px; }
+.sky-box { position: relative; height: min(70vh, 600px); overflow: hidden; border-radius: 10px; touch-action: none; user-select: none;
+  background: radial-gradient(ellipse at 50% 50%, #1d3550 0%, #14233a 45%, #0b1424 100%); box-shadow: inset 0 0 0 1px #3fb8c955; }
+.sky-board { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; will-change: transform; }
+.sky-lines { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.sky-dust { fill: #dbe8ff; }
+.sky-ring ellipse { fill: none; stroke: #9fc3e6; stroke-opacity: .16; stroke-width: 1; stroke-dasharray: 2 5; }
+.sky-lines path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-lines path.far { stroke: #9fb0c2; opacity: .3; stroke-dasharray: 3 5; stroke-width: 1.4; }
+.sky-lines path.open { stroke: var(--amber, #ffb020); opacity: .8; }
+.sky-lines path.done { stroke: #5fe0f0; opacity: .95; filter: drop-shadow(0 0 2px #5fe0f0aa); }
+.sky-lines path.now { stroke: var(--amber, #ffb020); stroke-width: 3; filter: drop-shadow(0 0 4px #ffb020cc); }
+.sky-era { position: absolute; transform: translate(-50%, -50%); font-size: calc(9px / max(var(--s, 1), .45)); color: #bcd3ea; opacity: .75; white-space: nowrap; pointer-events: none;
+  background: #0b1424cc; padding: 0 6px; border-radius: 8px; }
+.sky-root { position: absolute; transform: translate(-50%, -50%); width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; align-content: center; gap: 0;
+  background: radial-gradient(circle, #fff6d8 0%, #ffcf5a 35%, #ffb02033 70%, transparent 72%); color: #2a1a00; pointer-events: none; text-align: center; }
+.sky-root i { font-style: normal; font-size: 22px; line-height: 1; }
+.sky-root b { font-size: 11px; line-height: 1.1; }
+.sky-root small { font-size: 10px; }
+.sky-star { position: absolute; transform: translate(-50%, -50%); width: 40px; height: 40px; padding: 0; border: 0; background: none; cursor: pointer; }
+.sky-orb { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: #0f1b2c; border: 2px solid #7f93a8;
+  box-shadow: 0 0 0 2px #0b1424; overflow: visible; }
+.sky-orb > img, .sky-orb .art-ico { width: 34px; height: 34px; object-fit: contain; border-radius: 50%; }
+.sky-orb { font-size: 17px; line-height: 1; }
+.sky-eu { position: absolute; right: -6px; top: -7px; font-style: normal; font-size: 11px; }
+.sky-star .stage-pips { position: absolute; left: 50%; bottom: -4px; margin: 0; transform: translateX(-50%); }
+.sky-lab { position: absolute; left: 50%; top: calc(100% + 5px); transform: translateX(-50%); white-space: nowrap; font-size: calc(9.5px / max(var(--s, 1), .45)); line-height: 1.15; color: #e6eef8;
+  text-shadow: 0 0 3px #0b1424, 0 0 3px #0b1424, 0 1px 2px #000; pointer-events: none; font-weight: 600; }
+.sky-star.lab-up .sky-lab { top: auto; bottom: calc(100% + 3px); }
+.sky-lab small { color: var(--amber, #ffb020); font-size: .92em; }
+.sky-star.s-done .sky-orb { border-color: #5fe0f0; background: #12324a; box-shadow: 0 0 0 2px #0b1424, 0 0 10px 2px #5fe0f0aa; }
+.sky-star.s-now .sky-orb { border-color: var(--amber, #ffb020); box-shadow: 0 0 0 2px #0b1424, 0 0 14px 4px #ffb020bb; animation: skyPulse 1.6s ease-in-out infinite; }
+.sky-star.s-now { z-index: 2; }
+.sky-star.s-open .sky-orb { border-color: #ffd27a; box-shadow: 0 0 0 2px #0b1424, 0 0 6px 1px #ffd27a77; }
+.sky-star.s-far .sky-orb { filter: brightness(.55) saturate(.4); border-style: dashed; }
+.sky-star.s-far .sky-lab { opacity: .7; }
+@keyframes skyPulse { 50% { box-shadow: 0 0 0 2px #0b1424, 0 0 20px 7px #ffb020dd; } }
+.sky-zoom { position: absolute; right: 6px; top: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 3; }
+.sky-zoom button { width: 30px; height: 30px; padding: 0; border-radius: 8px; background: #0b1424cc; color: #e6eef8; border: 1px solid #3fb8c988; font-size: 16px; }
+.sky-legend { position: absolute; left: 6px; bottom: 5px; right: 6px; font-size: 9.5px; color: #bcd3ea; pointer-events: none; z-index: 3; }
+.sky-legend span { margin-right: 6px; }
+.sky-legend .lg-done { color: #5fe0f0; } .sky-legend .lg-now { color: #ffb020; } .sky-legend .lg-open { color: #ffd27a; } .sky-legend .lg-far { color: #8899aa; }
 .stage-pips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
 .itile .stage-pips { margin: 2px 0 0; }
 .stage-pips i { width: 7px; height: 7px; border-radius: 50%; background: #2c3640; border: 1px solid #9fb0c2; }
@@ -989,3 +1020,7 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .city-scroll { overflow: hidden; border-radius: 10px; }
 .city-scroll.zoomed { overflow: auto; max-height: 380px; -webkit-overflow-scrolling: touch; }
 .city-scroll.zoomed .city-view { margin: 0; }
+/* 가속 버튼(11-24): 연구 칸·연구 창 */
+.civ-cur-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.civ-cur-wrap .boost-bar.compact { justify-content: flex-end; }
+.tech-now { display: flex; flex-direction: column; gap: 4px; width: 100%; }

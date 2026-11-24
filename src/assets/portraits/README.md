@@ -47,3 +47,8 @@
 - 장 수·배치: `src/data/faces.ts`(FACE_PLAN). 명령문: `npm run faces` → `docs/face-country-prompts.md`.
 - 3×3 그림 자르기: `python3 scripts/cut_faces.py <sheet 그림 폴더>` → 이 폴더에 바로 저장 + 너무 닮은 쌍 알려 줌.
 - 옛 지역 묶음(`face-ea-…`)은 나라별 그림이 없을 때만 씀.
+
+## 내 지도자 얼굴 8가지(11-24)
+- player-m30 · player-m40 · player-m50 · player-m60 · player-f30 · player-f40 · player-f50 · player-f60 (.webp, 512×512)
+- 시작 화면 "얼굴 고르기"와 설정 > 내 얼굴 바꾸기에서 골라요. 없으면 src/data/looks.ts LOOK_TEMP의 임시 그림.
+- 명령문: 프로젝트 파일 guides/player-look-prompts.md

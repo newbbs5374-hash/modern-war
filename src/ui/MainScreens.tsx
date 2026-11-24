@@ -24,7 +24,9 @@ import { mediaOf } from '../game/media';
 import { assemblyOf } from '../game/assembly';
 import { liveLaws } from '../game/laws';
 import { scheduleOf } from '../game/schedule';
-import { cabinetOf } from '../game/cabinet';
+import { cabinetOf, postCount } from '../game/cabinet';
+import { POSTS } from '../data/staff';
+import { StaffPanel } from './StaffUI';
 
 /** 시설 15개를 효과가 닿는 분야로 나눔 */
 export const DEFENSE_BUILDINGS: readonly BuildingId[] = ['철도망', '군항', '공군기지', '방공포대', '훈련소', '비축창고', '정보본부', '우주기지'];
@@ -49,13 +51,12 @@ function pickTab<T extends string>(tabs: TabDef<T>[], v: T): T {
 export function PersonalScreen(props: ScreenProps) {
   const { state } = props;
   const o = state.officer;
-  const r = state.player.rankIndex;
   const [raw, setTab] = useTab<PersonalTab>('personal', 'profile');
   const errandsDone = o.aides.filter((a) => a.errand && state.worldMs >= a.errand.endMs).length;
   const tabs: TabDef<PersonalTab>[] = [
     { id: 'profile', label: '프로필', icon: '🪪' },
     { id: 'train', label: '훈련', icon: '🎯' },
-    { id: 'aides', label: `참모 ${o.aides.length}/${aideSlots(r)}`, icon: '🧑‍✈️', badge: errandsDone || null },
+    { id: 'aides', label: '대통령실', icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
   ];
@@ -68,9 +69,30 @@ export function PersonalScreen(props: ScreenProps) {
         <LeaderCard {...props} />
       )}
       {tab === 'train' && <TrainingScreen {...props} />}
-      {tab === 'aides' && <AidesPanel {...props} />}
+      {tab === 'aides' && <StaffTab {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
       {tab === 'plan' && <SchedulePanel {...props} />}
+    </>
+  );
+}
+
+/** 개인 → 대통령실(11-24): 대통령실 참모·기관장 | 수행 부관(전투 분대원, 지금 부관 그대로) */
+function StaffTab(props: ScreenProps) {
+  const o = props.state.officer;
+  const [v, setV] = useTab<'staff' | 'aide'>('staff-view', 'staff');
+  const errandsDone = o.aides.filter((a) => a.errand && props.state.worldMs >= a.errand.endMs).length;
+  return (
+    <>
+      <div className="seg cab-seg">
+        <button className={v === 'staff' ? 'on' : ''} onClick={() => setV('staff')}>
+          🏢 참모·기관장 {postCount(cabinetOf(props.state))}/{POSTS.length}
+        </button>
+        <button className={v === 'aide' ? 'on' : ''} onClick={() => setV('aide')}>
+          🧑‍✈️ 수행 부관 {o.aides.length}/{aideSlots(props.state.player.rankIndex)}
+          {errandsDone ? ' ❗' : ''}
+        </button>
+      </div>
+      {v === 'staff' ? <StaffPanel {...props} /> : <AidesPanel {...props} />}
     </>
   );
 }
@@ -133,7 +155,7 @@ export function SocietyScreen(props: ScreenProps) {
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'mins' && (
         <>
-          <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis']} title="사회 부처" />
+          <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis', 'moj', 'moe']} title="사회 부처" />
           <FacilityPanel {...props} only={SOCIETY_BUILDINGS} />
         </>
       )}
@@ -175,14 +197,14 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'vault' && <TreasuryPanel {...props} />}
       {tab === 'tax' && (
         <>
-          <MinistryCards state={props.state} actions={props.actions} ids={['mof']} title="기획재정부" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel']} title="기획재정부·고용노동부" />
           <PolicyPanel {...props} />
         </>
       )}
       {tab === 'res' && <ResourcePanel {...props} />}
       {tab === 'ind' && (
         <>
-          <MinistryCards state={props.state} actions={props.actions} ids={['moti']} title="산업자원부" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['moti', 'molit', 'mofs']} title="산업·국토·해양 부처" />
           <FacilityPanel {...props} only={ECONOMY_BUILDINGS} />
         </>
       )}

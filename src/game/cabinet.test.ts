@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { newGame, advance, type GameState } from './state';
 import {
   appointMinister,
@@ -11,12 +11,21 @@ import {
   recruit,
   recruitCost,
   cabBudget,
+  HEARING,
 } from './cabinet';
 import { appointPersonGeneral, bestFor, cabinetTick, hearingChance, startTask } from './cabinetOps';
 import { generalSlots } from '../data/officers';
 
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e9 } } });
+
+// 청문회 시험은 시험판 생략(HEARING.skip)을 끄고 해요
+beforeAll(() => {
+  HEARING.skip = false;
+});
+afterAll(() => {
+  HEARING.skip = true;
+});
 
 describe('인물·부처', () => {
   it('새 게임에 사람이 100명 가까이, 이름은 겹치지 않음', () => {

@@ -1,5 +1,6 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
 import { salaryPerDay } from '../game/state';
+import { playerKeys } from '../data/looks';
 import { originFits, originOf } from '../game/origin';
 import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
@@ -59,7 +60,7 @@ import { PersonFace } from './People';
 import { AideCareer, BondLoyalty } from './AideCareer';
 import { AidePickModal } from './AidePick';
 import { dismissAide } from '../game/aidePick';
-import { FIELD_ICON, branchSummary, generalEffectText, loyaltyOf } from '../game/loyal';
+import { FIELD_ICON, GENERAL_TITLE, branchSummary, generalEffectText, loyaltyOf, type GeneralField } from '../game/loyal';
 import { BLOCK_AT, PLOT_MIN, ROLE_INFO } from '../game/rivals';
 import { TrainIcon } from './iconArt';
 import { TitleBox } from './TitleUI';
@@ -314,7 +315,7 @@ export function LeaderCard(props: ScreenProps) {
       )}
       <div className="lc-card">
         <div className="lc-photo">
-          <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+          <PersonFace who={{ kind: 'player' }} keys={playerKeys(state.player)} fallback={RANK_ICON[r]} />
           <span className="lc-step">
             {tier + 1}/{TITLES.length}
           </span>
@@ -641,7 +642,7 @@ export function GeneralsPanel({ state, actions }: ScreenProps) {
           </span>
           <span className="li-main">
             <b>
-              {g.name} <small className="muted">{g.field} · {g.style}</small>
+              {g.name} <small className="muted">{GENERAL_TITLE[g.field as GeneralField] ?? g.field} · {g.style}</small>
             </b>
             <small>
               능력 {g.skill} · 충성 {Math.round(g.loyalty)} · {g.from}

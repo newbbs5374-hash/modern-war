@@ -16,11 +16,12 @@ import { civOf, debugAllResearch, debugCouncil, debugFinishDistricts, debugFinis
 import { Card, HOUR, fmt } from './common';
 import { Modal, Tabs, Tile } from './kit';
 import { Flag } from './flag';
-import { PortraitList } from './Portrait';
+import { Face, PortraitList } from './Portrait';
+import { LEADER_LOOKS, lookName, playerKeys } from '../data/looks';
 import { FieldArtList, IconArtList } from './FieldArtList';
 import type { ScreenProps } from './screens';
 
-type Pop = null | 'code' | 'time' | 'ops' | 'art' | 'reset';
+type Pop = null | 'code' | 'time' | 'ops' | 'art' | 'reset' | 'look';
 type ArtTab = 'face' | 'field' | 'icon';
 
 /** 켜짐/꺼짐 줄 */
@@ -99,6 +100,14 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             on={civ.council.on}
             onClick={() => actions.apply((s) => setCouncilOn(s, !civOf(s).council.on))}
           />
+          <button className="set-row" onClick={() => setPop('look')}>
+            <span className="set-ico">🙂</span>
+            <span className="set-txt">
+              <b>내 얼굴 바꾸기</b>
+              <small>{state.player.look ? lookName(state.player.look) : '기본 얼굴'} · 남·여 × 30~60대 8가지</small>
+            </span>
+            <span className="set-ico">▸</span>
+          </button>
           <SwitchRow icon="📘" name="첫 판 안내" sub="본부에 다음 할 일 안내를 띄워요" on={!guideHidden} onClick={() => actions.apply((s) => hideGuide(s, !guideOf(s).hidden))} />
         </div>
       </Card>
@@ -122,6 +131,25 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         🔄 처음부터 새로 시작
       </button>
       <p className="set-foot small muted">현대전 사령관 · 시험판</p>
+
+      {pop === 'look' && (
+        <Modal title="내 얼굴 바꾸기" icon="🙂" onClose={close}>
+          <div className="look-grid">
+            {LEADER_LOOKS.map((l) => (
+              <button
+                key={l}
+                className={`look-tile ${state.player.look === l ? 'on' : ''}`}
+                onClick={() => (actions.apply((s) => ({ ...s, player: { ...s.player, look: l } })), say(`얼굴을 ${lookName(l)}(으)로 바꿨어요.`), close())}
+              >
+                <span className="look-photo">
+                  <Face keys={playerKeys({ countryId: state.player.countryId, look: l })} fallback={l[0] === 'm' ? '👨' : '👩'} />
+                </span>
+                <small>{lookName(l)}</small>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
 
       {pop === 'code' && (
         <Modal title="저장 코드" icon="📤" onClose={close}>

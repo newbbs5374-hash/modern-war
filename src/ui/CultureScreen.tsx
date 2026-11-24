@@ -1,4 +1,5 @@
 // 🎭 문화 탭(11-23): 시설 · 걸작 · 행사 · 세계 · 승리
+import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { Card, fmt } from './common';
 import { FLAG } from './flag';
@@ -104,6 +105,7 @@ function VenuePanel({ state, actions }: ScreenProps) {
               🏗️ {venueById(b.venue).levels[b.to - 1]} ({b.to}단계)
             </span>
             <span className="muted">{timeLeft(b.endMs - state.worldMs)}</span>
+            <BoostBar state={state} apply={actions.apply} target={{ kind: 'venue', venue: b.venue }} compact />
           </div>
         ))}
         <div className="tiles c3 cul-tiles">

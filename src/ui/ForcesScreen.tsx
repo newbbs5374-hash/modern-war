@@ -6,7 +6,8 @@ import { countryById } from '../data/world';
 import { canProduce, produce, buildMs, QUEUE_MAX, queueName, crystalReady } from '../game/economy';
 import { exclusiveByName, exclusiveLock, specialsFor, specialsOf, type SpecialDef } from '../data/specials';
 import { unitTechLock } from '../game/civ';
-import { boostsOf, boostsToFinish, useBoost } from '../game/boost';
+import { boostPrice, boostsAffordable, boostsToFinish, useBoost } from '../game/boost';
+import { priceText } from './BoostBar';
 import { fmt } from './common';
 import { UnitIcon } from './iconArt';
 import { Chip, Help, Meter, useTab } from './kit';
@@ -94,11 +95,11 @@ export function ForcesScreen(props: ScreenProps) {
             </button>
             <button
               className="gold"
-              disabled={!first || boostsOf(state) < 1}
-              title={first ? `가속권 ${need}장으로 바로 끝내기` : '모집 중일 때 쓸 수 있어요'}
-              onClick={() => first && actions.apply((s) => useBoost(s, { kind: 'queue', id: first.id }, Math.min(need, boostsOf(s))))}
+              disabled={!first || boostsAffordable(state) < 1}
+              title={first ? (boostsAffordable(state) < need ? `가속권·루비가 모자라 할 수 있는 만큼만 줄여요` : `가속권 ${need}장(모자라면 루비)으로 바로 끝내기`) : '모집 중일 때 쓸 수 있어요'}
+              onClick={() => first && actions.apply((s) => useBoost(s, { kind: 'queue', id: first.id }, need))}
             >
-              ⚡{first ? <small>🎫{need}</small> : null}
+              ⚡{first ? <small>{priceText(boostPrice(state, need))}</small> : null}
             </button>
           </span>
         )}

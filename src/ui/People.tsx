@@ -1,6 +1,7 @@
 // 인물 사진을 누르면: ① 큰 초상화 팝업 → ② 인물 창(정보 · 스탯 · 관계 · 교류).
 // 용흔의 서약자 정보창처럼 위에 큰 사진·이름·등급, 아래 탭. 사진 칸은 Portrait.tsx 의 Face를 그대로 씀.
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { playerKeys } from '../data/looks';
 import { AIDE_EFFECT } from '../battle/grid';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { STAT_IDS, statCap, statExpNeed } from '../data/officers';
@@ -37,7 +38,7 @@ import { timeLeft } from './officerScreens';
 import { Face, aideKeys } from './Portrait';
 import type { GameActions } from './screens';
 import { AideCareer, BondLoyalty } from './AideCareer';
-import { bondStage, generalEffectText, loyaltyMood, loyaltyOf } from '../game/loyal';
+import { GENERAL_TITLE, bondStage, generalEffectText, loyaltyMood, loyaltyOf, type GeneralField } from '../game/loyal';
 import { BLOCK_AT, PLOT_MIN, ROLE_INFO, influenceOf, roleOf, watching, wooChance } from '../game/rivals';
 
 /* ───────── 어디서든 인물 열기 ───────── */
@@ -113,7 +114,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
       return {
         name: s.player.name,
         title: `${countryById(me).name} · ${TITLES[s.player.title ?? 0].name}`,
-        keys: ['player', `leader-${me}`],
+        keys: playerKeys(s.player),
         fallback: <Flag id={me} />,
         tags: [`호칭 ${(s.player.title ?? 0) + 1}/${TITLES.length}`, `봉급 시간당 ${Math.round(salaryPerDay(s))}`],
         intro: `${countryById(me).name}을 이끄는 지도자. 훈련·임무로 스탯을 키우고, 부관·장군과 함께 나라를 지켜요.`,
@@ -135,7 +136,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
       const g = o.generals.find((x) => x.id === p.id)!;
       return {
         name: g.name,
-        title: `${g.field} 장군 · ${g.style}`,
+        title: `${GENERAL_TITLE[g.field as GeneralField] ?? `${g.field} 장군`} · ${g.style}`,
         keys: [g.faceKey, `aide-${g.name}`],
         fallback: '⭐',
         tags: [`능력 ${g.skill}/10`, `충성 ${Math.round(g.loyalty)}`, g.from],
@@ -336,7 +337,7 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
           const g = o.generals.find((x) => x.id === who.id)!;
           return (
             <div className="pw-grid">
-              <Row k="분야" v={g.field} />
+              <Row k="직함" v={GENERAL_TITLE[g.field as GeneralField] ?? g.field} />
               <Row k="성향" v={g.style} />
               <Row k="들어온 길" v={g.from} />
               <Row k="도시 방어" v={`+${(g.skill * 1.5).toFixed(1)}%`} />
