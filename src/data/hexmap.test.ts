@@ -11,7 +11,7 @@ describe('육각 타일 지도', () => {
     expect(citySizes(2)).toEqual([3, 2]);
   });
   it('나라 타일 수 = 도시 묶음 합(겹침 없음), 표와 같음', () => {
-    const want: Record<string, number> = { ru: 472, us: 398, cn: 398, in: 263, ir: 226, tr: 135, ua: 135, jp: 98, de: 98, uk: 98, kr: 520, kp: 98, il: 98 };
+    const want: Record<string, number> = { ru: 472, us: 398, cn: 398, in: 263, ir: 226, tr: 135, ua: 135, jp: 98, de: 98, uk: 98, kr: 629, kp: 98, il: 98 };
     for (const c of COUNTRIES) {
       const n = TILES.filter((t) => t.home === c.id).length;
       expect(n).toBe(want[c.id]);

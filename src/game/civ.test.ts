@@ -20,7 +20,7 @@ const rich = (s: GameState): GameState => ({
 
 describe('연구', () => {
   it('3단계 연구: 바꿔도 끝낸 단계는 남고, 옛 저장(stage 없음)도 이어서 됨', () => {
-    let s = newGame('t', 'kr', 0, { seed: 5 });
+    let s = newGame('t', 'uk', 0, { seed: 5 });
     s = C.startResearch(s, 'm-rifle');
     s = advance(s, 1.1 * H);
     expect(C.techStage(s, 'm-rifle')).toBe(1);

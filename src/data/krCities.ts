@@ -1,4 +1,4 @@
-// 대한민국 10개 도시의 실제 정보(11/24 대장 요청 "각 도시마다 더 세밀한 정보, 실제와 이질감 없게").
+// 대한민국 11개 도시의 실제 정보(11/24 대장 요청 "각 도시마다 더 세밀한 정보, 실제와 이질감 없게").
 // 인구·면적은 2024년 무렵 주민등록·통계 기준 어림값. 시설 위치는 실제 경도·위도(도시 화면에 그 자리로 찍힘).
 // 숫자 효과는 시험판용(balance에서 맞춤).
 
@@ -57,10 +57,22 @@ export interface Landmark {
   kind: MarkKind;
   /** [경도, 위도] */
   at: [number, number];
-  /** 지금 실제 발전 단계(1~5) */
+  /** 지금 실제 발전 단계(1~5). 고향 전용 시설은 0(빈 터)에서 시작 */
   lv: number;
   note: string;
+  /** 고향 전용 시설(11-24): 직접 지어 max 단계까지. 단계마다 eff가 더해짐(MARK_SCALE 안 곱함) */
+  home?: { max: number; eff: CityEff };
 }
+
+/** 대장 고향 도시(11-24 대장: "익산·여수·순천은 고향이야. 더 꾸며줘") */
+export const HOMETOWNS = ['익산', '여수', '순천'] as const;
+export const isHometown = (name: string) => (HOMETOWNS as readonly string[]).includes(name);
+/** 고향 도시 민심 덤 */
+export const HOMETOWN_LOYALTY = 10;
+/** 고향 세 도시를 모두 가지면: 전라 고향 벨트 */
+export const HOME_BELT: CityEff = { budget: 0.03, navy: 0.05 };
+/** 고향 전용 시설 짓기·올리기 값(지금 단계 lv → 다음 단계) */
+export const homeBuildCost = (lv: number) => ({ cost: 4000 * (lv + 1), res: { 강철: 3 * (lv + 1) } as Record<string, number>, hours: 2 * (lv + 1) });
 
 export interface KrCityInfo {
   /** 별명 */
@@ -245,6 +257,17 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
       { id: 'rsu', name: '여수공항', kind: 'airport', at: [127.617, 34.842], lv: 2, note: '' },
       { id: 'expo', name: '여수 엑스포 해양공원', kind: 'tourism', at: [127.745, 34.753], lv: 4, note: '' },
       { id: 'jinnam', name: '진남관(전라좌수영)', kind: 'culture', at: [127.735, 34.745], lv: 3, note: '이순신 장군 본영' },
+      { id: 'odongdo', name: '오동도', kind: 'nature', at: [127.766, 34.745], lv: 4, note: '동백꽃 섬·방파제 산책길' },
+      { id: 'hyangiram', name: '향일암', kind: 'culture', at: [127.8, 34.592], lv: 3, note: '돌산 끝 해돋이 암자' },
+      { id: 'dolsan', name: '돌산대교·해상케이블카', kind: 'tourism', at: [127.735, 34.727], lv: 4, note: '여수 밤바다 야경' },
+      { id: 'yisunsin', name: '이순신대교', kind: 'port', at: [127.71, 34.905], lv: 3, note: '광양만을 잇는 현수교' },
+      { id: 'kcga', name: '해양경찰교육원', kind: 'navy', at: [127.61, 34.75], lv: 3, note: '해경 간부 교육' },
+      { id: 'geomundo', name: '거문도', kind: 'navy', at: [127.31, 34.03], lv: 2, note: '1885 거문도 사건. 남해 길목 섬' },
+      { id: 'h-fire', name: '밤바다 불꽃 축제장', kind: 'tourism', at: [127.75, 34.74], lv: 0, note: '고향 전용 · 여수 밤바다 불꽃놀이', home: { max: 3, eff: { budget: 0.006, loyaltyAll: 1 } } },
+      { id: 'h-navyfwd', name: '남해 해군 전진기지', kind: 'navy', at: [127.66, 34.69], lv: 0, note: '고향 전용 · 남해 함대 정박지', home: { max: 3, eff: { navy: 0.02 } } },
+      { id: 'h-oil', name: '전략 석유 비축기지', kind: 'energy', at: [127.7, 34.87], lv: 0, note: '고향 전용 · 지하 원유 저장 동굴', home: { max: 3, eff: { res: 0.01 } } },
+      { id: 'h-kcga', name: '해경 교육원 확장', kind: 'navy', at: [127.6, 34.77], lv: 0, note: '고향 전용 · 섬 지키는 해경', home: { max: 3, eff: { navy: 0.01, mission: 0.005 } } },
+      { id: 'h-watch', name: '거문도 해양 감시소', kind: 'intel', at: [127.32, 34.05], lv: 0, note: '고향 전용 · 남해 레이더', home: { max: 3, eff: { mission: 0.008 } } },
     ],
   },
   순천: {
@@ -261,8 +284,45 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
       { id: 'scnu', name: '순천대학교', kind: 'univ', at: [127.48, 34.97], lv: 2, note: '' },
       { id: 'haeryong', name: '해룡 산업단지', kind: 'industry', at: [127.55, 34.92], lv: 2, note: '광양제철소 협력' },
       { id: 'seonam', name: '선암사·송광사', kind: 'culture', at: [127.33, 34.99], lv: 3, note: '천년 고찰' },
+      { id: 'scstation', name: '순천역', kind: 'port', at: [127.502, 34.945], lv: 3, note: '전라선·경전선이 만나는 역' },
+      { id: 'yulchon', name: '율촌 산업단지', kind: 'industry', at: [127.58, 34.88], lv: 3, note: '해룡면. 금속·기계' },
+      { id: 'dramaset', name: '순천 드라마촬영장', kind: 'culture', at: [127.52, 34.952], lv: 3, note: '1960~80년대 거리 재현' },
+      { id: 'crane', name: '흑두루미 마을', kind: 'nature', at: [127.47, 34.87], lv: 4, note: '천연기념물 겨울 철새' },
+      { id: 'jorye', name: '조례호수공원', kind: 'nature', at: [127.53, 34.96], lv: 2, note: '' },
+      { id: 'jobworld', name: '순천만 잡월드', kind: 'univ', at: [127.495, 34.92], lv: 2, note: '어린이 직업 체험관' },
+      { id: 'h-garden', name: '국가정원 확장', kind: 'tourism', at: [127.49, 34.935], lv: 0, note: '고향 전용 · 정원 박람회', home: { max: 3, eff: { loyaltyAll: 1, budget: 0.004 } } },
+      { id: 'h-eco', name: '생태 연구소', kind: 'lab', at: [127.52, 34.89], lv: 0, note: '고향 전용 · 습지·기후 연구', home: { max: 3, eff: { research: 0.04 } } },
+      { id: 'h-hosp', name: '순천 의대 병원', kind: 'univ', at: [127.47, 34.98], lv: 0, note: '고향 전용 · 전남 동부 거점 병원', home: { max: 3, eff: { loyalty: 2, army: 0.005 } } },
+      { id: 'h-rail', name: '남해안 철도 교차역', kind: 'port', at: [127.51, 34.94], lv: 0, note: '고향 전용 · 보급 철도', home: { max: 3, eff: { army: 0.01, res: 0.004 } } },
+      { id: 'h-film', name: '영상 단지', kind: 'culture', at: [127.535, 34.95], lv: 0, note: '고향 전용 · 드라마·영화 촬영', home: { max: 3, eff: { loyaltyAll: 1 } } },
     ],
     rivers: [{ name: '동천', w: 1, pts: [[127.47, 35.02], [127.485, 34.97], [127.495, 34.93], [127.505, 34.9], [127.51, 34.87]] }],
+  },
+  익산: {
+    nick: '백제의 왕도 · 보석과 식품의 도시',
+    pop: 27,
+    area: 507,
+    admin: '시 · 1읍 14면 14동',
+    industry: ['식품', '보석 가공', '철도 물류', '농업'],
+    trait: { name: '백제 왕도', icon: '🛕', text: '모든 우리 도시 민심 +1 · 육군 모집 +1%', eff: { loyaltyAll: 1, army: 0.01 } },
+    landmarks: [
+      { id: 'mireuksa', name: '미륵사지 석탑', kind: 'culture', at: [127.032, 36.012], lv: 5, note: '백제역사유적지구(세계유산)' },
+      { id: 'wanggung', name: '왕궁리 유적', kind: 'culture', at: [127.054, 35.973], lv: 4, note: '백제 무왕의 궁궐 터' },
+      { id: 'foodcl', name: '국가식품클러스터', kind: 'industry', at: [127.03, 35.99], lv: 4, note: '왕궁면. 식품 기업 단지' },
+      { id: 'iksanst', name: '익산역', kind: 'port', at: [126.946, 35.94], lv: 4, note: '호남·전라·장항선이 만나는 KTX역' },
+      { id: 'wku', name: '원광대학교', kind: 'univ', at: [126.958, 35.968], lv: 3, note: '' },
+      { id: 'jewel', name: '보석박물관·보석 가공단지', kind: 'bank', at: [127.03, 35.98], lv: 3, note: '귀금속 가공 특구' },
+      { id: 'nco', name: '육군부사관학교', kind: 'army', at: [127.06, 36.08], lv: 4, note: '부사관 양성' },
+      { id: 'ind2', name: '익산 제2산업단지', kind: 'industry', at: [126.99, 35.93], lv: 3, note: '' },
+      { id: 'iksangov', name: '익산시청', kind: 'gov', at: [126.957, 35.948], lv: 3, note: '' },
+      { id: 'mangyeong', name: '만경강 들판', kind: 'nature', at: [126.93, 35.88], lv: 3, note: '호남평야 곡창' },
+      { id: 'h-baekje', name: '백제 왕도 복원', kind: 'culture', at: [127.045, 35.98], lv: 0, note: '고향 전용 · 왕궁·미륵사 복원, 서동축제', home: { max: 3, eff: { loyaltyAll: 1, budget: 0.004 } } },
+      { id: 'h-jewel', name: '보석 가공 특구', kind: 'bank', at: [127.0, 35.97], lv: 0, note: '고향 전용 · 귀금속 수출', home: { max: 3, eff: { budget: 0.008 } } },
+      { id: 'h-food', name: '식품클러스터 확장', kind: 'industry', at: [127.04, 35.995], lv: 0, note: '고향 전용 · 군 전투식량 공장', home: { max: 3, eff: { res: 0.006, loyalty: 2 } } },
+      { id: 'h-rail', name: '호남 철도 허브', kind: 'port', at: [126.94, 35.95], lv: 0, note: '고향 전용 · 호남 보급 중심', home: { max: 3, eff: { army: 0.01, res: 0.004 } } },
+      { id: 'h-nco', name: '부사관학교 확장', kind: 'army', at: [127.07, 36.07], lv: 0, note: '고향 전용 · 간부 양성', home: { max: 3, eff: { army: 0.015, mission: 0.004 } } },
+    ],
+    rivers: [{ name: '만경강', w: 1.2, pts: [[127.1, 35.92], [127.03, 35.9], [126.97, 35.885], [126.9, 35.88], [126.85, 35.87]] }],
   },
 };
 

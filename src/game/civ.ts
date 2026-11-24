@@ -70,7 +70,7 @@ import {
 import { BASIC_RES, CITY_RES, COMPOSITE_PER_INDUSTRY, LUXURIES, PROCESSED, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
 import { HEX_DIRS, PIONEER_ISLANDS, hexKey } from '../data/hexmap';
 import { cityMap, isSeaCell, type CityTile } from '../data/cityMap';
-import { CITY_EFF_CAP, KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, type CityEff, type Landmark } from '../data/krCities';
+import { CITY_EFF_CAP, HOME_BELT, HOMETOWNS, HOMETOWN_LOYALTY, KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, homeBuildCost, isHometown, type CityEff, type Landmark } from '../data/krCities';
 import { COUNTRIES, countryById } from '../data/world';
 import { facBonus } from './facility';
 import { Rng } from './rng';
@@ -1002,6 +1002,7 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   let house = 0;
   for (const d of cc.districts) if (d.id === 'housing' && d.doneMs <= s.worldMs) house += 10 + 2 * adjCount(cityId, d.tile, 'housing', cc);
   if (house) rows.push(['🏘️ 주거 구역', house]);
+  if (isHometown(c.name) && s.world.owner[cityId] === me) rows.push(['🏡 대장의 고향', HOMETOWN_LOYALTY]);
   const own = Math.round(cityOwnLoyalty(s, cityId) * 10) / 10;
   if (own) rows.push(['🏙️ 도시 특성·실제 시설', own]);
   const all = Math.round(cityEffTotal(s).loyaltyAll * 10) / 10;
@@ -1114,6 +1115,13 @@ export function markLevel(s: GameState, cityId: string, id: string): number {
   return st.doneMs <= s.worldMs ? st.lv : st.lv - 1;
 }
 export const markUpCost = (lv: number) => ({ cost: 2500 * lv, res: { 강철: 2 * lv } as Partial<Record<Res, number>>, hours: 1.5 * lv });
+/** 시설 하나의 다음 단계 값(고향 전용 시설은 빈 터부터 짓는 값) */
+export function markCostOf(cityId: string, id: string, lv: number): { cost: number; res: Partial<Record<Res, number>>; hours: number } {
+  const lm = cityMarks(cityId).find((x) => x.id === id);
+  return lm?.home ? (homeBuildCost(lv) as { cost: number; res: Partial<Record<Res, number>>; hours: number }) : markUpCost(lv);
+}
+/** 시설 최고 단계 */
+export const markMax = (cityId: string, id: string) => cityMarks(cityId).find((x) => x.id === id)?.home?.max ?? MARK_MAX;
 export function canUpgradeMark(s: GameState, cityId: string, id: string): string | null {
   const lm = cityMarks(cityId).find((x) => x.id === id);
   if (!lm) return '없는 시설이에요';
@@ -1121,8 +1129,8 @@ export function canUpgradeMark(s: GameState, cityId: string, id: string): string
   const st = civOf(s).cities[cityId]?.marks?.[id];
   if (st && st.doneMs > s.worldMs) return '발전 공사 중이에요';
   const lv = markLevel(s, cityId, id);
-  if (lv >= MARK_MAX) return '가장 높은 단계예요';
-  const c = markUpCost(lv);
+  if (lv >= markMax(cityId, id)) return '가장 높은 단계예요';
+  const c = markCostOf(cityId, id, lv);
   if (s.nations[s.player.countryId].treasury < c.cost) return `국방예산 ${c.cost.toLocaleString()} 필요`;
   for (const [r, v] of Object.entries(c.res)) if ((s.economy.stock[r as Res] ?? 0) < v!) return `${r} ${v}개 필요`;
   return null;
@@ -1130,7 +1138,7 @@ export function canUpgradeMark(s: GameState, cityId: string, id: string): string
 export function upgradeMark(s: GameState, cityId: string, id: string): GameState {
   if (canUpgradeMark(s, cityId, id)) return s;
   const lv = markLevel(s, cityId, id);
-  const c = markUpCost(lv);
+  const c = markCostOf(cityId, id, lv);
   const me = s.player.countryId;
   const stock = { ...s.economy.stock };
   for (const [r, v] of Object.entries(c.res)) stock[r as Res] -= v!;
@@ -1139,7 +1147,7 @@ export function upgradeMark(s: GameState, cityId: string, id: string): GameState
   return withCiv(ns, (cv) => {
     const cc = (cv.cities[cityId] ??= defaultCity(s, cityById(cityId)));
     cc.marks = { ...(cc.marks ?? {}), [id]: { lv: lv + 1, doneMs: s.worldMs + c.hours * H } };
-    clog(cv, `🏗️ ${cityById(cityId).name} ${name} ${lv + 1}단계 발전 공사 시작(${c.hours}시간)`);
+    clog(cv, `🏗️ ${cityById(cityId).name} ${name} ${lv === 0 ? '짓기' : `${lv + 1}단계 발전`} 공사 시작(${c.hours}시간)`);
   });
 }
 
@@ -1156,6 +1164,7 @@ export function cityParts(s: GameState, cityId: string): { trait: CityEff; marks
   for (const lm of cityMarks(cityId)) {
     const lv = markLevel(s, cityId, lm.id);
     for (const [k, v] of Object.entries(MARK_KIND[lm.kind].per)) marks[k as keyof CityEff] += (v ?? 0) * lv * MARK_SCALE;
+    if (lm.home) for (const [k, v] of Object.entries(lm.home.eff)) marks[k as keyof CityEff] += (v ?? 0) * lv;
   }
   const mil: CityEff & { pDom: Record<'육' | '해' | '공', number> } = { pDom: { 육: 0, 해: 0, 공: 0 } };
   const cc = civOf(s).cities[cityId];
@@ -1188,6 +1197,13 @@ export function cityShare(s: GameState, cityId: string): number {
 /** 계산 기억(같은 문명 상태·시각·땅 주인이면 다시 안 셈) */
 const effMemo = new WeakMap<object, { ms: number; owner: object; me: string; v: EffSet }>();
 /** 내 도시 전체가 나라에 주는 힘(상한 CITY_EFF_CAP) */
+/** 고향 세 도시(익산·여수·순천)를 모두 가졌는지: 전라 고향 벨트 */
+export function ownsHomeBelt(s: GameState): boolean {
+  return HOMETOWNS.every((n) => {
+    const c = CITIES.find((x) => x.name === n);
+    return !!c && s.world.owner[c.id] === s.player.countryId;
+  });
+}
 export function cityEffTotal(s: GameState): EffSet {
   const key = (s.civ ?? s) as object;
   const hit = effMemo.get(key);
@@ -1209,6 +1225,7 @@ function cityEffCalc(s: GameState): EffSet {
     addEff(t, p.mil, k);
     if (p.mil.pDom) for (const d of ['육', '해', '공'] as const) t.pDom[d] += p.mil.pDom[d] * k;
   }
+  if (ownsHomeBelt(s)) addEff(t, HOME_BELT, 1);
   for (const key of Object.keys(CITY_EFF_CAP) as Array<keyof typeof CITY_EFF_CAP>) t[key] = Math.min(CITY_EFF_CAP[key], t[key]);
   for (const d of ['육', '해', '공'] as const) t.pDom[d] = Math.min(CITY_EFF_CAP.power, t.pDom[d]);
   t.loyaltyAll = Math.min(8, t.loyaltyAll);

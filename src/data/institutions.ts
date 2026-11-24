@@ -35,7 +35,7 @@ export const CITY_INST: Record<string, InstId[]> = {
   런던: ['bank', 'intel'], 버밍엄: ['univ'],
   뉴델리: ['intel'], 콜카타: [], 벵갈루루: ['lab', 'univ'], 첸나이: ['nuke'], 뭄바이: ['bank', 'navy'],
   서울: ['intel', 'univ', 'bank'], 부산: ['navy', 'bank'],
-  대구: ['air', 'army'], 광주: ['air'], 대전: ['lab', 'univ'], 전주: [], 강릉: ['air'], 제주: ['navy'], 여수: [], 순천: [],
+  대구: ['air', 'army'], 광주: ['air'], 대전: ['lab', 'univ'], 전주: [], 강릉: ['air'], 제주: ['navy'], 여수: [], 순천: [], 익산: ['army'],
   앙카라: ['army'], 이스탄불: ['bank', 'navy'], 이즈미르: ['air'],
   텔아비브: ['lab', 'intel'], 하이파: ['navy'],
   테헤란: ['intel'], 이스파한: ['nuke'], 반다르아바스: ['navy'], 시라즈: [],

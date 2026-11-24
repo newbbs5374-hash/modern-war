@@ -1,5 +1,6 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
+import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar } from './BoostBar';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -684,6 +685,7 @@ export function CityPanel(props: ScreenProps) {
               <span className="civ-city-top">
                 <b>
                   {city.capital ? '👑 ' : ''}
+                  {isHometown(city.name) ? '🏡 ' : ''}
                   {city.name}
                 </b>
                 <span>{loyaltyFace(cc.loyalty)}</span>
@@ -827,7 +829,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         building: (d && d.doneMs > now) || (m && m.doneMs > now) || (st && st.doneMs > now) || false,
         deposit: dp && !d ? RES_ICON[dp] : null,
         mined: !!m,
-        mark: mk ? { icon: MARK_KIND[mk.kind].icon, lv: markLv(mk.id), color: MARK_COLOR[mk.kind], nature: mk.kind === 'nature' } : undefined,
+        mark: mk ? { icon: MARK_KIND[mk.kind].icon, lv: markLv(mk.id), color: MARK_COLOR[mk.kind], nature: mk.kind === 'nature' && !mk.home, home: !!mk.home } : undefined,
         dist: hexDist(t, { q: 0, r: 0 }),
       };
     });
@@ -899,7 +901,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
     );
   };
   return (
-    <Modal title={city.name} icon={city.capital ? '👑' : '🏙️'} onClose={onClose}>
+    <Modal title={isHometown(city.name) ? `${city.name} · 고향` : city.name} icon={city.capital ? '👑' : isHometown(city.name) ? '🏡' : '🏙️'} onClose={onClose}>
       <div className="row">
         <span>
           {loyaltyFace(cc.loyalty)} 민심 <b>{Math.round(cc.loyalty)}</b> <small className="muted">→ {Math.round(target)}</small>
@@ -954,6 +956,13 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         {info && (
           <p className="small">
             <b>{info.trait.icon} {info.trait.name}</b>: {info.trait.text}
+          </p>
+        )}
+        {isHometown(city.name) && (
+          <p className="small good">
+            🏡 대장의 고향: 민심 +{HOMETOWN_LOYALTY} · 고향 전용 시설 {info?.landmarks.filter((m) => m.home).length ?? 0}가지(🏗️ 빈 터를 눌러 짓기)
+            <br />
+            {C.ownsHomeBelt(state) ? '✅' : '⬜'} 전라 고향 벨트(익산·여수·순천 모두 우리 땅): {effText(HOME_BELT)}
           </p>
         )}
         {open && (
@@ -1070,38 +1079,44 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           const lv = markLv(selMark.id);
           const st = cc.marks?.[selMark.id];
           const upWhy = C.canUpgradeMark(state, id, selMark.id);
-          const cost = C.markUpCost(lv);
+          const cost = C.markCostOf(id, selMark.id, lv);
+          const max = C.markMax(id, selMark.id);
+          const home = selMark.home;
           return (
             <div className="civ-build">
               <div className="line-item">
                 <span className="li-ico">{MARK_KIND[selMark.kind].icon}</span>
                 <span className="li-main">
                   <b>
-                    {selMark.name} · {lv}단계/{MARK_MAX}
+                    {home && '🏡 '}
+                    {selMark.name} · {lv === 0 ? '빈 터' : `${lv}단계`}/{max}
                   </b>
                   <small>
-                    {MARK_KIND[selMark.kind].name} 시설{selMark.note ? ` · ${selMark.note}` : ''}
+                    {home ? '고향 전용 시설' : `${MARK_KIND[selMark.kind].name} 시설`}
+                    {selMark.note ? ` · ${selMark.note.replace('고향 전용 · ', '')}` : ''}
                     <br />
-                    지금 효과: {effText(scaled(Object.fromEntries(Object.entries(MARK_KIND[selMark.kind].per).map(([k, v]) => [k, (v as number) * lv * MARK_SCALE])) as CityEff, share))}
+                    {lv === 0 && home
+                      ? `지으면(1단계마다): ${effText(home.eff)}`
+                      : `지금 효과: ${effText(scaled(Object.fromEntries(Object.entries(MARK_KIND[selMark.kind].per).map(([k, v]) => [k, (v as number) * lv * MARK_SCALE + ((home?.eff as Record<string, number> | undefined)?.[k] ?? 0) * lv])) as CityEff, share))}`}
                     <br />
                     {st && st.doneMs > state.worldMs
                       ? `${st.lv}단계로 발전 공사 중 · ${timeLeft(st.doneMs - state.worldMs)}`
-                      : lv < MARK_MAX
-                        ? `다음 단계: 💰${fmt(cost.cost)} 🔩${cost.res.강철} · ${cost.hours}시간`
+                      : lv < max
+                        ? `${lv === 0 ? '짓기' : '다음 단계'}: 💰${fmt(cost.cost)} 🔩${cost.res.강철} · ${cost.hours}시간`
                         : '가장 높은 단계'}
                   </small>
                 </span>
-                {lv < MARK_MAX && !(st && st.doneMs > state.worldMs) && (
+                {lv < max && !(st && st.doneMs > state.worldMs) && (
                   <button
                     className="primary"
                     disabled={!!upWhy}
                     title={upWhy ?? ''}
                     onClick={() => {
                       actions.apply((s) => C.upgradeMark(s, id, selMark.id));
-                      setMsg(`🏗️ ${selMark.name} ${lv + 1}단계 발전 공사 시작! ${cost.hours}시간 뒤 완공`);
+                      setMsg(`🏗️ ${selMark.name} ${lv === 0 ? '짓기' : `${lv + 1}단계 발전`} 공사 시작! ${cost.hours}시간 뒤 완공`);
                     }}
                   >
-                    ⬆️ 발전
+                    {lv === 0 ? '🏗️ 짓기' : '⬆️ 발전'}
                   </button>
                 )}
               </div>
