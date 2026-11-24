@@ -943,3 +943,27 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #8b5
 button.mini { padding: 3px 7px; font-size: 13px; }
 .fleets .rotor { animation: rotor-spin 0.25s linear infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes rotor-spin { to { transform: rotate(360deg); } }
+
+/* 연구 나무: 선행 → 후속 선 · 3단계 (11-24) */
+.tech-tree { position: relative; }
+.tech-tree .civ-era-row { position: relative; z-index: 1; margin-bottom: 14px; }
+.tech-tree .tiles.c5 { row-gap: 16px; column-gap: 8px; }
+.tech-lines { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: visible; }
+.tech-lines path { fill: none; stroke-width: 2; stroke-linecap: round; }
+.tech-lines path.far { stroke: #9fb0c2; opacity: .35; stroke-dasharray: 3 4; }
+.tech-lines path.open { stroke: var(--amber, #ffb020); opacity: .85; }
+.tech-lines path.done { stroke: #39b3c6; opacity: .9; }
+.tech-lines path.now { stroke: var(--amber, #ffb020); stroke-width: 3; filter: drop-shadow(0 0 3px #ffb020aa); }
+.tt-cell { display: flex; min-width: 0; }
+.tt-cell > .itile { flex: 1; width: 100%; }
+.tech-tree .itile.locked { opacity: 1; filter: brightness(.6) saturate(.6); }
+.stage-pips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.itile .stage-pips { margin: 2px 0 0; }
+.stage-pips i { width: 7px; height: 7px; border-radius: 50%; background: #2c3640; border: 1px solid #9fb0c2; }
+.stage-pips i.on { background: #39b3c6; border-color: #69c5d3; }
+.stage-pips i.cur { background: #ffb020; border-color: #ffd27a; }
+.tech-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 8px; }
+.tech-stage { display: flex; flex-direction: column; gap: 3px; padding: 5px 6px; border: 1px solid #768a9f; border-radius: 10px; background: #3e4c5a; }
+.tech-stage.on { border-color: #39b3c6; }
+.tech-stage.cur { border-color: #ffb020; }
+.tech-stage small { font-size: 10.5px; }
