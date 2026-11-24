@@ -128,7 +128,10 @@ export interface CouncilActive {
 export interface CivState {
   done: string[];
   eureka: string[];
+  /** 지금 단계에 쌓인 점수 */
   progress: Record<string, number>;
+  /** 끝낸 단계 수(0~2, 3단계를 다 끝내면 done으로 옮김). 11-24 3단계 연구 — 옛 저장엔 없음 */
+  stage?: Record<string, number>;
   cur: { mil: string | null; soc: string | null };
   /** 고르지 않은 동안 모인 연구 점수(다음 연구에 씀, 12시간치까지) */
   bank: { mil: number; soc: number };
@@ -242,8 +245,28 @@ export function effDom(s: GameState, k: 'build' | 'power', dom: '육' | '해' | 
 // ── 연구 ──
 
 export const hasTech = (s: GameState, id: string) => civOf(s).done.includes(id);
+/** 기술 하나는 3단계로 나눠 연구(11-24 대장: 연구 시간을 늘리려고). 단계마다 원래 시간만큼 걸림 */
+export const TECH_STAGES = 3;
+/** 한 단계에 드는 시간(점수) */
 export function techCost(s: GameState, t: Tech): number {
   return t.hours * (civOf(s).eureka.includes(t.id) ? 0.5 : 1);
+}
+/** 끝낸 단계 수(0~3) */
+export function techStage(s: GameState, id: string): number {
+  const c = civOf(s);
+  return c.done.includes(id) ? TECH_STAGES : Math.min(TECH_STAGES - 1, c.stage?.[id] ?? 0);
+}
+/** 남은 점수(모든 단계 합) */
+export function techLeft(s: GameState, t: Tech): number {
+  if (hasTech(s, t.id)) return 0;
+  const per = techCost(s, t);
+  return Math.max(0, (TECH_STAGES - techStage(s, t.id)) * per - (civOf(s).progress[t.id] ?? 0));
+}
+/** 전체 진행 0~1 */
+export function techProgress(s: GameState, t: Tech): number {
+  if (hasTech(s, t.id)) return 1;
+  const per = techCost(s, t);
+  return Math.min(1, (techStage(s, t.id) * per + (civOf(s).progress[t.id] ?? 0)) / (TECH_STAGES * per));
 }
 export function canResearch(s: GameState, id: string): string | null {
   const t = techById(id);
@@ -308,6 +331,7 @@ function finishTech(ns: GameState, c: CivState, t: Tech): GameState {
   c.done.push(t.id);
   c.cur[t.line] = null;
   delete c.progress[t.id];
+  if (c.stage) delete c.stage[t.id];
   const what = [t.units?.length ? `병과 ${t.units.join('·')}` : '', t.cards?.length ? `카드 ${t.cards.length}장` : '', t.districts?.length ? `구역 ${t.districts.map((d) => districtById(d).name).join('·')}` : '', t.agree?.length ? `협정 ${t.agree.map((a) => agreeById(a).name).join('·')}` : ''].filter(Boolean).join(' · ');
   clog(c, `${t.icon} ${t.name} 연구 완료${what ? ` → ${what}` : ''}`);
   const era = eraOf(c);
@@ -1064,7 +1088,13 @@ export function civAccrue(s: GameState, ms: number): GameState {
         pts = 0;
       } else {
         pts -= need;
-        ns = finishTech({ ...ns, civ: c }, c, t);
+        const st = Math.min(TECH_STAGES - 1, c.stage?.[id] ?? 0) + 1;
+        if (st >= TECH_STAGES) ns = finishTech({ ...ns, civ: c }, c, t);
+        else {
+          (c.stage ??= {})[id] = st;
+          c.progress[id] = 0;
+          clog(c, `${t.icon} ${t.name} ${st}/${TECH_STAGES}단계 끝`);
+        }
       }
     }
   }

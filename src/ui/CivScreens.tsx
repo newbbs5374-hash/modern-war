@@ -1,6 +1,6 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
@@ -18,6 +18,7 @@ import {
   MIL_TECHS,
   SLOT_ICON,
   SOC_TECHS,
+  TECHS,
   agendaById,
   agreeById,
   cardById,
@@ -67,17 +68,23 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
     const t = id ? techById(id)! : null;
     const cost = t ? C.techCost(state, t) : 0;
     const got = t ? (c.progress[t.id] ?? 0) : 0;
+    const st = t ? C.techStage(state, t.id) : 0;
     const allDone = !t && (l === 'mil' ? MIL_TECHS : SOC_TECHS).every((x) => c.done.includes(x.id));
     return (
       <button className={`civ-cur ${t || allDone ? '' : 'idle'}`} onClick={() => (setLine(l), t && setPick(t))}>
         <span className="civ-cur-ico">{t ? <ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} /> : l === 'mil' ? '⚙️' : '📜'}</span>
         <span className="civ-cur-main">
           <small className="muted">{l === 'mil' ? '군사 기술' : '사회 제도'}</small>
-          <b>{t ? t.name : allDone ? '모든 연구 끝' : '고르는 중…'}</b>
+          <b>
+            {t ? t.name : allDone ? '모든 연구 끝' : '고르는 중…'}
+            {t && <StagePips n={st} cur />}
+          </b>
           {t ? (
             <>
               <Meter value={got} max={cost} tone={l === 'mil' ? 'blue' : 'gold'} />
-              <small className="muted">{timeLeft(((cost - got) / Math.max(0.01, rate)) * H)} 남음{c.eureka.includes(t.id) ? ' · 💡' : ''}</small>
+              <small className="muted">
+                {st + 1}/{C.TECH_STAGES}단계 · 이 단계 {timeLeft(((cost - got) / Math.max(0.01, rate)) * H)} · 전체 {timeLeft((C.techLeft(state, t) / Math.max(0.01, rate)) * H)} 남음{c.eureka.includes(t.id) ? ' · 💡' : ''}
+              </small>
             </>
           ) : allDone ? (
             <small className="ok">✓ 이 줄 연구를 모두 끝냈어요</small>
@@ -97,6 +104,12 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
           </span>
           <Tip label={`🔬 ×${r1(rate)}`} title="연구 속도(실제 1시간에)" rows={C.researchBreakdown(state).map(([k, v]) => [k, `+${r1(v)}`])} total={`${r1(rate)}`} />
           <Help title="연구">
+            <p>
+              <b>3단계 연구</b>: 기술 하나는 1단계 → 2단계 → 3단계로 나눠 연구해요. 3단계를 모두 끝내야 기술이 완성되고 병과·카드·구역이 열려요. 다른 연구로 바꿔도 끝낸 단계와 쌓인 점수는 그대로 남아요.
+            </p>
+            <p>
+              <b>선</b>: 위 기술에서 아래 기술로 이어진 선은 "먼저 해야 하는 연구"예요. 청록 선은 끝남, 주황 선은 지금 열 수 있음, 흐린 점선은 아직 멀었음.
+            </p>
             <p>연구는 두 줄이에요. <b>군사 기술</b>은 병과와 무기 강화를, <b>사회 제도</b>는 정책 카드·협정·도시 구역을 열어요. 두 줄은 동시에 하나씩 진행돼요.</p>
             <p>
               <b>병과 열기</b>: 지도자 호칭(부대 크기)과 연구(무기 종류)가 둘 다 있어야 해요. 보병·특수부대는 처음부터 열려 있어요.
@@ -127,35 +140,7 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
           📜 사회 제도 <small>{c.done.filter((id) => id.startsWith('s-')).length}/{SOC_TECHS.length}</small>
         </button>
       </div>}
-      {([1, 2, 3, 4] as const).map((era) => (
-        <div key={era} className="civ-era-row">
-          <small className="stat-group-name">
-            <ArtIcon k={eraArtKey(era)} emoji={ERAS[era].icon} cls="inline" /> {ERAS[era].name}
-          </small>
-          <div className="tiles c5">
-            {list
-              .filter((t) => t.era === era)
-              .map((t) => {
-                const done = C.hasTech(state, t.id);
-                const now = c.cur[t.line] === t.id;
-                const why = C.canResearch(state, t.id);
-                const prog = (c.progress[t.id] ?? 0) / C.techCost(state, t);
-                return (
-                  <Tile
-                    key={t.id}
-                    icon={<ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} />}
-                    label={t.name}
-                    sub={done ? '✓ 완료' : now ? `${Math.round(prog * 100)}%` : why ? '선행 연구' : `${r1(C.techCost(state, t))}시간`}
-                    badge={!done && c.eureka.includes(t.id) ? '💡' : null}
-                    tone={done ? 'green' : now ? 'gold' : undefined}
-                    locked={!done && !now && !!why && why.startsWith('먼저')}
-                    onClick={() => setPick(t)}
-                  />
-                );
-              })}
-          </div>
-        </div>
-      ))}
+      <TechTree {...props} list={list} onPick={setPick} />
       {c.log.length > 0 && (
         <section className="card">
           <small className="stat-group-name">📰 최근 소식</small>
@@ -168,6 +153,192 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
       )}
       {pick && <TechModal {...props} t={pick} onClose={() => setPick(null)} onGo={(id) => actions.apply((s) => C.startResearch(s, id))} />}
     </>
+  );
+}
+
+/** 단계 점 ●●○ */
+function StagePips({ n, cur }: { n: number; cur?: boolean }) {
+  return (
+    <span className="stage-pips" aria-label={`${n}/${C.TECH_STAGES}단계`}>
+      {Array.from({ length: C.TECH_STAGES }, (_, i) => (
+        <i key={i} className={i < n ? 'on' : cur && i === n ? 'cur' : ''} />
+      ))}
+    </span>
+  );
+}
+
+const TREE_COLS = 5;
+/** 시대마다 5칸×2줄에 놓기: 선행 기술 바로 아래 칸을 먼저 잡아 선이 덜 꼬이게 */
+export function layoutTree(list: Tech[]): Record<string, { era: number; col: number; row: number }> {
+  const pos: Record<string, { era: number; col: number; row: number }> = {};
+  for (const era of [1, 2, 3, 4]) {
+    const here = list.filter((t) => t.era === era);
+    const ids = new Set(here.map((t) => t.id));
+    const rows = Math.max(1, Math.ceil(here.length / TREE_COLS));
+    const free = new Set<string>();
+    for (let r = 0; r < rows; r++) for (let col = 0; col < TREE_COLS; col++) free.add(`${col},${r}`);
+    const put = (t: Tech, want: number | null, rowPref: number) => {
+      let best: string | null = null;
+      let bestScore = Infinity;
+      for (const k of free) {
+        const [col, r] = k.split(',').map(Number);
+        const score = (want == null ? col * 0.01 : Math.abs(col - want)) + Math.abs(r - rowPref) * 0.6;
+        if (score < bestScore) (bestScore = score), (best = k);
+      }
+      if (!best) return;
+      free.delete(best);
+      const [col, row] = best.split(',').map(Number);
+      pos[t.id] = { era, col, row };
+    };
+    const want = (t: Tech) => {
+      const ps = t.needs.map((n) => pos[n]).filter(Boolean);
+      return ps.length ? ps.reduce((a, p) => a + p.col, 0) / ps.length : null;
+    };
+    const outer = here.filter((t) => t.needs.length && t.needs.every((n) => !ids.has(n)));
+    const inner = here.filter((t) => t.needs.some((n) => ids.has(n)));
+    const roots = here.filter((t) => !t.needs.length);
+    const rootsWithKids = roots.filter((t) => inner.some((x) => x.needs.includes(t.id)));
+    for (const t of [...outer].sort((a, b) => (want(a) ?? 0) - (want(b) ?? 0))) put(t, want(t), 0);
+    for (const t of rootsWithKids) put(t, null, 0);
+    for (const t of inner) put(t, want(t), rows - 1);
+    for (const t of roots.filter((x) => !rootsWithKids.includes(x))) put(t, null, 0);
+  }
+  return pos;
+}
+
+/** 선 길: 바로 아래 줄이면 부드러운 곡선, 사이에 다른 칸이 있으면 칸 사이 틈(골목)으로 돌아감 */
+function treePath(from: DOMRect, to: DOMRect, b: DOMRect, lanes: Record<string, number>): string {
+  const x1 = from.left + from.width / 2 - b.left;
+  const y1 = from.bottom - b.top;
+  const x2 = to.left + to.width / 2 - b.left;
+  const y2 = to.top - b.top;
+  if (y2 <= y1 + 2) return `M${x1},${from.top + from.height / 2 - b.top} L${x2},${to.top + to.height / 2 - b.top}`;
+  if (y2 - y1 < from.height * 0.7) {
+    const my = (y1 + y2) / 2;
+    return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+  }
+  // 칸 사이 세로 골목: 후속 쪽 옆 틈
+  const right = x2 >= x1;
+  const gx = Math.round(right ? from.right - b.left + 3 : from.left - b.left - 3);
+  const lane = (lanes[gx] = (lanes[gx] ?? -1) + 1);
+  const off = ((lane % 3) - 1) * 2;
+  const gxx = gx + off;
+  const ya = y1 + 6 + (lane % 3) * 2;
+  const yb = y2 - 6 - (lane % 3) * 2;
+  return roundPath(
+    [
+      [x1, y1],
+      [x1, ya],
+      [gxx, ya],
+      [gxx, yb],
+      [x2, yb],
+      [x2, y2],
+    ],
+    5,
+  );
+}
+function roundPath(pts: Array<[number, number]>, r: number): string {
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i - 1];
+    const [x, y] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    const l1 = Math.hypot(x - px, y - py);
+    const l2 = Math.hypot(nx - x, ny - y);
+    const k = Math.min(r, l1 / 2, l2 / 2);
+    if (!(k > 0.5)) {
+      d += ` L${x},${y}`;
+      continue;
+    }
+    d += ` L${x - ((x - px) / l1) * k},${y - ((y - py) / l1) * k} Q${x},${y} ${x + ((nx - x) / l2) * k},${y + ((ny - y) / l2) * k}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  return `${d} L${lx},${ly}`;
+}
+
+/** 연구 나무: 시대별 칸 + 선행 → 후속을 잇는 선 */
+function TechTree({ state, list, onPick }: ScreenProps & { list: Tech[]; onPick: (t: Tech) => void }) {
+  const c = C.civOf(state);
+  const pos = useMemo(() => layoutTree(list), [list]);
+  const box = useRef<HTMLDivElement>(null);
+  const [lines, setLines] = useState<Array<{ key: string; d: string; cls: string }>>([]);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const sig = `${c.done.join()}|${c.cur.mil}|${c.cur.soc}`;
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const draw = () => {
+      const b = el.getBoundingClientRect();
+      const at: Record<string, DOMRect> = {};
+      el.querySelectorAll<HTMLElement>('[data-tech]').forEach((n) => (at[n.dataset.tech!] = n.getBoundingClientRect()));
+      const out: Array<{ key: string; d: string; cls: string }> = [];
+      const lanes: Record<string, number> = {};
+      for (const t of list) {
+        const to = at[t.id];
+        if (!to) continue;
+        for (const n of t.needs) {
+          const from = at[n];
+          if (!from) continue;
+          const d = treePath(from, to, b, lanes);
+          const pd = c.done.includes(n);
+          const cd = c.done.includes(t.id);
+          const now = c.cur[t.line] === t.id;
+          const cls = cd ? 'done' : now ? 'now' : pd ? 'open' : 'far';
+          out.push({ key: `${n}>${t.id}`, d, cls });
+        }
+      }
+      const order = { far: 0, open: 1, done: 2, now: 3 } as Record<string, number>;
+      out.sort((a, z) => order[a.cls] - order[z.cls]);
+      setLines(out);
+      setSize({ w: b.width, h: b.height });
+    };
+    draw();
+    const ro = new ResizeObserver(draw);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [list, sig]);
+  return (
+    <div className="tech-tree" ref={box}>
+      <svg className="tech-lines" width={size.w} height={size.h} aria-hidden>
+        {lines.map((l) => (
+          <path key={l.key} d={l.d} className={l.cls} />
+        ))}
+      </svg>
+      {([1, 2, 3, 4] as const).map((era) => (
+        <div key={era} className="civ-era-row">
+          <small className="stat-group-name">
+            <ArtIcon k={eraArtKey(era)} emoji={ERAS[era].icon} cls="inline" /> {ERAS[era].name}
+          </small>
+          <div className="tiles c5">
+            {list
+              .filter((t) => t.era === era)
+              .map((t) => {
+                const done = C.hasTech(state, t.id);
+                const now = c.cur[t.line] === t.id;
+                const why = C.canResearch(state, t.id);
+                const st = C.techStage(state, t.id);
+                const prog = C.techProgress(state, t);
+                const p = pos[t.id];
+                return (
+                  <div key={t.id} className="tt-cell" data-tech={t.id} style={p ? { gridColumn: p.col + 1, gridRow: p.row + 1 } : undefined}>
+                    <Tile
+                      icon={<ArtIcon k={techArtKey(t.id)} emoji={t.icon} alt={t.name} />}
+                      label={t.name}
+                      sub={done ? '✓ 완료' : now ? `${st + 1}단계 ${Math.round(prog * 100)}%` : why ? '선행 연구' : st ? `${st}/${C.TECH_STAGES}단계` : `${r1(C.techCost(state, t) * C.TECH_STAGES)}시간`}
+                      badge={!done && c.eureka.includes(t.id) ? '💡' : null}
+                      tone={done ? 'green' : now ? 'gold' : undefined}
+                      locked={!done && !now && !!why && why.startsWith('먼저')}
+                      onClick={() => onPick(t)}
+                    >
+                      {!done && (st > 0 || now) && <StagePips n={st} cur={now} />}
+                    </Tile>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -196,7 +367,7 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
           <span className="muted">연구 중이에요</span>
         ) : (
           <button className="primary wide" disabled={!!why} onClick={() => (onGo(t.id), onClose())}>
-            {why ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)` : `🔬 연구 시작 · ${r1(C.techCost(state, t))}시간`)}
+            {why ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간`)}
           </button>
         )
       }
@@ -210,6 +381,21 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
         <span className="tag">{t.line === 'mil' ? '⚙️ 군사 기술' : '📜 사회 제도'}</span> <span className="tag">{ERAS[t.era].icon} {ERAS[t.era].name}</span>
       </p>
       <p>{t.text}</p>
+      <div className="tech-stages">
+        {Array.from({ length: C.TECH_STAGES }, (_, i) => {
+          const st = C.techStage(state, t.id);
+          const on = i < st;
+          const curSt = !on && i === st && now;
+          const part = curSt ? (c.progress[t.id] ?? 0) / C.techCost(state, t) : on ? 1 : 0;
+          return (
+            <div key={i} className={`tech-stage ${on ? 'on' : ''} ${curSt ? 'cur' : ''}`}>
+              <small>{i + 1}단계 {i === C.TECH_STAGES - 1 ? '· 완성' : ''}</small>
+              <Meter value={part} max={1} tone={on ? 'green' : 'gold'} />
+              <small className="muted">{on ? '✓ 끝' : `${r1(C.techCost(state, t))}시간`}</small>
+            </div>
+          );
+        })}
+      </div>
       {unlocks.length > 0 && (
         <div className="chips civ-unlocks">
           {unlocks.map((u) => (
@@ -230,7 +416,11 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
             .join(' · ')}
         </p>
       ) : null}
-      {t.needs.length > 0 && <p className="small">먼저 할 연구: {t.needs.map((n) => `${techById(n)!.icon} ${techById(n)!.name}${C.hasTech(state, n) ? ' ✓' : ''}`).join(', ')}</p>}
+      {t.needs.length > 0 && <p className="small">⬆️ 먼저 할 연구: {t.needs.map((n) => `${techById(n)!.icon} ${techById(n)!.name}${C.hasTech(state, n) ? ' ✓' : ''}`).join(', ')}</p>}
+      {(() => {
+        const next = TECHS.filter((x) => x.needs.includes(t.id));
+        return next.length > 0 ? <p className="small">⬇️ 이어지는 연구: {next.map((x) => `${x.icon} ${x.name}${C.hasTech(state, x.id) ? ' ✓' : ''}`).join(', ')}</p> : null;
+      })()}
       {t.eureka && (
         <div className={`civ-eureka ${c.eureka.includes(t.id) ? 'on' : ''}`}>
           💡 <b>번뜩임</b>: {t.eureka.text} → 연구 절반

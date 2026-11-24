@@ -18,6 +18,19 @@ const rich = (s: GameState): GameState => ({
 });
 
 describe('연구', () => {
+  it('3단계 연구: 바꿔도 끝낸 단계는 남고, 옛 저장(stage 없음)도 이어서 됨', () => {
+    let s = newGame('t', 'kr', 0, { seed: 5 });
+    s = C.startResearch(s, 'm-rifle');
+    s = advance(s, 1.1 * H);
+    expect(C.techStage(s, 'm-rifle')).toBe(1);
+    s = C.startResearch(s, 'm-comms');
+    s = advance(s, 0.2 * H);
+    expect(C.techStage(s, 'm-rifle')).toBe(1);
+    // 옛 저장: stage 칸이 없어도 0단계로 봄
+    const old = { ...s, civ: { ...C.civOf(s), stage: undefined } };
+    expect(C.techStage(old, 'm-rifle')).toBe(0);
+    expect(C.techLeft(old, { id: 'm-drone', hours: 1 } as never)).toBe(3);
+  });
   it('고른 연구가 실제 시간으로 쌓여 끝나고, 병과는 등급 + 연구 둘 다 있어야 열림', () => {
     let s = rich(setRank(newGame('t', 'kr', 0, { seed: 1 }), 3));
     expect(canProduce(s, '전차')).toMatch(/연구/);
@@ -25,9 +38,14 @@ describe('연구', () => {
     s = C.startResearch(s, 'm-mech');
     expect(C.civOf(s).cur.mil).toBe('m-mech');
     s = advance(s, 1.2 * H);
+    // 3단계 연구(11-24): 1단계만 끝나고 아직 완성 아님
+    expect(C.hasTech(s, 'm-mech')).toBe(false);
+    expect(C.techStage(s, 'm-mech')).toBe(1);
+    s = advance(s, 2.4 * H);
     expect(C.hasTech(s, 'm-mech')).toBe(true);
+    expect(C.civOf(s).stage?.['m-mech']).toBeUndefined();
     s = C.startResearch(s, 'm-armor');
-    s = advance(s, 3 * H);
+    s = advance(s, 9 * H);
     expect(C.hasTech(s, 'm-armor')).toBe(true);
     expect(canProduce(s, '전차')).toBeNull();
     // 등급이 모자라면 연구가 있어도 안 열림
@@ -38,7 +56,7 @@ describe('연구', () => {
     s = advance(s, 0.5 * H);
     expect(C.civOf(s).bank.mil).toBeGreaterThan(0.4);
     s = C.startResearch(s, 'm-drone');
-    s = advance(s, 0.6 * H);
+    s = advance(s, 2.6 * H);
     expect(C.hasTech(s, 'm-drone')).toBe(true);
   });
   it('번뜩임: 훈련을 해내면 관련 연구가 절반', () => {
@@ -257,7 +275,7 @@ describe('자원 24종 · 연구 70개 · 체제 8가지(11-23)', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 4 }));
     expect(C.canSetGov(s, 'technocracy')).toMatch(/의무 교육/);
     s = C.startResearch(s, 's-school');
-    s = advance(s, 2 * H);
+    s = advance(s, 6 * H);
     expect(C.canSetGov(s, 'technocracy')).toBeNull();
     s = C.setGov(s, 'technocracy');
     expect(C.effSum(s, 'research')).toBeGreaterThanOrEqual(0.25);
