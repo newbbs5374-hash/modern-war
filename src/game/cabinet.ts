@@ -3,7 +3,8 @@
 import { COUNTRIES } from '../data/world';
 import { LEADERS } from '../data/leaders';
 import { STAT_IDS, type StatId } from '../data/officers';
-import { LOOK, ethOfName, makeNameEth } from '../data/names';
+import { LOOK, ethOfName, makeNameEth, pickUsEth } from '../data/names';
+import { US_ETH, deckSize, type UsEth } from '../data/faces';
 import { assignFaces } from '../data/faces';
 import {
   FACTION_BONUS_AT,
@@ -101,6 +102,16 @@ export interface GenOpt {
   sex?: 'm' | 'f';
 }
 
+/** 미국 사람 갈래(11-24): 얼굴이 많이 남은 갈래일수록 잘 뽑힘 → 한 갈래만 얼굴이 모자라지 않게 */
+function usEthFor(c: CabinetState, sex: 'm' | 'f', rng: Rng): UsEth {
+  const free = US_ETH.map((e) => Math.max(0, deckSize(`us-${e}`, sex) - c.people.filter((p) => p.country === 'us' && p.sex === sex && (p.eth ?? 'we') === e).length));
+  const sum = free.reduce((a, b) => a + b, 0);
+  if (sum <= 0) return pickUsEth(rng);
+  let r = rng.next() * sum;
+  for (let i = 0; i < US_ETH.length; i++) if ((r -= free[i]) < 0) return US_ETH[i];
+  return 'we';
+}
+
 export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number, taken: Set<string>): Person {
   const origins = Object.keys(PERSON_ORIGINS) as PersonOrigin[];
   const origin = o.origin ?? rng.pick(origins);
@@ -122,7 +133,7 @@ export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number,
   // 10%는 출신과 다른 특화(숨은 재능)
   const spec = rng.chance(0.1) ? rng.pick(['경제통', '외교통', '행정통', '복지통', '과학자', '홍보통', '육군통', '해군통', '공군통', '정보통', '군수통'] as SpecId[]) : rng.pick(info.spec);
   const hidden: Hidden | null = rng.chance(0.3) ? rng.pick(HIDDEN_IDS) : null;
-  const nm = makeNameEth(o.country, sex, rng, taken);
+  const nm = makeNameEth(o.country, sex, rng, taken, o.country === 'us' ? usEthFor(c, sex, rng) : undefined);
   return {
     id: c.nextId++,
     name: nm.name,
@@ -214,10 +225,12 @@ export function newCabinet(s: Pick<GameState, 'world' | 'worldMs' | 'player'>): 
 
 /** 얼굴이 몇 번째에 놓이는지: 자리에 앉은 사람 > 내 나라 정계·군 > 인재 > 외국 */
 const faceRank = (p: Person) => (p.seat ? 100 : 0) + (p.buddy ? 50 : 0) + (p.group === '외국' ? 0 : p.group === '인재' ? 10 : 20);
+/** 한 화면에 같이 나오는 무리: 인재 명단과 내 내각은 한 화면, 나머지는 무리마다 */
+const faceScreen = (p: Person) => (p.group === '인재' || p.group === '내각' ? 'cab' : p.group);
 /** 얼굴 나눠 주기(빈 사람만, 겹치면 순위 낮은 쪽이 바꿈). c를 고침 */
 export function giveFaces(c: CabinetState) {
   for (const p of c.people) if (p.country === 'us' && !p.eth) p.eth = ethOfName('us', p.name);
-  const m = assignFaces(c.people.map((p) => ({ id: p.id, sex: p.sex, age: p.age, country: p.country, eth: p.eth, face: p.face, rank: faceRank(p) })));
+  const m = assignFaces(c.people.map((p) => ({ id: p.id, sex: p.sex, age: p.age, country: p.country, eth: p.eth, face: p.face, rank: faceRank(p), screen: faceScreen(p) })));
   for (const p of c.people) p.face = m.get(p.id);
 }
 

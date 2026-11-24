@@ -116,3 +116,24 @@ describe('청문회 가속권(11-24)', () => {
     expect(s.world.events.some((e) => e.text.includes('청문회'))).toBe(true);
   });
 });
+
+describe('얼굴 겹침(11-24)', () => {
+  it('한 화면(인재+내각, 무리별 명단) 안에서는 같은 얼굴이 없음', async () => {
+    const { newGame, advance } = await import('./state');
+    const C = await import('./cabinet');
+    const { faceTag } = await import('../data/faces');
+    for (const cid of ['kr', 'us']) {
+      let s = newGame('t', cid, 0, { seed: 3 });
+      for (let d = 0; d < 3; d++) {
+        s = advance(s, 24 * 3600e3);
+        const seen = new Set<string>();
+        for (const p of C.cabinetOf(s).people) {
+          const g = p.group === '인재' || p.group === '내각' ? 'cab' : p.group;
+          const k = `${g}|${faceTag(p.country, p.eth)}-${p.sex}-${p.face}`;
+          expect(seen.has(k)).toBe(false);
+          seen.add(k);
+        }
+      }
+    }
+  });
+});

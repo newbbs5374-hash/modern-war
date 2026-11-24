@@ -131,8 +131,8 @@ export function pickUsEth(rng: Rng): UsEth {
 const poolKey = (country: string, eth?: string) => (country === 'us' && eth && eth !== 'we' ? `us-${eth}` : country);
 
 /** 이름 + 얼굴 갈래(미국만 4갈래, 나머지는 나라 그대로). 이름은 그 갈래 이름표에서 뽑음 */
-export function makeNameEth(country: string, sex: 'm' | 'f', rng: Rng, taken?: Set<string>): { name: string; eth?: UsEth } {
-  const eth = country === 'us' ? pickUsEth(rng) : undefined;
+export function makeNameEth(country: string, sex: 'm' | 'f', rng: Rng, taken?: Set<string>, want?: UsEth): { name: string; eth?: UsEth } {
+  const eth = country === 'us' ? (want ?? pickUsEth(rng)) : undefined;
   return { name: makeName(country, sex, rng, taken, eth), eth };
 }
 
