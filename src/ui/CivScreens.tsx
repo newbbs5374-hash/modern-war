@@ -1,6 +1,8 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
 import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
+import { GOV_FACILITIES } from '../data/govFacilities';
+import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar } from './BoostBar';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -958,6 +960,15 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
             <b>{info.trait.icon} {info.trait.name}</b>: {info.trait.text}
           </p>
         )}
+        {(() => {
+          const gf = GOV_FACILITIES.filter((f) => govFacCity(state, f) === id);
+          return gf.length ? (
+            <p className="small">
+              🏛️ 정부 시설: {gf.map((f) => `${f.icon}${f.name} ${govFacLevel(state, f.id) ? '★'.repeat(govFacLevel(state, f.id)) : '(미착공)'}`).join(' · ')}
+              <span className="muted"> · 부처 창에서 지어요</span>
+            </p>
+          ) : null;
+        })()}
         {isHometown(city.name) && (
           <p className="small good">
             🏡 대장의 고향: 민심 +{HOMETOWN_LOYALTY} · 고향 전용 시설 {info?.landmarks.filter((m) => m.home).length ?? 0}가지(🏗️ 빈 터를 눌러 짓기)

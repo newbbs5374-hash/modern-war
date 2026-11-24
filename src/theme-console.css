@@ -794,3 +794,10 @@ select.wide, button.wide { width: 100%; }
 .advice-n { font-size: 10px; color: var(--accent, #f0a040); font-weight: 700; text-align: center; }
 .advice-card small { font-size: 10.5px; }
 .advice-card button { font-size: 10px; padding: 2px 6px; }
+.stree-sub { margin-top: 4px; }
+.stree-sub > small { font-size: 9.5px; }
+.stree-sub .stree-rail { padding-top: 10px; margin-top: 0; }
+.gfac { display: grid; grid-template-columns: 26px 1fr auto; gap: 5px; align-items: center; border: 1px solid var(--hud-dim); padding: 3px 5px; margin: 2px 0; }
+.gfac-ico { font-size: 20px; text-align: center; }
+.gfac button { font-size: 10.5px; padding: 3px 6px; line-height: 1.1; }
+.gfac small { font-size: 9.5px; }

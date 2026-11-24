@@ -2,10 +2,10 @@
 // 실제 대한민국 대통령실 구성(비서실·정책실·국가안보실 3실장 + 수석비서관 + 안보실 차장 + 경호처)과
 // 대통령이 임명하는 국무총리·권력기관장·독립기관장을 참고했어요. 계산은 src/game/cabinet.ts(postPower·postEff)
 // 대통령실 참모는 실제로도 국회 인사청문회를 거치지 않아요 → 바로 임명.
-import type { SpecId } from './cabinet';
+import type { MinistryId, SpecId } from './cabinet';
 import type { AnyStat } from './stats2';
 
-export type OfficeId = 'sec' | 'pol' | 'nsc' | 'pss' | 'gov';
+export type OfficeId = 'sec' | 'pol' | 'nsc' | 'pss' | 'gov' | 'agency';
 export interface Office {
   id: OfficeId;
   icon: string;
@@ -19,6 +19,7 @@ export const OFFICES: Office[] = [
   { id: 'pol', icon: '📑', name: '정책실', head: 'policy', text: '경제·사회·과학 정책을 짜고 부처를 조율해요. 정책실장이 부처 업무를 빠르게 만들어요.' },
   { id: 'nsc', icon: '🛡️', name: '국가안보실', head: 'nsa', text: '외교·국방·안보 위기를 맡아요. 1차장은 외교, 2차장은 국방을 챙겨요.' },
   { id: 'pss', icon: '🕶️', name: '대통령경호처', head: null, text: '대통령과 가족의 안전을 지켜요. 경호가 단단하면 정적의 방해 공작이 통하지 않아요.' },
+  { id: 'agency', icon: '🏢', name: '청장(부 소속)', head: null, text: '부 아래에 달린 청 18곳의 청장이에요. 실제처럼 국방부 → 병무청·방위사업청, 행정안전부 → 경찰청·소방청처럼 부마다 딸려 있어요. 부 장관이 유능하면 그 부의 청장도 힘을 더 내요.' },
   { id: 'gov', icon: '🏛️', name: '국무총리·기관장', head: null, text: '대통령이 임명하는 국무총리와 권력기관장·독립기관장이에요. 실제로는 국회 동의나 청문회가 필요하지만 시험판에서는 바로 임명해요.' },
 ];
 
@@ -77,7 +78,9 @@ export type PostId =
   | 'policy' | 'econ' | 'social' | 'sci'
   | 'nsa' | 'nsa1' | 'nsa2'
   | 'guard'
-  | 'pm' | 'pros' | 'police' | 'tax' | 'audit' | 'bok' | 'dapa';
+  | 'pm' | 'pros' | 'police' | 'tax' | 'audit' | 'bok' | 'dapa'
+  // 11-24 대장 요청 5번: 청 18곳(경찰·국세·방위사업 3곳은 원래 있던 자리)
+  | 'mma' | 'nfa' | 'kcs' | 'pps' | 'kcg' | 'kasa' | 'kfs' | 'rda' | 'kma' | 'kipo' | 'kdca' | 'oka' | 'sma' | 'macc' | 'kh';
 
 export interface Post {
   id: PostId;
@@ -90,6 +93,8 @@ export interface Post {
   stats: AnyStat[];
   spec: SpecId[];
   eff: Partial<Record<PostEff, number>>;
+  /** 청이면 위의 부 */
+  parent?: MinistryId;
 }
 
 export const POSTS: Post[] = [
@@ -115,14 +120,32 @@ export const POSTS: Post[] = [
   // ── 국무총리·기관장 ──
   { id: 'pm', office: 'gov', icon: '🏛️', name: '국무총리', level: '총리', role: '내각 총괄(국회 동의 필요)', stats: ['행정', '정치'], spec: ['행정통', '경제통'], eff: { minPower: 0.06, trust: 0.5 } },
   { id: 'pros', office: 'gov', icon: '🔍', name: '검찰총장', level: '장관급', role: '수사·기소(청문회)', stats: ['법률', '정보'], spec: ['행정통', '정보통'], eff: { scandal: 0.15, soc: 1 } },
-  { id: 'police', office: 'gov', icon: '🚓', name: '경찰청장', level: '차관급', role: '치안 유지(청문회)', stats: ['통솔', '행정'], spec: ['행정통'], eff: { loyalty: 1.5 } },
-  { id: 'tax', office: 'gov', icon: '🧾', name: '국세청장', level: '차관급', role: '세금 걷기(청문회)', stats: ['경제', '법률'], spec: ['경제통'], eff: { budget: 0.02, taxSoft: 0.06 } },
+  { id: 'police', office: 'agency', parent: 'mois', icon: '🚓', name: '경찰청장', level: '차관급', role: '치안 유지(청문회)', stats: ['통솔', '행정'], spec: ['행정통'], eff: { loyalty: 1.5 } },
+  { id: 'tax', office: 'agency', parent: 'mof', icon: '🧾', name: '국세청장', level: '차관급', role: '세금 걷기(청문회)', stats: ['경제', '법률'], spec: ['경제통'], eff: { budget: 0.02, taxSoft: 0.06 } },
   { id: 'audit', office: 'gov', icon: '📋', name: '감사원장', level: '장관급', role: '나랏돈·공무원 감사(국회 동의)', stats: ['법률', '청렴'], spec: ['행정통', '경제통'], eff: { trust: 1, scandal: 0.1 } },
   { id: 'bok', office: 'gov', icon: '🏦', name: '한국은행 총재', level: '장관급', role: '돈의 가치·금리(청문회)', stats: ['경제', '과학'], spec: ['경제통'], eff: { econ: 2, taxSoft: 0.05 } },
-  { id: 'dapa', office: 'gov', icon: '🏗️', name: '방위사업청장', level: '차관급', role: '무기 사 오기·만들기', stats: ['군수', '과학'], spec: ['군수통', '과학자'], eff: { build: 0.03 } },
+  { id: 'dapa', office: 'agency', parent: 'mnd', icon: '🏗️', name: '방위사업청장', level: '차관급', role: '무기 사 오기·만들기', stats: ['군수', '과학'], spec: ['군수통', '과학자'], eff: { build: 0.03 } },
+  // ── 청(부 소속) ──
+  { id: 'mma', office: 'agency', parent: 'mnd', icon: '🪪', name: '병무청장', level: '차관급', role: '징병 검사·입영', stats: ['행정', '통솔'], spec: ['행정통', '육군통'], eff: { troop: 0.02 } },
+  { id: 'nfa', office: 'agency', parent: 'mois', icon: '🚒', name: '소방청장', level: '차관급', role: '불·재난 구조', stats: ['통솔', '체력'], spec: ['행정통'], eff: { soc: 1, loyalty: 0.5 } },
+  { id: 'kcs', office: 'agency', parent: 'mof', icon: '🛃', name: '관세청장', level: '차관급', role: '세관·밀수 단속', stats: ['법률', '경제'], spec: ['경제통'], eff: { budget: 0.01, econ: 0.5 } },
+  { id: 'pps', office: 'agency', parent: 'mof', icon: '📦', name: '조달청장', level: '차관급', role: '나라 물건 사기·비축', stats: ['군수', '행정'], spec: ['군수통', '경제통'], eff: { build: 0.02 } },
+  { id: 'kcg', office: 'agency', parent: 'mofs', icon: '🚤', name: '해양경찰청장', level: '차관급', role: '바다 치안·구조', stats: ['통솔', '지휘'], spec: ['해군통'], eff: { sec: 1 } },
+  { id: 'kasa', office: 'agency', parent: 'msit', icon: '🛰️', name: '우주항공청장', level: '차관급', role: '로켓·위성·항공', stats: ['과학', '행정'], spec: ['과학자', '공군통'], eff: { research: 0.03 } },
+  { id: 'kfs', office: 'agency', parent: 'mafra', icon: '🌲', name: '산림청장', level: '차관급', role: '숲·산불·정원', stats: ['행정', '청렴'], spec: ['행정통', '복지통'], eff: { loyalty: 0.8 } },
+  { id: 'rda', office: 'agency', parent: 'mafra', icon: '🧑‍🌾', name: '농촌진흥청장', level: '차관급', role: '농업 기술 연구', stats: ['과학', '경제'], spec: ['과학자'], eff: { growth: 0.03 } },
+  { id: 'kma', office: 'agency', parent: 'mcee', icon: '🌦️', name: '기상청장', level: '차관급', role: '날씨 예보·작전 기상', stats: ['과학', '정보'], spec: ['과학자', '공군통'], eff: { mission: 0.015 } },
+  { id: 'kipo', office: 'agency', parent: 'moti', icon: '📑', name: '특허청장', level: '차관급', role: '특허·기술 보호', stats: ['과학', '법률'], spec: ['과학자', '경제통'], eff: { research: 0.02, econ: 0.5 } },
+  { id: 'kdca', office: 'agency', parent: 'mohw', icon: '🦠', name: '질병관리청장', level: '차관급', role: '감염병 막기', stats: ['과학', '행정'], spec: ['복지통', '과학자'], eff: { growth: 0.03, approval: 0.5 } },
+  { id: 'oka', office: 'agency', parent: 'mofa', icon: '🧳', name: '재외동포청장', level: '차관급', role: '해외 동포 지원', stats: ['외교', '매력'], spec: ['외교통'], eff: { favor: 1.5 } },
+  { id: 'sma', office: 'agency', parent: 'molit', icon: '🏗️', name: '새만금개발청장', level: '차관급', role: '새만금 간척지 개발', stats: ['경제', '행정'], spec: ['경제통', '행정통'], eff: { econ: 1 } },
+  { id: 'macc', office: 'agency', parent: 'molit', icon: '🏙️', name: '행정중심복합도시건설청장', level: '차관급', role: '세종 행정도시 짓기', stats: ['행정', '경제'], spec: ['행정통'], eff: { taskTime: 0.03 } },
+  { id: 'kh', office: 'agency', parent: 'mcst', icon: '🏯', name: '국가유산청장', level: '차관급', role: '문화유산 지키기', stats: ['과학', '매력'], spec: ['홍보통', '과학자'], eff: { approval: 0.5, speech: 0.03 } },
 ];
 export const postById = (id: PostId) => POSTS.find((p) => p.id === id)!;
 export const postsOf = (office: OfficeId) => POSTS.filter((p) => p.office === office);
+/** 부 아래의 청장 자리 */
+export const agenciesOf = (min: MinistryId) => POSTS.filter((p) => p.parent === min);
 /** 실장이 밑의 참모 힘에 보태는 비율(실장 힘 1당) */
 export const HEAD_BOOST = 0.12;
 /** 경호처장 힘이 이만큼이면 정적 방해 공작을 막음 */

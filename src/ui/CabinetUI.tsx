@@ -53,7 +53,7 @@ import {
 import { appointPersonGeneral, bestFor, canPersonGeneral, canTask, hearingChance, personGeneralSkill, startTask, statTotal, taskHours } from '../game/cabinetOps';
 import { FIELD_ICON, GENERAL_TITLE, freeFields, type GeneralField } from '../game/loyal';
 import { postById } from '../data/staff';
-import { PostPick } from './StaffUI';
+import { AgencySection, PostPick } from './StaffUI';
 import { generalSlots } from '../data/officers';
 import type { GameState } from '../game/state';
 import { Card, fmt } from './common';
@@ -165,12 +165,12 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
         <small>충성 {Math.round(p.loyalty)}</small>
         <Meter value={p.loyalty} max={100} tone={p.loyalty >= 70 ? 'green' : p.loyalty < 35 ? 'red' : 'gold'} />
       </div>
-      {p.group === '인재' && (
+      {(p.group === '인재' || p.group === '관료' || p.group === '공공') && (
         <button className="gold wide" disabled={!!recWhy} onClick={() => apply((s) => recruit(s, p.id))}>
           🤝 영입하기 <small>💵{fmt(recruitCost(state, p))}</small>
         </button>
       )}
-      {p.group === '인재' && recWhy && <p className="small muted">{recWhy}</p>}
+      {(p.group === '인재' || p.group === '관료' || p.group === '공공') && recWhy && <p className="small muted">{recWhy}</p>}
       {mine && (
         <div className="cab-acts">
           {!p.seat && !p.post && (
@@ -274,7 +274,7 @@ function GeneralPick({ state, actions, p, onDone }: Pick<ScreenProps, 'state' | 
 /* ───────── 👤 개인 → 인재 탭 ───────── */
 
 type TalentView = 'pool' | 'mine' | 'book';
-const BOOK_GROUPS: Group[] = ['정계', '재계', '언론', '시민', '군', '외국'];
+const BOOK_GROUPS: Group[] = ['관료', '공공', '정계', '재계', '언론', '시민', '군', '외국'];
 
 export function TalentPanel(props: ScreenProps) {
   const { state, actions } = props;
@@ -437,6 +437,7 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
     );
   return (
     <Modal title={m.name} icon={m.icon} onClose={onClose}>
+      {m.kind === '처' && <p className="small muted" style={{ margin: 0 }}>🏛️ 국무총리 소속 처(장관급 처장)</p>}
       {iconArt(`icon-min-${id}`) && <img className="cab-min-banner" src={iconArt(`icon-min-${id}`)!} alt="" draggable={false} />}
       <p className="small">{m.text}</p>
       <div className="cab-kv small">
@@ -498,6 +499,7 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
           {tWhy && <p className="small muted">{tWhy}</p>}
         </div>
       )}
+      <AgencySection state={state} actions={actions} id={id} />
       {who !== null && <PersonModal state={state} actions={actions} pid={who} onClose={() => setWho(null)} />}
     </Modal>
   );

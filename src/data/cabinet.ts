@@ -2,7 +2,31 @@
 import type { StatId } from './officers';
 import type { AnyStat } from './stats2';
 
-export type MinistryId = 'mnd' | 'nis' | 'mofa' | 'mof' | 'moti' | 'mois' | 'mohw' | 'msit' | 'kocis' | 'mou' | 'moj' | 'moe' | 'molit' | 'mofs' | 'moel';
+export type MinistryId =
+  | 'mnd' | 'nis' | 'mofa' | 'mof' | 'moti' | 'mois' | 'mohw' | 'msit' | 'kocis' | 'mou' | 'moj' | 'moe' | 'molit' | 'mofs' | 'moel'
+  // 11-24 대장 요청 5번: 새 부 6 + 처 3
+  | 'mafra' | 'mcee' | 'mss' | 'mpva' | 'mogef' | 'mcst' | 'mpm' | 'moleg' | 'mfds';
+
+/** 업무 결과를 자료로 적은 것(새 부처 업무는 이걸로 계산: game/cabinetOps finishTask) */
+export interface TaskFx {
+  /** [버프 종류, 값(장관 힘 1 기준), 시간] */
+  buff?: Array<['build' | 'res' | 'secScore' | 'diploScore' | 'econScore' | 'socScore' | 'counter', number, number]>;
+  /** [지지도, 시간] */
+  pres?: [number, number];
+  trust?: number;
+  /** 모든 내 도시 민심 + */
+  cityLoyal?: number;
+  intel?: number;
+  fame?: number;
+  /** 금고 + (몇 시간치 수입) */
+  treasuryH?: number;
+  /** 부족한 기본 자원 [가짓수, 양] */
+  stockLow?: [number, number];
+  /** 연구 두 줄에 몇 시간치 */
+  research?: number;
+  /** 내 사람 충성 + */
+  cabLoyal?: number;
+}
 export type FieldTab = 'defense' | 'diplo' | 'society' | 'economy';
 
 export type SpecId = '경제통' | '외교통' | '행정통' | '복지통' | '과학자' | '홍보통' | '육군통' | '해군통' | '공군통' | '정보통' | '군수통';
@@ -22,7 +46,9 @@ export interface Ministry {
   spec: SpecId[];
   /** 장관 효과 설명(p = 장관 힘, 0~약 1.5) */
   effText: string;
-  tasks: Array<{ id: string; icon: string; name: string; hours: number; text: string }>;
+  tasks: Array<{ id: string; icon: string; name: string; hours: number; text: string; fx?: TaskFx }>;
+  /** 부·처 구분(보여 주기용, 없으면 부) */
+  kind?: '부' | '처';
 }
 
 export const MINISTRIES: Ministry[] = [
@@ -162,10 +188,93 @@ export const MINISTRIES: Ministry[] = [
       { id: 'deal', icon: '🤝', name: '노사 대타협', hours: 4, text: '하루 동안 사회 안정 +5 · 자원 +5%' },
     ],
   },
+  // ── 11-24 대장 요청 5번: 새 부 6곳 ──
+  {
+    id: 'mafra', icon: '🌾', name: '농림축산식품부', short: '농식품', tab: 'economy', role: '농업·먹거리·농촌',
+    text: '쌀과 고기, 먹거리와 농촌을 챙기는 부처예요. 식량이 넉넉하면 도시 민심이 안정돼요. 산림청·농촌진흥청이 딸려 있어요.',
+    stats: ['경제', '행정'], spec: ['경제통', '복지통'], effText: '도시 민심 · 자원 조금',
+    tasks: [
+      { id: 'harvest', icon: '🌾', name: '풍년 지원', hours: 6, text: '부족한 기본 자원 2가지 +15 · 모든 도시 민심 +2', fx: { stockLow: [2, 15], cityLoyal: 2 } },
+      { id: 'local', icon: '🧺', name: '로컬푸드 장터', hours: 3, text: '12시간 동안 지지도 +3', fx: { pres: [3, 12] } },
+    ],
+  },
+  {
+    id: 'mcee', icon: '🌍', name: '기후에너지환경부', short: '기후', tab: 'economy', role: '에너지·환경·기후',
+    text: '발전소와 에너지, 깨끗한 공기와 물을 맡는 부처예요. 에너지가 넉넉하면 공장이 잘 돌아요. 기상청이 딸려 있어요.',
+    stats: ['과학', '경제'], spec: ['과학자', '경제통'], effText: '자원 생산 · 사회 점수',
+    tasks: [
+      { id: 'grid', icon: '⚡', name: '전력망 확충', hours: 6, text: '하루 동안 자원 +10%', fx: { buff: [['res', 0.1, 24]] } },
+      { id: 'clean', icon: '🌳', name: '탄소중립 선언', hours: 4, text: '하루 동안 사회 안정 +4 · 명성 +', fx: { buff: [['socScore', 4, 24]], fame: 8 } },
+    ],
+  },
+  {
+    id: 'mss', icon: '🚀', name: '중소벤처기업부', short: '중기', tab: 'economy', role: '중소기업·창업·소상공인',
+    text: '작은 회사와 새 회사를 키우는 부처예요. 일자리가 늘고 경제가 탄탄해져요.',
+    stats: ['경제', '과학'], spec: ['경제통'], effText: '경제 점수 · 국방예산 조금',
+    tasks: [
+      { id: 'startup', icon: '💡', name: '창업 지원', hours: 6, text: '12시간 동안 경제 지수 +7', fx: { buff: [['econScore', 7, 12]] } },
+      { id: 'shop', icon: '🏪', name: '소상공인 지원금', hours: 3, text: '12시간 동안 지지도 +3 · 금고 조금 −', fx: { pres: [3, 12], treasuryH: -1 } },
+    ],
+  },
+  {
+    id: 'mpva', icon: '🎗️', name: '국가보훈부', short: '보훈', tab: 'defense', role: '참전 용사·유공자 예우',
+    text: '나라를 위해 싸운 사람과 가족을 돌보는 부처예요. 군의 사기가 오르고 병력이 오래 버텨요.',
+    stats: ['행정', '청렴'], spec: ['복지통', '육군통'], effText: '병력 보충 · 안보 점수',
+    tasks: [
+      { id: 'honor', icon: '🎖️', name: '호국 영웅 예우', hours: 6, text: '12시간 동안 안보 +6 · 지지도 +2', fx: { buff: [['secScore', 6, 12]], pres: [2, 12] } },
+      { id: 'vet', icon: '🏥', name: '보훈 병원 지원', hours: 4, text: '내 사람 충성 +3 · 신뢰도 +1', fx: { cabLoyal: 3, trust: 1 } },
+    ],
+  },
+  {
+    id: 'mogef', icon: '👨‍👩‍👧', name: '성평등가족부', short: '가족', tab: 'society', role: '가족·청소년·성평등',
+    text: '가족과 아이, 청소년을 돌보고 차별을 줄이는 부처예요. 인구가 늘고 사회가 안정돼요.',
+    stats: ['행정', '매력'], spec: ['복지통'], effText: '인구 성장 · 사회 점수',
+    tasks: [
+      { id: 'care', icon: '🍼', name: '돌봄 확대', hours: 6, text: '하루 동안 사회 안정 +5', fx: { buff: [['socScore', 5, 24]] } },
+      { id: 'youth', icon: '🧒', name: '청소년 캠프', hours: 3, text: '12시간 동안 지지도 +3', fx: { pres: [3, 12] } },
+    ],
+  },
+  {
+    id: 'mcst', icon: '🎭', name: '문화체육관광부', short: '문체', tab: 'society', role: '문화·체육·관광',
+    text: '문화와 스포츠, 관광을 키우는 부처예요. 나라 매력이 커지고 국민이 즐거워요. 국가유산청이 딸려 있어요.',
+    stats: ['매력', '언변'], spec: ['홍보통'], effText: '지지도 · 모든 나라 호감 조금',
+    tasks: [
+      { id: 'festival', icon: '🎆', name: '국가 축제', hours: 6, text: '하루 동안 지지도 +4 · 명성 +', fx: { pres: [4, 24], fame: 10 } },
+      { id: 'tour', icon: '🧳', name: '관광 홍보', hours: 4, text: '하루 동안 외교 위상 +4 · 금고 +2시간치', fx: { buff: [['diploScore', 4, 24]], treasuryH: 2 } },
+    ],
+  },
+  // ── 새 처 3곳(국무총리 소속) ──
+  {
+    id: 'mpm', icon: '🗂️', name: '인사혁신처', short: '인사처', tab: 'society', kind: '처', role: '공무원 뽑기·기르기',
+    text: '공무원을 뽑고 기르는 곳이에요. 좋은 사람이 정부에 들어오고 부처 일이 빨라져요.',
+    stats: ['행정', '청렴'], spec: ['행정통'], effText: '부처 업무 시간 · 영입비',
+    tasks: [
+      { id: 'exam', icon: '📝', name: '특별 채용', hours: 6, text: '인재 명단에 후보 1명(우수)', fx: {} },
+      { id: 'train', icon: '🏫', name: '공무원 연수', hours: 4, text: '내 사람 충성 +2', fx: { cabLoyal: 2 } },
+    ],
+  },
+  {
+    id: 'moleg', icon: '📜', name: '법제처', short: '법제처', tab: 'society', kind: '처', role: '법 다듬기',
+    text: '새 법과 규칙을 다듬어 서로 어긋나지 않게 하는 곳이에요. 의회가 정부를 더 믿어요.',
+    stats: ['법률', '행정'], spec: ['행정통'], effText: '신뢰도',
+    tasks: [
+      { id: 'clean', icon: '✂️', name: '규제 정리', hours: 6, text: '12시간 동안 경제 지수 +5 · 신뢰도 +1', fx: { buff: [['econScore', 5, 12]], trust: 1 } },
+      { id: 'easy', icon: '📖', name: '쉬운 법령 만들기', hours: 3, text: '신뢰도 +2', fx: { trust: 2 } },
+    ],
+  },
+  {
+    id: 'mfds', icon: '💊', name: '식품의약품안전처', short: '식약처', tab: 'society', kind: '처', role: '먹거리·약 안전',
+    text: '먹거리와 약이 안전한지 살피는 곳이에요. 큰 사고가 줄고 국민이 안심해요.',
+    stats: ['과학', '청렴'], spec: ['과학자', '복지통'], effText: '사회 점수 · 인구 성장',
+    tasks: [
+      { id: 'inspect', icon: '🔬', name: '안전 일제 점검', hours: 6, text: '하루 동안 사회 안정 +4 · 신뢰도 +1', fx: { buff: [['socScore', 4, 24]], trust: 1 } },
+      { id: 'fast', icon: '💉', name: '신약 빠른 심사', hours: 4, text: '연구 두 줄에 2시간치 점수', fx: { research: 2 } },
+    ],
+  },
 ];
 export const ministryById = (id: MinistryId) => MINISTRIES.find((m) => m.id === id)!;
 /** 장관 자리 수: 등급이 오를수록(처음 3석 → 전설의 지도자 15석). 11-24 부처 15곳 */
-export const ministerSlots = (rank: number) => Math.min(15, 3 + Math.floor(rank * 1.2));
+export const ministerSlots = (rank: number) => Math.min(24, 3 + Math.floor(rank * 1.2));
 
 /* ───────── 인물 ───────── */
 
@@ -244,5 +353,5 @@ export const GRADES: Record<Grade, { icon: string; total: [number, number]; pay:
 };
 
 /** 인물 무리(도감·인물 수) */
-export type Group = '인재' | '내각' | '군' | '정계' | '재계' | '언론' | '시민' | '외국';
-export const GROUP_ICON: Record<Group, string> = { 인재: '📋', 내각: '🏛️', 군: '⭐', 정계: '🗳️', 재계: '🏢', 언론: '📺', 시민: '✊', 외국: '🌐' };
+export type Group = '인재' | '내각' | '군' | '정계' | '재계' | '언론' | '시민' | '외국' | '관료' | '공공';
+export const GROUP_ICON: Record<Group, string> = { 인재: '📋', 내각: '🏛️', 군: '⭐', 정계: '🗳️', 재계: '🏢', 언론: '📺', 시민: '✊', 외국: '🌐', 관료: '🗂️', 공공: '🏭' };

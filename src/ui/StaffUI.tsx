@@ -1,7 +1,11 @@
 // 대통령실 참모진 · 국무총리 · 기관장 화면(11-24 대장 요청 "참모진 직급 세분화·임명 직책 반영").
 // 개인 → 대통령실 탭. 실마다 자리 카드 → 누르면 자리 창(효과·지금 사람·추천 후보 바로 임명).
 import { useState } from 'react';
-import { EFF_INFO, HEAD_BOOST, GUARD_COUNTER_AT, OFFICES, POSTS, effLine, postById, postsOf, type OfficeId, type PostEff, type PostId } from '../data/staff';
+import { EFF_INFO, HEAD_BOOST, GUARD_COUNTER_AT, OFFICES, POSTS, agenciesOf, effLine, postById, postsOf, type OfficeId, type PostEff, type PostId } from '../data/staff';
+import { ministryById, type MinistryId } from '../data/cabinet';
+import { GOV_FAC_MAX, govFacCost, type GovFacility } from '../data/govFacilities';
+import { buildGovFac, canBuildGovFac, govFacCity, govFacLevel, govFacOn, govFacsOf } from '../game/govFac';
+import { cityById } from '../data/cities';
 import {
   appointPost,
   autoFillOffice,
@@ -14,6 +18,7 @@ import {
   postEff,
   postHolder,
   postPower,
+  ministerOf,
   unpost,
   type Person,
 } from '../game/cabinet';
@@ -156,6 +161,11 @@ export function PostModal({ state, actions, id, onClose }: Pick<ScreenProps, 'st
       <p className="small">
         {office.icon} {office.name} · {post.level} · {post.role}
       </p>
+      {post.parent && (
+        <p className="small muted" style={{ margin: '0 0 4px' }}>
+          ⬆️ {ministryById(post.parent).name} 소속 · {ministerOf(c, post.parent) ? `${ministerOf(c, post.parent)!.name} 장관이 있어 힘이 조금 더 나요` : '장관이 오면 힘이 최대 +15%'}
+        </p>
+      )}
       <div className="cab-kv small">
         <span>🎯 효과(보통 사람)</span>
         <b>{effLine(post.eff)}</b>
@@ -183,6 +193,7 @@ export function PostModal({ state, actions, id, onClose }: Pick<ScreenProps, 'st
         )}
       </div>
       <NeedBox need={NEEDS[id]} spec={post.spec} />
+      {post.parent && <FacList state={state} actions={actions} list={govFacsOf(post.parent, [id]).filter((f) => 'post' in f.owner)} />}
       <h4 className="cab-h">지금 자리</h4>
       {h ? (
         row(h, <button onClick={() => actions.apply((s) => unpost(s, h.id))}>내리기</button>)
@@ -295,9 +306,108 @@ function StaffTree({ state, onOpen }: { state: GameState; onOpen: (id: PostId) =
           <small className="stree-label">
             {o.icon} {o.name} <span className="muted">· 옆 가지</span>
           </small>
-          <div className="stree-rail">{postsOf(o.id).map((p) => card(p.id))}</div>
+          {o.id === 'agency' ? (
+            [...new Set(postsOf('agency').map((p) => p.parent!))].map((par) => (
+              <div key={par} className="stree-sub">
+                <small className="muted">
+                  {ministryById(par).icon} {ministryById(par).name} ↓
+                </small>
+                <div className="stree-rail">{agenciesOf(par).map((p) => card(p.id))}</div>
+              </div>
+            ))
+          ) : (
+            <div className="stree-rail">{postsOf(o.id).map((p) => card(p.id))}</div>
+          )}
         </div>
       ))}
     </div>
+  );
+}
+
+/** 소속 시설 목록(짓기·키우기) */
+function FacList({ state, actions, list }: Pick<ScreenProps, 'state' | 'actions'> & { list: GovFacility[] }) {
+  if (!list.length) return null;
+  return (
+    <>
+      <h4 className="cab-h">🏗️ 소속 시설</h4>
+      {list.map((f) => {
+        const lv = govFacLevel(state, f.id);
+        const why = canBuildGovFac(state, f.id);
+        const on = govFacOn(state, f);
+        const city = cityById(govFacCity(state, f))?.name ?? '';
+        return (
+          <div key={f.id} className="gfac">
+            <span className="gfac-ico">{f.icon}</span>
+            <span className="cab-main">
+              <b>
+                {f.name} <small>📍{city}</small>
+              </b>
+              <small>
+                {'★'.repeat(lv)}
+                {'☆'.repeat(GOV_FAC_MAX - lv)} · {lv ? effLine(f.eff, lv) : `1단계마다 ${effLine(f.eff)}`}
+                {lv > 0 && !on ? ' · ⏸️ 멈춤(주인 자리가 비었거나 남의 도시)' : ''}
+              </small>
+              <small className="muted">{f.text}</small>
+            </span>
+            {lv < GOV_FAC_MAX ? (
+              <button disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => buildGovFac(s, f.id))}>
+                {lv ? '키우기' : '짓기'}
+                <br />
+                <small>💵{Math.round(govFacCost(lv) / 1000)}천</small>
+              </button>
+            ) : (
+              <b className="gold-t">MAX</b>
+            )}
+          </div>
+        );
+      })}
+      {list.some((f) => canBuildGovFac(state, f.id)?.includes('있어야')) && <p className="small muted">시설은 장관·청장이 앉아 있어야 짓고, 자리가 비면 효과가 멈춰요.</p>}
+    </>
+  );
+}
+
+/** 부처 창 안: 소속 청과 시설(11-24 대장 요청 5번) */
+export function AgencySection({ state, actions, id }: Pick<ScreenProps, 'state' | 'actions'> & { id: MinistryId }) {
+  const [open, setOpen] = useState<PostId | null>(null);
+  const [fold, setFold] = useState(true);
+  const c = cabinetOf(state);
+  const ag = agenciesOf(id);
+  const facs = govFacsOf(id, ag.map((a) => a.id));
+  if (!ag.length && !facs.length) return null;
+  return (
+    <>
+      {ag.length > 0 && (
+        <>
+          <h4 className="cab-h">🏢 소속 청 {ag.length}곳</h4>
+          <div className="cab-mins staff-grid">
+            {ag.map((p) => {
+              const h = postHolder(c, p.id);
+              return (
+                <button key={p.id} className="cab-min" onClick={() => setOpen(p.id)}>
+                  <span className="cab-min-ico">{h ? <PersonFace p={h} size={30} /> : p.icon}</span>
+                  <span className="cab-main">
+                    <b>
+                      {p.icon} {p.name.replace('청장', '청')}
+                    </b>
+                    <small>{h ? `${h.name} 청장` : '청장 없음'}</small>
+                    <small className="muted">{p.role}</small>
+                  </span>
+                  <b className="cab-pow">{h ? pct(postPower(state, p.id)) : '-'}</b>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      {facs.length > 0 && (
+        <>
+          <button className="wide" onClick={() => setFold(!fold)}>
+            🏗️ 소속 시설 {facs.length}곳 {fold ? '펼치기 ▾' : '접기 ▴'}
+          </button>
+          {!fold && <FacList state={state} actions={actions} list={facs} />}
+        </>
+      )}
+      {open && <PostModal state={state} actions={actions} id={open} onClose={() => setOpen(null)} />}
+    </>
   );
 }
