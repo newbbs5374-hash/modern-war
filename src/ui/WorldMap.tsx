@@ -14,6 +14,9 @@ import { KR_INNER, KR_OUTLINE } from "../data/krProvinces";
 import { GEO_PROV_INNER } from "../data/provinces";
 import { landOwners, provinces } from "../game/territory";
 import { HOME_MARKS } from "./homeTerrain";
+import { useHomeGeos } from "./homeGeo";
+import { CITY_DEFENSE_MAX } from "../game/balance";
+import { CITY_STAGES } from "../game/growth";
 import {
   GEO,
   GEO_PATH,
@@ -64,6 +67,8 @@ interface Props {
   army?: Record<string, number>;
   /** 해외 파병(지도 표시) */
   deploys?: MapDeploy[];
+  /** 도시 단계(0 마을 ~ 6 세계 도시): 확대하면 점 크기·단계 아이콘 */
+  cityLv?: Record<string, number>;
 }
 
 /** 실사 세계지도 그림: src/assets/world/world-map.(png|webp) 를 넣으면 바다·땅 바탕으로 깔림(명령문 /mnt/project-files/guides/world-art-prompts.md) */
@@ -446,6 +451,7 @@ export function WorldMap({
   mini,
   army,
   deploys,
+  cityLv,
 }: Props) {
   const colorOf = (id: string) =>
     mode === "나라"
@@ -578,6 +584,23 @@ export function WorldMap({
   // 확대해도 글씨·점·선이 같이 커지지 않게(처음 배율 기준으로 화면 크기 유지)
   const z = mini ? 1 : Math.min(1, START_K / cv.k);
   const zr = mini ? 1 : Math.pow(z, 0.75);
+  // ── 확대 단계별 상세(11/24 C3) ──
+  // 1단계(처음): 나라 색·도시 / 2단계(×1.6~): 도 경계 / 3단계(×3~): 실제 강·고속도로·도시 단계 / 4단계(×5~): 철도·지방 도로
+  const inView = (x: number, y: number, pad = 30) =>
+    x > X0 + cv.x - pad && x < X0 + cv.x + vw(cv.k) + pad && y > Y0 + cv.y - pad && y < Y0 + cv.y + vh(cv.k) + pad;
+  const seenIds = mini ? [] : COUNTRIES.filter((c) => CITIES.some((ci) => ci.home === c.id && inView(ci.x, ci.y, 120))).map((c) => c.id);
+  const geos = useHomeGeos(seenIds, !mini && cv.k >= 3);
+  // 전선: 서로 전쟁 중인 두 나라 땅이 맞닿은 곳
+  const fronts: Array<[string, string]> = [];
+  if (!mini)
+    for (let i = 0; i < COUNTRIES.length; i++)
+      for (let j = i + 1; j < COUNTRIES.length; j++) {
+        const a = COUNTRIES[i].id;
+        const b = COUNTRIES[j].id;
+        if (isAlive(world, a) && isAlive(world, b) && relationOf(world, a, b) === "전쟁") fronts.push([a, b]);
+      }
+  const frontOwners = Array.from(new Set(fronts.flat()));
+  const ownedBy = (o: string) => PROVS.filter((p) => (land[p.id] ?? p.c) === o);
 
   const svg = (
     <svg
@@ -604,6 +627,16 @@ export function WorldMap({
             <path d={COAST[c.id]} />
           </clipPath>
         ))}
+        {frontOwners.map((o) => (
+          <clipPath key={o} id={`wm-own-${o}`}>
+            {ownedBy(o).map((p) => (
+              <path key={p.id} d={p.d} />
+            ))}
+          </clipPath>
+        ))}
+        <filter id="wm-front-glow" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
         <pattern
           id="wm-occ"
           width="4"
@@ -731,6 +764,49 @@ export function WorldMap({
           pointerEvents="none"
         />
       ))}
+      {/* 실제 강·고속도로(×3~)·철도·지방 도로(×5~): Natural Earth 자료 */}
+      {!mini && cv.k >= 3 && (
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none">
+          {Object.entries(geos).map(([id, g]) => (
+            <g key={id} clipPath={`url(#wm-c-${id})`}>
+              <path d={g.river} stroke="#4fa3d9" strokeOpacity={0.75} strokeWidth={0.55 * z} />
+              {cv.k >= 5 && <path d={g.road2} stroke="#e9dcc0" strokeOpacity={0.45} strokeWidth={0.3 * z} />}
+              <path d={g.road} stroke="#3b2f1e" strokeOpacity={0.5} strokeWidth={1.1 * z} />
+              <path d={g.road} stroke="#f6cf7a" strokeOpacity={0.85} strokeWidth={0.55 * z} />
+              {cv.k >= 5 && (
+                <>
+                  <path d={g.rail} stroke="#1f2937" strokeOpacity={0.8} strokeWidth={0.6 * z} />
+                  <path d={g.rail} stroke="#e5e7eb" strokeOpacity={0.9} strokeWidth={0.3 * z} strokeDasharray={`${1.2 * z} ${1.2 * z}`} />
+                </>
+              )}
+            </g>
+          ))}
+        </g>
+      )}
+      {/* 전선: 전쟁 중인 두 나라 땅이 맞닿은 곳에 붉은 띠 */}
+      {fronts.length > 0 && (
+        <g pointerEvents="none">
+          {fronts.flatMap(([a, b]) =>
+            [
+              [a, b],
+              [b, a],
+            ].map(([x, y]) => (
+              <g key={`${x}-${y}`} clipPath={`url(#wm-own-${x})`}>
+                <g fill="none" stroke="#ef4444" strokeLinejoin="round">
+                  {ownedBy(y).map((p) => (
+                    <path key={p.id} d={p.d} strokeWidth={6 * zr} strokeOpacity={0.8} filter="url(#wm-front-glow)" />
+                  ))}
+                </g>
+                <g fill="none" stroke="#fecaca" strokeLinejoin="round" className="wm-front">
+                  {ownedBy(y).map((p) => (
+                    <path key={p.id} d={p.d} strokeWidth={1.6 * zr} strokeDasharray={`${3 * zr} ${2 * zr}`} />
+                  ))}
+                </g>
+              </g>
+            )),
+          )}
+        </g>
+      )}
       {/* 도(주·성·현) 경계: 모든 나라(대한민국은 시·도 자료) */}
       {!mini && cv.k >= 1.6 && (
         <g
@@ -837,12 +913,20 @@ export function WorldMap({
       {CITIES.map((city) => {
         const o = owner[city.id];
         const occupied = o !== city.home;
+        const lv = cityLv?.[city.id];
+        const grow = lv === undefined || mini ? 1 : 0.8 + lv * 0.07;
+        const hit = !mini && (world.defense[city.id] ?? CITY_DEFENSE_MAX) < CITY_DEFENSE_MAX - 2;
         return (
           <g key={city.id} className="map-city" onClick={() => pick(city.home)}>
+            {hit && (
+              <circle cx={city.x} cy={city.y} r={7 * zr} fill="none" stroke="#ef4444" strokeWidth={1.2 * zr} className="wm-hit">
+                <title>공격받는 중</title>
+              </circle>
+            )}
             <circle
               cx={city.x}
               cy={city.y}
-              r={(city.capital ? 3.8 : 2.8) * zr}
+              r={(city.capital ? 3.8 : 2.8) * zr * grow}
               fill={colorOf(o)}
               stroke={occupied ? "#fff" : "#0c1a2b"}
               strokeWidth={(occupied ? 1.6 : 1) * zr}
@@ -856,6 +940,8 @@ export function WorldMap({
               >
                 {city.capital ? "★" : ""}
                 {city.name}
+                {hit ? " 🔥" : ""}
+                {cv.k >= 3 && lv !== undefined ? ` ${CITY_STAGES[lv].icon}` : ""}
               </text>
             )}
             {!mini && cv.k >= 3 && (

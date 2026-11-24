@@ -23,17 +23,10 @@ import groundSand from '../assets/city/city-ground-beach.webp';
 // 실사 자료(11/24 C2): 나라마다 NASA 야간 불빛·지형 음영 그림 + Natural Earth 실제 도로·철도·강(scripts/gen_homegeo.py)
 import HOME_BOUNDS from '../assets/home/bounds.json';
 import { GEO } from '../data/realGeo';
+import { useHomeGeo } from './homeGeo';
+export type { HomeGeo } from './homeGeo';
 
 const HOME_IMG = import.meta.glob('../assets/home/*.webp', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const HOME_GEO_FILES = import.meta.glob('../assets/home/geo-*.json', { import: 'default' }) as Record<string, () => Promise<HomeGeo>>;
-export interface HomeGeo {
-  road: string;
-  road2: string;
-  rail: string;
-  river: string;
-  /** 가까이 보는 나라의 밤 불빛 점(밝기 3단계, 빈 문자열이면 그림 사용) */
-  dots: [string, string, string];
-}
 const homeImg = (kind: 'night' | 'relief', id: string): string | null => HOME_IMG[`../assets/home/${kind}-${id}.webp`] ?? null;
 /** 그림 범위(경도·위도) → 세계 좌표 사각형 */
 function boundsRect(id: string): { x: number; y: number; w: number; h: number } | null {
@@ -43,26 +36,6 @@ function boundsRect(id: string): { x: number; y: number; w: number; h: number } 
   const l = lon0 < GEO.L0 ? lon0 + 360 : lon0;
   return { x: (l - GEO.L0) * GEO.PX, y: (GEO.B1 - lat1) * GEO.PX, w: (lon1 - lon0) * GEO.PX, h: (lat1 - lat0) * GEO.PX };
 }
-const GEO_CACHE = new Map<string, HomeGeo>();
-function useHomeGeo(id: string): HomeGeo | null {
-  const [g, setG] = useState<HomeGeo | null>(() => GEO_CACHE.get(id) ?? null);
-  useEffect(() => {
-    const hit = GEO_CACHE.get(id);
-    if (hit) return setG(hit);
-    const load = HOME_GEO_FILES[`../assets/home/geo-${id}.json`];
-    if (!load) return setG(null);
-    let live = true;
-    load().then((d) => {
-      GEO_CACHE.set(id, d);
-      if (live) setG(d);
-    });
-    return () => {
-      live = false;
-    };
-  }, [id]);
-  return g;
-}
-
 const W = 390;
 const H = 640;
 const MAX_K = 3.5;

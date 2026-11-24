@@ -1035,3 +1035,8 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .civ-cur-wrap .boost-bar.compact { justify-content: flex-end; }
 .tech-now { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .city-stage-tag.bad { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.6); }
+/* 세계지도 전선·공격받는 도시(11/24 C3) */
+.wm-front path { animation: wm-front-march 1.4s linear infinite; }
+@keyframes wm-front-march { to { stroke-dashoffset: -10; } }
+.wm-hit { animation: wm-hit-pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes wm-hit-pulse { 0% { opacity: 1; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.6); } }
