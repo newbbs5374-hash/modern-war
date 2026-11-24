@@ -4,14 +4,15 @@ import { presOf } from '../game/approval';
 import type { GameState } from '../game/state';
 import { Modal } from './kit';
 import { Spark } from './PresUI';
-import { Face, aideKeys } from './Portrait';
+import { Face } from './Portrait';
+import { secretaryKeys, secretaryOf } from '../data/secretary';
 
 const sign = (v: number | null) => (v === null ? '' : v > 0 ? ` ▲${v}` : v < 0 ? ` ▼${-v}` : ' ■');
 
 export function BriefingModal({ state, onClose, goTab }: { state: GameState; onClose: () => void; goTab: (screen: string, key: string, tab: string) => void }) {
   const b = briefing(state);
   const hist = presOf(state).hist.slice(-48);
-  const aide = state.officer.aides[0] ?? null;
+  const sec = secretaryOf(state.player.countryId);
   return (
     <Modal title="오늘의 국정 보고서" icon="📰" onClose={onClose}>
       <div className="brf-top">
@@ -34,9 +35,10 @@ export function BriefingModal({ state, onClose, goTab }: { state: GameState; onC
       </div>
       <div className="brf-say">
         <span className="brf-face">
-          <Face keys={aideKeys(aide)} fallback="🧑‍✈️" />
+          <Face keys={secretaryKeys(state.player.countryId)} fallback="👩‍💼" />
         </span>
         <div>
+          <small className="muted">수행비서 {sec.name}({sec.age})</small>
           {b.lines.map((l, i) => (
             <p key={i} className="small">
               {l}
