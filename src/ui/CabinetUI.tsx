@@ -480,9 +480,12 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
       {!cands.length && !mn && <p className="small muted">👤 개인 → 인재 탭에서 사람을 먼저 영입하세요(영입한 사람만 장관·차관이 될 수 있어요).</p>}
       <h4 className="cab-h">부처 업무</h4>
       {t ? (
-        <p className="small">
-          📋 {m.tasks.find((x) => x.id === t.task)?.name} · {state.worldMs >= t.endMs ? '곧 끝나요' : `${timeLeft(t.endMs - state.worldMs)} 남음`}
-        </p>
+        <>
+          <p className="small">
+            📋 {m.tasks.find((x) => x.id === t.task)?.name} · {state.worldMs >= t.endMs ? '곧 끝나요' : `${timeLeft(t.endMs - state.worldMs)} 남음`}
+          </p>
+          <BoostBar state={state} apply={apply} target={{ kind: 'task', min: id }} />
+        </>
       ) : (
         <div className="cab-tasks">
           {m.tasks.map((x) => (
