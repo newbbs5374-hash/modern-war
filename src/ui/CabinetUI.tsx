@@ -64,6 +64,7 @@ import { Flag } from './flag';
 import { iconArt } from './iconArt';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
+import { RecommendButton } from './RecommendUI';
 
 const flag = (id: string) => <Flag id={id} size={0.55} />;
 const cname = (id: string) => COUNTRIES.find((c) => c.id === id)?.name ?? id;
@@ -312,6 +313,7 @@ export function TalentPanel(props: ScreenProps) {
             📖 도감
           </button>
         </div>
+        <RecommendButton state={state} actions={actions} />
         {hearing && (
           <p className="small cab-hearing">
             🏛️ {hearing.name} {ministryById(c.hearing!.min).name} 장관 청문회 · {timeLeft(c.hearing!.endMs - state.worldMs)} 남음 · 통과 {pct(hearingChance(state, hearing))}
@@ -388,6 +390,7 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
   return (
     <>
       <Card title={title} icon="🏛️" right={<small className="muted">장관 {ministerCount(c)}/{ministerSlots(state.player.rankIndex)}석</small>}>
+        <RecommendButton state={state} actions={actions} />
         <div className="cab-mins">
           {ids.map((id) => {
             const m = ministryById(id);

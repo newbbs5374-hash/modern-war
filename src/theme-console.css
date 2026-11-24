@@ -877,3 +877,26 @@ select.wide, button.wide { width: 100%; }
 .tt-boost button { padding: 1px 3px; font-size: 10px; }
 .tt-boost button small { display: none; }
 .civ-gov-boost { display: flex; justify-content: flex-end; margin-top: 4px; }
+
+/* 비서 인사 추천 보고(11-25) */
+.rec-btn { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 2px 0 6px; }
+.rec-n { background: #e08a3c; color: #fff; padding: 0 6px; border-radius: 8px; font-size: 11px; }
+.rec-head { display: flex; gap: 8px; align-items: flex-start; padding: 6px; border: 1px solid var(--hud-dim); background: #3d4b59; margin-bottom: 6px; }
+.rec-head p { margin: 0; line-height: 1.35; }
+.rec-msg { margin: 0 0 4px; color: #4caf7a; }
+.rec-field { margin-top: 6px; }
+.rec-h { margin: 6px 0 2px; font-size: 13px; }
+.rec-group { border: 1px solid var(--hud-dim); padding: 4px; margin-bottom: 6px; background: rgba(0, 0, 0, 0.12); }
+.rec-gname { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+.rec-row { border-top: 1px dashed var(--hud-dim); padding: 4px 0; }
+.rec-row:first-of-type { border-top: 0; }
+.rec-seat { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.rec-swap { color: #e08a3c; font-weight: 700; }
+.rec-mid { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.rec-face { padding: 0; background: none; border: 0; min-height: 0; }
+.rec-who { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.rec-who small { font-size: 10.5px; }
+.rec-say { margin: 2px 0 4px; line-height: 1.35; }
+.rec-why { display: block; margin-top: 2px; }
+.rec-none { opacity: 0.85; }
+.rec-empty { text-align: center; padding: 12px 0; }
