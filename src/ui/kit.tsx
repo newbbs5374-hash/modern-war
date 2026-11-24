@@ -1,7 +1,7 @@
 // 화면 부품: 팝업 · 도움말(?) · 접기 · 탭 · 아이콘 타일 · 막대
 import { useEffect, useState, type ReactNode } from 'react';
 
-export function Modal({ title, icon, onClose, children, footer }: { title: string; icon?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ title, icon, onClose, children, footer, big }: { title: string; icon?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; big?: boolean }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', k);
@@ -9,7 +9,7 @@ export function Modal({ title, icon, onClose, children, footer }: { title: strin
   }, [onClose]);
   return (
     <div className="modal-back" onClick={onClose}>
-      <div className="modal" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div className={big ? 'modal modal-big' : 'modal'} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           {icon && <span className="modal-ico">{icon}</span>}
           <h3>{title}</h3>
