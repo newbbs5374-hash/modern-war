@@ -1,7 +1,7 @@
 // 나라별 얼굴 520장 명령문 만들기: npm run faces → scripts/face-sheets.json(자르기 도구용) + docs/face-country-prompts.md(대장용 명령문)
 import { it } from 'vitest';
 import { writeFileSync } from 'fs';
-import { faceSheets, US_ETH_NAME, type FaceSheet } from '../src/data/faces';
+import { faceSheets, faceSheetsExtra, US_ETH_NAME, type FaceSheet } from '../src/data/faces';
 import { Rng } from '../src/game/rng';
 
 const KO: Record<string, string> = {
@@ -50,22 +50,30 @@ function desc(rng: Rng, c: FaceSheet['cells'][number]): { en: string; ko: string
   return { en, ko };
 }
 
-it('faces guide', () => {
-  const sheets = faceSheets();
-  const rng = new Rng(20261124);
-  writeFileSync(
-    'scripts/face-sheets.json',
-    JSON.stringify(sheets.map((s) => ({ sheet: s.sheet, grid: s.grid, cells: s.cells.map((c) => c.file) })), null, 1) + '\n',
-  );
+function guide(sheets: FaceSheet[], seed: number, jsonOut: string, mdOut: string, extra: boolean) {
+  const rng = new Rng(seed);
+  writeFileSync(jsonOut, JSON.stringify(sheets.map((s) => ({ sheet: s.sheet, grid: s.grid, cells: s.cells.map((c) => c.file) })), null, 1) + '\n');
+  const per = sheets.filter((s) => s.country === 'kr').length;
   const L: string[] = [];
-  L.push('# 나라별 인물 얼굴 520장 (11/24, 나라별 40장)', '');
-  L.push('게임 속 장관 후보·정계·재계·언론·시민·외국 장관이 이 얼굴을 **겹치지 않게 나눠** 써요. 게임이 얼굴을 먼저 정하고, 그 얼굴의 나라·인종에 맞는 이름표에서 이름을 뽑아서 이름과 인종이 어긋나지 않아요.', '');
-  L.push('## 어떻게 만드나요', '');
-  L.push('- 그림 한 장에 **3×3 = 9명**(나라마다 마지막 5번째 장만 **2×2 = 4명**). 나라마다 5장, 모두 **65장**이에요.');
-  L.push('- **채팅창 13개**: 나라마다 창 하나(미국은 백인·흑인·히스패닉·아시아계를 한 창에서). 창마다 5장을 차례로 만들어요.');
-  L.push('- 창마다 **첫 그림만** 아래 "틀 명령문"을 먼저 붙이고, 참고 그림 2장(`guides/face-country-ref.zip` 안의 `ref-face-spot.png` + `leader-<나라>.webp`)을 첨부하세요. 두 번째부터는 장 명령문만 보내면 돼요.');
-  L.push('- 저장 이름은 장마다 적힌 `sheet-<나라>-<번호>.png` 그대로. 다 만들면 65장을 zip 하나로 묶어 프로젝트 파일에 올려 주세요. 제가 9명씩 잘라서(`scripts/cut_faces.py`) 비슷한 얼굴을 거른 뒤 게임에 넣어요.');
-  L.push('- 그림 품질이 떨어지면(얼굴이 뭉개지거나 9칸이 안 맞으면) 그 장만 다시 만들어 주세요. 잘 안 되면 말씀해 주시면 2×2(4명) 명령문으로 바꿔 드릴게요.', '');
+  if (extra) {
+    L.push('# 나라별 인물 얼굴 추가 286장 (11/24, 나라별 22장 더)', '');
+    L.push('지금 나라마다 얼굴이 40장인데 한 판에 그 나라 사람이 약 55명 나와서 다른 탭끼리 얼굴이 겹쳐요. 나라마다 **22장(남 13 · 여 9)** 을 더 넣으면 62장이 되어 겹치지 않아요. 지난번 얼굴과 **다른 사람**이어야 해요.', '');
+    L.push('## 어떻게 만드나요', '');
+    L.push(`- 나라마다 **${per}장**(3×3 = 9명 두 장 + 2×2 = 4명 한 장), 모두 **${sheets.length}장**이에요.`);
+    L.push('- **채팅창 13개**: 나라마다 창 하나. 지난번 그 나라 창이 남아 있으면 거기서 이어서 장 명령문만 보내도 돼요(화풍이 더 잘 맞아요).');
+    L.push('- 새 창이면 **첫 그림에만** 아래 "틀 명령문"을 먼저 붙이고 참고 그림 2장(`guides/face-country-ref.zip` 안의 `ref-face-spot.png` + `leader-<나라>.webp`)을 첨부하세요.');
+    L.push('- 저장 이름은 장마다 적힌 `sheet-<나라>-<번호>.png`(번호 6~8) 그대로. 다 만들면 zip 하나로 묶어 프로젝트 파일에 올려 주세요. 제가 잘라서 게임에 넣어요.');
+    L.push('- 얼굴이 뭉개지거나 칸이 안 맞는 장만 다시 만들어 주세요.', '');
+  } else {
+    L.push('# 나라별 인물 얼굴 520장 (11/24, 나라별 40장)', '');
+    L.push('게임 속 장관 후보·정계·재계·언론·시민·외국 장관이 이 얼굴을 **겹치지 않게 나눠** 써요. 게임이 얼굴을 먼저 정하고, 그 얼굴의 나라·인종에 맞는 이름표에서 이름을 뽑아서 이름과 인종이 어긋나지 않아요.', '');
+    L.push('## 어떻게 만드나요', '');
+    L.push('- 그림 한 장에 **3×3 = 9명**(나라마다 마지막 5번째 장만 **2×2 = 4명**). 나라마다 5장, 모두 **65장**이에요.');
+    L.push('- **채팅창 13개**: 나라마다 창 하나(미국은 백인·흑인·히스패닉·아시아계를 한 창에서). 창마다 5장을 차례로 만들어요.');
+    L.push('- 창마다 **첫 그림만** 아래 "틀 명령문"을 먼저 붙이고, 참고 그림 2장(`guides/face-country-ref.zip` 안의 `ref-face-spot.png` + `leader-<나라>.webp`)을 첨부하세요. 두 번째부터는 장 명령문만 보내면 돼요.');
+    L.push('- 저장 이름은 장마다 적힌 `sheet-<나라>-<번호>.png` 그대로. 다 만들면 65장을 zip 하나로 묶어 프로젝트 파일에 올려 주세요. 제가 9명씩 잘라서(`scripts/cut_faces.py`) 비슷한 얼굴을 거른 뒤 게임에 넣어요.');
+    L.push('- 그림 품질이 떨어지면(얼굴이 뭉개지거나 9칸이 안 맞으면) 그 장만 다시 만들어 주세요. 잘 안 되면 말씀해 주시면 2×2(4명) 명령문으로 바꿔 드릴게요.', '');
+  }
   L.push('## 틀 명령문 (창마다 첫 그림에 한 번)', '');
   L.push('```');
   L.push(
@@ -78,19 +86,26 @@ it('faces guide', () => {
     if (s.country !== last) {
       win++;
       last = s.country;
-      L.push(`---`, '', `## 창 ${win} · ${KO[s.country]} · 5장 (첨부: ref-face-spot.png + leader-${s.country}.webp)`, '');
+      L.push(`---`, '', `## 창 ${win} · ${KO[s.country]} · ${per}장 (${extra ? '새 창이면 ' : ''}첨부: ref-face-spot.png + leader-${s.country}.webp)`, '');
     }
     const ds = s.cells.map((c) => desc(rng, c));
     L.push(`### ${s.sheet}.png · 창 ${win} · ${s.grid}×${s.grid} = ${s.cells.length}명`);
     L.push(`- ${ds.map((d, i) => `${i + 1}) ${d.ko}`).join(' · ')}`);
     L.push('```');
-    const first = s.sheet.endsWith('-1');
+    const first = s.sheet.endsWith(extra ? '-6' : '-1');
     L.push(
-      `${first ? 'First sheet.' : 'Next sheet, same fixed rules and same style as the previous sheets in this chat.'} A ${s.grid}x${s.grid} grid of ${s.cells.length} different people.${s.grid === 2 ? ' (This one is 2x2, four cells.)' : ''}`,
+      `${first ? (extra ? 'New sheet (if this is a new chat, this is the first sheet). These must be NEW people, clearly different from any face in my earlier sheets.' : 'First sheet.') : 'Next sheet, same fixed rules and same style as the previous sheets in this chat.'} A ${s.grid}x${s.grid} grid of ${s.cells.length} different people.${s.grid === 2 ? ' (This one is 2x2, four cells.)' : ''}`,
     );
     ds.forEach((d, i) => L.push(`${i + 1}) ${d.en}.`));
     L.push(`Backgrounds vary: blurred cabinet room, press room, parliament corridor, office bookshelves. File name: save this image as ${s.sheet}.png`);
     L.push('```', '');
   }
-  writeFileSync('docs/face-country-prompts.md', L.join('\n'));
+  writeFileSync(mdOut, L.join('\n'));
+}
+
+it('faces guide', () => {
+  guide(faceSheets(), 20261124, 'scripts/face-sheets.json', 'docs/face-country-prompts.md', false);
+});
+it('faces guide extra', () => {
+  guide(faceSheetsExtra(), 20261125, 'scripts/face-sheets-2.json', 'docs/face-country-prompts-2.md', true);
 });
