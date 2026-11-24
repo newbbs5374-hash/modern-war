@@ -18,9 +18,9 @@ import { EndingCard, VictoryCard } from './victoryScreens';
 import { Chip, Modal, Tile, useTab } from './kit';
 import { FLAG } from './flag';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
-import { cityGrowthMap } from '../game/growth';
+import { cityGrowthMap, cityStage } from '../game/growth';
 import { cityTagMap } from '../game/cityTags';
-import { cityById } from '../data/cities';
+import { CITIES, cityById } from '../data/cities';
 import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { GRAND_RANK, OPERATION_RANK } from '../data/officers';
@@ -423,7 +423,7 @@ function MapPanel({ state }: ScreenProps) {
             ))}
           </span>
         }
-        help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 점선은 도(주·성) 경계예요. 주요 도시를 점령하면 공격을 시작한 도시부터 그 도시까지 길목의 땅도 함께 차지하고, 빼앗긴 땅은 점령한 나라 색에 빗금으로 보여요. 🚢✈️🛡️ 배·비행기·전차는 그 나라가 가진 병과예요(우리나라는 직접 만든 부대). 평소엔 자기 나라 둘레를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. 해외 파병(외교 → 파병) 부대는 파병 간 나라 둘레에서 움직여요.</p>}
+        help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 점선은 도(주·성) 경계예요. 주요 도시를 점령하면 공격을 시작한 도시부터 그 도시까지 길목의 땅도 함께 차지하고, 빼앗긴 땅은 점령한 나라 색에 빗금으로 보여요. 🚢✈️🛡️ 배·비행기·전차는 그 나라가 가진 병과예요(우리나라는 직접 만든 부대). 평소엔 자기 나라 둘레를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. 해외 파병(외교 → 파병) 부대는 파병 간 나라 둘레에서 움직여요. 확대할수록 자세해져요: 3배부터 실제 강·고속도로와 도시 단계 아이콘, 5배부터 철도·지방 도로. 서로 전쟁 중인 두 나라 땅이 맞닿은 곳엔 붉은 전선이 생기고, 공격받는 도시는 붉게 깜빡여요.</p>}
       >
         <WorldMap
           world={w}
@@ -431,6 +431,7 @@ function MapPanel({ state }: ScreenProps) {
           selectedId={sel ?? me}
           onSelect={setSel}
           mode={mode}
+          cityLv={Object.fromEntries(CITIES.map((c) => [c.id, cityStage(state, c.id).stage.lv]))}
           army={{ ...state.economy.army }}
           deploys={(state.deploy?.list ?? []).map((d) => ({
             from: me,
