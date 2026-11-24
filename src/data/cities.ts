@@ -30,6 +30,21 @@ export const CITIES: City[] = COUNTRIES.flatMap((c) =>
   }),
 );
 
+/** 실제로 바다에 닿은 도시(항만 구역을 지을 수 있음). 강 하구 항구·수도권 항구 포함 */
+export const COASTAL_CITIES: ReadonlySet<string> = new Set([
+  '워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '휴스턴',
+  '톈진', '광저우', '선전', '상하이',
+  '상트페테르부르크', '무르만스크', '아르한겔스크', '블라디보스토크',
+  '함부르크', '도쿄', '후쿠오카', '런던',
+  '콜카타', '첸나이', '뭄바이', '서울', '부산',
+  '이스탄불', '이즈미르', '텔아비브', '하이파', '반다르아바스', '오데사', '남포',
+]);
+/** 도시가 바다에 닿았는지(분쟁 섬처럼 도시가 아닌 곳은 늘 바닷가) */
+export function isCoastalCity(id: string): boolean {
+  const c = CITIES.find((x) => x.id === id);
+  return c ? COASTAL_CITIES.has(c.name) : true;
+}
+
 const byId = new Map(CITIES.map((c) => [c.id, c]));
 export function cityById(id: string): City {
   const c = byId.get(id);

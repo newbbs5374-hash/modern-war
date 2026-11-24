@@ -135,6 +135,22 @@ describe('외교', () => {
 });
 
 describe('도시', () => {
+  it('항만은 실제 바닷가 도시만 · 항만·비행장은 연구 없이 지을 수 있음', () => {
+    const s = rich(setRank(newGame('t', 'ru', 0, { seed: 3 }), 6));
+    // 모스크바(ru-0)는 내륙: 바닷가 칸이 없고 항만은 못 지음
+    const moscow = C.cityTiles('ru-0').filter((t) => !t.center);
+    expect(moscow.some((t) => C.terrainOf(t.q, t.r) === '바닷가')).toBe(false);
+    expect(C.canDistrict(s, 'ru-0', hexKey(moscow[0].q, moscow[0].r), 'harbor')).toMatch(/바다에 닿지 않은/);
+    // 내륙 도시도 비행장은 됨(연구 없이)
+    const flat = moscow.find((t) => C.terrainOf(t.q, t.r) === '평지')!;
+    expect(C.canDistrict(s, 'ru-0', hexKey(flat.q, flat.r), 'airfield')).toBeNull();
+    // 상트페테르부르크(ru-1)는 바닷가 도시: 연구 없이 항만
+    const spb = C.cityTiles('ru-1').find((t) => !t.center && C.terrainOf(t.q, t.r) === '바닷가')!;
+    expect(C.canDistrict(s, 'ru-1', hexKey(spb.q, spb.r), 'harbor')).toBeNull();
+    // 덴버(us-4)처럼 예전 지도 탓에 바닷가가 있던 내륙 도시도 이제 없음
+    expect(C.cityTiles('us-4').some((t) => C.terrainOf(t.q, t.r) === '바닷가')).toBe(false);
+  });
+
   it('구역 짓기(칸 조건·도시 크기만큼), 완공되면 효과·번뜩임, 항만 없으면 군함 못 만듦', () => {
     let s = rich(setRank(newGame('t', 'kr', 0, { seed: 8 }), 6));
     s = C.debugAllResearch(s);

@@ -1,7 +1,7 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
 import { useMemo, useState } from 'react';
-import { CITIES, cityById } from '../data/cities';
+import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
   AGENDAS,
@@ -544,7 +544,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         <Tip label="이유" title="민심 목표" rows={C.loyaltyReasons(state, id).map(([k, v]) => [k, signed(Math.round(v))])} total={`${Math.round(target)}`} />
       </div>
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
-      <CityView cells={cells} coast={coast} sel={sel} onPick={(k) => (setSel(k), setMsg(''))} uid={id} />
+      <CityView cells={cells} coast={coast} sel={sel} onPick={(k) => (setSel(k), setMsg(''))} uid={id} inland={!isCoastalCity(id)} />
       <div className="legend small muted">
         <span>
           <i style={{ background: TERRAIN_COLOR.평지 }} /> 평지
@@ -557,6 +557,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         <span>🏛️ 도심</span>
         <span>◌ 매장지 · ⛏️ 채굴장</span>
       </div>
+      <p className="small muted">{isCoastalCity(id) ? '🌊 바다에 닿은 도시 · 가장자리 바닷가 칸에 ⚓항만을 지을 수 있어요' : '🏞️ 내륙 도시 · ⚓항만은 못 지어요(🛫비행장은 돼요)'}</p>
       <p className="small">
         구역 {cc.districts.length}/{C.districtSlots(state, id)} ·{' '}
         {cc.districts.map((d) => `${districtById(d.id).icon}${d.doneMs > state.worldMs ? `(${timeLeft(d.doneMs - state.worldMs)})` : ''}`).join(' ') || '아직 없음'}
