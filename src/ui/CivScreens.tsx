@@ -1,5 +1,6 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
+import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar } from './BoostBar';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
@@ -1307,7 +1308,8 @@ export function IslandPanel(props: ScreenProps) {
           </span>
           <small className={ready ? 'good' : 'muted'}>🕊️ 사절 {ready ? '준비됨' : timeLeft(c.envoyReadyMs - state.worldMs)}</small>
           <Help title="분쟁 섬 영향력">
-            <p>주인 없는 분쟁 섬 12곳마다 주민 대표가 있어요. 사절을 보내거나(예산 {fmt(ENVOY_COST)}) 섬 부탁(자원 보내기)을 들어주면 영향력이 쌓여요.</p>
+            <p>여러 나라가 실제로 다투는 섬 12곳마다 주민 대표가 있어요. 그 섬을 실제로 다투는 나라는 영향력이 20% 더 쌓이고, 남이 1등을 하면 그 나라와 긴장이 조금씩 올라요.</p>
+            <p> 사절을 보내거나(예산 {fmt(ENVOY_COST)}) 섬 부탁(자원 보내기)을 들어주면 영향력이 쌓여요.</p>
             <p>
               영향력 1등이면서 {ISLAND_LEAD_MIN} 이상이면 그 섬 자원을 시간당 {ISLAND_RES_PER_HOUR}개 받고, 국제 회의 표가 1장 늘어요. 다른 나라도 가까운 섬에 영향력을 쌓아요.
             </p>
@@ -1323,7 +1325,7 @@ export function IslandPanel(props: ScreenProps) {
             <Tile
               key={p.id}
               icon={<IslandIcon id={p.id} badge={lead.id ? FLAG[lead.id] : p.res === '항구' ? '⚓' : <ResIcon res={p.res} inline />} />}
-              label={p.name}
+              label={`${p.name}${claimsIsland(p.id, me) ? ' ★' : ''}`}
               sub={`나 ${Math.round(mineV)} · ${lead.id ? (lead.id === me ? '1등!' : countryById(lead.id).name.slice(0, 4)) : '주인 없음'}`}
               tone={lead.id === me ? 'gold' : undefined}
               onClick={() => setPick(p.id)}
@@ -1339,6 +1341,7 @@ export function IslandPanel(props: ScreenProps) {
 function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string; onClose: () => void }) {
   const p = PIONEER_ISLANDS.find((x) => x.id === id)!;
   const me = state.player.countryId;
+  const real = REAL_ISLANDS[id];
   const inf = C.civOf(state).influence[id] ?? {};
   const top = Object.entries(inf)
     .sort((a, b) => b[1] - a[1])
@@ -1354,6 +1357,17 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
         {islandArtUrl(p.id) && (
           <div className="unit-photo island-photo">
             <IslandIcon id={p.id} />
+          </div>
+        )}
+        {real && (
+          <div className="small isle-real">
+            {real.alt && <div className="muted">다른 이름: {real.alt}</div>}
+            <div>
+              ⚔️ 다투는 나라: {real.sides.map((x) => `${FLAG[x]} ${countryById(x).name}`).join(' · ')}
+              {real.others.length > 0 && <span className="muted"> · {real.others.join(' · ')}</span>}
+            </div>
+            <div className="muted">📜 {real.story}</div>
+            {claimsIsland(id, me) && <div className="good">★ 우리가 다투는 섬: 영향력 +{Math.round(CLAIM_INFLUENCE * 100)}%</div>}
           </div>
         )}
         <p className="small">
@@ -1390,7 +1404,7 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
         >
           🕊️ 사절 보내기
           <br />
-          <small>{ev ?? `${fmt(ENVOY_COST)} · 영향력 +${Math.round(10 * C.influenceMult(state))}`}</small>
+          <small>{ev ?? `${fmt(ENVOY_COST)} · 영향력 +${Math.round(10 * C.influenceMult(state, id))}`}</small>
         </button>
         <button
           className="gold"

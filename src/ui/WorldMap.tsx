@@ -1,3 +1,4 @@
+import { REAL_ISLANDS } from '../data/islands';
 import {
   useEffect,
   useRef,
@@ -8,7 +9,7 @@ import {
 import { CITIES } from "../data/cities";
 import { CITY_RES, RES_ICON, type Res } from "../data/economy";
 import { CITY_INST, instById } from "../data/institutions";
-import { BLOCS, COUNTRIES, HOLY_CITY, type Relation } from "../data/world";
+import { BLOCS, COUNTRIES, HOLY_CITY, countryById, type Relation } from "../data/world";
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
 import { KR_INNER, KR_OUTLINE } from "../data/krProvinces";
 import { GEO_PROV_INNER } from "../data/provinces";
@@ -862,7 +863,7 @@ export function WorldMap({
               </g>
             );
           })}
-      {/* 분쟁 섬(가상의 작은 섬)·고대 성지 */}
+      {/* 분쟁 섬(실제 분쟁 섬)·고대 성지 */}
       {PIONEER_ISLANDS.map((p) => (
         <path
           key={p.id}
@@ -872,7 +873,7 @@ export function WorldMap({
           strokeWidth="0.5"
         >
           <title>
-            {p.name} · 주인 없는 분쟁 섬 · {p.res}
+            {p.name} · 분쟁 섬({REAL_ISLANDS[p.id]?.sides.map((x) => countryById(x).name).join('·')} 등) · {p.res}
           </title>
         </path>
       ))}

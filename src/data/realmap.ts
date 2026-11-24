@@ -75,22 +75,24 @@ export const CITY_LONLAT: Record<string, [number, number]> = {
   남포: [124.9, 38.4],
 };
 
-/** 분쟁 섬(가상의 작은 섬)·고대 성지 자리 [경도, 위도]: 실제 바다 위 */
+/** 분쟁 섬(실제 분쟁 섬, 11-24)·고대 성지 자리 [경도, 위도]. 섬 자체가 땅으로 그려진 곳(브랑겔·스발바르)은 바로 옆 바다 */
 export const ISLAND_LONLAT: Record<string, [number, number]> = {
-  "p-cheongseok": [114, 12],
-  "p-whale": [150, 55],
-  "p-storm": [-10, 62],
-  "p-twin": [155, 33],
-  "p-flame": [63, 18],
-  "p-fog": [45, 74],
-  "p-southwind": [89, 14],
-  "p-coral": [135, 18],
-  "p-turtle": [175, 28],
-  "p-southcross": [75, 6.5],
-  "p-blackrock": [178, 58],
-  "p-dawn": [126, 30],
+  "p-cheongseok": [114.3, 10.0],
+  "p-whale": [147.0, 44.0],
+  "p-storm": [-13.7, 57.6],
+  "p-twin": [112.0, 16.5],
+  "p-flame": [55.03, 25.87],
+  "p-fog": [12.0, 77.0],
+  "p-southwind": [93.35, 14.1],
+  "p-coral": [117.75, 15.15],
+  "p-turtle": [166.6, 19.3],
+  "p-southcross": [79.6, 9.4],
+  "p-blackrock": [180.5, 69.9],
+  "p-dawn": [123.5, 25.75],
   holy: [31, 33.6],
 };
+/** 좁은 바다(해협·만)에 있는 섬: 바다 여유를 좁게 봄 */
+export const NARROW_SEA_ISLANDS = ["p-flame", "p-southcross"];
 
 export const islandXY = (id: string) => project(...ISLAND_LONLAT[id]);
 

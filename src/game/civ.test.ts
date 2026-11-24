@@ -8,6 +8,7 @@ import { PIONEER_ISLANDS, hexKey } from '../data/hexmap';
 import { govSlots, govById, slotCount } from '../data/civ';
 import { parseSave } from './save';
 import { COUNTRIES } from '../data/world';
+import { CLAIM_INFLUENCE, REAL_ISLANDS } from '../data/islands';
 import { relationOf } from './world';
 
 const H = 3600e3;
@@ -282,5 +283,14 @@ describe('자원 24종 · 연구 70개 · 체제 8가지(11-23)', () => {
     expect(C.canSetGov(s, 'technocracy')).toBeNull();
     s = C.setGov(s, 'technocracy');
     expect(C.effSum(s, 'research')).toBeGreaterThanOrEqual(0.25);
+  });
+});
+
+describe('실제 분쟁 섬(11-24)', () => {
+  it('섬 12곳 모두 실제 정보가 있고, 다투는 나라는 영향력 덤', () => {
+    for (const p of PIONEER_ISLANDS) expect(REAL_ISLANDS[p.id]?.sides.length).toBeGreaterThan(0);
+    const s = newGame('t', 'jp', 0, { seed: 1 });
+    expect(C.influenceMult(s, 'p-dawn')).toBeCloseTo(C.influenceMult(s) + CLAIM_INFLUENCE);
+    expect(C.influenceMult(s, 'p-flame')).toBeCloseTo(C.influenceMult(s));
   });
 });

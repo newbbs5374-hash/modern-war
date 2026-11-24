@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { CLAIM_INFLUENCE, CLAIM_TENSION, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { instSum } from './institutions';
 import { originEff, originOf } from './origin';
 import { cabBuild, cabFavor, cabGrowth, cabLoyalty, cabRes, cabResearch } from './cabinet';
@@ -590,8 +591,9 @@ export function islandLeader(s: GameState, island: string): { id: string | null;
 export function myIslands(s: GameState): string[] {
   return PIONEER_ISLANDS.filter((p) => islandLeader(s, p.id).id === s.player.countryId).map((p) => p.id);
 }
-export function influenceMult(s: GameState): number {
-  return 1 + effSum(s, 'influence') + (hasTech(s, 's-envoy') ? 0.2 : 0);
+/** 영향력 쌓이는 배율. 섬을 넘기면 그 섬을 실제로 다투는 나라일 때 덤(+20%) */
+export function influenceMult(s: GameState, island?: string): number {
+  return 1 + effSum(s, 'influence') + (hasTech(s, 's-envoy') ? 0.2 : 0) + (island && claimsIsland(island, s.player.countryId) ? CLAIM_INFLUENCE : 0);
 }
 export function canEnvoy(s: GameState, island: string): string | null {
   if (!PIONEER_ISLANDS.some((p) => p.id === island)) return '없는 섬';
@@ -609,9 +611,9 @@ export function sendEnvoy(s: GameState, island: string): GameState {
   const before = myIslands(s).length;
   let ns: GameState = { ...s, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - ENVOY_COST } } };
   ns = withCiv(ns, (c) => {
-    addInfluence(c, island, me, ENVOY_INFLUENCE * influenceMult(s));
+    addInfluence(c, island, me, ENVOY_INFLUENCE * influenceMult(s, island));
     c.envoyReadyMs = s.worldMs + ENVOY_COOLDOWN_MS;
-    clog(c, `🕊️ ${PIONEER_ISLANDS.find((p) => p.id === island)!.name}에 사절 → 영향력 +${Math.round(ENVOY_INFLUENCE * influenceMult(s))}`);
+    clog(c, `🕊️ ${PIONEER_ISLANDS.find((p) => p.id === island)!.name}에 사절 → 영향력 +${Math.round(ENVOY_INFLUENCE * influenceMult(s, island))}`);
   });
   return myIslands(ns).length > before ? eureka(ns, { kind: 'island' }) : ns;
 }
@@ -637,8 +639,8 @@ export function fulfillRequest(s: GameState, island: string): GameState {
   const before = myIslands(s).length;
   const ns = withCiv({ ...s, economy: { ...s.economy, stock: { ...s.economy.stock, [r.res]: s.economy.stock[r.res] - r.qty } } }, (c) => {
     c.reqDone[island] = r.period;
-    addInfluence(c, island, me, ISLAND_REQUEST_INFLUENCE * influenceMult(s));
-    clog(c, `🏝️ ${PIONEER_ISLANDS.find((p) => p.id === island)!.name} 부탁(${r.res} ${r.qty}개) 들어줌 → 영향력 +${Math.round(ISLAND_REQUEST_INFLUENCE * influenceMult(s))}`);
+    addInfluence(c, island, me, ISLAND_REQUEST_INFLUENCE * influenceMult(s, island));
+    clog(c, `🏝️ ${PIONEER_ISLANDS.find((p) => p.id === island)!.name} 부탁(${r.res} ${r.qty}개) 들어줌 → 영향력 +${Math.round(ISLAND_REQUEST_INFLUENCE * influenceMult(s, island))}`);
   });
   return myIslands(ns).length > before ? eureka(ns, { kind: 'island' }) : ns;
 }
@@ -1466,8 +1468,29 @@ export function civTick(s: GameState, pairsBefore: Record<string, { tension: num
     if (x.id === me || !isAlive(s.world, x.id)) continue;
     const cap = CITIES.find((ct) => ct.home === x.id && ct.capital)!;
     const near = [...PIONEER_ISLANDS].sort((a, b) => Math.hypot(a.x - cap.x, a.y - cap.y) - Math.hypot(b.x - cap.x, b.y - cap.y)).slice(0, 2);
+    // 실제로 다투는 섬은 멀어도 챙김
+    for (const p of PIONEER_ISLANDS) if (claimsIsland(p.id, x.id) && !near.includes(p)) near.push(p);
     const k = (c.aiGov[x.id] === 'assembly' ? 1.25 : 1) * (s.world.personalities[x.id] === '경제형' ? 1.2 : 1);
-    for (const p of near) if (rng.chance(0.6)) addInfluence(c, p.id, x.id, AI_INFLUENCE_PER_TICK * k * (1 + rng.next()));
+    for (const p of near) if (rng.chance(0.6)) addInfluence(c, p.id, x.id, AI_INFLUENCE_PER_TICK * k * (claimsIsland(p.id, x.id) ? 1 + CLAIM_INFLUENCE : 1) * (1 + rng.next()));
+  }
+  // 남이 다투는 섬에서 우리가 1등이거나, 우리가 다투는 섬에서 남이 1등이면 그 나라와 긴장이 조금씩 오름
+  {
+    const p3 = { ...ns.world.pairs };
+    let hot = false;
+    for (const p of PIONEER_ISLANDS) {
+      const lead = islandLeader({ ...ns, civ: c }, p.id).id;
+      if (!lead) continue;
+      for (const side of REAL_ISLANDS[p.id]?.sides ?? []) {
+        if (side === lead || (side !== me && lead !== me)) continue;
+        const other = side === me ? lead : side;
+        const pk = pairKey(me, other);
+        const pp = p3[pk];
+        if (!pp || pp.rel === '전쟁' || pp.rel === '연합') continue;
+        p3[pk] = { ...pp, tension: Math.min(99, pp.tension + CLAIM_TENSION) };
+        hot = true;
+      }
+    }
+    if (hot) ns = { ...ns, world: { ...ns.world, pairs: p3 } };
   }
   // 국제 회의
   if (c.council.on) {
