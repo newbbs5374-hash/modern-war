@@ -974,3 +974,7 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .aide-cand.on { outline: 2px solid var(--gold, #e6b800); }
 .aide-cand-face { flex: 0 0 48px; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 26px; background: rgba(0, 0, 0, 0.25); }
 .aide-cand-face .face-img { width: 100%; height: 100%; object-fit: cover; }
+/* 가속 버튼(11-24): 연구 칸·연구 창 */
+.civ-cur-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.civ-cur-wrap .boost-bar.compact { justify-content: flex-end; }
+.tech-now { display: flex; flex-direction: column; gap: 4px; width: 100%; }

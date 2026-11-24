@@ -3,11 +3,13 @@
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { applyOrigin, type OriginId } from './origin';
+import type { LeaderLook } from '../data/looks';
+import { START_SANCTIONS } from '../data/conflicts';
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS, TITLES, firstTierOfRank } from '../data/ranks';
 import { TITLE_MAX, syncTitle } from './title';
 import { PERSONALITIES } from '../data/leaders';
-import { aiTick, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
+import { aiTick, applyNowConflicts, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import { applyContracts, contractMoneyPerHour } from './economy';
 import { TRUST_START, generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
@@ -70,6 +72,10 @@ export interface GameState {
     pendingSalary: number;
     /** 지도자 출신(11-23). 옛 저장은 없음 */
     origin?: OriginId;
+    /** 내 얼굴(11-24). 옛 저장은 없음 → 예전 그림 */
+    look?: LeaderLook;
+    /** 지금 세계 정세로 시작한 판(11-24) */
+    realWorld?: boolean;
   };
   nations: Record<string, NationState>;
   /** 시험 버튼으로 건너뛴 총 시간(ms). 기록용 */
@@ -127,6 +133,10 @@ export interface NewGameOptions {
   seed?: number;
   /** 지도자 출신(11-23) */
   origin?: OriginId;
+  /** 지금 세계 정세로 시작(러-우 전쟁 등, 11-24). 끄면 모두 평화로 출발 */
+  realWorld?: boolean;
+  /** 내 얼굴(남/여 × 30·40·50·60대, 11-24) */
+  look?: LeaderLook;
 }
 
 export function newGame(name: string, countryId: string, now: number, opt: NewGameOptions = {}): GameState {
@@ -139,11 +149,12 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     };
   }
   const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
+  if (opt.realWorld) applyNowConflicts(world, countryId);
   const s: GameState = {
     version: SAVE_VERSION,
     worldMs: 0,
     lastRealTime: now,
-    player: { name, countryId, rankIndex: 0, salary: 0, pendingSalary: 0 },
+    player: { name, countryId, rankIndex: 0, salary: 0, pendingSalary: 0, ...(opt.look ? { look: opt.look } : {}), ...(opt.realWorld ? { realWorld: true } : {}) },
     nations,
     debugSkippedMs: 0,
     world,
@@ -154,6 +165,10 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     crisis: newCrisis(0),
   };
   s.cabinet = newCabinet(s);
+  if (opt.realWorld) {
+    // 시작부터 국제 제재를 받는 나라(러시아): 국방예산 −20%
+    for (const [id, days] of Object.entries(START_SANCTIONS)) s.civ!.council.active.push({ agenda: 'sanction', target: id, untilMs: days * REAL_MS_PER_GAME_DAY });
+  }
   return syncTitle(opt.origin ? addBuddy(applyOrigin(s, opt.origin), opt.origin, null) : s, true);
 }
 

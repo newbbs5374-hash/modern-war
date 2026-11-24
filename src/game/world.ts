@@ -46,6 +46,7 @@ import {
 } from './balance';
 import { Rng } from './rng';
 import { noteCapture } from './territory';
+import { FRONT_CITIES, NOW_CONFLICTS } from '../data/conflicts';
 import { instDefense } from './institutions';
 import type { NationState } from './state';
 
@@ -112,6 +113,28 @@ export function newWorld(seed: number, randomLeaders: boolean, firstTickMs: numb
     defense[c.id] = CITY_DEFENSE_MAX;
   }
   return { seed: rng.seed, nextTickMs: firstTickMs, personalities, pairs, owner, defense, events: [] };
+}
+
+/**
+ * 지금 세계 정세로 바꾸기(11-24): 러시아-우크라이나 전쟁, 이스라엘-이란·한반도 휴전, 국경·패권 긴장.
+ * 새 판 시작 때 한 번만 써요. 소식 목록에도 남겨요.
+ */
+export function applyNowConflicts(w: WorldState, player: string): WorldState {
+  for (const c of NOW_CONFLICTS) {
+    const p = w.pairs[pairKey(c.a, c.b)];
+    if (!p) continue;
+    p.rel = c.rel;
+    p.tension = c.tension;
+    p.weariness = c.weariness;
+  }
+  for (const [name, d] of Object.entries(FRONT_CITIES)) {
+    const city = CITIES.find((x) => x.name === name);
+    if (city) w.defense[city.id] = Math.min(w.defense[city.id], d);
+  }
+  for (const c of [...NOW_CONFLICTS].reverse()) {
+    w.events.unshift({ t: 0, kind: '외교', text: `${c.icon} ${c.name}: ${c.text}`, mine: c.a === player || c.b === player });
+  }
+  return w;
 }
 
 export function relationOf(w: WorldState, a: string, b: string): Relation {

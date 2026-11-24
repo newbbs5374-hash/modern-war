@@ -1063,6 +1063,40 @@ export function unitTechLock(s: GameState, unit: string, variant?: unknown): str
 
 // ── 시간 흐름 ──
 
+/** 연구 점수를 한 줄에 넣기: 단계·완료를 넘기며 쓰고, 고른 연구가 없으면 12시간치까지 모아 둠 */
+function feedResearch(ns: GameState, c: CivState, line: 'mil' | 'soc', pts: number, rate: number): GameState {
+  while (pts > 0) {
+    const id = c.cur[line];
+    if (!id) {
+      c.bank[line] = Math.min(rate * 12, c.bank[line] + pts);
+      break;
+    }
+    const t = techById(id)!;
+    const need = t.hours * (c.eureka.includes(id) ? 0.5 : 1) - (c.progress[id] ?? 0);
+    if (pts < need) {
+      c.progress[id] = (c.progress[id] ?? 0) + pts;
+      pts = 0;
+    } else {
+      pts -= need;
+      const st = Math.min(TECH_STAGES - 1, c.stage?.[id] ?? 0) + 1;
+      if (st >= TECH_STAGES) ns = finishTech({ ...ns, civ: c }, c, t);
+      else {
+        (c.stage ??= {})[id] = st;
+        c.progress[id] = 0;
+        clog(c, `${t.icon} ${t.name} ${st}/${TECH_STAGES}단계 끝`);
+      }
+    }
+  }
+  return ns;
+}
+/** 가속(11-24): 지금 하는 연구에 점수를 바로 넣음 */
+export function addResearch(s: GameState, line: 'mil' | 'soc', pts: number): GameState {
+  if (!(pts > 0)) return s;
+  const c = cloneCiv(civOf(s));
+  const ns = feedResearch(s, c, line, pts, researchRate(s));
+  return { ...ns, civ: c };
+}
+
 /** ms만큼 쌓이는 것: 연구 · 민심 · 인구 · 섬 자원 · 자원 교환 협정 */
 export function civAccrue(s: GameState, ms: number): GameState {
   if (!(ms > 0)) return s;
@@ -1073,30 +1107,9 @@ export function civAccrue(s: GameState, ms: number): GameState {
   // 연구
   const rate = researchRate(s);
   for (const line of ['mil', 'soc'] as const) {
-    let pts = rate * h + c.bank[line];
+    const pts = rate * h + c.bank[line];
     c.bank[line] = 0;
-    while (pts > 0) {
-      const id = c.cur[line];
-      if (!id) {
-        c.bank[line] = Math.min(rate * 12, pts);
-        break;
-      }
-      const t = techById(id)!;
-      const need = t.hours * (c.eureka.includes(id) ? 0.5 : 1) - (c.progress[id] ?? 0);
-      if (pts < need) {
-        c.progress[id] = (c.progress[id] ?? 0) + pts;
-        pts = 0;
-      } else {
-        pts -= need;
-        const st = Math.min(TECH_STAGES - 1, c.stage?.[id] ?? 0) + 1;
-        if (st >= TECH_STAGES) ns = finishTech({ ...ns, civ: c }, c, t);
-        else {
-          (c.stage ??= {})[id] = st;
-          c.progress[id] = 0;
-          clog(c, `${t.icon} ${t.name} ${st}/${TECH_STAGES}단계 끝`);
-        }
-      }
-    }
+    ns = feedResearch(ns, c, line, pts, rate);
   }
   // 도시: 민심이 목표로 다가가고, 좋으면 인구가 자람
   const tmp: GameState = { ...ns, civ: c };

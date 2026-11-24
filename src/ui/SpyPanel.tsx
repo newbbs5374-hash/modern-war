@@ -1,4 +1,5 @@
 // 작전 → 첩보 탭: 공작원 보내기
+import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { Card, fmt } from './common';
 import { FLAG } from './flag';
@@ -34,6 +35,7 @@ export function SpyPanel({ state, actions }: ScreenProps) {
                 </span>
               </span>
               <span className="muted">{timeLeft(m.endMs - state.worldMs)}</span>
+              <BoostBar state={state} apply={actions.apply} target={{ kind: 'spy', id: m.id }} compact />
             </div>
           );
         })}
