@@ -80,3 +80,21 @@ describe('인물·부처', () => {
     expect(cabinetOf(s).people.length).toBeGreaterThan(50);
   });
 });
+
+describe('장관 임명 조건(11-24)', () => {
+  it('영입 값은 몸값 그대로, 영입 → 장관 청문회 → 자리', async () => {
+    const { newGame, advance } = await import('./state');
+    const C = await import('./cabinet');
+    let s = newGame('t', 'kr', 0, { seed: 1 });
+    const p = C.cabinetOf(s).people.find((x) => x.group === '인재')!;
+    expect(C.recruitCost(s, p)).toBe(p.pay);
+    expect(C.canAppointMinister(s, p.id, 'mnd')).toMatch(/영입/);
+    s = C.recruit(s, p.id);
+    s = C.appointMinister(s, p.id, 'mnd');
+    const q = C.cabinetOf(s).people.find((x) => x.group === '인재')!;
+    s = C.recruit(s, q.id);
+    expect(C.canAppointMinister(s, q.id, 'mofa')).toMatch(/청문회가 끝난 뒤/);
+    s = advance(s, 0.6 * 3600e3);
+    expect(C.cabinetOf(s).hearing).toBeNull();
+  });
+});

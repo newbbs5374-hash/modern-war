@@ -217,6 +217,16 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
               </button>
             );
           })}
+          {(() => {
+            const whys = MINISTRIES.map((m) => (pick === 'min' ? canAppointMinister(state, p.id, m.id) : canAppointVice(state, p.id, m.id)));
+            const allNo = whys.every(Boolean);
+            const why = whys.find((w) => w && !w.startsWith('이미')) ?? whys[0];
+            return allNo && why ? (
+              <p className="small warn" style={{ gridColumn: '1 / -1' }}>
+                ⚠️ 지금은 못 앉혀요: {why}
+              </p>
+            ) : null;
+          })()}
           <p className="small muted" style={{ gridColumn: '1 / -1' }}>
             {pick === 'min'
               ? `장관은 인사청문회(실제 30분)를 거쳐요. 통과 확률 ${pct(hearingChance(state, p))} · 장관 ${ministerCount(c)}/${ministerSlots(state.player.rankIndex)}석`
@@ -464,7 +474,8 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
           ))}
         </>
       )}
-      {!cands.length && !mn && <p className="small muted">👤 개인 → 인재 탭에서 사람을 먼저 영입하세요.</p>}
+      {!mn && cands.length > 0 && cands.every((p) => canAppointMinister(state, p.id, id)) && <p className="small warn">⚠️ {canAppointMinister(state, cands[0].id, id)}</p>}
+      {!cands.length && !mn && <p className="small muted">👤 개인 → 인재 탭에서 사람을 먼저 영입하세요(영입한 사람만 장관·차관이 될 수 있어요).</p>}
       <h4 className="cab-h">부처 업무</h4>
       {t ? (
         <p className="small">

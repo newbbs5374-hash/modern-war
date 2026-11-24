@@ -331,7 +331,8 @@ export const counterOn = (s: GameState) => buffSum(s, 'counter') > 0;
 
 /* ───────── 영입 · 임명 ───────── */
 
-export const recruitCost = (s: GameState, p: Person) => Math.round(p.pay * (1 + s.player.rankIndex * 0.15));
+// 11-24: 호칭(혜택 단계)과 상관없이 몸값 그대로(PR #99 뒤 단계가 늘 최고라 2.5배로 비싸졌던 것 바로잡음)
+export const recruitCost = (_s: GameState, p: Person) => Math.round(p.pay);
 
 function withCab(s: GameState, f: (c: CabinetState, ns: GameState) => GameState | void): GameState {
   const c = structuredClone(cabinetOf(s));
@@ -366,7 +367,11 @@ export function canAppointMinister(s: GameState, pid: number, min: MinistryId): 
   const c = cabinetOf(s);
   const p = c.people.find((x) => x.id === pid);
   if (!p || p.group !== '내각') return '영입한 사람만 앉힐 수 있어요';
-  if (c.hearing) return '다른 청문회가 진행 중이에요';
+  if (c.hearing) {
+    const h = c.people.find((x) => x.id === c.hearing!.pid);
+    const left = Math.max(1, Math.ceil((c.hearing.endMs - s.worldMs) / 60000));
+    return `${h ? `${h.name} ` : ''}청문회가 끝난 뒤에 할 수 있어요(약 ${left}분 남음, 청문회는 한 번에 한 명)`;
+  }
   if (ministerOf(c, min)) return '이미 장관이 있어요(먼저 해임)';
   const cur = p.seat?.kind === 'min' ? 0 : 1;
   if (ministerCount(c) + cur > ministerSlots(s.player.rankIndex)) return `장관 자리가 다 찼어요(${ministerSlots(s.player.rankIndex)}석)`;
