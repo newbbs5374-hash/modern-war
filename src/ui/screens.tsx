@@ -43,6 +43,8 @@ import { moodLabel, presOf } from '../game/approval';
 export interface GameActions {
   claim: () => void;
   save: () => void;
+  /** 카카오 서버와 지금 맞추기 */
+  cloudSync: () => void;
   load: () => void;
   exportCode: () => string;
   importCode: (code: string) => string | null;

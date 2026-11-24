@@ -10,6 +10,7 @@ import { STAT_ICON } from './icons';
 import { conflictsOf, otherSide, NOW_CONFLICTS } from '../data/conflicts';
 import { LEADER_LOOKS, lookName, playerKeys, type LeaderLook } from '../data/looks';
 import { Face } from './Portrait';
+import { CloudStartCard } from './CloudUI';
 
 export interface StartPick {
   randomLeaders: boolean;
@@ -21,10 +22,12 @@ export interface StartPick {
 interface Props {
   onStart: (name: string, countryId: string, pick: StartPick) => void;
   onImport: (code: string) => string | null;
+  /** 카카오 서버 저장으로 이어 하기 */
+  onCloud: () => void;
 }
 
 /** 새 게임: 이름과 나라 고르기 */
-export function StartScreen({ onStart, onImport }: Props) {
+export function StartScreen({ onStart, onImport, onCloud }: Props) {
   const [name, setName] = useState('');
   const [pick, setPick] = useState<string | null>(null);
   const [code, setCode] = useState('');
@@ -140,6 +143,7 @@ export function StartScreen({ onStart, onImport }: Props) {
           : '가까운 미래, 13개 나라는 평화롭게 출발하지만 자원과 바닷길을 두고 긴장이 쌓여요. 나라를 골라 지도자로 취임하세요. '}
         세계 시계는 실제 1시간 = 게임 하루예요.
       </p>
+      <CloudStartCard onContinue={onCloud} />
       <label className="field start-name">
         지도자 이름
         <input value={name} maxLength={12} placeholder="예: 김철수" onChange={(e) => setName(e.target.value)} />

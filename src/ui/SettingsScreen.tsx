@@ -20,6 +20,7 @@ import { Face, PortraitList } from './Portrait';
 import { LEADER_LOOKS, lookName, playerKeys } from '../data/looks';
 import { FieldArtList, IconArtList } from './FieldArtList';
 import type { ScreenProps } from './screens';
+import { CloudCard } from './CloudUI';
 
 type Pop = null | 'code' | 'time' | 'ops' | 'art' | 'reset' | 'look';
 type ArtTab = 'face' | 'field' | 'icon';
@@ -82,7 +83,8 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         </span>
       </section>
 
-      <Card icon="💾" title="저장" help="5초마다, 그리고 창을 닫을 때 이 브라우저에 자동 저장돼요. 다른 기기에서 이어 하려면 '코드 만들기'로 저장 코드를 복사해 두고, 그 기기에서 '코드로 불러오기'에 붙여 넣으세요.">
+      <Card icon="💾" title="저장" help="5초마다, 그리고 창을 닫을 때 이 브라우저에 자동 저장돼요. 카카오로 로그인하면 카카오 서버에도 저장돼서 휴대폰·집 PC·회사 PC 어디서 열어도 같은 판이 이어져요(직접 한 일은 몇 초 뒤 올라가고, 창을 다시 열면 다른 기기의 더 나중 진행을 받아 와요). 로그인 없이 옮기려면 '코드 만들기'로 저장 코드를 복사해 그 기기에서 '코드로 불러오기'에 붙여 넣으세요.">
+        <CloudCard onSync={actions.cloudSync} />
         <div className="tiles c4">
           <Tile icon="💾" label="지금 저장" onClick={() => (actions.save(), say('저장했어요.'))} />
           <Tile icon="📂" label="불러오기" sub="마지막 저장" onClick={() => (actions.load(), say('마지막 저장을 불러왔어요.'))} />
