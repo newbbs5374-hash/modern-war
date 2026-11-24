@@ -78,7 +78,7 @@ import {
 } from "../game/budgetSeason";
 import { cityById } from "../data/cities";
 import { chainState } from "../game/chains";
-import { SCENES, sceneArt } from "./scenes";
+import { SCENES, domArt, sceneArt } from "./scenes";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const longLeft = (ms: number) =>
@@ -128,7 +128,7 @@ export function AgendaPanel({ state, actions }: ScreenProps) {
                 className={`dom-branch ${mine ? "on" : ""} ${cur === b.id ? "sel" : ""}`}
                 onClick={() => (mine ? setOpen(b.id) : setPick(b.id))}
               >
-                <span className="dom-ico">{b.icon}</span>
+                <DomIco k={`agenda-${b.id}`} icon={b.icon} />
                 <b>{b.name}</b>
                 <small>
                   {mine
@@ -320,7 +320,7 @@ export function GroupsPanel({ state, actions }: ScreenProps) {
                 className={`dom-group t-${tone}`}
                 onClick={() => setWhy(g.id)}
               >
-                <span className="dom-ico">{g.icon}</span>
+                <DomIco k={`group-${g.id}`} icon={g.icon} />
                 <b>{g.name}</b>
                 <small>힘 {Math.round(pw[g.id])}%</small>
                 <Meter value={v} max={100} tone={tone} />
@@ -436,7 +436,7 @@ export function CodesPanel({ state, actions }: ScreenProps) {
                 className={`dom-code ${codePick(state, c.id) !== 1 ? "on" : ""}`}
                 onClick={() => setOpen(c.id)}
               >
-                <span className="dom-ico">{c.icon}</span>
+                <DomIco k={`code-${c.id}`} icon={c.icon} />
                 <b>{c.name}</b>
                 <small>{o.name}</small>
               </button>
@@ -530,7 +530,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
                 }}
               >
                 {ready && <i className="badge">!</i>}
-                <span className="dom-ico">{p.icon}</span>
+                <DomIco k={`proj-${p.id}`} icon={p.icon} />
                 <b>{p.name}</b>
                 <small>
                   {st >= 3
@@ -683,7 +683,7 @@ function ChainsCard({ state }: Pick<ScreenProps, "state">) {
               className={`dom-chain ${done >= 4 ? "done" : done ? "on" : ""}`}
               onClick={() => setOpen(def.id)}
             >
-              <span className="dom-ico">{def.icon}</span>
+              <DomIco k={`chain-${def.id}`} icon={def.icon} />
               <b>{def.name}</b>
               <span className="dom-chain-links">
                 {def.links.map((l, i) => (
@@ -770,7 +770,7 @@ function ZonesCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
               className={`dom-zone ${z ? "on" : ""}`}
               onClick={() => setCityPick(c)}
             >
-              <span className="dom-ico">{z ? z.icon : "🏘️"}</span>
+              {z ? <DomIco k={`zone-${z.id}`} icon={z.icon} /> : <span className="dom-ico">🏘️</span>}
               <b>{cityById(c)?.name}</b>
               <small>{z ? z.name : "일반"}</small>
             </button>
@@ -986,3 +986,9 @@ export function SceneImg({ scene, big }: { scene: string; big?: boolean }) {
 /** 사진첩 쓰기 전에 dom 없으면 빈 화면(첫 틱 전) */
 export const hasDom = (s: ScreenProps["state"]) => !!s.dom;
 export { branchById };
+
+/** 내정 카드 아이콘: src/assets/dom/<이름>.webp 그림이 있으면 그림, 없으면 이모지 */
+function DomIco({ k, icon }: { k: string; icon: string }) {
+  const u = domArt(k);
+  return <span className="dom-ico">{u ? <img src={u} alt="" /> : icon}</span>;
+}

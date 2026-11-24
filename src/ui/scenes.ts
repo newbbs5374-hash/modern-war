@@ -29,3 +29,9 @@ export const SCENES: Record<string, { name: string; icon: string; bg: string }> 
 export function sceneArt(scene: string, night: boolean): string | null {
   return URLS[`scene-${scene}-${night ? 'night' : 'day'}`] ?? URLS[`scene-${scene}-day`] ?? URLS[`scene-${scene}`] ?? null;
 }
+
+// 내정 카드 아이콘 그림(11/24): src/assets/dom/<agenda|group|code|proj|chain|zone>-<id>.webp
+const DOM_FILES = import.meta.glob('../assets/dom/*.{png,jpg,jpeg,webp}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const DOM_URLS: Record<string, string> = {};
+for (const [p, u] of Object.entries(DOM_FILES)) DOM_URLS[p.split('/').pop()!.replace(/\.[^.]+$/, '')] = u;
+export const domArt = (key: string): string | null => DOM_URLS[key] ?? null;
