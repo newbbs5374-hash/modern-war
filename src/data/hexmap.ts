@@ -92,20 +92,20 @@ export interface PioneerIsland {
   y: number;
 }
 
-/** 분쟁 섬 12개: 이름 · 나는 자원 · 놓을 자리(옛 지도 좌표 근처). 기획 스레드 목록과 같음 */
+/** 분쟁 섬 12개(실제 분쟁 섬, 11-24): 이름 · 나는 자원 · 육각 자리(옛 지도 좌표). 실제 위치·다투는 나라는 data/islands.ts */
 const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [number, number] }> = [
-  { id: 'p-cheongseok', name: '푸른암초', res: '갈륨', at: [690, 120] },
-  { id: 'p-whale', name: '고래섬', res: '석유', at: [820, 60] },
-  { id: 'p-storm', name: '폭풍섬', res: '티타늄', at: [130, 50] },
-  { id: 'p-twin', name: '쌍둥이섬', res: '알루미늄', at: [770, 350] },
-  { id: 'p-flame', name: '불꽃섬', res: '석유', at: [470, 345] },
-  { id: 'p-fog', name: '안개섬', res: '갈륨', at: [70, 300] },
-  { id: 'p-southwind', name: '남풍섬', res: '석유', at: [380, 540] },
-  { id: 'p-coral', name: '산호환초', res: '산호', at: [720, 480] },
-  { id: 'p-turtle', name: '거북섬', res: '알루미늄', at: [850, 480] },
-  { id: 'p-southcross', name: '남십자섬', res: '희토류', at: [110, 540] },
-  { id: 'p-blackrock', name: '검은바위섬', res: '강철', at: [560, 15] },
-  { id: 'p-dawn', name: '새벽섬', res: '항구', at: [770, 220] },
+  { id: 'p-cheongseok', name: '스프래틀리 군도', res: '갈륨', at: [690, 120] },
+  { id: 'p-whale', name: '남쿠릴 열도', res: '석유', at: [820, 60] },
+  { id: 'p-storm', name: '로콜 섬', res: '티타늄', at: [130, 50] },
+  { id: 'p-twin', name: '파라셀 군도', res: '알루미늄', at: [770, 350] },
+  { id: 'p-flame', name: '아부무사 섬', res: '석유', at: [470, 345] },
+  { id: 'p-fog', name: '스발바르 제도', res: '갈륨', at: [70, 300] },
+  { id: 'p-southwind', name: '코코 제도', res: '석유', at: [380, 540] },
+  { id: 'p-coral', name: '스카버러 암초', res: '산호', at: [720, 480] },
+  { id: 'p-turtle', name: '웨이크 섬', res: '알루미늄', at: [850, 480] },
+  { id: 'p-southcross', name: '카치섬', res: '희토류', at: [110, 540] },
+  { id: 'p-blackrock', name: '브랑겔 섬', res: '강철', at: [560, 15] },
+  { id: 'p-dawn', name: '센카쿠 열도', res: '항구', at: [770, 220] },
 ];
 const HOLY_AT: [number, number] = [150, 455];
 /** 분쟁 섬 크기(칸) */

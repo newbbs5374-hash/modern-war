@@ -5,6 +5,7 @@ import {
   GEO,
   GEO_PATH,
   ISLAND_LONLAT,
+  NARROW_SEA_ISLANDS,
   isLand,
   openSea,
   project,
@@ -32,7 +33,7 @@ describe("현실 세계지도", () => {
   it("분쟁 섬·성지는 바다 위(다른 나라 땅과 겹치지 않음)", () => {
     for (const id of Object.keys(ISLAND_LONLAT)) {
       const p = project(...ISLAND_LONLAT[id]);
-      expect(openSea(p.x, p.y, 4)).toBe(true);
+      expect(openSea(p.x, p.y, NARROW_SEA_ISLANDS.includes(id) ? 2 : 4)).toBe(true);
     }
     expect(PIONEER_ISLANDS.every((p) => p.x > 0 && p.x < GEO.W)).toBe(true);
     expect(HOLY_HEX.x).toBeGreaterThan(0);
