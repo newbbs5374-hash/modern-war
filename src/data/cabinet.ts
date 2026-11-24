@@ -1,7 +1,7 @@
-// 정부 부처 9곳 · 인물 특화·성향·숨은 특성·파벌·등급(11-23 대장 결정). 계산은 src/game/cabinet.ts
+// 정부 부처 15곳(11-24: 9곳 + 통일·법무·교육·국토교통·해양수산·고용노동) · 인물 특화·성향·숨은 특성·파벌·등급(11-23 대장 결정). 계산은 src/game/cabinet.ts
 import type { StatId } from './officers';
 
-export type MinistryId = 'mnd' | 'nis' | 'mofa' | 'mof' | 'moti' | 'mois' | 'mohw' | 'msit' | 'kocis';
+export type MinistryId = 'mnd' | 'nis' | 'mofa' | 'mof' | 'moti' | 'mois' | 'mohw' | 'msit' | 'kocis' | 'mou' | 'moj' | 'moe' | 'molit' | 'mofs' | 'moel';
 export type FieldTab = 'defense' | 'diplo' | 'society' | 'economy';
 
 export type SpecId = '경제통' | '외교통' | '행정통' | '복지통' | '과학자' | '홍보통' | '육군통' | '해군통' | '공군통' | '정보통' | '군수통';
@@ -105,10 +105,65 @@ export const MINISTRIES: Ministry[] = [
       { id: 'brief', icon: '🎙️', name: '정례 브리핑', hours: 3, text: '신뢰도 +3' },
     ],
   },
+  // ── 11-24 대장 요청: 대통령이 장관을 임명하는 실제 부처 더하기 ──
+  {
+    id: 'mou', icon: '🕊️', name: '통일부', short: '통일', tab: 'diplo', role: '남북 관계·평화',
+    text: '갈라진 이웃과 대화하고 평화를 준비하는 부처예요. 장관이 유능하면 사이 나쁜 나라와도 말이 통하고 외교 위상이 올라요.',
+    stats: ['정치', '정보'], spec: ['외교통'], effText: '모든 나라 호감 · 외교 점수',
+    tasks: [
+      { id: 'talks', icon: '🤝', name: '고위급 회담', hours: 6, text: '가장 사이 나쁜 나라 호감 +12(장관 힘만큼 더)' },
+      { id: 'family', icon: '👪', name: '이산가족 상봉', hours: 4, text: '하루 동안 지지도 +4 · 외교 위상 +4' },
+    ],
+  },
+  {
+    id: 'moj', icon: '⚖️', name: '법무부', short: '법무', tab: 'society', role: '법질서·검찰·출입국',
+    text: '법을 지키게 하고 검찰과 교정·출입국을 맡는 부처예요. 의회와 국민이 정부를 믿게 받쳐 줘요.',
+    stats: ['정치', '정보'], spec: ['행정통', '정보통'], effText: '신뢰도 · 정적 견제',
+    tasks: [
+      { id: 'probe', icon: '🔍', name: '부패 수사', hours: 6, text: '하루 동안 정적 방해 공작을 막음 · 신뢰도 +2' },
+      { id: 'amnesty', icon: '🕊️', name: '특별 사면', hours: 3, text: '12시간 동안 지지도 +4(대신 신뢰도 −1)' },
+    ],
+  },
+  {
+    id: 'moe', icon: '🎓', name: '교육부', short: '교육', tab: 'society', role: '학교·대학·인재 기르기',
+    text: '학교와 대학을 맡아 나라의 인재를 길러요. 연구가 빨라지고 사람이 늘어요.',
+    stats: ['정보', '정치'], spec: ['과학자', '복지통'], effText: '연구 속도 · 인구 성장',
+    tasks: [
+      { id: 'scholar', icon: '📚', name: '국비 장학생', hours: 6, text: '인재 명단에 🔵우수 후보 2명' },
+      { id: 'reform', icon: '🏫', name: '교육 개혁', hours: 4, text: '하루 동안 사회 안정 +6' },
+    ],
+  },
+  {
+    id: 'molit', icon: '🛣️', name: '국토교통부', short: '국토', tab: 'economy', role: '도로·철도·주택·도시',
+    text: '길과 철도, 집과 도시를 짓는 부처예요. 부대가 빨리 움직이고 자원이 잘 돌아요.',
+    stats: ['군수', '통솔'], spec: ['행정통', '경제통'], effText: '부대 모집 속도 · 자원 생산',
+    tasks: [
+      { id: 'soc', icon: '🚄', name: 'SOC 투자', hours: 6, text: '12시간 동안 경제 지수 +8 · 모집 +10%' },
+      { id: 'housing', icon: '🏘️', name: '주택 공급', hours: 4, text: '모든 도시 민심 +4' },
+    ],
+  },
+  {
+    id: 'mofs', icon: '⚓', name: '해양수산부', short: '해양', tab: 'economy', role: '바다·항만·수산',
+    text: '바다와 항만, 고기잡이를 맡는 부처예요. 바닷길 자원과 항구가 튼튼해져요.',
+    stats: ['군수', '전술'], spec: ['해군통', '경제통'], effText: '자원 생산 · 호감 조금',
+    tasks: [
+      { id: 'port', icon: '🚢', name: '항만 정비', hours: 6, text: '하루 동안 자원 +12%' },
+      { id: 'fish', icon: '🐟', name: '수산물 비축', hours: 3, text: '부족한 기본 자원 2가지를 얻음' },
+    ],
+  },
+  {
+    id: 'moel', icon: '👷', name: '고용노동부', short: '노동', tab: 'economy', role: '일자리·노사',
+    text: '일자리를 만들고 노동자와 회사 사이를 조율하는 부처예요. 세금 불만이 줄고 공장이 멈추지 않아요.',
+    stats: ['정치', '통솔'], spec: ['복지통', '경제통'], effText: '세금 불만 줄이기 · 경제 점수',
+    tasks: [
+      { id: 'jobs', icon: '💼', name: '일자리 정책', hours: 6, text: '12시간 동안 경제 지수 +6 · 지지도 +3' },
+      { id: 'deal', icon: '🤝', name: '노사 대타협', hours: 4, text: '하루 동안 사회 안정 +5 · 자원 +5%' },
+    ],
+  },
 ];
 export const ministryById = (id: MinistryId) => MINISTRIES.find((m) => m.id === id)!;
-/** 장관 자리 수: 등급이 오를수록(처음 3석 → 전설의 지도자 9석) */
-export const ministerSlots = (rank: number) => Math.min(9, 3 + Math.floor(rank * 0.6));
+/** 장관 자리 수: 등급이 오를수록(처음 3석 → 전설의 지도자 15석). 11-24 부처 15곳 */
+export const ministerSlots = (rank: number) => Math.min(15, 3 + Math.floor(rank * 1.2));
 
 /* ───────── 인물 ───────── */
 

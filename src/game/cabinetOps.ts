@@ -13,6 +13,7 @@ import {
   POOL_MAX,
   cabLog,
   cabinetOf,
+  genPerson,
   giveFaces,
   ministerOf,
   ministryPower,
@@ -74,6 +75,13 @@ function taskMult(s: GameState, min: MinistryId): number {
 
 function addBuff(c: CabinetState, key: CabinetState['buffs'][number]['key'], v: number, untilMs: number, why: string) {
   c.buffs = [...c.buffs.filter((b) => b.untilMs > untilMs - 48 * H), { key, v, untilMs, why }].slice(-16);
+}
+
+/** 전쟁 중이 아닌 나라 중 호감이 가장 낮은 나라 */
+function coldestLive(s: GameState): string | null {
+  const me = s.player.countryId;
+  const list = COUNTRIES.filter((o) => o.id !== me && isAlive(s.world, o.id) && relationOf(s.world, me, o.id) !== '전쟁').sort((a, b) => favorOf(s, a.id) - favorOf(s, b.id));
+  return list[0]?.id ?? null;
 }
 
 /** 업무 끝: 결과를 나라에 반영하고 한 줄 소식 */
@@ -202,6 +210,82 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
     case 'kocis:campaign':
       ns = addPresMod(ns, '📣 홍보 캠페인', 5 * k, 12);
       text = `지지도 +${Math.round(5 * k)}(12시간)`;
+      break;
+    case 'mou:talks': {
+      const o = coldestLive(s);
+      if (o) {
+        const v = Math.round(12 * k);
+        ns = addFavorNote(ns, o, '🤝 고위급 회담', v);
+        text = `${COUNTRIES.find((x) => x.id === o)!.name} 호감 +${v}`;
+      } else text = '회담할 나라가 없어요';
+      break;
+    }
+    case 'mou:family':
+      ns = addPresMod(ns, '👪 이산가족 상봉', 4 * k, 24);
+      addBuff(c, 'diploScore', 4 * k, now + 24 * H, name);
+      text = `지지도 +${Math.round(4 * k)} · 외교 위상 +${Math.round(4 * k)}(하루)`;
+      break;
+    case 'moj:probe':
+      addBuff(c, 'counter', 1, now + 24 * H, name);
+      ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust + 2 * k) } };
+      text = `하루 동안 정적 방해를 막아요 · 신뢰도 +${Math.round(2 * k)}`;
+      break;
+    case 'moj:amnesty':
+      ns = addPresMod(ns, '🕊️ 특별 사면', 4 * k, 12);
+      ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust - 1) } };
+      text = `지지도 +${Math.round(4 * k)}(12시간) · 신뢰도 −1`;
+      break;
+    case 'moe:scholar': {
+      const rng = new Rng(c.seed ^ 0x2c1b);
+      const taken = takenNames(c);
+      for (let i = 0; i < 2; i++) {
+        const p = genPerson(c, rng, { country: me, group: '인재', grade: '우수', age: [30, 45] }, now, taken);
+        p.known = true;
+        c.people.push(p);
+      }
+      c.seed = (c.seed + rng.seed) >>> 0;
+      giveFaces(c);
+      text = '인재 명단에 🔵우수 후보 2명';
+      break;
+    }
+    case 'moe:reform':
+      addBuff(c, 'socScore', 6 * k, now + 24 * H, name);
+      text = `사회 안정 +${Math.round(6 * k)}(하루)`;
+      break;
+    case 'molit:soc':
+      addBuff(c, 'econScore', 8 * k, now + 12 * H, name);
+      addBuff(c, 'build', 0.1 * k, now + 12 * H, name);
+      text = `경제 지수 +${Math.round(8 * k)} · 모집 +${Math.round(10 * k)}%(12시간)`;
+      break;
+    case 'molit:housing': {
+      const civ = structuredClone(civOf(ns));
+      for (const ct of CITIES) if (s.world.owner[ct.id] === me && civ.cities[ct.id]) civ.cities[ct.id].loyalty = clamp(civ.cities[ct.id].loyalty + 4 * k);
+      ns = { ...ns, civ };
+      text = `모든 도시 민심 +${Math.round(4 * k)}`;
+      break;
+    }
+    case 'mofs:port':
+      addBuff(c, 'res', 0.12 * k, now + 24 * H, name);
+      text = `자원 +${Math.round(12 * k)}%(하루)`;
+      break;
+    case 'mofs:fish': {
+      const stock = { ...ns.economy.stock };
+      const low = [...BASIC_RES].sort((a, b) => (stock[a] ?? 0) - (stock[b] ?? 0)).slice(0, 2);
+      const q = Math.round(15 * k);
+      for (const r of low) stock[r] = (stock[r] ?? 0) + q;
+      ns = { ...ns, economy: { ...ns.economy, stock } };
+      text = `${low.join('·')} +${q}`;
+      break;
+    }
+    case 'moel:jobs':
+      addBuff(c, 'econScore', 6 * k, now + 12 * H, name);
+      ns = addPresMod(ns, '💼 일자리 정책', 3 * k, 12);
+      text = `경제 지수 +${Math.round(6 * k)} · 지지도 +${Math.round(3 * k)}(12시간)`;
+      break;
+    case 'moel:deal':
+      addBuff(c, 'socScore', 5 * k, now + 24 * H, name);
+      addBuff(c, 'res', 0.05 * k, now + 24 * H, name);
+      text = `사회 안정 +${Math.round(5 * k)} · 자원 +${Math.round(5 * k)}%(하루)`;
       break;
     case 'kocis:brief':
       ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust + 3 * k) } };

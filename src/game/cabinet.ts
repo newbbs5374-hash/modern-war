@@ -1,4 +1,4 @@
-// 인물 약 100명 · 부처 9곳 장관/차관 · 인재 명단 · 청문회 · 파벌 · 궁합(11-23 대장 결정).
+// 인물 약 100명 · 부처 15곳 장관/차관 · 인재 명단 · 청문회 · 파벌 · 궁합(11-23 대장 결정).
 // 이 파일은 상태·인물 만들기·효과 계산만 해요(다른 계산 파일을 부르지 않아 순환이 없음). 시간 흐름·부처 업무 결과는 cabinetOps.ts
 import { COUNTRIES } from '../data/world';
 import { LEADERS } from '../data/leaders';
@@ -351,17 +351,17 @@ export function factionTilt(s: GameState): Faction | null {
 }
 const seatedTrait = (s: GameState, t: Trait) => (s.cabinet ? seated(s.cabinet) : []).filter((p) => p.trait === t).length;
 
-export const cabBuild = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.06 + postEff(s, 'build') + buffSum(s, 'build') + (factionOn(s, '군부파') ? 0.06 : 0);
+export const cabBuild = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.06 + ministryPower(s, 'molit') * 0.03 + postEff(s, 'build') + buffSum(s, 'build') + (factionOn(s, '군부파') ? 0.06 : 0);
 export const cabTroop = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.05 + postEff(s, 'troop');
 export const cabSpy = (s: GameState) => ministryPower(s, 'nis') * 0.05;
 export const cabMission = (s: GameState) => ministryPower(s, 'nis') * 0.03 + postEff(s, 'mission');
-export const cabFavor = (s: GameState) => ministryPower(s, 'mofa') * 6 + postEff(s, 'favor') + (factionOn(s, '온건파') ? 5 : 0);
+export const cabFavor = (s: GameState) => ministryPower(s, 'mofa') * 6 + ministryPower(s, 'mou') * 3 + ministryPower(s, 'mofs') * 1 + postEff(s, 'favor') + (factionOn(s, '온건파') ? 5 : 0);
 export const cabBudget = (s: GameState) => 1 + ministryPower(s, 'mof') * 0.06 + postEff(s, 'budget') + (factionOn(s, '경제파') ? 0.05 : 0);
-export const cabTaxSoft = (s: GameState) => Math.min(0.7, ministryPower(s, 'mof') * 0.25 + postEff(s, 'taxSoft'));
-export const cabRes = (s: GameState) => 1 + ministryPower(s, 'moti') * 0.08 + buffSum(s, 'res');
+export const cabTaxSoft = (s: GameState) => Math.min(0.7, ministryPower(s, 'mof') * 0.25 + ministryPower(s, 'moel') * 0.1 + postEff(s, 'taxSoft'));
+export const cabRes = (s: GameState) => 1 + ministryPower(s, 'moti') * 0.08 + ministryPower(s, 'molit') * 0.03 + ministryPower(s, 'mofs') * 0.04 + buffSum(s, 'res');
 export const cabLoyalty = (s: GameState) => ministryPower(s, 'mois') * 4 + ministryPower(s, 'mohw') * 2 + postEff(s, 'loyalty') + (factionOn(s, '개혁파') ? 3 : 0);
-export const cabGrowth = (s: GameState) => ministryPower(s, 'mohw') * 0.12 + postEff(s, 'growth');
-export const cabResearch = (s: GameState) => ministryPower(s, 'msit') * 0.15 + postEff(s, 'research');
+export const cabGrowth = (s: GameState) => ministryPower(s, 'mohw') * 0.12 + ministryPower(s, 'moe') * 0.05 + postEff(s, 'growth');
+export const cabResearch = (s: GameState) => ministryPower(s, 'msit') * 0.15 + ministryPower(s, 'moe') * 0.06 + postEff(s, 'research');
 export const cabSpeech = (s: GameState) => ministryPower(s, 'kocis') * 0.2 + postEff(s, 'speech');
 /** 지지도 목표 덤 [이유, 값] */
 export function cabApprovalRows(s: GameState): Array<[string, number]> {
@@ -387,12 +387,14 @@ export function cabFieldRows(s: GameState, f: 'defense' | 'diplo' | 'society' | 
   const hawk = seatedTrait(s, '강경파');
   if (hawk && f === 'defense') rows.push(['⚔️ 강경파 각료', 2 * hawk]);
   if (hawk && f === 'diplo') rows.push(['⚔️ 강경파 각료', -2 * hawk]);
+  if (f === 'diplo' && ministryPower(s, 'mou')) rows.push(['🕊️ 통일부', Math.round(ministryPower(s, 'mou') * 2 * 10) / 10]);
+  if (f === 'economy' && ministryPower(s, 'moel')) rows.push(['👷 고용노동부', Math.round(ministryPower(s, 'moel') * 2 * 10) / 10]);
   const pe = postEff(s, ({ defense: 'sec', diplo: 'diplo', society: 'soc', economy: 'econ' } as const)[f]);
   if (pe) rows.push(['🏢 대통령실·기관장', Math.round(pe * 10) / 10]);
   return rows;
 }
 /** 신뢰도 목표 덤(파벌 쏠림) */
-export const cabTrust = (s: GameState) => (factionTilt(s) ? -5 : 0) + Math.round(postEff(s, 'trust') * 10) / 10;
+export const cabTrust = (s: GameState) => (factionTilt(s) ? -5 : 0) + Math.round(ministryPower(s, 'moj') * 1.5 * 10) / 10 + Math.round(postEff(s, 'trust') * 10) / 10;
 export const counterOn = (s: GameState) => buffSum(s, 'counter') > 0 || guardOn(s);
 
 /* ───────── 영입 · 임명 ───────── */
