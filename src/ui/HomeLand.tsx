@@ -14,11 +14,12 @@ import { homeTerrain } from './homeTerrain';
 import { landOwners } from '../game/territory';
 import { COUNTRY_COLORS } from './WorldMap';
 // 바닥 그림(11-23 대장 결정 "코드 실사화"): 이음새 없는 풀·들판·모래·바다 그림을 깔고 햇빛·그림자를 코드로 더함.
-// 새 바닥 그림(home-ground-*.png, 명령문 guides/home-real-art-prompts.md)이 오면 이 줄만 바꾸면 됨.
-import groundGrass from '../assets/city/city-ground-grass.webp';
+// 11-24: 대장이 만든 바닥 그림 4장(home-ground-*, 이음새 없는 항공사진풍)으로 바꿈. 땅·먼 바다·해안 얕은 바다·도시 둘레.
+import groundLand from '../assets/field/home-ground-land.webp';
+import groundSea from '../assets/field/home-ground-sea.webp';
+import groundShallow from '../assets/field/home-ground-shallow.webp';
+import groundUrban from '../assets/field/home-ground-urban.webp';
 import groundSand from '../assets/city/city-ground-beach.webp';
-import groundPlain from '../assets/field/tile-plain.webp';
-import groundSea from '../assets/field/tile-sea.webp';
 
 const W = 390;
 const H = 640;
@@ -240,9 +241,17 @@ export function HomeLand(props: {
         onWheel={onWheel}
       >
         <defs>
-          <pattern id="g-grass" patternUnits="userSpaceOnUse" width="140" height="140"><image href={groundGrass} width="140" height="140" /></pattern>
-          <pattern id="g-plain" patternUnits="userSpaceOnUse" width="220" height="220"><image href={groundPlain} width="220" height="220" /></pattern>
-          <pattern id="g-sea" patternUnits="userSpaceOnUse" width="160" height="160"><image href={groundSea} width="160" height="160" /></pattern>
+          <pattern id="g-grass" patternUnits="userSpaceOnUse" width="240" height="240"><image href={groundLand} width="240" height="240" /></pattern>
+          <pattern id="g-sea" patternUnits="userSpaceOnUse" width="240" height="240"><image href={groundSea} width="240" height="240" /></pattern>
+          <pattern id="g-shoal" patternUnits="userSpaceOnUse" width="160" height="160"><image href={groundShallow} width="160" height="160" /></pattern>
+          <pattern id="g-urban" patternUnits="userSpaceOnUse" width="120" height="120"><image href={groundUrban} width="120" height="120" /></pattern>
+          <radialGradient id="g-urban-fade">
+            <stop offset="55%" stopColor="#fff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </radialGradient>
+          <mask id="g-urban-mask" maskContentUnits="objectBoundingBox">
+            <rect width="1" height="1" fill="url(#g-urban-fade)" />
+          </mask>
           <pattern id="g-sand" patternUnits="userSpaceOnUse" width="60" height="60"><image href={groundSand} width="60" height="60" /></pattern>
           {/* 햇빛: 왼쪽 위가 밝고 가장자리는 살짝 어둡게 */}
           <radialGradient id="g-sun" cx="20%" cy="10%" r="95%">
@@ -292,11 +301,11 @@ export function HomeLand(props: {
           ))}
           {/* 땅 층(나중에 제작 이미지로 바꿀 자리) */}
           {/* 얕은 바다 띠 → 모래 해안 → 풀밭 + 들판 + 높낮이 얼룩 + 파도 거품 */}
-          <path d={land} fill="url(#g-shallow)" stroke="#5fd0dc" strokeWidth="34" strokeOpacity="0.35" filter="url(#g-soft)" />
+          <path d={land} fill="none" stroke="url(#g-shoal)" strokeWidth="40" strokeLinejoin="round" />
+          <path d={land} fill="url(#g-shallow)" stroke="#5fd0dc" strokeWidth="34" strokeOpacity="0.15" filter="url(#g-soft)" />
           <path d={land} fill="url(#g-sand)" stroke="url(#g-sand)" strokeWidth="12" />
           <path d={land} fill="url(#g-grass)" />
-          <path d={land} fill="url(#g-plain)" opacity="0.45" />
-          <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.55" />
+          <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.3" />
           <path d={land} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="1 5" />
           {/* 빼앗긴 도: 점령한 나라 색 + 빗금 */}
           <defs>
@@ -397,7 +406,7 @@ export function HomeLand(props: {
             return (
               <g key={c.id} className="city" onClick={() => tapCity(c.id, x, y)}>
                 <g transform={`translate(${x},${y}) scale(${citySc(i)}) translate(${-x},${-y})`}>
-                <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="#9a978c" opacity="0.35" filter="url(#g-soft)" />
+                <ellipse cx={x} cy={y + 4} rx={c.capital ? 100 : 22} ry={c.capital ? 60 : 10} fill="url(#g-urban)" mask="url(#g-urban-mask)" opacity="0.9" />
                 {c.capital && art.factory && <image href={art.factory} x={x - 118} y={y - 6} width="44" height="44" />}
                 {c.capital && art.base && <image href={art.base} x={x - 96} y={y + 34} width="48" height="48" />}
                 {c.capital && art.port && <image href={art.port} x={x + 72} y={y + 10} width="48" height="48" />}
