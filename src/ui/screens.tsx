@@ -19,6 +19,7 @@ import { Chip, Modal, Tile, useTab } from './kit';
 import { FLAG } from './flag';
 import { HomeLand, cityStatus, type DayMode } from './HomeLand';
 import { cityGrowthMap } from '../game/growth';
+import { cityTagMap } from '../game/cityTags';
 import { cityById } from '../data/cities';
 import { CITY_RES, RES_ICON, type Res } from '../data/economy';
 import { CITY_DEFENSE_MAX } from '../game/balance';
@@ -131,7 +132,7 @@ export function HomeScreen(props: ScreenProps) {
 
   return (
     <div className="home-stage">
-      <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} cityGrowth={cityGrowthMap(state, me.id)} />
+      <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} cityGrowth={cityGrowthMap(state, me.id)} cityTags={cityTagMap(state)} />
       {talkOpen && <TalkModal state={state} actions={actions} onClose={() => setTalkOpen(false)} />}
       {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
       {ordersOpen && <OrdersModal state={state} apply={actions.apply} onClose={() => setOrdersOpen(false)} />}

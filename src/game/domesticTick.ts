@@ -7,6 +7,7 @@ import { codesTick } from './codes';
 import { budgetTick } from './budgetSeason';
 import './zones';
 import './projects';
+import './chains';
 
 export function domTick(s: GameState): GameState {
   const ns = s.dom ? s : { ...s, dom: newDom(s) };

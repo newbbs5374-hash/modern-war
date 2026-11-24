@@ -1017,6 +1017,16 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .city-zoom-bar { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
 .city-zoom-bar button { min-height: 0; padding: 3px 10px; font-size: 12px; border-radius: 8px; }
 .city-zoom-bar button.on { border-color: #fde047; color: #fde047; }
+.city-zoom-bar .city-dn { margin-left: auto; }
+.city-zoom-hint { display: block; margin: 2px 0 4px; font-size: 11px; }
+/* 도시 단계(11/24 C1) */
+.city-stage { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 2px; }
+.city-stage-badge { padding: 3px 9px; border-radius: 999px; background: rgba(63, 184, 201, 0.16); border: 1px solid var(--hud, #3fb8c9); font-size: 13px; }
+.city-stage-badge small { opacity: 0.75; }
+.city-stage-bar { position: relative; flex: 1 1 120px; min-width: 120px; height: 18px; border-radius: 9px; background: rgba(0, 0, 0, 0.3); overflow: hidden; }
+.city-stage-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #3fb8c9, #ffb020); opacity: 0.75; }
+.city-stage-bar small { position: relative; display: block; text-align: center; font-size: 11px; line-height: 18px; color: #fff; text-shadow: 0 1px 2px #000; }
+.city-stage-tag { padding: 2px 8px; border-radius: 8px; background: rgba(255, 176, 32, 0.15); border: 1px solid rgba(255, 176, 32, 0.6); font-size: 12px; }
 .city-scroll { overflow: hidden; border-radius: 10px; }
 .city-scroll.zoomed { overflow: auto; max-height: 380px; -webkit-overflow-scrolling: touch; }
 .city-scroll.zoomed .city-view { margin: 0; }
@@ -1024,3 +1034,4 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .civ-cur-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .civ-cur-wrap .boost-bar.compact { justify-content: flex-end; }
 .tech-now { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.city-stage-tag.bad { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.6); }

@@ -676,3 +676,20 @@ button.on { outline: 1px solid var(--amber); }
 .dom-scene.big { aspect-ratio: 16 / 10; }
 .dom-scene.big.ph { font-size: 60px; }
 select.wide, button.wide { width: 100%; }
+/* 생산 줄(11-24 A1) */
+.dom-chains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.dom-chain { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; margin: 0; min-height: 0; border: 1px solid var(--hud-dim); background: #465564; text-align: center; }
+.dom-chain b { font-size: 12.5px; }
+.dom-chain small { font-size: 10.5px; color: var(--muted); }
+.dom-chain.on { border-color: var(--hud); }
+.dom-chain.done { border-color: var(--amber); background: #5a5236; }
+.dom-chain-links { display: flex; gap: 2px; }
+.dom-chain-links i { font-style: normal; font-size: 15px; filter: grayscale(1); opacity: 0.4; }
+.dom-chain-links i.ok { filter: none; opacity: 1; }
+.dom-chain-steps { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 4px; }
+.dom-chain-steps li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--hud-dim); background: #465564; }
+.dom-chain-steps li.ok { border-color: var(--hud); background: #2f5f68; }
+.dom-chain-steps li div { display: flex; flex-direction: column; }
+.dom-chain-steps li small { font-size: 11px; color: var(--muted); }
+.dom-chain-steps .dom-ico { font-size: 24px; }
+.homeland-tag { font-size: 12px; }
