@@ -4,7 +4,7 @@ import { advance, budgetPerDay, newGame, setRank, troopsPerDay, type GameState }
 import { addContract, buildMs, canProduce, canTrade, canUpgrade, cancelContract, claimChore, produce, producesOf, resPerDay, startChore, trade, tradePartners, upgradeFacility } from './economy';
 import { claimMission, finishTraining, grandTargets, startGrand, startTraining } from './officer';
 import { parseSave } from './save';
-import { debugAllResearch } from './civ';
+import { civResMult, debugAllResearch } from './civ';
 
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } });
@@ -19,11 +19,14 @@ describe('내정', () => {
   it('내 도시에서 자원이 쌓이고, 점령 도시는 절반', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     const per = resPerDay(s);
-    expect(per.반도체).toBe(3); // 서울 2 + 부산 1
+    // 서울 2 + 부산 1 + 광주 1, 도시 특성·실제 시설 자원 배율(11/24)
+    expect(per.반도체).toBeCloseTo(4 * civResMult(s), 5);
+    const before = s.economy.stock.반도체;
     s = advance(s, 2 * H);
-    expect(s.economy.stock.반도체).toBeCloseTo(6, 5);
+    expect(s.economy.stock.반도체 - before).toBeCloseTo(2 * per.반도체!, 0);
     const w = { ...s.world, owner: { ...s.world.owner, 'jp-0': 'kr' } };
-    expect(resPerDay({ ...s, world: w }).반도체).toBe(4); // 도쿄 2 × 0.5
+    const m = civResMult(s);
+    expect(resPerDay({ ...s, world: w }).반도체! - resPerDay(s).반도체!).toBeCloseTo(1 * m, 1); // 도쿄 2 × 0.5
   });
   it('내정 업무 → 분야 경험치 + 시설 특별 가동, 시설 올리기는 등급마다 최고 단계', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 2 }));

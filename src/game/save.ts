@@ -12,7 +12,7 @@ import { newBuildings, newEconomy } from './economy';
 import { BUILDING_IDS, FACILITIES, RESOURCES } from '../data/economy';
 import { newWorld } from './world';
 import { newOfficer } from './officer';
-import { newCiv } from './civ';
+import { migrateCityTiles, newCiv } from './civ';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
 
 export const SAVE_KEY = 'modern-war-save';
@@ -34,7 +34,7 @@ function storage(): Storage | null {
 /** 저장 내용이 올바른지 확인하고, 틀리면 null */
 export function parseSave(text: string): GameState | null {
   try {
-    const s = JSON.parse(text) as GameState;
+    let s = JSON.parse(text) as GameState;
     if (!s || typeof s !== 'object') return null;
     // 1단계 저장(세계 정보 없음) → 시작 구도로 세계를 새로 만들어 이어감
     if (s.version === 1 && typeof s.worldMs === 'number') {
@@ -64,6 +64,11 @@ export function parseSave(text: string): GameState | null {
     const w = s.world;
     if (!w || typeof w.seed !== 'number' || typeof w.nextTickMs !== 'number' || !Array.isArray(w.events)) return null;
     if (!w.pairs || !w.personalities || !w.owner || !w.defense) return null;
+    // 11/24 새 도시(대한민국 10개 도시): 옛 저장엔 없으므로 그 나라 수도 주인에게(수도가 없으면 처음 나라)
+    for (const c of CITIES) {
+      if (typeof w.owner[c.id] !== 'string') w.owner[c.id] = w.owner[`${c.home}-0`] ?? c.home;
+      if (typeof w.defense[c.id] !== 'number') w.defense[c.id] = w.defense[`${c.home}-0`] ?? 100;
+    }
     if (CITIES.some((c) => typeof w.owner[c.id] !== 'string' || typeof w.defense[c.id] !== 'number')) return null;
     if (typeof s.worldMs !== 'number' || typeof s.lastRealTime !== 'number') return null;
     const p = s.player;
@@ -103,6 +108,7 @@ export function parseSave(text: string): GameState | null {
     // 문명식 운영(연구·체제·외교·도시)이 없는 옛 저장: 새로 채움
     if (!s.civ || !Array.isArray(s.civ.done) || !s.civ.council) s.civ = newCiv(s);
     if (s.civ.lastSwapMs === null) s.civ.lastSwapMs = -Infinity;
+    s = migrateCityTiles(s); // 11/24 도시 칸 4.5배·실제 모양: 옛 구역 자리 옮기기
     if (typeof o.boosts !== 'number') o.boosts = TEST_BOOSTS; // 시험판: 옛 저장에도 가속권 지급
     return firstTestGrant(s); // 시험판: 옛 저장에도 자원 넉넉히(한 번만)
   } catch {

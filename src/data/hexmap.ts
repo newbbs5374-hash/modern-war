@@ -57,6 +57,12 @@ export type CitySize = 2 | 3 | 4;
 export const SIZE_NAME: Record<CitySize, string> = { 2: '소도시', 3: '중도시', 4: '대도시' };
 export const SIZE_TILES: Record<CitySize, number> = { 2: 37, 3: 61, 4: 91 };
 /** 나라 도시 수에 따른 크기: 수도는 4개 이상이면 대도시(아니면 중도시), 4개 이상이면 둘째, 6개 이상이면 셋째도 중도시 */
+/** 나라별로 정한 도시 크기(11/24 대한민국 10개 도시: 서울 대도시 · 광역시 4곳 중도시 · 나머지 소도시) */
+
+export function citySizesOf(countryId: string, n: number): CitySize[] {
+  if (countryId === 'kr' && n === 10) return [4, 3, 3, 3, 3, 2, 2, 2, 2, 2];
+  return citySizes(n);
+}
 export function citySizes(n: number): CitySize[] {
   return Array.from({ length: n }, (_, i) => (i === 0 ? (n >= 4 ? 4 : 3) : i === 1 && n >= 4 ? 3 : i === 2 && n >= 6 ? 3 : 2));
 }
@@ -115,7 +121,7 @@ const CITY_AT: Record<string, Array<[number, number]>> = {
   ua: [[238, 245], [292, 238], [232, 292]],
   cn: [[555, 190], [600, 228], [565, 292], [615, 300], [480, 145], [525, 250], [458, 205], [640, 262]],
   kp: [[680, 188], [648, 160]],
-  kr: [[712, 250], [726, 296]],
+  kr: [[708, 238], [748, 318], [748, 284], [692, 330], [712, 280], [700, 304], [750, 240], [686, 372], [726, 346], [708, 352]],
   jp: [[812, 225], [796, 292]],
 };
 
@@ -180,7 +186,7 @@ function build() {
   type Job = { country: Country; idx: number; size: CitySize; target: Hex };
   const jobs: Job[] = [];
   for (const c of COUNTRIES) {
-    const sizes = citySizes(c.cities.length);
+    const sizes = citySizesOf(c.id, c.cities.length);
     const tg = CITY_AT[c.id] ?? targets(c, c.cities.length);
     sizes.forEach((size, idx) => jobs.push({ country: c, idx, size, target: pixelToHex(tg[idx][0], tg[idx][1]) }));
   }

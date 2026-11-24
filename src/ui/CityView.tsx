@@ -13,7 +13,28 @@ const URLS: Record<string, string> = {};
 for (const [path, url] of Object.entries(FILES)) URLS[path.split('/').pop()!.replace(/\.[^.]+$/, '')] = url;
 export const cityArt = (key: string): string | null => URLS[key] ?? null;
 
-export type CityThing = 'center' | 'industry' | 'harbor' | 'airfield' | 'lab' | 'housing' | 'mine' | 'suburb' | 'mountain' | 'ruins' | 'forest';
+export type CityThing =
+  | 'center'
+  | 'industry'
+  | 'harbor'
+  | 'airfield'
+  | 'lab'
+  | 'housing'
+  | 'mine'
+  | 'suburb'
+  | 'apt'
+  | 'mountain'
+  | 'ruins'
+  | 'forest'
+  | 'mark'
+  // 군사 연구시설(11/24)
+  | 'adl'
+  | 'shipyard'
+  | 'arms'
+  | 'missile'
+  | 'drone'
+  | 'cyber'
+  | 'aero';
 export type CityGround = '평지' | '산' | '유적' | '바닷가';
 export interface CityCell {
   key: string;
@@ -26,6 +47,15 @@ export interface CityCell {
   /** 매장지 자원 아이콘(채굴장 없을 때 점선 고리) */
   deposit?: string | null;
   mined?: boolean;
+  /** 실제 시설: 아이콘·단계 */
+  mark?: { icon: string; lv: number; color: string; nature?: boolean };
+}
+/** 글씨(구·군 이름, 시설 이름). x,y는 땅 좌표 */
+export interface CityLabel {
+  x: number;
+  y: number;
+  text: string;
+  kind: 'gu' | 'mark' | 'river';
 }
 
 /** 눕힌 정도(세로 줄임) */
@@ -42,9 +72,18 @@ const SIZE: Record<CityThing, number> = {
   housing: 2.1,
   mine: 2.0,
   suburb: 1.7,
+  apt: 2.0,
   mountain: 2.3,
   ruins: 1.8,
   forest: 1.9,
+  mark: 2.3,
+  adl: 2.2,
+  shipyard: 2.3,
+  arms: 2.2,
+  missile: 2.3,
+  drone: 2.1,
+  cyber: 2.1,
+  aero: 2.3,
 };
 
 const hexPts = (x: number, y: number, r: number) =>
@@ -60,9 +99,18 @@ interface Props {
   uid: string;
   /** 바다에 닿지 않은 도시: 둘레를 바다 대신 들판으로 */
   inland?: boolean;
+  /** 도시 밖 이웃 땅(실제 지도) 모양 */
+  around?: string;
+  /** 구·군 경계선 */
+  borders?: string;
+  /** 강(땅 좌표 path, 굵기) */
+  rivers?: Array<{ d: string; w: number }>;
+  labels?: CityLabel[];
+  /** 확대 배율(1 = 화면 너비) */
+  zoom?: number;
 }
 
-export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid, inland }: Props) {
+export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid, inland, around, borders, rivers, labels, zoom = 1 }: Props) {
   const xs = cells.map((c) => c.x);
   const ys = cells.map((c) => c.y);
   const x0 = Math.min(...xs) - S * 1.6;
@@ -76,7 +124,7 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
   const paint = (g: CityGround) => (GROUND_ART[g] && cityArt(GROUND_ART[g]!) ? `url(#cg-${uid}-${g})` : GROUND[g]);
   const flat = `scale(1 ${K})`;
   return (
-    <svg className="city-view" viewBox={vb} role="img" aria-label="도시 모습">
+    <svg className="city-view" viewBox={vb} role="img" aria-label="도시 모습" style={zoom > 1 ? { width: `${zoom * 100}%`, maxHeight: 'none' } : undefined}>
       <defs>
         <linearGradient id={`cv-sea-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#0c3a5c" />
@@ -125,6 +173,13 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
           </g>
         </>
       )}
+      {/* 도시 밖 이웃 땅(실제 지도) */}
+      {around && (
+        <g transform={flat}>
+          <path d={around} fill="#4a5d3a" opacity={0.85} />
+          <path d={around} fill="none" stroke="#2c3a22" strokeOpacity={0.5} strokeWidth={0.4} />
+        </g>
+      )}
       {/* 땅: 지형이 칸 경계 없이 섞임 */}
       <g transform={flat}>
         <path d={coast} fill={paint(inland ? '평지' : '바닷가')} />
@@ -135,7 +190,18 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
             ))}
           </g>
         </g>
-        {!inland && <path d={coast} fill="none" stroke="#f3e6bb" strokeOpacity="0.6" strokeWidth={0.45} />}
+        {!inland && !around && <path d={coast} fill="none" stroke="#f3e6bb" strokeOpacity="0.6" strokeWidth={0.45} />}
+        {/* 강 */}
+        {rivers?.map((r, i) => (
+          <g key={`rv${i}`} clipPath={`url(#cv-land-${uid})`}>
+            <path d={r.d} fill="none" stroke="#2b6a92" strokeWidth={r.w * S * 0.55} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={r.d} fill="none" stroke="#5fb3e0" strokeWidth={r.w * S * 0.3} strokeLinecap="round" strokeLinejoin="round" opacity={0.8} />
+          </g>
+        ))}
+        {/* 행정구역(구·군) 경계 */}
+        {borders && <path d={borders} fill="none" stroke="#fef3c7" strokeOpacity={0.55} strokeWidth={0.35} strokeDasharray="1.2 0.8" />}
+        {/* 도시 경계(실제 행정구역) */}
+        {around && <path d={coast} fill="none" stroke="#fde68a" strokeOpacity={0.85} strokeWidth={0.6} />}
         {/* 매장지 고리·고른 칸 */}
         {cells.map((c) =>
           c.deposit && !c.thing ? (
@@ -161,7 +227,13 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
           return (
             <g key={c.key} opacity={c.building ? 0.55 : 1}>
               <ellipse cx={gx} cy={gy + w * 0.06} rx={w * 0.42} ry={w * 0.16} fill="#000" opacity={0.28} filter={`url(#cv-shadow-${uid})`} />
-              {url ? <image href={url} x={gx - w / 2} y={gy - w * 0.78} width={w} height={w} /> : <Fallback kind={c.thing!} x={gx} y={gy} w={w} />}
+              {c.thing === 'mark' && c.mark ? (
+                <Mark x={gx} y={gy} w={w} m={c.mark} />
+              ) : url ? (
+                <image href={url} x={gx - w / 2} y={gy - w * 0.78} width={w} height={w} />
+              ) : (
+                <Fallback kind={c.thing!} x={gx} y={gy} w={w} />
+              )}
               {c.building && (
                 <text x={gx} y={gy - w * 0.3} fontSize={S * 0.9} textAnchor="middle">
                   🏗️
@@ -177,10 +249,42 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid,
             </text>
           ) : null,
         )}
+        {placeLabels(labels ?? []).map((l, i) => (
+          <text
+            key={`l${i}`}
+            x={l.x}
+            y={l.py}
+            fontSize={l.kind === 'gu' ? S * 0.85 : S * 0.62}
+            textAnchor="middle"
+            fill={l.kind === 'gu' ? '#fef9c3' : l.kind === 'river' ? '#bae6fd' : '#ffffff'}
+            stroke="#0f172a"
+            strokeWidth={S * 0.14}
+            paintOrder="stroke"
+            fontWeight={l.kind === 'gu' ? 700 : 600}
+            opacity={l.kind === 'gu' ? 0.9 : 0.95}
+          >
+            {l.text}
+          </text>
+        ))}
       </g>
     </svg>
   );
 });
+
+/** 글씨가 겹치지 않게: 시설 이름은 아래 → 위 → 안 보이게 */
+function placeLabels(list: CityLabel[]): Array<CityLabel & { py: number }> {
+  const out: Array<CityLabel & { py: number; w: number }> = [];
+  const order = [...list].sort((a, b) => (a.kind === 'gu' ? 0 : 1) - (b.kind === 'gu' ? 0 : 1));
+  for (const l of order) {
+    const fs = l.kind === 'gu' ? S * 0.85 : S * 0.62;
+    const w = l.text.length * fs * 0.95;
+    const tries = l.kind === 'mark' ? [l.y * K + S * 0.95, l.y * K - S * 2.9] : [l.y * K];
+    const py = tries.find((y) => !out.some((o) => Math.abs(o.x - l.x) < (o.w + w) / 2 && Math.abs(o.py - y) < fs * 1.05));
+    if (py === undefined) continue;
+    out.push({ ...l, py, w });
+  }
+  return out;
+}
 
 /** 비스듬히 본 상자 하나(앞면·옆면·지붕) */
 function Box({ x, y, w, d, h, c, roof, win }: { x: number; y: number; w: number; d: number; h: number; c: string; roof?: string; win?: boolean }) {
@@ -198,6 +302,37 @@ function Box({ x, y, w, d, h, c, roof, win }: { x: number; y: number; w: number;
 function shade(hex: string, f: number): string {
   const n = (i: number) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) * f)));
   return `rgb(${n(0)},${n(1)},${n(2)})`;
+}
+
+/** 실제 시설: 단계만큼 높아지는 건물 + 아이콘 */
+function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: string; lv: number; color: string; nature?: boolean } }) {
+  const u = w / 10;
+  const h = (2.2 + m.lv * 1.1) * u;
+  if (m.nature)
+    return (
+      <g>
+        <path d={`M${x - 5 * u},${y + 1.6 * u} L${x - 1 * u},${y - h} L${x + 1.4 * u},${y - h * 0.55} L${x + 2.6 * u},${y - h * 0.75} L${x + 5 * u},${y + 1.6 * u} Z`} fill="#5f7d4a" />
+        <path d={`M${x - 1 * u},${y - h} L${x + 1.4 * u},${y - h * 0.55} L${x},${y + 1.6 * u} Z`} fill="#4b6a3a" />
+        <circle cx={x} cy={y - h - 1.6 * u} r={1.7 * u} fill="#0f172a" stroke="#fde68a" strokeWidth={0.25 * u} />
+        <text x={x} y={y - h - 1.0 * u} fontSize={2.0 * u} textAnchor="middle">
+          {m.icon}
+        </text>
+      </g>
+    );
+  return (
+    <g>
+      <ellipse cx={x} cy={y + 0.6 * u} rx={3.6 * u} ry={1.5 * u} fill={m.color} opacity={0.35} />
+      <Box x={x - 1.4 * u} y={y + 0.4 * u} w={2.4 * u} d={1.4 * u} h={h * 0.7} c={m.color} win />
+      <Box x={x + 1.4 * u} y={y + 1 * u} w={2 * u} d={1.2 * u} h={h} c={shade(m.color, 0.85)} win />
+      <circle cx={x} cy={y - h - 1.6 * u} r={1.7 * u} fill="#0f172a" stroke="#fde68a" strokeWidth={0.25 * u} />
+      <text x={x} y={y - h - 1.0 * u} fontSize={2.0 * u} textAnchor="middle">
+        {m.icon}
+      </text>
+      {Array.from({ length: m.lv }, (_, i) => (
+        <circle key={i} cx={x - (m.lv - 1) * 0.55 * u + i * 1.1 * u} cy={y + 2.6 * u} r={0.38 * u} fill="#fde047" />
+      ))}
+    </g>
+  );
 }
 
 /** 그림이 오기 전 임시 모습 */
@@ -271,6 +406,86 @@ function Fallback({ kind, x, y, w }: { kind: CityThing; x: number; y: number; w:
           <Box x={x + 1.2 * u} y={y + 2 * u} w={1.2 * u} d={0.8 * u} h={0.8 * u} c="#eab308" />
         </g>
       );
+    case 'apt':
+      return (
+        <g>
+          <Box x={x - 2.2 * u} y={y - 0.2 * u} w={1.5 * u} d={1.2 * u} h={6 * u} c="#cbd5e1" win />
+          <Box x={x} y={y - 0.8 * u} w={1.5 * u} d={1.2 * u} h={7 * u} c="#d6dce4" win />
+          <Box x={x + 2.2 * u} y={y + 0.2 * u} w={1.5 * u} d={1.2 * u} h={5.4 * u} c="#c4ccd6" win />
+          <Box x={x - 0.8 * u} y={y + 1.8 * u} w={1.5 * u} d={1.2 * u} h={4.2 * u} c="#dde3ea" win />
+        </g>
+      );
+    case 'adl':
+      return (
+        <g>
+          <Box x={x - 0.6 * u} y={y + 0.8 * u} w={4 * u} d={1.8 * u} h={2.4 * u} c="#cbd5e1" roof="#475569" win />
+          <ellipse cx={x + 2.6 * u} cy={y - 2.8 * u} rx={1.4 * u} ry={1.1 * u} fill="#e2e8f0" stroke="#64748b" strokeWidth={0.15 * u} />
+          <rect x={x - 3.2 * u} y={y - 4.2 * u} width={0.5 * u} height={4.4 * u} fill="#64748b" />
+          <path d={`M${x - 3.8 * u},${y - 4.2 * u} L${x - 2.1 * u},${y - 4.2 * u}`} stroke="#ef4444" strokeWidth={0.35 * u} />
+        </g>
+      );
+    case 'shipyard':
+      return (
+        <g>
+          <path d={`M${x - 4.4 * u},${y + 1.6 * u} L${x + 4.4 * u},${y + 1.6 * u} L${x + 3.4 * u},${y + 2.6 * u} L${x - 3.4 * u},${y + 2.6 * u} Z`} fill="#64748b" />
+          <path d={`M${x - 3 * u},${y + 1.2 * u} L${x + 2.6 * u},${y + 1.2 * u} L${x + 1.8 * u},${y + 0.2 * u} L${x - 2.4 * u},${y + 0.2 * u} Z`} fill="#94a3b8" />
+          <Box x={x - 0.6 * u} y={y + 0.2 * u} w={1.2 * u} d={0.8 * u} h={1.2 * u} c="#cbd5e1" />
+          <path d={`M${x - 3.6 * u},${y + 1.4 * u} V${y - 5 * u} H${x + 2 * u} M${x - 3.6 * u},${y - 3.4 * u} L${x - 2 * u},${y - 5 * u}`} fill="none" stroke="#f59e0b" strokeWidth={0.4 * u} />
+          <line x1={x + 1.4 * u} y1={y - 5 * u} x2={x + 1.4 * u} y2={y - 2.4 * u} stroke="#cbd5e1" strokeWidth={0.12 * u} />
+        </g>
+      );
+    case 'arms':
+      return (
+        <g>
+          <Box x={x - 0.8 * u} y={y + 0.8 * u} w={4.6 * u} d={2 * u} h={2.2 * u} c="#6b7280" roof="#4d5a3a" />
+          <Box x={x + 2.4 * u} y={y + 1.4 * u} w={1.6 * u} d={1.2 * u} h={1.4 * u} c="#57534e" />
+          <rect x={x - 2.4 * u} y={y - 5 * u} width={0.6 * u} height={4.6 * u} fill="#78716c" />
+          <rect x={x - 1.2 * u} y={y - 4 * u} width={0.6 * u} height={3.6 * u} fill="#78716c" />
+          <circle cx={x - 2.1 * u} cy={y - 5.6 * u} r={0.8 * u} fill="#d6d3d1" opacity={0.6} />
+        </g>
+      );
+    case 'missile':
+      return (
+        <g>
+          <ellipse cx={x} cy={y + 1 * u} rx={3.6 * u} ry={1.4 * u} fill="#a8a29e" />
+          <path d={`M${x - 0.6 * u},${y + 0.6 * u} V${y - 5 * u} L${x},${y - 6.4 * u} L${x + 0.6 * u},${y - 5 * u} V${y + 0.6 * u} Z`} fill="#f8fafc" stroke="#94a3b8" strokeWidth={0.12 * u} />
+          <path d={`M${x - 0.6 * u},${y + 0.6 * u} l-0.8,0.6 v-1.6 Z M${x + 0.6 * u},${y + 0.6 * u} l0.8,0.6 v-1.6 Z`} fill="#dc2626" />
+          <path d={`M${x + 1.2 * u},${y + 0.6 * u} L${x + 1.2 * u},${y - 3.6 * u} L${x + 2 * u},${y - 3.6 * u}`} fill="none" stroke="#475569" strokeWidth={0.35 * u} />
+          <Box x={x - 2.6 * u} y={y + 1.6 * u} w={1.6 * u} d={1 * u} h={1 * u} c="#e5e7eb" />
+        </g>
+      );
+    case 'drone':
+      return (
+        <g>
+          <Box x={x - 0.6 * u} y={y + 0.8 * u} w={3.6 * u} d={1.6 * u} h={2.2 * u} c="#e2e8f0" roof="#0ea5e9" win />
+          <g transform={`translate(${x + 1.6 * u} ${y - 4.4 * u})`}>
+            <path d={`M${-2.2 * u},0 H${2.2 * u} M0,${-0.5 * u} V${0.5 * u}`} stroke="#334155" strokeWidth={0.35 * u} />
+            <ellipse cx={-2.2 * u} cy={-0.3 * u} rx={0.9 * u} ry={0.25 * u} fill="#94a3b8" />
+            <ellipse cx={2.2 * u} cy={-0.3 * u} rx={0.9 * u} ry={0.25 * u} fill="#94a3b8" />
+          </g>
+        </g>
+      );
+    case 'cyber':
+      return (
+        <g>
+          <Box x={x - 0.4 * u} y={y + 0.8 * u} w={3.4 * u} d={1.8 * u} h={3 * u} c="#1e293b" roof="#334155" />
+          {[0, 1, 2].map((i) => (
+            <line key={i} x1={x - 1.8 * u} x2={x + 1 * u} y1={y - 1.6 * u + i * 0.8 * u} y2={y - 1.6 * u + i * 0.8 * u} stroke="#22d3ee" strokeWidth={0.18 * u} opacity={0.8} />
+          ))}
+          <path d={`M${x + 2.6 * u},${y - 2.2 * u} q${1.6 * u},${-1.6 * u} ${0},${-3.2 * u}`} fill="none" stroke="#94a3b8" strokeWidth={0.3 * u} />
+          <line x1={x + 2.4 * u} y1={y - 2.2 * u} x2={x + 2.4 * u} y2={y} stroke="#94a3b8" strokeWidth={0.3 * u} />
+        </g>
+      );
+    case 'aero':
+      return (
+        <g>
+          <path d={`M${x - 3.6 * u},${y + 1.6 * u} V${y - 0.6 * u} Q${x - 1.2 * u},${y - 3.4 * u} ${x + 1.2 * u},${y - 0.6 * u} V${y + 1.6 * u} Z`} fill="#cbd5e1" stroke="#64748b" strokeWidth={0.15 * u} />
+          <path d={`M${x + 2.6 * u},${y + 1.4 * u} V${y - 4.6 * u} L${x + 3.1 * u},${y - 5.8 * u} L${x + 3.6 * u},${y - 4.6 * u} V${y + 1.4 * u} Z`} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={0.12 * u} />
+          <circle cx={x + 3.1 * u} cy={y - 3.2 * u} r={0.3 * u} fill="#1d4ed8" />
+        </g>
+      );
+    case 'mark':
+      return null;
     case 'suburb':
       return (
         <g>

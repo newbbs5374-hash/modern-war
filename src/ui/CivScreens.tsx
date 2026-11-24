@@ -34,7 +34,11 @@ import {
 import { RES_ICON } from '../data/economy';
 import { specialsFor } from '../data/specials';
 import { EDGE_DIR, HEX_DIRS, HEX_SIZE, PIONEER_ISLANDS, hexCorners, hexDist, hexKey } from '../data/hexmap';
-import { CityView, type CityCell, type CityThing } from './CityView';
+import { CityView, type CityCell, type CityLabel, type CityThing } from './CityView';
+import { cityMap } from '../data/cityMap';
+import { KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, effText, type CityEff } from '../data/krCities';
+import { CITY_INST, instById } from '../data/institutions';
+import { SIZE_NAME } from '../data/hexmap';
 import { smoothPath, type Seg } from './smoothHex';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
@@ -352,6 +356,7 @@ function TechModal({ state, t, onClose, onGo }: ScreenProps & { t: Tech; onClose
     ...(t.units ?? []).flatMap((u) => [`🪖 ${u}`, ...specialsFor(me, u).map((d) => `🌟 ${d.name}`)]),
     ...(t.cards ?? []).map((k) => cardById(k)).filter(Boolean).map((k) => `🃏 ${k!.name}`),
     ...(t.districts ?? []).map((d) => `${districtById(d).icon} ${districtById(d).name}`),
+    ...DISTRICTS.filter((d) => d.tech === t.id).map((d) => `${d.icon} ${d.name}(군사 연구시설)`),
     ...(t.agree ?? []).map((a) => `${agreeById(a).icon} ${agreeById(a).name} 협정`),
   ];
   const switching = !done && !now && c.cur[t.line];
@@ -611,7 +616,11 @@ export function CityPanel(props: ScreenProps) {
             </span>
           </div>
           <Help title="도시">
-            <p>도시마다 육각 칸이 있어요(소도시 19 · 중도시 37 · 대도시 61칸). 칸에 <b>구역</b>을 지어요: 소도시 1 · 중도시 2 · 대도시 3개.</p>
+            <p>도시마다 육각 칸이 있어요(소도시 169 · 중도시 271 · 대도시 397칸). 칸에 <b>구역</b>을 지어요: 소도시 3 · 중도시 5 · 대도시 7개.</p>
+            <p>🇰🇷 대한민국 10개 도시는 실제 행정구역 모양 그대로예요. 구·군 경계, 강, 실제 시설(대통령실·국방과학연구소·해군작전사령부 등)이 실제 자리에 있고, 시설마다 발전 단계(1~{MARK_MAX})를 올릴 수 있어요.</p>
+            <p>
+              <b>도시 특성·실제 시설·군사 연구시설</b>은 나라 전체 예산·자원·연구·모집·전투력·임무에 더해져요. 그 도시 민심이 낮으면 줄고, 점령지는 절반만 받아요.
+            </p>
             <ul>
               {DISTRICTS.map((d) => (
                 <li key={d.id}>
@@ -643,7 +652,7 @@ export function CityPanel(props: ScreenProps) {
               </span>
               <Meter value={cc.loyalty} max={100} tone={cc.loyalty >= LOYALTY_OK ? 'green' : 'red'} />
               <small className="muted">
-                👪{cc.pop} · {cc.districts.map((d) => districtById(d.id).icon).join('') || '구역 없음'} {cc.districts.length}/{C.districtSlots(state, city.id)}
+                {KR_CITY_INFO[city.name] ? `${KR_CITY_INFO[city.name].trait.icon} ` : ''}👪{people(C.cityPeople(state, city.id))} · {cc.districts.map((d) => districtById(d.id).icon).join('') || '구역 없음'} {cc.districts.length}/{C.districtSlots(state, city.id)}
                 {building ? ' 🏗️' : ''}
                 {city.home !== me ? ' · 점령지' : ''}
               </small>
@@ -672,56 +681,165 @@ function cityCoast(tiles: Array<{ q: number; r: number; x: number; y: number }>)
 
 const TERRAIN_COLOR: Record<C.Terrain, string> = { 평지: '#4d7c3a', 산: '#78716c', 유적: '#a78b4f', 바닷가: '#c2a86b' };
 
+const people = (v: number) => (v >= 10000 ? `${Math.round(v / 1000) / 10}천만` : `${v.toLocaleString()}만`);
+const MARK_COLOR: Record<string, string> = {
+  gov: '#c9b98f', intel: '#64748b', army: '#6b7a4f', navy: '#3b6e9c', air: '#7d93ad', lab: '#d8dee6', univ: '#b98a6b', bank: '#8fa4b8', industry: '#9a8f86',
+  port: '#7c8ea0', airport: '#a3b3c2', culture: '#b8754f', tourism: '#4fa3a5', nature: '#5f8f4a', energy: '#a8a29e', shipyard: '#71839a',
+};
+
+/** 구·군이 다른 이웃 칸 사이 선 */
+function guBorders(tiles: Array<{ q: number; r: number; x: number; y: number; gu?: number }>): string {
+  const at = new Map(tiles.map((t) => [hexKey(t.q, t.r), t]));
+  let d = '';
+  for (const t of tiles) {
+    if (t.gu === undefined) continue;
+    const cs = hexCorners(t.x, t.y);
+    cs.forEach((p, i) => {
+      const dir = HEX_DIRS[EDGE_DIR[i]];
+      const o = at.get(hexKey(t.q + dir.q, t.r + dir.r));
+      if (o && o.gu !== undefined && o.gu > t.gu!) {
+        const q2 = cs[(i + 1) % 6];
+        d += `M${p[0].toFixed(2)},${p[1].toFixed(2)}L${q2[0].toFixed(2)},${q2[1].toFixed(2)}`;
+      }
+    });
+  }
+  return d;
+}
+
+/** 효과에 몫(민심·점령)을 곱해 한 줄로 */
+const scaled = (e: CityEff, k: number): CityEff => Object.fromEntries(Object.entries(e).map(([key, v]) => [key, key === 'loyalty' ? v : (v as number) * k])) as CityEff;
+
 function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; onClose: () => void }) {
   const city = cityById(id);
   const cc = C.cityCiv(state, id);
-  const tiles = C.cityTiles(id);
+  const map = cityMap(id);
+  const tiles = map.tiles;
+  const info = KR_CITY_INFO[city.name] ?? null;
   const [sel, setSel] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
+  const [zoom, setZoom] = useState(1);
+  const [open, setOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // 확대하면 도심이 가운데 오게
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || zoom === 1) return;
+    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  }, [zoom]);
   const distAt = (k: string) => cc.districts.find((d) => d.tile === k);
   const mineAt = (k: string) => (cc.mines ?? []).find((m) => m.tile === k);
   const selTile = sel ? tiles.find((t) => hexKey(t.q, t.r) === sel) : null;
   const dep = sel ? C.depositAt(id, sel) : null;
+  const selMark = sel ? C.markAt(id, sel) : null;
   const target = C.loyaltyTarget(state, id);
+  const marks = C.cityMarks(id);
   const coast = useMemo(() => cityCoast(tiles), [id]);
+  const around = useMemo(() => {
+    if (!map.outLand.size) return undefined;
+    const pts = [...map.outLand].map((k) => {
+      const [q, r] = k.split(',').map(Number);
+      return { q, r, x: HEX_SIZE * Math.sqrt(3) * (q + r / 2), y: HEX_SIZE * 1.5 * r };
+    });
+    return cityCoast(pts);
+  }, [id]);
+  const borders = useMemo(() => (map.gu && map.gu.length > 1 ? guBorders(tiles) : undefined), [id]);
+  const rivers = useMemo(
+    () =>
+      info?.rivers && map.geo
+        ? info.rivers.map((r) => ({ w: r.w, d: 'M' + r.pts.map((p) => map.geo!(...p)).map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join('L') }))
+        : undefined,
+    [id],
+  );
   const now = state.worldMs;
+  const markLv = (mid: string) => C.markLevel(state, id, mid);
   const cells = useMemo((): CityCell[] => {
-    const center = tiles.find((t) => t.center) ?? tiles[0];
     const base = tiles.map((t) => {
       const k = hexKey(t.q, t.r);
-      const ground = C.terrainOf(t.q, t.r);
+      const ground = C.terrainOf(id, t.q, t.r);
       const d = cc.districts.find((x) => x.tile === k);
       const m = (cc.mines ?? []).find((x) => x.tile === k);
+      const mk = marks.find((x) => x.tile === k);
       const dp = C.depositAt(id, k);
       let thing = null as CityThing | null;
       if (t.center) thing = 'center';
-      else if (d) thing = d.id;
+      else if (mk) thing = 'mark';
+      else if (d) thing = d.id as CityThing;
       else if (m) thing = 'mine';
       else if (dp) thing = null;
       else if (ground === '산') thing = 'mountain';
       else if (ground === '유적') thing = 'ruins';
+      const st = mk ? cc.marks?.[mk.id] : undefined;
       return {
         key: k,
         x: t.x,
         y: t.y,
         ground,
         thing,
-        building: (d && d.doneMs > now) || (m && m.doneMs > now) || false,
+        building: (d && d.doneMs > now) || (m && m.doneMs > now) || (st && st.doneMs > now) || false,
         deposit: dp && !d ? RES_ICON[dp] : null,
         mined: !!m,
-        dist: hexDist(t, center),
+        mark: mk ? { icon: MARK_KIND[mk.kind].icon, lv: markLv(mk.id), color: MARK_COLOR[mk.kind], nature: mk.kind === 'nature' } : undefined,
+        dist: hexDist(t, { q: 0, r: 0 }),
       };
     });
-    // 빈 땅: 도심 가까이엔 인구만큼 마을, 멀리엔 군데군데 숲
-    const empty = base.filter((c) => !c.thing && !c.deposit).sort((a, b) => a.dist - b.dist);
-    empty.slice(0, cc.pop).forEach((c) => (c.thing = 'suburb'));
-    empty.slice(cc.pop).forEach((c) => {
+    // 빈 땅: 인구가 늘수록 도심에서 시가지가 퍼짐(가까운 곳은 아파트 단지, 바깥은 주택가), 멀리엔 숲
+    const empty = base.filter((c) => !c.thing && !c.deposit && c.ground !== '바닷가').sort((a, b) => a.dist - b.dist || a.y - b.y);
+    const built = cc.districts.length + marks.length;
+    const urban = Math.min(empty.length, Math.round(cc.pop * 9 + built * 2));
+    const dense = Math.round(urban * Math.min(0.5, cc.pop / 16));
+    empty.slice(0, dense).forEach((c) => (c.thing = 'apt'));
+    empty.slice(dense, urban).forEach((c) => (c.thing = 'suburb'));
+    empty.slice(urban).forEach((c) => {
       const h = (Math.abs(Math.round(c.x * 7 + c.y * 13)) * 2654435761) % 97;
-      if (c.dist >= 2 && h % 3 === 0) c.thing = 'forest';
+      if (h % 3 === 0) c.thing = 'forest';
     });
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, cc.districts, cc.mines, cc.pop, Math.floor(now / 60000)]);
+  }, [id, cc.districts, cc.mines, cc.marks, cc.pop, Math.floor(now / 60000)]);
+  const labels = useMemo((): CityLabel[] => {
+    const out: CityLabel[] = [];
+    if (map.gu && map.gu.length > 1) {
+      map.gu.forEach((name, gi) => {
+        const ts = tiles.filter((t) => t.gu === gi);
+        if (!ts.length) return;
+        const cx = ts.reduce((a, t) => a + t.x, 0) / ts.length;
+        const cy = ts.reduce((a, t) => a + t.y, 0) / ts.length;
+        // 가운데에 가장 가까운 칸 위에
+        const t = ts.reduce((b, x) => (Math.hypot(x.x - cx, x.y - cy) < Math.hypot(b.x - cx, b.y - cy) ? x : b));
+        out.push({ x: t.x, y: t.y, text: name, kind: 'gu' });
+      });
+    }
+    if (zoom >= 2)
+      for (const mk of marks) {
+        const t = map.at.get(mk.tile)!;
+        out.push({ x: t.x, y: t.y, text: mk.name, kind: 'mark' });
+      }
+    return out;
+  }, [id, zoom]);
+  const parts = C.cityParts(state, id);
+  const share = C.cityShare(state, id);
+  const milDefs = DISTRICTS.filter((d) => d.mil);
+  const baseDefs = DISTRICTS.filter((d) => !d.mil);
+  const buildTile = (d: (typeof DISTRICTS)[number]) => {
+    const why = C.canDistrict(state, id, sel!, d.id as DistrictId);
+    const adj = C.adjCount(id, sel!, d.id, cc);
+    return (
+      <Tile
+        key={d.id}
+        icon={d.icon}
+        label={d.name}
+        sub={why ? why.replace(' 필요', '') : `${fmt(d.cost)} · 이웃+${adj}`}
+        locked={!!why}
+        onClick={() => {
+          if (why) return setMsg(`${d.name}: ${why}`);
+          actions.apply((s) => C.buildDistrict(s, id, sel!, d.id));
+          setMsg(`${d.icon} ${d.name} 공사 시작! ${r1(C.districtHours(state, d.id))}시간 뒤 완공 · ${d.text}`);
+          setSel(null);
+        }}
+      />
+    );
+  };
   return (
     <Modal title={city.name} icon={city.capital ? '👑' : '🏙️'} onClose={onClose}>
       <div className="row">
@@ -729,12 +847,84 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           {loyaltyFace(cc.loyalty)} 민심 <b>{Math.round(cc.loyalty)}</b> <small className="muted">→ {Math.round(target)}</small>
         </span>
         <span>
-          👪 인구 <b>{cc.pop}</b>/{C.popCap(state, id)}
+          👪 <b>{people(C.cityPeople(state, id))}</b> <small className="muted">(발전 {cc.pop}/{C.popCap(state, id)})</small>
         </span>
         <Tip label="이유" title="민심 목표" rows={C.loyaltyReasons(state, id).map(([k, v]) => [k, signed(Math.round(v))])} total={`${Math.round(target)}`} />
       </div>
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
-      <CityView cells={cells} coast={coast} sel={sel} onPick={(k) => (setSel(k), setMsg(''))} uid={id} inland={!isCoastalCity(id)} />
+      <div className="city-info">
+        <button className="city-info-top" onClick={() => setOpen(!open)}>
+          <span>
+            {info ? `${info.trait.icon} ${info.nick}` : `${SIZE_NAME[city.size]} · ${tiles.length}칸`}
+          </span>
+          <small>{open ? '접기 ▲' : '도시 정보 ▼'}</small>
+        </button>
+        {info && (
+          <p className="small">
+            <b>{info.trait.icon} {info.trait.name}</b>: {info.trait.text}
+          </p>
+        )}
+        {open && (
+          <div className="city-info-body small">
+            {info ? (
+              <>
+                <p>
+                  실제 인구 약 <b>{people(info.pop)}</b> 명 · 면적 {info.area.toLocaleString()}km² · {info.admin}
+                </p>
+                <p>주요 산업: {info.industry.join(' · ')}</p>
+                {map.gu && map.gu.length > 1 && <p className="muted">행정구역: {map.gu.join(' · ')}</p>}
+              </>
+            ) : (
+              <p>
+                {SIZE_NAME[city.size]} · 칸 {tiles.length} · 인구 약 {people(C.cityPeople(state, id))} · 기관{' '}
+                {(CITY_INST[city.name] ?? []).map((i) => `${instById(i).icon}${instById(i).name}`).join(' · ') || '없음'}
+              </p>
+            )}
+            <p className="stat-group-name">이 도시가 나라에 주는 힘 (민심·점령 반영 ×{r1(share)})</p>
+            <ul className="city-eff">
+              {info && <li>⭐ 도시 특성: {effText(scaled(parts.trait, share)) || '없음'}</li>}
+              {marks.length > 0 && <li>🏛️ 실제 시설 {marks.length}곳: {effText(scaled(parts.marks, share)) || '없음'}</li>}
+              <li>
+                🧪 군사 연구시설:{' '}
+                {effText(scaled(parts.mil, share)) || '없음'}
+                {parts.mil.pDom && (['육', '해', '공'] as const).filter((d) => parts.mil.pDom![d]).map((d) => ` · ${d}군 전투력 +${r1(parts.mil.pDom![d] * share * 100)}%`).join('')}
+              </li>
+            </ul>
+            {marks.length > 0 && (
+              <div className="city-marks">
+                {marks.map((mk) => (
+                  <button key={mk.id} className={`city-mark ${sel === mk.tile ? 'on' : ''}`} onClick={() => (setSel(mk.tile), setMsg(''))}>
+                    {MARK_KIND[mk.kind].icon} {mk.name} <b>{markLv(mk.id)}단계</b>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="city-zoom-bar">
+        {[1, 2, 3].map((z) => (
+          <button key={z} className={zoom === z ? 'on' : ''} onClick={() => setZoom(z)}>
+            {z === 1 ? '전체' : `${z}배`}
+          </button>
+        ))}
+        <small className="muted">{zoom > 1 ? '밀어서 둘러보기 · 시설 이름 보임' : '확대하면 시설 이름이 보여요'}</small>
+      </div>
+      <div ref={scrollRef} className={`city-scroll ${zoom > 1 ? 'zoomed' : ''}`}>
+        <CityView
+          cells={cells}
+          coast={coast}
+          sel={sel}
+          onPick={(k) => (setSel(k), setMsg(''))}
+          uid={id}
+          inland={!isCoastalCity(id)}
+          around={around}
+          borders={borders}
+          rivers={rivers}
+          labels={labels}
+          zoom={zoom}
+        />
+      </div>
       <div className="legend small muted">
         <span>
           <i style={{ background: TERRAIN_COLOR.평지 }} /> 평지
@@ -745,18 +935,63 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         <span>⛰️ 산</span>
         <span>🏺 유적</span>
         <span>🏛️ 도심</span>
+        {marks.length > 0 && <span>🔵 실제 시설(점 = 단계)</span>}
         <span>◌ 매장지 · ⛏️ 채굴장</span>
       </div>
-      <p className="small muted">{isCoastalCity(id) ? '🌊 바다에 닿은 도시 · 가장자리 바닷가 칸에 ⚓항만을 지을 수 있어요' : '🏞️ 내륙 도시 · ⚓항만은 못 지어요(🛫비행장은 돼요)'}</p>
+      <p className="small muted">{isCoastalCity(id) ? '🌊 바다에 닿은 도시 · 가장자리 바닷가 칸에 ⚓항만·🛳️군 조선소를 지을 수 있어요' : '🏞️ 내륙 도시 · ⚓항만·🛳️조선소는 못 지어요(🛫비행장은 돼요)'}</p>
       <p className="small">
         구역 {cc.districts.length}/{C.districtSlots(state, id)} ·{' '}
         {cc.districts.map((d) => `${districtById(d.id).icon}${d.doneMs > state.worldMs ? `(${timeLeft(d.doneMs - state.worldMs)})` : ''}`).join(' ') || '아직 없음'}
       </p>
-      {selTile ? (
+      {selTile && selMark ? (
+        (() => {
+          const lv = markLv(selMark.id);
+          const st = cc.marks?.[selMark.id];
+          const upWhy = C.canUpgradeMark(state, id, selMark.id);
+          const cost = C.markUpCost(lv);
+          return (
+            <div className="civ-build">
+              <div className="line-item">
+                <span className="li-ico">{MARK_KIND[selMark.kind].icon}</span>
+                <span className="li-main">
+                  <b>
+                    {selMark.name} · {lv}단계/{MARK_MAX}
+                  </b>
+                  <small>
+                    {MARK_KIND[selMark.kind].name} 시설{selMark.note ? ` · ${selMark.note}` : ''}
+                    <br />
+                    지금 효과: {effText(scaled(Object.fromEntries(Object.entries(MARK_KIND[selMark.kind].per).map(([k, v]) => [k, (v as number) * lv * MARK_SCALE])) as CityEff, share))}
+                    <br />
+                    {st && st.doneMs > state.worldMs
+                      ? `${st.lv}단계로 발전 공사 중 · ${timeLeft(st.doneMs - state.worldMs)}`
+                      : lv < MARK_MAX
+                        ? `다음 단계: 💰${fmt(cost.cost)} 🔩${cost.res.강철} · ${cost.hours}시간`
+                        : '가장 높은 단계'}
+                  </small>
+                </span>
+                {lv < MARK_MAX && !(st && st.doneMs > state.worldMs) && (
+                  <button
+                    className="primary"
+                    disabled={!!upWhy}
+                    title={upWhy ?? ''}
+                    onClick={() => {
+                      actions.apply((s) => C.upgradeMark(s, id, selMark.id));
+                      setMsg(`🏗️ ${selMark.name} ${lv + 1}단계 발전 공사 시작! ${cost.hours}시간 뒤 완공`);
+                    }}
+                  >
+                    ⬆️ 발전
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })()
+      ) : selTile ? (
         <div className="civ-build">
           <small className="stat-group-name">
-            고른 칸: {selTile.center ? '도심' : C.terrainOf(selTile.q, selTile.r)}
-            {C.terrainOf(selTile.q, selTile.r) === '바닷가' ? ` · 옆 바다 ${C.seaAround(selTile.q, selTile.r)}칸` : ''}
+            고른 칸: {selTile.center ? '도심' : C.terrainOf(id, selTile.q, selTile.r)}
+            {C.terrainOf(id, selTile.q, selTile.r) === '바닷가' ? ` · 옆 바다 ${C.seaAround(id, selTile.q, selTile.r)}칸` : ''}
+            {map.gu && selTile.gu !== undefined ? ` · ${map.gu[selTile.gu]}` : ''}
           </small>
           {dep && !distAt(sel!) && (
             <div className="line-item">
@@ -790,35 +1025,20 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           )}
           {mineAt(sel!) ? null : distAt(sel!) ? (
             <p className="small">
-              {districtById(distAt(sel!)!.id).icon} {districtById(distAt(sel!)!.id).name} · 이웃 보너스 {C.adjCount(id, sel!, distAt(sel!)!.id, cc)}개
+              {districtById(distAt(sel!)!.id).icon} {districtById(distAt(sel!)!.id).name} · {districtById(distAt(sel!)!.id).text} · 이웃 보너스 {C.adjCount(id, sel!, distAt(sel!)!.id, cc)}개
             </p>
           ) : (
-            <div className="tiles c5">
-              {DISTRICTS.map((d) => {
-                const why = C.canDistrict(state, id, sel!, d.id as DistrictId);
-                const adj = C.adjCount(id, sel!, d.id, cc);
-                return (
-                  <Tile
-                    key={d.id}
-                    icon={d.icon}
-                    label={d.name}
-                    sub={why ? why.replace(' 필요', '') : `${fmt(d.cost)} · 이웃+${adj}`}
-                    locked={!!why}
-                    onClick={() => {
-                      if (why) return setMsg(`${d.name}: ${why}`);
-                      actions.apply((s) => C.buildDistrict(s, id, sel!, d.id));
-                      setMsg(`${d.icon} ${d.name} 공사 시작! ${r1(C.districtHours(state, d.id))}시간 뒤 완공`);
-                      setSel(null);
-                    }}
-                  />
-                );
-              })}
-            </div>
+            <>
+              <small className="stat-group-name">기본 구역</small>
+              <div className="tiles c5">{baseDefs.map(buildTile)}</div>
+              <small className="stat-group-name">🧪 군사 연구시설 (도시마다 1개씩)</small>
+              <div className="tiles c4">{milDefs.map(buildTile)}</div>
+            </>
           )}
         </div>
       ) : (
         <p className="small muted">
-          칸을 누르면 지을 수 있는 구역이 나와요. 이웃 보너스가 큰 자리를 골라 보세요. 매장지
+          칸을 누르면 지을 수 있는 구역이 나와요. {marks.length ? '🔵 실제 시설을 누르면 발전 단계를 올릴 수 있어요. ' : ''}매장지
           {C.deposits(id).length ? ` ${C.deposits(id).map((x) => RES_ICON[x.res]).join('')}` : ''}에는 채굴장을 지을 수 있어요.
         </p>
       )}

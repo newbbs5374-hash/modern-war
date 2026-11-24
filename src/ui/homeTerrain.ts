@@ -17,10 +17,8 @@ function ringArea(r: number[][]): number {
 
 export const HOME_W = 390;
 export const HOME_H = 640;
-/** 표기만 하는 지명(도시 기능 없음): 경도·위도 */
-export const HOME_MARKS: Record<string, Array<{ name: string; lonlat: [number, number] }>> = {
-  kr: [{ name: '여수', lonlat: [127.66, 34.76] }],
-};
+/** 표기만 하는 지명(도시 기능 없음): 경도·위도. 여수는 11/24부터 실제 도시가 됨 */
+export const HOME_MARKS: Record<string, Array<{ name: string; lonlat: [number, number] }>> = {};
 
 type Ring = number[][];
 

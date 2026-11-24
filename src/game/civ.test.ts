@@ -37,15 +37,17 @@ describe('연구', () => {
     expect(C.canResearch(s, 'm-armor')).toMatch(/먼저/);
     s = C.startResearch(s, 'm-mech');
     expect(C.civOf(s).cur.mil).toBe('m-mech');
-    s = advance(s, 1.2 * H);
+    // 연구 속도 1일 때 기준 시간(11/24 대한민국 도시 특성·시설로 빨라짐)
+    const hr = (h: number) => (h / C.researchRate(s)) * H;
+    s = advance(s, hr(1.2));
     // 3단계 연구(11-24): 1단계만 끝나고 아직 완성 아님
     expect(C.hasTech(s, 'm-mech')).toBe(false);
     expect(C.techStage(s, 'm-mech')).toBe(1);
-    s = advance(s, 2.4 * H);
+    s = advance(s, hr(2.4));
     expect(C.hasTech(s, 'm-mech')).toBe(true);
     expect(C.civOf(s).stage?.['m-mech']).toBeUndefined();
     s = C.startResearch(s, 'm-armor');
-    s = advance(s, 9 * H);
+    s = advance(s, hr(9));
     expect(C.hasTech(s, 'm-armor')).toBe(true);
     expect(canProduce(s, '전차')).toBeNull();
     // 등급이 모자라면 연구가 있어도 안 열림
@@ -157,26 +159,27 @@ describe('도시', () => {
     const s = rich(setRank(newGame('t', 'ru', 0, { seed: 3 }), 6));
     // 모스크바(ru-0)는 내륙: 바닷가 칸이 없고 항만은 못 지음
     const moscow = C.cityTiles('ru-0').filter((t) => !t.center);
-    expect(moscow.some((t) => C.terrainOf(t.q, t.r) === '바닷가')).toBe(false);
+    expect(moscow.some((t) => C.terrainOf('ru-0', t.q, t.r) === '바닷가')).toBe(false);
     expect(C.canDistrict(s, 'ru-0', hexKey(moscow[0].q, moscow[0].r), 'harbor')).toMatch(/바다에 닿지 않은/);
     // 내륙 도시도 비행장은 됨(연구 없이)
-    const flat = moscow.find((t) => C.terrainOf(t.q, t.r) === '평지')!;
+    const flat = moscow.find((t) => C.terrainOf('ru-0', t.q, t.r) === '평지')!;
     expect(C.canDistrict(s, 'ru-0', hexKey(flat.q, flat.r), 'airfield')).toBeNull();
     // 상트페테르부르크(ru-1)는 바닷가 도시: 연구 없이 항만
-    const spb = C.cityTiles('ru-1').find((t) => !t.center && C.terrainOf(t.q, t.r) === '바닷가')!;
+    const spb = C.cityTiles('ru-1').find((t) => !t.center && C.terrainOf('ru-1', t.q, t.r) === '바닷가')!;
     expect(C.canDistrict(s, 'ru-1', hexKey(spb.q, spb.r), 'harbor')).toBeNull();
     // 덴버(us-4)처럼 예전 지도 탓에 바닷가가 있던 내륙 도시도 이제 없음
-    expect(C.cityTiles('us-4').some((t) => C.terrainOf(t.q, t.r) === '바닷가')).toBe(false);
+    expect(C.cityTiles('us-4').some((t) => C.terrainOf('us-4', t.q, t.r) === '바닷가')).toBe(false);
   });
 
   it('구역 짓기(칸 조건·도시 크기만큼), 완공되면 효과·번뜩임, 항만 없으면 군함 못 만듦', () => {
     let s = rich(setRank(newGame('t', 'kr', 0, { seed: 8 }), 6));
     s = C.debugAllResearch(s);
     expect(canProduce(s, '구축함')).toMatch(/항만/);
-    const city = 'kr-0';
+    // 서울은 11/24부터 실제 모양이라 내륙 → 부산에 항만
+    const city = 'kr-1';
     const tiles = C.cityTiles(city).filter((t) => !t.center);
-    const coast = tiles.find((t) => C.terrainOf(t.q, t.r) === '바닷가')!;
-    const inland = tiles.find((t) => C.terrainOf(t.q, t.r) !== '바닷가')!;
+    const coast = tiles.find((t) => C.terrainOf(city, t.q, t.r) === '바닷가' && !C.markAt(city, hexKey(t.q, t.r)))!;
+    const inland = tiles.find((t) => C.terrainOf(city, t.q, t.r) !== '바닷가' && !C.markAt(city, hexKey(t.q, t.r)))!;
     expect(C.canDistrict(s, city, hexKey(inland.q, inland.r), 'harbor')).toMatch(/바닷가/);
     s = C.buildDistrict(s, city, hexKey(coast.q, coast.r), 'harbor');
     expect(C.cityCiv(s, city).districts.length).toBe(1);
@@ -194,19 +197,19 @@ describe('도시', () => {
     expect(C.canDistrict(s, city, hexKey(tiles[tiles.length - 1].q, tiles[tiles.length - 1].r), 'industry')).toMatch(/까지|이미/);
   });
   it('민심: 전쟁 피로로 떨어지면 생산이 줄지만 도시는 잃지 않음, 인구는 민심이 좋으면 자람', () => {
-    let s = newGame('t', 'kr', 0, { seed: 9 });
-    const pop0 = C.cityCiv(s, 'kr-0').pop;
+    let s = newGame('t', 'jp', 0, { seed: 9 });
+    const pop0 = C.cityCiv(s, 'jp-0').pop;
     s = advance(s, 30 * H);
-    expect(C.cityCiv(s, 'kr-0').pop).toBeGreaterThan(pop0);
+    expect(C.cityCiv(s, 'jp-0').pop).toBeGreaterThan(pop0);
     expect(C.civBudgetMult(s)).toBeGreaterThan(1);
     // 모든 나라와 전쟁 + 큰 피로
     const pairs = { ...s.world.pairs };
-    for (const k of Object.keys(pairs)) if (k.includes('kr')) pairs[k] = { ...pairs[k], rel: '전쟁', weariness: 300 };
+    for (const k of Object.keys(pairs)) if (k.includes('jp')) pairs[k] = { ...pairs[k], rel: '전쟁', weariness: 300 };
     let w: GameState = { ...s, world: { ...s.world, pairs } };
     w = C.civAccrue(w, 30 * H);
-    expect(C.cityCiv(w, 'kr-0').loyalty).toBeLessThan(50);
+    expect(C.cityCiv(w, 'jp-0').loyalty).toBeLessThan(50);
     expect(C.cityTotals(w).mult).toBeLessThan(1);
-    expect(w.world.owner['kr-0']).toBe('kr');
+    expect(w.world.owner['jp-0']).toBe('jp');
   });
   it('옛 저장에도 문명 상태가 채워짐', () => {
     const s = newGame('t', 'kr', 0, { seed: 10 });

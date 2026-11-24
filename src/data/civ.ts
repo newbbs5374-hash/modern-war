@@ -366,7 +366,9 @@ export const agendaById = (id: AgendaId) => AGENDAS.find((a) => a.id === id)!;
 
 // ── 내정: 도시 구역 · 민심 · 인구 ──
 
-export type DistrictId = 'industry' | 'harbor' | 'airfield' | 'lab' | 'housing';
+export type DistrictId = 'industry' | 'harbor' | 'airfield' | 'lab' | 'housing' | MilLabId;
+/** 군사 연구시설(11/24 대장 요청 "지을 수 있는 군사 연구시설 확충") */
+export type MilLabId = 'adl' | 'shipyard' | 'arms' | 'missile' | 'drone' | 'cyber' | 'aero';
 export interface District {
   id: DistrictId;
   name: string;
@@ -375,6 +377,12 @@ export interface District {
   where: '아무 칸' | '바닷가 칸' | '평지 칸' | '평지·바닷가 칸';
   /** 연구 없이 처음부터 지을 수 있음(항만·비행장, 11-24 대장 요청) */
   free?: boolean;
+  /** 이 연구를 끝내야 지음(군사 연구시설) */
+  tech?: string;
+  /** 바다에 닿은 도시만 */
+  coastal?: boolean;
+  /** 군사 연구시설: 효과(나라 전체, 도시 효과 상한 안에서) */
+  mil?: { research?: number; army?: number; navy?: number; air?: number; power?: number; powerDom?: '육' | '해' | '공'; mission?: number; res?: number };
   cost: number;
   res: Partial<Record<Res, number>>;
   hours: number;
@@ -387,10 +395,20 @@ export const DISTRICTS: District[] = [
   { id: 'airfield', name: '비행장', icon: '🛫', where: '평지·바닷가 칸', free: true, cost: 4000, res: { 강철: 4, 석유: 4 }, hours: 3, text: '전투기·헬기·폭격기를 만들 수 있음 · 공군 모집 −5%', adj: '옆 공업 구역마다 공군 모집 −2%씩 더' },
   { id: 'lab', name: '연구소', icon: '🔬', where: '아무 칸', cost: 3500, res: { 반도체: 3 }, hours: 3, text: '연구 +12%', adj: '옆 산·유적 칸마다 연구 +4%씩 더' },
   { id: 'housing', name: '주거 구역', icon: '🏘️', where: '아무 칸', cost: 2500, res: { 강철: 3 }, hours: 2, text: '그 도시 민심 +10 · 인구 상한 +2 · 성장 빨라짐', adj: '옆 주거·바다 칸마다 민심 +2씩 더' },
+  // ── 군사 연구시설 7종(도시마다 1개씩, 옆 칸 보너스는 연구소·공업 구역) ──
+  { id: 'adl', name: '국방 연구소', icon: '🧪', where: '아무 칸', free: true, cost: 4500, res: { 반도체: 2, 강철: 3 }, hours: 3, text: '연구 +0.08/시간 · 전투력 +1%', adj: '옆 연구소·국방 연구소마다 연구 +0.03씩 더', mil: { research: 0.08, power: 0.01 } },
+  { id: 'shipyard', name: '군 조선소', icon: '🛳️', where: '바닷가 칸', free: true, coastal: true, cost: 5000, res: { 강철: 10 }, hours: 4, text: '해군 모집 +8% · 해군 전투력 +2%', adj: '옆 바다·공업 구역마다 해군 모집 +2%씩 더', mil: { navy: 0.08, power: 0.02, powerDom: '해' } },
+  { id: 'arms', name: '방산 공장', icon: '⚙️', where: '평지 칸', free: true, cost: 4000, res: { 강철: 8 }, hours: 3, text: '육군 모집 +8% · 자원 +2%', adj: '옆 공업 구역·방산 공장마다 육군 모집 +2%씩 더', mil: { army: 0.08, res: 0.02 } },
+  { id: 'missile', name: '미사일 시험장', icon: '🚀', where: '평지·바닷가 칸', tech: 'm-guided', cost: 6000, res: { 강철: 6, 희토류: 2 }, hours: 4, text: '육군·공군 전투력 +3%', adj: '옆 국방 연구소·바다마다 전투력 +0.5%씩 더', mil: { power: 0.03 } },
+  { id: 'drone', name: '무인기 연구소', icon: '🛸', where: '아무 칸', tech: 'm-drone', cost: 4500, res: { 반도체: 3 }, hours: 3, text: '육군 전투력 +3% · 육군 모집 +3% · 연구 +0.03', adj: '옆 연구소·공업 구역마다 연구 +0.02씩 더', mil: { power: 0.03, powerDom: '육', army: 0.03, research: 0.03 } },
+  { id: 'cyber', name: '사이버전 센터', icon: '💻', where: '아무 칸', tech: 'm-cyber', cost: 5000, res: { 반도체: 4 }, hours: 3, text: '임무 성공 +3% · 연구 +0.03', adj: '옆 연구소·국방 연구소마다 임무 +1%씩 더', mil: { mission: 0.03, research: 0.03 } },
+  { id: 'aero', name: '항공우주 연구소', icon: '🛰️', where: '평지·바닷가 칸', tech: 'm-jet', cost: 6500, res: { 알루미늄: 4, 반도체: 3 }, hours: 4, text: '공군 전투력 +4% · 공군 모집 +4% · 연구 +0.04', adj: '옆 비행장·연구소마다 공군 모집 +2%씩 더', mil: { power: 0.04, powerDom: '공', air: 0.04, research: 0.04 } },
 ];
+/** 군사 연구시설 7종 */
+export const MIL_LABS = DISTRICTS.filter((d) => d.mil);
 export const districtById = (id: DistrictId) => DISTRICTS.find((d) => d.id === id)!;
-/** 도시 크기(19·37·61칸)에 따른 구역 수 1·2·3 */
-export const DISTRICT_SLOTS: Record<2 | 3 | 4, number> = { 2: 1, 3: 2, 4: 3 };
+/** 도시 크기(169·271·397칸, 11/24 4.5배)에 따른 구역 수 3·5·7 */
+export const DISTRICT_SLOTS: Record<2 | 3 | 4, number> = { 2: 3, 3: 5, 4: 7 };
 /** 연구로 칸을 더: 헌법 개정 +1 */
 export const POP_MAX = 10;
 /** 인구 1 → 2에 필요한 성장 점수(인구 × 이 값) */
