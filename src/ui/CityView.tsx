@@ -58,9 +58,11 @@ interface Props {
   sel: string | null;
   onPick: (key: string) => void;
   uid: string;
+  /** 바다에 닿지 않은 도시: 둘레를 바다 대신 들판으로 */
+  inland?: boolean;
 }
 
-export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid }: Props) {
+export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid, inland }: Props) {
   const xs = cells.map((c) => c.x);
   const ys = cells.map((c) => c.y);
   const x0 = Math.min(...xs) - S * 1.6;
@@ -101,19 +103,31 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid 
           ) : null;
         })}
       </defs>
-      <rect x={x0 - 50} y={-5000} width={x1 - x0 + 100} height={10000} fill={`url(#cv-sea-${uid})`} />
-      <rect x={x0 - 50} y={-5000} width={x1 - x0 + 100} height={10000} fill={`url(#cv-wave-${uid})`} />
-      {/* 얕은 바다 빛 */}
-      <g transform={flat}>
-        <path d={coast} fill="none" stroke="#5eead4" strokeOpacity="0.22" strokeWidth={S * 1.6} strokeLinejoin="round" />
-      </g>
-      {/* 섬 두께(절벽) */}
-      <g transform={`translate(0 ${S * 0.7}) ${flat}`}>
-        <path d={coast} fill="#6b5536" />
-      </g>
+      {inland ? (
+        <>
+          {/* 내륙 도시: 둘레는 바다가 아니라 들판 */}
+          <rect x={x0 - 50} y={-5000} width={x1 - x0 + 100} height={10000} fill="#3d5230" />
+          <g transform={flat}>
+            <path d={coast} fill="none" stroke="#1f2a17" strokeOpacity="0.35" strokeWidth={S * 1.2} strokeLinejoin="round" />
+          </g>
+        </>
+      ) : (
+        <>
+          <rect x={x0 - 50} y={-5000} width={x1 - x0 + 100} height={10000} fill={`url(#cv-sea-${uid})`} />
+          <rect x={x0 - 50} y={-5000} width={x1 - x0 + 100} height={10000} fill={`url(#cv-wave-${uid})`} />
+          {/* 얕은 바다 빛 */}
+          <g transform={flat}>
+            <path d={coast} fill="none" stroke="#5eead4" strokeOpacity="0.22" strokeWidth={S * 1.6} strokeLinejoin="round" />
+          </g>
+          {/* 섬 두께(절벽) */}
+          <g transform={`translate(0 ${S * 0.7}) ${flat}`}>
+            <path d={coast} fill="#6b5536" />
+          </g>
+        </>
+      )}
       {/* 땅: 지형이 칸 경계 없이 섞임 */}
       <g transform={flat}>
-        <path d={coast} fill={paint('바닷가')} />
+        <path d={coast} fill={paint(inland ? '평지' : '바닷가')} />
         <g clipPath={`url(#cv-land-${uid})`}>
           <g filter={`url(#cv-soft-${uid})`}>
             {cells.map((c) => (
@@ -121,7 +135,7 @@ export const CityView = memo(function CityView({ cells, coast, sel, onPick, uid 
             ))}
           </g>
         </g>
-        <path d={coast} fill="none" stroke="#f3e6bb" strokeOpacity="0.6" strokeWidth={0.45} />
+        {!inland && <path d={coast} fill="none" stroke="#f3e6bb" strokeOpacity="0.6" strokeWidth={0.45} />}
         {/* 매장지 고리·고른 칸 */}
         {cells.map((c) =>
           c.deposit && !c.thing ? (

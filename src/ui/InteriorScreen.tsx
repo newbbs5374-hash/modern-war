@@ -627,6 +627,13 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
           </>
         )}
       </div>
+      {(id === '군항' || id === '공군기지') && (
+        <p className="small" style={{ marginTop: 6 }}>
+          {id === '군항'
+            ? '🌐 군항은 나라 전체 시설이에요(모집 속도). 군함을 만들려면 사회 › 도시에서 바다에 닿은 도시에 ⚓항만 구역도 지어야 해요.'
+            : '🌐 공군기지는 나라 전체 시설이에요(모집 속도). 헬기·전투기·폭격기를 만들려면 사회 › 도시에서 아무 도시에나 🛫비행장 구역도 지어야 해요.'}
+        </p>
+      )}
       {st.buildEndMs > state.worldMs && <BoostBar state={state} apply={actions.apply} target={{ kind: 'build', fac: id }} />}
       <p className="small muted" style={{ marginTop: 6 }}>
         📋 업무 "{CHORES[id]}": {CHORE_HOURS}시간 뒤 {info.fac} 경험 +{CHORE_EXP}, 그리고 {BUFF_HOURS}시간 동안 이 시설 효과 +{Math.round(BUFF_EFF * (BUILDING_SCALE[id] ?? 1) * 1000) / 10}%.
