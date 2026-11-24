@@ -4,6 +4,11 @@ import { BASIC_RES, RESOURCES, type Res } from '../data/economy';
 const NEW_RES_24: Res[] = ['니켈', '텅스텐', '코발트', '특수강', '정밀부품', '게르마늄', '헬륨', '커피', '비단'];
 import { DRILL_MAX } from './officer';
 import type { GameState } from './state';
+import { goalsOf } from './goals';
+
+/** 시험판 루비(11-24 대장: 인재 명단 새로 받기를 마음껏 시험) */
+export const TEST_RUBY = 5000;
+export const TEST_GRANT_NOW = 4;
 
 /** 봉급·국방예산·병력·자원·가속권·정보·훈련 일정 */
 export function grantTestResources(s: GameState): GameState {
@@ -25,8 +30,9 @@ export function grantTestResources(s: GameState): GameState {
       intel: s.officer.intel + 500,
       drills: DRILL_MAX,
       drillAnchorMs: s.worldMs,
-      testGrant: 3,
+      testGrant: TEST_GRANT_NOW,
     },
+    goals: { ...goalsOf(s), ruby: goalsOf(s).ruby + TEST_RUBY },
   };
 }
 
@@ -37,8 +43,9 @@ export function firstTestGrant(s: GameState): GameState {
     const stock = { ...s.economy.stock };
     const add = s.officer.testGrant === 1 ? RESOURCES.filter((r) => !BASIC_RES.includes(r)) : NEW_RES_24;
     for (const r of add) stock[r] = (stock[r] ?? 0) + 1000;
-    return { ...s, economy: { ...s.economy, stock }, officer: { ...s.officer, testGrant: 3 } };
+    s = { ...s, economy: { ...s.economy, stock }, officer: { ...s.officer, testGrant: 3 } };
   }
+  if (s.officer.testGrant === 3) return { ...s, goals: { ...goalsOf(s), ruby: goalsOf(s).ruby + TEST_RUBY }, officer: { ...s.officer, testGrant: TEST_GRANT_NOW } };
   if (s.officer.testGrant) return s;
   return grantTestResources(s);
 }
