@@ -1,6 +1,7 @@
 // 인물 사진을 누르면: ① 큰 초상화 팝업 → ② 인물 창(정보 · 스탯 · 관계 · 교류).
 // 용흔의 서약자 정보창처럼 위에 큰 사진·이름·등급, 아래 탭. 사진 칸은 Portrait.tsx 의 Face를 그대로 씀.
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { playerKeys } from '../data/looks';
 import { AIDE_EFFECT } from '../battle/grid';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { STAT_IDS, statCap, statExpNeed } from '../data/officers';
@@ -113,7 +114,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
       return {
         name: s.player.name,
         title: `${countryById(me).name} · ${TITLES[s.player.title ?? 0].name}`,
-        keys: ['player', `leader-${me}`],
+        keys: playerKeys(s.player),
         fallback: <Flag id={me} />,
         tags: [`호칭 ${(s.player.title ?? 0) + 1}/${TITLES.length}`, `봉급 시간당 ${Math.round(salaryPerDay(s))}`],
         intro: `${countryById(me).name}을 이끄는 지도자. 훈련·임무로 스탯을 키우고, 부관·장군과 함께 나라를 지켜요.`,

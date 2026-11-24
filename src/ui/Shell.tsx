@@ -1,4 +1,5 @@
 import { drillsNow } from '../game/officer';
+import { playerKeys } from '../data/looks';
 import { goalsReady, rubyOf } from '../game/goals';
 import { useState, type ReactNode } from 'react';
 import { CURRENCIES } from '../data/catalog';
@@ -64,7 +65,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
         {screen === 'home' ? (
           <button className="who" onClick={() => go('personal')}>
             <span className="portrait">
-              <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${me.id}`]} fallback={<Flag id={me.id} />} />
+              <PersonFace who={{ kind: 'player' }} keys={playerKeys(state.player)} fallback={<Flag id={me.id} />} />
             </span>
             <span>
               <b>
