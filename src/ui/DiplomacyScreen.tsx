@@ -58,7 +58,7 @@ export function DiplomacyScreen(props: ScreenProps) {
       />
       {tab === 'mofa' && (
         <>
-          <MinistryCards state={props.state} actions={props.actions} ids={['mofa']} title="외교부" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['mofa', 'mou']} title="외교부·통일부" />
           <SummitPanel {...props} />
           <ForeignPeople state={props.state} actions={props.actions} />
         </>

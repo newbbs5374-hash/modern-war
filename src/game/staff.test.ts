@@ -66,3 +66,23 @@ describe('대통령실 참모진·기관장(11-24)', () => {
     expect(counterOn(s)).toBe(true);
   });
 });
+
+describe('부처 15곳(11-24)', () => {
+  it('새 부처 6곳: 장관 앉히고 업무 끝내면 결과가 나옴', async () => {
+    const { MINISTRIES, ministerSlots } = await import('../data/cabinet');
+    const { startTask, cabinetTick } = await import('./cabinetOps');
+    expect(MINISTRIES.length).toBe(15);
+    expect(ministerSlots(10)).toBe(15);
+    let s = hire(rich(newGame('t', 'kr', 0, { seed: 21 })), 8);
+    const ids = ['mou', 'moj', 'moe', 'molit', 'mofs', 'moel'] as const;
+    const mine = C.cabinetOf(s).people.filter((p) => p.group === '내각' && !p.seat && !p.post);
+    ids.forEach((id, i) => (s = C.appointMinister(s, mine[i].id, id)));
+    for (const id of ids) expect(C.ministerOf(C.cabinetOf(s), id)).not.toBeNull();
+    const pool0 = C.cabinetOf(s).people.filter((p) => p.group === '인재').length;
+    for (const id of ids) s = startTask(s, id, MINISTRIES.find((m) => m.id === id)!.tasks[0].id);
+    s = { ...s, worldMs: s.worldMs + 7 * 3600e3 };
+    s = cabinetTick(s, 60e3);
+    expect(Object.keys(C.cabinetOf(s).tasks).length).toBe(0);
+    expect(C.cabinetOf(s).people.filter((p) => p.group === '인재').length).toBeGreaterThanOrEqual(pool0 + 2);
+  });
+});
