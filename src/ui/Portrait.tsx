@@ -5,6 +5,7 @@ import { COUNTRIES } from '../data/world';
 import { LEADERS } from '../data/leaders';
 import { AIDE_SPECIALTIES, NAME_POOL } from '../data/officers';
 import { faceFile, faceTag } from '../data/faces';
+import { secretaryOf } from '../data/secretary';
 
 const FILES = import.meta.glob('../assets/portraits/*.{png,jpg,jpeg,webp,PNG,JPG,JPEG,WEBP}', {
   eager: true,
@@ -44,6 +45,7 @@ export function portraitSlots(): { key: string; who: string }[] {
     { key: 'player', who: '나(플레이어 지도자) · 없으면 우리 나라 지도자 그림' },
     ...COUNTRIES.map((c) => ({ key: `leader-${c.id}`, who: `${c.name} ${LEADERS[c.id].title} ${LEADERS[c.id].name}` })),
     { key: 'aide', who: '기본 부관(당직 부관)' },
+    ...COUNTRIES.map((c) => ({ key: `secretary-${c.id}`, who: `${c.name} 수행비서 ${secretaryOf(c.id).name}(20대 여성)` })),
     ...AIDE_SPECIALTIES.map((s) => ({ key: AIDE_FILE[s], who: `${s} 부관` })),
     ...NAME_POOL.map((n) => ({ key: `aide-${n}`, who: `부관·라이벌 ${n}(선택)` })),
     { key: 'envoy', who: '다른 나라 특사' },

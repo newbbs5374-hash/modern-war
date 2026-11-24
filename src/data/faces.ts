@@ -49,37 +49,107 @@ export const FACE_EXTRA: Record<string, FacePlan> = {
 };
 export const FACE_EXTRA_READY = true;
 
+/**
+ * 셋째 묶음(11-24 대장 "겹치는 인물이 없어야"): 한 판에 내 나라 사람이 약 110명(남 66~72 · 여 34~42)에
+ * 장관·참모를 뽑을수록 더 늘어서, 나라마다 80장(남 50 · 여 30)을 더 넣어 142장으로 만듦.
+ * 그림이 들어온 나라만 EXTRA2_READY에 넣어요(나라 id, 미국은 'us'). 번호는 둘째 묶음 다음부터 이어 붙임.
+ */
+const STD3 = N(27, 23, 18, 12);
+export const FACE_EXTRA2: Record<string, FacePlan> = {
+  kr: STD3, kp: STD3, jp: STD3, cn: STD3, in: STD3, uk: STD3, de: STD3, ru: STD3, ua: STD3, ir: STD3, il: STD3, tr: STD3,
+  // 미국 80 = 백인 40 · 흑인 16 · 히스패닉 16 · 아시아계 8
+  'us-we': N(14, 11, 9, 6),
+  'us-bl': N(5, 5, 3, 3),
+  'us-hi': N(5, 5, 3, 3),
+  'us-as': N(3, 2, 2, 1),
+};
+export const EXTRA2_READY: readonly string[] = [];
+const tagCountry = (tag: string) => (tag.startsWith('us-') ? 'us' : tag);
+const extra2On = (tag: string) => EXTRA2_READY.includes(tagCountry(tag));
+
 const part = (p: FacePlan, sex: 'm' | 'f') => (sex === 'm' ? [p.m50, p.m60] : [p.f50, p.f60]);
 
 /** 묶음·성별 안 얼굴 수(extra: 추가 얼굴까지) */
-export function deckSize(tag: string, sex: 'm' | 'f', extra = FACE_EXTRA_READY): number {
+export function deckSize(tag: string, sex: 'm' | 'f', extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag)): number {
   const [a, b] = part(FACE_PLAN[tag] ?? STD, sex);
   const [c, d] = extra ? part(FACE_EXTRA[tag] ?? STD2, sex) : [0, 0];
-  return a + b + c + d;
+  const [e, f] = extra2 ? part(FACE_EXTRA2[tag] ?? STD3, sex) : [0, 0];
+  return a + b + c + d + e + f;
 }
 /** i번째 얼굴의 나이대·번호: 0~(기존 수−1)은 기존 얼굴, 그다음은 추가 얼굴 */
-export function deckSlot(tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY): { band: FaceBand; n: number } {
+export function deckSlot(tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag)): { band: FaceBand; n: number } {
   const [b50, b60] = part(FACE_PLAN[tag] ?? STD, sex);
-  const [e50] = part(FACE_EXTRA[tag] ?? STD2, sex);
-  const size = deckSize(tag, sex, extra);
+  const [e50, e60] = part(FACE_EXTRA[tag] ?? STD2, sex);
+  const [g50] = part(FACE_EXTRA2[tag] ?? STD3, sex);
+  const size = deckSize(tag, sex, extra, extra2);
   const k = ((i % size) + size) % size;
   if (k < b50) return { band: '50', n: k + 1 };
   if (k < b50 + b60) return { band: '60', n: k - b50 + 1 };
   const j = k - b50 - b60;
-  return j < e50 ? { band: '50', n: b50 + j + 1 } : { band: '60', n: b60 + (j - e50) + 1 };
+  if (j < e50) return { band: '50', n: b50 + j + 1 };
+  if (j < e50 + e60) return { band: '60', n: b60 + (j - e50) + 1 };
+  const q = j - e50 - e60;
+  return q < g50 ? { band: '50', n: b50 + e50 + q + 1 } : { band: '60', n: b60 + e60 + (q - g50) + 1 };
 }
 export const pad2 = (n: number) => String(n).padStart(2, '0');
 /** i번째 얼굴의 파일 이름(확장자 없이) */
-export const faceFile = (tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY) => {
-  const { band, n } = deckSlot(tag, sex, i, extra);
+export const faceFile = (tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag)) => {
+  const { band, n } = deckSlot(tag, sex, i, extra, extra2);
   return `face-${tag}-${sex}-${band}-${pad2(n)}`;
 };
 /** 모든 얼굴 파일 이름(명령문·시험용) */
-export function allFaceFiles(extra = FACE_EXTRA_READY): string[] {
+export function allFaceFiles(extra = FACE_EXTRA_READY, extra2?: boolean): string[] {
   const out: string[] = [];
-  for (const tag of Object.keys(FACE_PLAN)) for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(tag, sex, extra); i++) out.push(faceFile(tag, sex, i, extra));
+  for (const tag of Object.keys(FACE_PLAN)) {
+    const e2 = extra2 ?? (extra && extra2On(tag));
+    for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(tag, sex, extra, e2); i++) out.push(faceFile(tag, sex, i, extra, e2));
+  }
   return out;
 }
+
+/* ───────── 젊은 얼굴(부관, 11-24 대장 "부관들은 젊은 나이의 인물로") ───────── */
+// 파일 이름: face-{묶음}-{성별}-30-{번호}.webp(20~30대). 장관·참모 얼굴(50·60)과 파일이 달라 서로 겹치지 않아요.
+// 한국은 이미 있는 이름 부관 그림 20장(남 11 · 여 9)을 앞 번호로 씀 → 새로 16장(남 9 · 여 7)만 더.
+export interface YoungPlan {
+  m: number;
+  f: number;
+}
+export const YOUNG_PLAN: Record<string, YoungPlan> = {
+  kr: { m: 20, f: 16 },
+  kp: { m: 20, f: 12 }, jp: { m: 20, f: 12 }, cn: { m: 20, f: 12 }, in: { m: 20, f: 12 }, uk: { m: 20, f: 12 }, de: { m: 20, f: 12 },
+  ru: { m: 20, f: 12 }, ua: { m: 20, f: 12 }, ir: { m: 20, f: 12 }, il: { m: 20, f: 12 }, tr: { m: 20, f: 12 },
+  // 미국 32 = 백인 16 · 흑인 6 · 히스패닉 6 · 아시아계 4
+  'us-we': { m: 10, f: 6 },
+  'us-bl': { m: 4, f: 2 },
+  'us-hi': { m: 4, f: 2 },
+  'us-as': { m: 2, f: 2 },
+};
+/** 지금 게임에 들어 있는 젊은 얼굴 수(그림이 오면 늘림). 없는 나라는 부관이 옛 방식(장관 얼굴 묶음)으로 */
+export const YOUNG_READY: Record<string, YoungPlan> = {
+  kr: { m: 11, f: 9 },
+};
+/** 한국 이름 부관 그림 → 젊은 얼굴 번호(옛 저장의 이름 부관이 같은 얼굴을 계속 쓰게) */
+export const KR_NAMED_YOUNG: Record<string, string> = {
+  남궁현: 'face-kr-m-30-01', 류지후: 'face-kr-m-30-02', 문하람: 'face-kr-m-30-03', 백시우: 'face-kr-m-30-04', 서도윤: 'face-kr-m-30-05', 송재민: 'face-kr-m-30-06',
+  윤태오: 'face-kr-m-30-07', 임건우: 'face-kr-m-30-08', 정민재: 'face-kr-m-30-09', 최도현: 'face-kr-m-30-10', 황이든: 'face-kr-m-30-11',
+  강하린: 'face-kr-f-30-01', 권나래: 'face-kr-f-30-02', 박서진: 'face-kr-f-30-03', 배수아: 'face-kr-f-30-04', 신다온: 'face-kr-f-30-05',
+  오세라: 'face-kr-f-30-06', 조은결: 'face-kr-f-30-07', 한유나: 'face-kr-f-30-08', 홍라온: 'face-kr-f-30-09',
+};
+export const youngSize = (tag: string, sex: 'm' | 'f') => YOUNG_READY[tag]?.[sex] ?? 0;
+export const youngFile = (tag: string, sex: 'm' | 'f', i: number) => `face-${tag}-${sex}-30-${pad2(i + 1)}`;
+export const isYoungFace = (key?: string) => !!key && /^face-.+-[mf]-30-\d+$/.test(key);
+/** 그 나라에 젊은 얼굴이 (한 성별이라도) 들어 있나 */
+export const youngReady = (country: string) => {
+  const tags = country === 'us' ? US_ETH.map((e) => `us-${e}`) : [country];
+  return tags.some((t) => youngSize(t, 'm') + youngSize(t, 'f') > 0);
+};
+/** 모든 젊은 얼굴 파일(계획 전체) */
+export function allYoungFiles(): string[] {
+  const out: string[] = [];
+  for (const [tag, p] of Object.entries(YOUNG_PLAN)) for (const sex of ['m', 'f'] as const) for (let i = 0; i < p[sex]; i++) out.push(youngFile(tag, sex, i));
+  return out;
+}
+
 
 export interface FacePerson {
   id: number;
@@ -146,8 +216,10 @@ export interface FaceSheet {
   /** 저장할 그림 이름(확장자 없이) 예) sheet-kr-1 */
   sheet: string;
   country: string;
-  grid: 2 | 3;
-  cells: Array<{ file: string; tag: string; sex: 'm' | 'f'; band: FaceBand }>;
+  /** 한 줄 칸 수(1 = 한 사람 그림, 2×2 · 3×3 · 4×4) */
+  grid: 1 | 2 | 3 | 4;
+  /** band 30 = 20~30대 부관, 20 = 20대 수행비서 */
+  cells: Array<{ file: string; tag: string; sex: 'm' | 'f'; band: FaceBand | '30' | '20' }>;
 }
 export const SHEET_COUNTRIES = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr'];
 /** 기존 40장 그림: 나라마다 9·9·9·9·4 = 5장(sheet-kr-1~5) */
@@ -166,8 +238,8 @@ function makeSheets(extra: boolean): FaceSheet[] {
     for (const tag of tags)
       for (const sex of ['m', 'f'] as const) {
         const from = extra ? deckSize(tag, sex, false) : 0;
-        const to = extra ? deckSize(tag, sex, true) : deckSize(tag, sex, false);
-        for (let i = from; i < to; i++) cells.push({ file: faceFile(tag, sex, i, true), tag, sex, band: deckSlot(tag, sex, i, true).band });
+        const to = extra ? deckSize(tag, sex, true, false) : deckSize(tag, sex, false, false);
+        for (let i = from; i < to; i++) cells.push({ file: faceFile(tag, sex, i, true, false), tag, sex, band: deckSlot(tag, sex, i, true, false).band });
       }
     // 한 장 안에 남녀·나이가 섞이게 골고루 펼침
     const mixed: typeof cells = [];
@@ -181,4 +253,48 @@ function makeSheets(extra: boolean): FaceSheet[] {
     }
   }
   return out;
+}
+
+/** 골고루 섞어 16명씩(4×4) 나눔. 끝에 남으면 9(3×3)·4(2×2)로 */
+function cut16(c: string, cells: FaceSheet['cells'], first: number, prefix = ''): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  const step = Math.max(1, Math.ceil(cells.length / 16));
+  const mixed: typeof cells = [];
+  for (let k = 0; k < step; k++) for (let j = k; j < cells.length; j += step) mixed.push(cells[j]);
+  for (let s = 0, n = first; s < mixed.length; n++) {
+    const left = mixed.length - s;
+    const size = left >= 16 ? 16 : left >= 9 ? 9 : 4;
+    out.push({ sheet: `sheet-${c}-${prefix}${n}`, country: c, grid: size === 16 ? 4 : size === 9 ? 3 : 2, cells: mixed.slice(s, s + size) });
+    s += size;
+  }
+  return out;
+}
+const tagsOf = (c: string) => (c === 'us' ? US_ETH.map((e) => `us-${e}`) : [c]);
+
+/** 셋째 묶음 80장: 나라마다 4×4 다섯 장(sheet-kr-9~13) */
+export function faceSheetsExtra2(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  for (const c of SHEET_COUNTRIES) {
+    const cells: FaceSheet['cells'] = [];
+    for (const tag of tagsOf(c))
+      for (const sex of ['m', 'f'] as const)
+        for (let i = deckSize(tag, sex, true, false); i < deckSize(tag, sex, true, true); i++) cells.push({ file: faceFile(tag, sex, i, true, true), tag, sex, band: deckSlot(tag, sex, i, true, true).band });
+    out.push(...cut16(c, cells, 9));
+  }
+  return out;
+}
+/** 젊은 부관 얼굴(아직 없는 것): 나라마다 4×4 두 장(sheet-kr-y1…), 한국은 한 장 */
+export function youngSheets(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  for (const c of SHEET_COUNTRIES) {
+    const cells: FaceSheet['cells'] = [];
+    for (const tag of tagsOf(c))
+      for (const sex of ['m', 'f'] as const) for (let i = youngSize(tag, sex); i < (YOUNG_PLAN[tag]?.[sex] ?? 0); i++) cells.push({ file: youngFile(tag, sex, i), tag, sex, band: '30' });
+    out.push(...cut16(c, cells, 1, 'y'));
+  }
+  return out;
+}
+/** 수행비서 13명: 한 사람씩 한 장(secretary-kr…) */
+export function secretarySheets(): FaceSheet[] {
+  return SHEET_COUNTRIES.map((c) => ({ sheet: `secretary-${c}`, country: c, grid: 1 as const, cells: [{ file: `secretary-${c}`, tag: c === 'us' ? 'us-we' : c, sex: 'f' as const, band: '20' as const }] }));
 }

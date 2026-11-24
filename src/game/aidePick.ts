@@ -3,7 +3,7 @@
 // - 후보는 실제 12시간마다 새로 바뀜. 임명은 돈·레벨·시간 조건 없음. 자리가 꽉 차면 한 명과 바꿈
 // - 얼굴은 나라별 얼굴(faces.ts)을 쓰고, 이름도 내 나라 이름표에서 뽑음
 import { AIDE_SPECIALTIES, aideSlots, type AideSpecialty } from '../data/officers';
-import { deckSize, faceFile, faceTag } from '../data/faces';
+import { KR_NAMED_YOUNG, deckSize, faceFile, faceTag, youngFile, youngReady, youngSize } from '../data/faces';
 import { makeNameEth } from '../data/names';
 import { cabinetOf } from './cabinet';
 import { note, withOfficer, type Aide, type OfficerState } from './officer';
@@ -74,8 +74,19 @@ function faceUse(s: GameState): Map<string, number> {
   const add = (k: string) => m.set(k, (m.get(k) ?? 0) + 1);
   for (const p of cabinetOf(s).people) if (p.face !== undefined) add(faceFile(faceTag(p.country, p.eth), p.sex, p.face));
   for (const a of s.officer.aides) if (a.faceKey) add(a.faceKey);
+  for (const g of s.officer.generals) if (g.faceKey) add(g.faceKey);
   return m;
 }
+
+/** 젊은 얼굴(부관용) 중 안 쓴 것 하나. 없으면 null */
+function pickYoung(use: Map<string, number>, tag: string, sex: 'm' | 'f', rng: Rng): string | null {
+  const files = Array.from({ length: youngSize(tag, sex) }, (_, i) => youngFile(tag, sex, i)).filter((f) => !use.get(f));
+  if (!files.length) return null;
+  const f = rng.pick(files);
+  use.set(f, 1);
+  return f;
+}
+const youngFree = (use: Map<string, number>, tag: string, sex: 'm' | 'f') => Array.from({ length: youngSize(tag, sex) }, (_, i) => youngFile(tag, sex, i)).filter((f) => !use.get(f)).length;
 
 /** 가장 덜 쓴 얼굴 하나 고르기(고른 얼굴은 use에 더함) */
 function pickFace(use: Map<string, number>, tag: string, sex: 'm' | 'f', rng: Rng): string {
@@ -91,8 +102,19 @@ function pickFace(use: Map<string, number>, tag: string, sex: 'm' | 'f', rng: Rn
 /** 후보 한 명 만들기 */
 function makeCand(s: GameState, rng: Rng, specialty: AideSpecialty, trait: AideTrait, key: string, taken: Set<string>, use: Map<string, number>, careerIdx: number): AideCand {
   const country = s.player.countryId;
-  const sex: 'm' | 'f' = rng.chance(0.35) ? 'f' : 'm';
-  const { name, eth } = makeNameEth(country, sex, rng, taken);
+  let sex: 'm' | 'f' = rng.chance(0.35) ? 'f' : 'm';
+  let nm = makeNameEth(country, sex, rng, taken);
+  let faceKey: string | null = null;
+  // 11-24 대장 "부관들은 젊은 나이의 인물로": 젊은 얼굴이 있는 나라는 젊은 얼굴(장관 얼굴과 안 겹침), 그 성별이 다 찼으면 다른 성별
+  if (youngReady(country)) {
+    for (let k = 0; k < 8 && !faceKey; k++) {
+      if (k === 4) sex = sex === 'm' ? 'f' : 'm';
+      if (k > 0) nm = makeNameEth(country, sex, rng, taken);
+      if (youngFree(use, faceTag(country, nm.eth), sex) > 0) faceKey = pickYoung(use, faceTag(country, nm.eth), sex, rng);
+    }
+  }
+  const { name, eth } = nm;
+  taken.add(name);
   const t = AIDE_TRAITS[trait];
   const jig = () => Math.round(rng.range(-4, 4));
   return {
@@ -101,9 +123,9 @@ function makeCand(s: GameState, rng: Rng, specialty: AideSpecialty, trait: AideT
     specialty,
     trait,
     sex,
-    age: Math.round(rng.range(40, 57)),
+    age: faceKey ? Math.round(rng.range(25, 36)) : Math.round(rng.range(28, 39)),
     eth,
-    faceKey: pickFace(use, faceTag(country, eth), sex, rng),
+    faceKey: faceKey ?? pickFace(use, faceTag(country, eth), sex, rng),
     level: t.level + (trait === '노련' && rng.chance(0.4) ? 1 : 0),
     bond: Math.max(5, t.bond + jig()),
     loyalty: Math.max(30, Math.min(90, t.loyalty + jig())),
@@ -221,4 +243,32 @@ export function starterAide(s: GameState, o: OfficerState, rng: Rng): Aide {
   const sp = rng.pick([...AIDE_SPECIALTIES]);
   const c = makeCand(s, rng, sp, '유망', 'start', taken, faceUse(s), Math.floor(rng.next() * 5));
   return candToAide(o, { ...c, level: 1, bond: 10, loyalty: 50 }, s.worldMs);
+}
+
+/**
+ * 옛 저장(11-24 이전): 부관·장군(부관 출신)이 장관과 같은 중년 얼굴을 쓰던 것을 젊은 얼굴로 바꿈.
+ * 한국 이름 부관(강하린 등)은 원래 그림 그대로의 젊은 얼굴 번호로. 서로 겹치지 않게. s를 고침.
+ */
+export function migrateYoungAides(s: GameState) {
+  const country = s.player.countryId;
+  if (!youngReady(country) || !s.officer) return;
+  const people: Array<{ name: string; sex?: 'm' | 'f'; eth?: string; faceKey?: string; age?: number }> = [...s.officer.aides, ...s.officer.generals.filter((g) => g.from === '부관 임명' || g.from === '부관 승격')];
+  const use = new Map<string, number>();
+  for (const p of people) if (p.faceKey && /-30-\d+$/.test(p.faceKey)) use.set(p.faceKey, (use.get(p.faceKey) ?? 0) + 1);
+  const rng = new Rng(mixSeed(strNum(country), people.length, 0x70a9));
+  for (const p of people) {
+    if (p.faceKey && /-30-\d+$/.test(p.faceKey) && use.get(p.faceKey) === 1) continue;
+    if (p.faceKey && /-30-\d+$/.test(p.faceKey)) use.set(p.faceKey, use.get(p.faceKey)! - 1);
+    const named = country === 'kr' ? KR_NAMED_YOUNG[p.name] : undefined;
+    if (!p.faceKey && named && !use.get(named)) {
+      p.faceKey = named;
+      use.set(named, 1);
+      continue;
+    }
+    if (!p.sex) continue; // 성별을 모르는 옛 부관은 이름·분야 그림 그대로
+    const f = pickYoung(use, faceTag(country, p.eth), p.sex, rng);
+    if (!f) continue;
+    p.faceKey = f;
+    if (p.age !== undefined && p.age > 39) p.age = 25 + Math.round(rng.next() * 11);
+  }
 }
