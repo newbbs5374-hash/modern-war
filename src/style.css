@@ -967,3 +967,10 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .tech-stage.on { border-color: #39b3c6; }
 .tech-stage.cur { border-color: #ffb020; }
 .tech-stage small { font-size: 10.5px; }
+
+/* 부관 임명 창(11-24): 병과별 후보 */
+.aide-cands { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.aide-cand { width: 100%; align-items: center; }
+.aide-cand.on { outline: 2px solid var(--gold, #e6b800); }
+.aide-cand-face { flex: 0 0 48px; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 26px; background: rgba(0, 0, 0, 0.25); }
+.aide-cand-face .face-img { width: 100%; height: 100%; object-fit: cover; }

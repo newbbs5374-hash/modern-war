@@ -87,6 +87,13 @@ export interface Aide {
   /** 장군 교육 중(이 동안 전투·임무에 못 나감) · 교육을 마침 */
   school?: { endMs: number } | null;
   schooled?: boolean;
+  /** 11-24 병과별 후보에서 임명한 부관: 성별·나이·얼굴(나라별 얼굴 파일)·성향·경력 */
+  sex?: 'm' | 'f';
+  age?: number;
+  eth?: string;
+  faceKey?: string;
+  trait?: string;
+  career?: string;
 }
 
 export type ErrandKind = '정보 수집' | '보급 조달' | '전공 쌓기';
@@ -120,6 +127,8 @@ export interface General {
   /** 부관 시절 인연 · 특기(부관에서 임명된 장군만) */
   bond?: number;
   specialty?: AideSpecialty;
+  /** 부관 시절 얼굴(나라별 얼굴 파일) */
+  faceKey?: string;
   /** 마지막 작전 회의·격려 시각 */
   seenMs?: number;
 }
@@ -190,6 +199,8 @@ export interface OfficerState {
   active: ActiveMission | null;
   examReadyMs: number;
   aides: Aide[];
+  /** 부관 후보에서 임명한 기록(aidePick.ts) */
+  aidePick?: import('./aidePick').AidePickState;
   generals: General[];
   rivals: Rival[];
   /** 불신임 경고(이 시각까지 신뢰도를 회복하지 못하면 불신임) */
@@ -421,7 +432,7 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
   if (!cur) return { state: s, result: { ok: false, why: '하고 있는 훈련이 없어요' } };
   const name = cur.name;
   let result: TrainResult = { ok: false, why: '' };
-  const state = withOfficer(s, (o, rng, ns) => {
+  const state = withOfficer(s, (o, _rng, ns) => {
     o.training = null;
     const day = Math.floor(ns.worldMs / REAL_MS_PER_GAME_DAY);
     if (o.trainDay !== day) {
@@ -456,12 +467,6 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
         perk = PERKS[name];
         note(ns, `특기 "${perk}"을 얻었어요(${name} 별 3개 ${PERK_AT}번).`);
       }
-    }
-    // 모병 훈련 별 3개: 숨은 인재가 부관으로 합류(칸이 있으면)
-    if (name === '모병' && stars === 3 && o.aides.length < aideSlots(ns.player.rankIndex) && rng.chance(0.5)) {
-      const a = makeAide(o, rng);
-      o.aides.push(a);
-      note(ns, `모병 훈련에서 숨은 인재 ${ga(a.name)} 부관으로 합류했어요(${a.specialty}).`);
     }
     // 모병 훈련은 나라 병력도 조금 보탬
     if (name === '모병' && stars > 0) {
@@ -875,12 +880,6 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
       text = `${a.title} 실패… 공훈 +${Math.round(merit)}${a.kind === '대전투' ? ' · 병력 −5%' : ''}`;
     }
     note(ns, text);
-    // 성공한 임무에서 가끔 인재가 합류
-    if (win && o.aides.length < aideSlots(r) && rng.chance(0.1)) {
-      const aide = makeAide(o, rng);
-      o.aides.push(aide);
-      note(ns, `작전 중 만난 ${ga(aide.name)} 부관으로 합류했어요(${aide.specialty}).`);
-    }
   });
   let out = state;
   if (won && a.kind === '현장방문') out = addPresMod(out, '🤝 민생 현장 방문', 4, 24);

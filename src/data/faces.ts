@@ -47,7 +47,7 @@ export const FACE_EXTRA: Record<string, FacePlan> = {
   'us-hi': N(2, 1, 1, 1),
   'us-as': N(1, 0, 0, 0),
 };
-export const FACE_EXTRA_READY = false;
+export const FACE_EXTRA_READY = true;
 
 const part = (p: FacePlan, sex: 'm' | 'f') => (sex === 'm' ? [p.m50, p.m60] : [p.f50, p.f60]);
 

@@ -138,8 +138,8 @@ export const SOC_TECHS: Tech[] = [
   T({ id: 's-envoy', line: 'soc', name: '사절단', icon: '🕊️', era: 1, hours: 1.5, needs: [], agree: ['route'], cards: ['외-사절'], text: '항로 개방 협정 · 분쟁 섬 사절 효율 ↑', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
   T({ id: 's-guild', line: 'soc', name: '항로 상회', icon: '⚖️', era: 1, hours: 1.5, needs: [], agree: ['swap'], cards: ['경-상회'], text: '자원 교환 계약 협정', eureka: { key: { kind: 'talk', att: '거래' }, text: '대화에서 거래 성공' } }),
   // 항로기
-  T({ id: 's-harbor', line: 'soc', name: '항만법', icon: '⚓', era: 2, hours: 3, needs: ['s-urban'], districts: ['harbor'], cards: ['군-해병'], text: '항만 구역(바닷가 칸) 짓기', eureka: { key: { kind: 'train', name: '해상', stars: 1 }, text: '해상 훈련 성공' } }),
-  T({ id: 's-aviation', line: 'soc', name: '항공법', icon: '🛫', era: 2, hours: 3, needs: ['s-urban'], districts: ['airfield'], cards: ['군-조종'], text: '비행장 구역(평지 칸) 짓기', eureka: { key: { kind: 'train', name: '항공', stars: 1 }, text: '항공 훈련 성공' } }),
+  T({ id: 's-harbor', line: 'soc', name: '항만법', icon: '⚓', era: 2, hours: 3, needs: ['s-urban'], cards: ['군-해병'], eff: { power: { dom: '해', v: 0.05 } }, text: '해군 전투력 +5% · 카드 1장', eureka: { key: { kind: 'train', name: '해상', stars: 1 }, text: '해상 훈련 성공' } }),
+  T({ id: 's-aviation', line: 'soc', name: '항공법', icon: '🛫', era: 2, hours: 3, needs: ['s-urban'], cards: ['군-조종'], eff: { power: { dom: '공', v: 0.05 } }, text: '공군 전투력 +5% · 카드 1장', eureka: { key: { kind: 'train', name: '항공', stars: 1 }, text: '항공 훈련 성공' } }),
   T({ id: 's-academy', line: 'soc', name: '학술원', icon: '🎓', era: 2, hours: 3.5, needs: ['s-urban'], districts: ['lab'], agree: ['science'], cards: ['경-학자'], text: '연구소 구역 · 연구 협력 협정', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
   T({ id: 's-nonagg', line: 'soc', name: '불가침 조약법', icon: '🤝', era: 2, hours: 3, needs: ['s-envoy'], agree: ['nonagg'], cards: ['외-불가침'], text: '불가침 협정', eureka: { key: { kind: 'agree', id: 'route' }, text: '항로 개방 협정 맺기' } }),
   // 제공기
@@ -372,7 +372,9 @@ export interface District {
   name: string;
   icon: string;
   /** 지을 수 있는 칸 */
-  where: '아무 칸' | '바닷가 칸' | '평지 칸';
+  where: '아무 칸' | '바닷가 칸' | '평지 칸' | '평지·바닷가 칸';
+  /** 연구 없이 처음부터 지을 수 있음(항만·비행장, 11-24 대장 요청) */
+  free?: boolean;
   cost: number;
   res: Partial<Record<Res, number>>;
   hours: number;
@@ -381,8 +383,8 @@ export interface District {
 }
 export const DISTRICTS: District[] = [
   { id: 'industry', name: '공업 구역', icon: '🏭', where: '아무 칸', cost: 3000, res: { 강철: 5 }, hours: 2, text: '국방예산 +4% · 자원 +4%', adj: '옆 공업 구역·산 칸마다 +1%씩 더' },
-  { id: 'harbor', name: '항만', icon: '⚓', where: '바닷가 칸', cost: 4000, res: { 강철: 8 }, hours: 3, text: '군함을 만들 수 있음 · 해군 모집 −5%', adj: '옆 바다 칸마다 해군 모집 −2%씩 더' },
-  { id: 'airfield', name: '비행장', icon: '🛫', where: '평지 칸', cost: 4000, res: { 강철: 4, 석유: 4 }, hours: 3, text: '전투기·헬기·폭격기를 만들 수 있음 · 공군 모집 −5%', adj: '옆 공업 구역마다 공군 모집 −2%씩 더' },
+  { id: 'harbor', name: '항만', icon: '⚓', where: '바닷가 칸', free: true, cost: 4000, res: { 강철: 8 }, hours: 3, text: '군함을 만들 수 있음 · 해군 모집 −5%', adj: '옆 바다 칸마다 해군 모집 −2%씩 더' },
+  { id: 'airfield', name: '비행장', icon: '🛫', where: '평지·바닷가 칸', free: true, cost: 4000, res: { 강철: 4, 석유: 4 }, hours: 3, text: '전투기·헬기·폭격기를 만들 수 있음 · 공군 모집 −5%', adj: '옆 공업 구역마다 공군 모집 −2%씩 더' },
   { id: 'lab', name: '연구소', icon: '🔬', where: '아무 칸', cost: 3500, res: { 반도체: 3 }, hours: 3, text: '연구 +12%', adj: '옆 산·유적 칸마다 연구 +4%씩 더' },
   { id: 'housing', name: '주거 구역', icon: '🏘️', where: '아무 칸', cost: 2500, res: { 강철: 3 }, hours: 2, text: '그 도시 민심 +10 · 인구 상한 +2 · 성장 빨라짐', adj: '옆 주거·바다 칸마다 민심 +2씩 더' },
 ];

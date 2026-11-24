@@ -5,7 +5,7 @@ import { originEff, originOf } from './origin';
 import { cabBuild, cabFavor, cabGrowth, cabLoyalty, cabRes, cabResearch } from './cabinet';
 import { lawEff, lawRows } from './laws';
 import { splitBuild, splitEco, splitFavor, splitLoyalty, splitOf } from './policy';
-import { CITIES, cityById, type City } from '../data/cities';
+import { CITIES, cityById, isCoastalCity, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
   AGENDAS,
@@ -756,11 +756,19 @@ const hash = (q: number, r: number) => {
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
+/** 옆 칸이 바다인지: 바다에 닿은 도시에서, 그 도시 칸 바깥이면 바다(도시 화면은 도시 칸만 섬처럼 보여 줌) */
+function seaNear(place: string, q: number, r: number): boolean {
+  if (!isCoastalCity(place)) return false;
+  return TILE_AT.get(hexKey(q, r))?.place !== place;
+}
+/** 바닷가 칸: 실제로 바다에 닿은 도시의 가장자리 칸(11-24, 예전엔 옛 육각 세계지도 기준이라 내륙 도시도 바닷가가 있었음) */
 export function isCoast(q: number, r: number): boolean {
-  return HEX_DIRS.some((d) => !TILE_AT.has(hexKey(q + d.q, r + d.r)));
+  return seaAround(q, r) > 0;
 }
 export function seaAround(q: number, r: number): number {
-  return HEX_DIRS.filter((d) => !TILE_AT.has(hexKey(q + d.q, r + d.r))).length;
+  const place = TILE_AT.get(hexKey(q, r))?.place;
+  if (!place) return 0;
+  return HEX_DIRS.filter((d) => seaNear(place, q + d.q, r + d.r)).length;
 }
 /** 칸 지형(정해진 규칙이라 늘 같음): 바닷가 · 산 15% · 유적 5% · 나머지 평지 */
 export function terrainOf(q: number, r: number): Terrain {
@@ -781,13 +789,14 @@ export function districtSlots(s: GameState, cityId: string): number {
   return DISTRICT_SLOTS[cityById(cityId).size] + (hasTech(s, 's-federal') ? 1 : 0);
 }
 export function districtUnlocked(s: GameState, id: DistrictId): boolean {
-  return TECHS.some((t) => t.districts?.includes(id) && hasTech(s, t.id));
+  return !!districtById(id).free || TECHS.some((t) => t.districts?.includes(id) && hasTech(s, t.id));
 }
 export function canDistrict(s: GameState, cityId: string, tile: string, id: DistrictId): string | null {
   const d = districtById(id);
-  const tech = TECHS.find((t) => t.districts?.includes(id))!;
-  if (!districtUnlocked(s, id)) return `${tech.name} 연구 필요`;
+  const tech = TECHS.find((t) => t.districts?.includes(id));
+  if (!districtUnlocked(s, id)) return `${tech?.name ?? '연구'} 연구 필요`;
   if (s.world.owner[cityId] !== s.player.countryId) return '우리 도시가 아니에요';
+  if (id === 'harbor' && !isCoastalCity(cityId)) return '바다에 닿지 않은 도시예요';
   const cc = cityCiv(s, cityId);
   if (cc.districts.length >= districtSlots(s, cityId)) return `이 도시는 구역 ${districtSlots(s, cityId)}개까지`;
   const t = cityTiles(cityId).find((x) => hexKey(x.q, x.r) === tile);
@@ -799,6 +808,7 @@ export function canDistrict(s: GameState, cityId: string, tile: string, id: Dist
   const ter = terrainOf(t.q, t.r);
   if (d.where === '바닷가 칸' && ter !== '바닷가') return '바닷가 칸에만 지어요';
   if (d.where === '평지 칸' && ter !== '평지') return '평지 칸에만 지어요';
+  if (d.where === '평지·바닷가 칸' && ter !== '평지' && ter !== '바닷가') return '산·유적 칸에는 못 지어요';
   const me = s.player.countryId;
   if (s.nations[me].treasury < d.cost) return `국방예산 ${d.cost.toLocaleString()} 필요`;
   for (const [r, v] of Object.entries(d.res)) if (s.economy.stock[r as Res] < v!) return `${r} ${v}개 필요`;
@@ -903,11 +913,11 @@ export function adjCount(cityId: string, tile: string, id: DistrictId, cc: CityC
   const [q, r] = parse(tile);
   const near = HEX_DIRS.map((d) => ({ q: q + d.q, r: r + d.r }));
   const distAt = (k: string) => cc.districts.find((x) => x.tile === k)?.id;
-  const onLand = (h: { q: number; r: number }) => TILE_AT.has(hexKey(h.q, h.r));
-  void cityId;
+  const onLand = (h: { q: number; r: number }) => TILE_AT.get(hexKey(h.q, h.r))?.place === cityId;
+  const sea = (h: { q: number; r: number }) => seaNear(cityId, h.q, h.r);
   switch (id) {
     case 'harbor':
-      return near.filter((h) => !onLand(h)).length;
+      return near.filter(sea).length;
     case 'lab':
       return near.filter((h) => onLand(h) && ['산', '유적'].includes(terrainOf(h.q, h.r))).length;
     case 'industry':
@@ -915,7 +925,7 @@ export function adjCount(cityId: string, tile: string, id: DistrictId, cc: CityC
     case 'airfield':
       return near.filter((h) => distAt(hexKey(h.q, h.r)) === 'industry').length;
     case 'housing':
-      return near.filter((h) => !onLand(h) || distAt(hexKey(h.q, h.r)) === 'housing').length;
+      return near.filter((h) => sea(h) || distAt(hexKey(h.q, h.r)) === 'housing').length;
   }
 }
 /** 다 지은 구역 목록(내 도시만) */
@@ -1046,8 +1056,8 @@ export function unitTechLock(s: GameState, unit: string, variant?: unknown): str
   const t = techForUnit(unit);
   if (t && !hasTech(s, t.id)) return `${t.name} 연구 필요`;
   const dom = UNITS.find((u) => u.name === unit)?.domain;
-  if (dom === '해' && !hasDistrict(s, 'harbor')) return '항만 구역이 있는 도시가 필요해요';
-  if (['공격헬기', '전투기', '폭격기'].includes(unit) && !hasDistrict(s, 'airfield')) return '비행장 구역이 있는 도시가 필요해요';
+  if (dom === '해' && !hasDistrict(s, 'harbor')) return '바닷가 도시에 항만 구역이 필요해요(사회 › 도시)';
+  if (['공격헬기', '전투기', '폭격기'].includes(unit) && !hasDistrict(s, 'airfield')) return '도시에 비행장 구역이 필요해요(사회 › 도시)';
   return null;
 }
 

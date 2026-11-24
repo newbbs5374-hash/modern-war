@@ -7,15 +7,24 @@ import { cabinetOf } from '../game/cabinet';
 
 describe('나라별 얼굴 40장(11-24)', () => {
   it('나라마다 40장, 모두 520장, 파일 이름이 겹치지 않음', () => {
-    const files = allFaceFiles();
+    const files = allFaceFiles(false);
     expect(files.length).toBe(520);
     expect(new Set(files).size).toBe(520);
     const us = Object.keys(FACE_PLAN).filter((t) => t.startsWith('us-'));
-    expect(us.reduce((a, t) => a + deckSize(t, 'm') + deckSize(t, 'f'), 0)).toBe(40);
-    expect(deckSize('kr', 'm') + deckSize('kr', 'f')).toBe(40);
+    expect(us.reduce((a, t) => a + deckSize(t, 'm', false) + deckSize(t, 'f', false), 0)).toBe(40);
+    expect(deckSize('kr', 'm', false) + deckSize('kr', 'f', false)).toBe(40);
     expect(faceFile('kr', 'm', 0)).toBe('face-kr-m-50-01');
     expect(faceFile('kr', 'm', 14)).toBe('face-kr-m-60-01');
     expect(faceFile('us-bl', 'f', 2)).toBe('face-us-bl-f-60-01');
+  });
+  it('추가 얼굴(11-24) 켜짐: 나라마다 62장, 모두 806장, 그림 파일이 모두 있음', () => {
+    const have = new Set(Object.keys(import.meta.glob('../assets/portraits/face-*.webp')).map((k) => k.replace(/^.*\//, '').replace(/\.webp$/, '')));
+    const files = allFaceFiles(true);
+    expect(files.length).toBe(806);
+    expect(new Set(files).size).toBe(806);
+    expect(deckSize('kr', 'm') + deckSize('kr', 'f')).toBe(62);
+    const missing = files.filter((f) => !have.has(f));
+    expect(missing).toEqual([]);
   });
   it('미국 이름은 갈래에 맞는 이름표에서 나오고, 이름으로 갈래를 다시 알 수 있음', () => {
     const rng = new Rng(7);

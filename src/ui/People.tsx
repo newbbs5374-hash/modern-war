@@ -128,7 +128,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
         keys: aideKeys(a),
         fallback: AIDE_ICON[a.specialty],
         tags: [`💗 ${bondStage(a.bond).name} ${Math.round(a.bond)}`, `🫡 ${loyaltyMood(loyaltyOf(a)).name} ${Math.round(loyaltyOf(a))}`, a.school ? '🎓 장군 교육 중' : a.schooled ? '🎓 임명 대기' : busy ? `${ERRANDS[a.errand!.kind].icon} ${a.errand!.kind} 중` : '대기 중'],
-        intro: `전투에 함께 나가는 ${a.specialty} 부관. 인연이 깊어지면 이야기를 들려주고 충성이 올라요. 장군 교육을 마치면 장군으로 임명할 수 있어요.`,
+        intro: `${a.career ? `${a.career}${a.age ? `(${a.age}세)` : ''}. ` : ''}전투에 함께 나가는 ${a.specialty} 부관. 인연이 깊어지면 이야기를 들려주고 충성이 올라요. 장군 교육을 마치면 장군으로 임명할 수 있어요.`,
       };
     }
     case 'general': {
@@ -136,7 +136,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
       return {
         name: g.name,
         title: `${g.field} 장군 · ${g.style}`,
-        keys: [`aide-${g.name}`],
+        keys: [g.faceKey, `aide-${g.name}`],
         fallback: '⭐',
         tags: [`능력 ${g.skill}/10`, `충성 ${Math.round(g.loyalty)}`, g.from],
         intro: `${g.field}을(를) 맡은 장군. ${generalEffectText(g)}. 충성이 높으면 효과가 커지고, 낮으면 절반이 돼요.`,
@@ -318,6 +318,7 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
           return (
             <div className="pw-grid">
               <Row k="분야" v={`${AIDE_ICON[a.specialty]} ${a.specialty}`} />
+              {a.trait && <Row k="성향" v={a.trait} />}
               <Row k="레벨" v={`Lv.${a.level} / 10`} />
               <Row k="상태" v={a.errand ? (state.worldMs < a.errand.endMs ? `${a.errand.kind} · ${timeLeft(a.errand.endMs - state.worldMs)}` : `${a.errand.kind} 끝(보상 대기)`) : '대기 중'} />
               <Row k="인연 이야기" v={`${a.stories ?? 0} / 3`} />
