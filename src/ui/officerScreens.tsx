@@ -1,5 +1,6 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
 import { salaryPerDay } from '../game/state';
+import { playerKeys } from '../data/looks';
 import { originFits, originOf } from '../game/origin';
 import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
@@ -314,7 +315,7 @@ export function LeaderCard(props: ScreenProps) {
       )}
       <div className="lc-card">
         <div className="lc-photo">
-          <PersonFace who={{ kind: 'player' }} keys={['player', `leader-${state.player.countryId}`]} fallback={RANK_ICON[r]} />
+          <PersonFace who={{ kind: 'player' }} keys={playerKeys(state.player)} fallback={RANK_ICON[r]} />
           <span className="lc-step">
             {tier + 1}/{TITLES.length}
           </span>

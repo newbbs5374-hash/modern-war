@@ -172,8 +172,8 @@ export function App() {
   if (!state) {
     return (
       <StartScreen
-        onStart={(name, countryId, randomLeaders, origin) => {
-          const s = firstTestGrant(G.newGame(name, countryId, Date.now(), { randomLeaders, origin }));
+        onStart={(name, countryId, pick) => {
+          const s = firstTestGrant(G.newGame(name, countryId, Date.now(), pick));
           saveGame(s);
           setState(s);
           setNotices([]);
