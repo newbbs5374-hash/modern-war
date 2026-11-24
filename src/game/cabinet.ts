@@ -2,7 +2,9 @@
 // 이 파일은 상태·인물 만들기·효과 계산만 해요(다른 계산 파일을 부르지 않아 순환이 없음). 시간 흐름·부처 업무 결과는 cabinetOps.ts
 import { COUNTRIES } from '../data/world';
 import { LEADERS } from '../data/leaders';
-import { STAT_IDS, type StatId } from '../data/officers';
+import { STAT_IDS } from '../data/officers';
+import { ORIGIN_SHAPE2, STAT2_IDS, type AnyStat } from '../data/stats2';
+import { NEEDS, type Need } from '../data/needs';
 import { LOOK, ethOfName, makeNameEth, pickUsEth } from '../data/names';
 import { US_ETH, deckSize, type UsEth } from '../data/faces';
 import { assignFaces } from '../data/faces';
@@ -49,7 +51,8 @@ export interface Person {
   country: string;
   origin: PersonOrigin;
   grade: Grade;
-  stats: Record<StatId, number>;
+  /** 스탯 18개(11-24: 예전 9 + 국정·인품 9). 옛 저장은 fillStats2로 채움 */
+  stats: Record<AnyStat, number>;
   spec: SpecId;
   trait: Trait;
   hidden: Hidden | null;
@@ -91,6 +94,8 @@ export interface CabinetState {
   tasks: Partial<Record<MinistryId, { task: string; endMs: number }>>;
   buffs: CabBuff[];
   log: string[];
+  /** 분야별 마지막으로 조언 따른 때(11-24) */
+  advice?: Partial<Record<string, number>>;
 }
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -128,7 +133,7 @@ export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number,
   const scale = total / 72;
   const [a0, a1] = o.age ?? [35, 65];
   const age = Math.round(a0 + rng.next() * (a1 - a0));
-  const stats = {} as Record<StatId, number>;
+  const stats = {} as Record<AnyStat, number>;
   for (const id of STAT_IDS) {
     let v = base + (info.shape[id] ?? 0) * scale + (rng.next() * 6 - 3);
     if (age >= 60) v += id === '체력' ? -2 : id === '정치' || id === '통솔' ? 1 : 0;
@@ -139,6 +144,7 @@ export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number,
   const spec = rng.chance(0.1) ? rng.pick(['경제통', '외교통', '행정통', '복지통', '과학자', '홍보통', '육군통', '해군통', '공군통', '정보통', '군수통'] as SpecId[]) : rng.pick(info.spec);
   const hidden: Hidden | null = rng.chance(0.3) ? rng.pick(HIDDEN_IDS) : null;
   const nm = makeNameEth(o.country, sex, rng, taken, o.country === 'us' ? usEthFor(c, sex, rng) : undefined);
+  fillStats2(stats, origin, total, age, c.seed * 7919 + c.nextId);
   return {
     id: c.nextId++,
     name: nm.name,
@@ -163,6 +169,29 @@ export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number,
     pay: GRADES[grade].pay,
     sinceMs: worldMs,
   };
+}
+
+/** 새 스탯 9개(지휘·행정·경제·외교·법률·과학·언변·청렴·매력)를 출신 모양대로 채움. 따로 된 주사위라 예전 인물 뽑기 순서는 그대로 */
+export function fillStats2(stats: Partial<Record<AnyStat, number>>, origin: PersonOrigin, total: number, age: number, seed: number): void {
+  const r = new Rng(seed >>> 0);
+  const base = total / 9;
+  const scale = total / 72;
+  const shape = ORIGIN_SHAPE2[origin] ?? {};
+  for (const id of STAT2_IDS) {
+    const roll = r.next() * 6 - 3;
+    if (typeof stats[id] === 'number') continue;
+    let v = base + (shape[id] ?? 0) * scale + roll;
+    if (age >= 60 && (id === '지휘' || id === '외교')) v += 1;
+    stats[id] = Math.max(3, Math.round(v));
+  }
+}
+/** 옛 저장 인물: 새 스탯이 없으면 채움 */
+export function migrateStats2(c: CabinetState): void {
+  for (const p of c.people) {
+    if (typeof p.stats.지휘 === 'number') continue;
+    const total = STAT_IDS.reduce((a, id) => a + (p.stats[id] ?? 0), 0);
+    fillStats2(p.stats, p.origin, total, p.age, c.seed * 7919 + p.id);
+  }
 }
 
 /** 인물끼리 궁합(같은 학교·전우 / 앙숙) 몇 쌍 */
@@ -255,13 +284,24 @@ export const takenNames = (c: CabinetState) => new Set(c.people.map((p) => p.nam
 
 /* ───────── 장관 힘 ───────── */
 
-export const avgStats = (p: Person, ids: StatId[]) => ids.reduce((a, id) => a + (p.stats[id] ?? 0), 0) / ids.length;
+export const avgStats = (p: Person, ids: AnyStat[]) => ids.reduce((a, id) => a + (p.stats[id] ?? 0), 0) / ids.length;
+
+/** 자리에 맞는 정도(성향·출신·특화 덤 포함, 충성·궁합 빼고). 보통 사람 ≈ 1 */
+export function needPower(p: Person, need: Need, spec: readonly string[]): number {
+  let v = (avgStats(p, need.main) * 0.8 + (p.stats[need.sub] ?? 0) * 0.2) / 12;
+  if (spec.includes(p.spec)) v *= 1.3;
+  if (need.traits.includes(p.trait)) v *= 1.1;
+  if (need.origins.includes(p.origin)) v *= 1.05;
+  return v;
+}
+/** 적합도 0~100%(안내용): 능력 1.6이면 100% */
+export const fitPct = (p: Person, need: Need, spec: readonly string[]) => Math.max(0, Math.min(100, Math.round((needPower(p, need, spec) / 1.6) * 100)));
+export const needOf = (id: string): Need => NEEDS[id];
 
 /** 사람 한 명이 그 부처에서 내는 힘(일반 장관 ≈ 1) */
 export function personPower(p: Person, min: MinistryId, c?: CabinetState): number {
   const m = ministryById(min);
-  let v = avgStats(p, m.stats) / 12;
-  if (m.spec.includes(p.spec)) v *= 1.3;
+  let v = needPower(p, NEEDS[min], m.spec);
   if (p.trait === '야심') v *= 1.15;
   if (p.hidden === '숨은 천재') v *= 1.25;
   v *= p.loyalty >= 80 ? 1.1 : p.loyalty < 30 ? 0.5 : 1;
@@ -290,8 +330,7 @@ export const postHolder = (c: CabinetState, id: PostId) => c.people.find((p) => 
 /** 사람 한 명이 그 자리에서 내는 힘(실장 덤 빼고, 보통 ≈ 1) */
 export function personPostPower(p: Person, id: PostId): number {
   const m = postById(id);
-  let v = avgStats(p, m.stats) / 12;
-  if (m.spec.includes(p.spec)) v *= 1.3;
+  let v = needPower(p, NEEDS[id], m.spec);
   if (p.trait === '야심') v *= 1.15;
   if (p.hidden === '숨은 천재') v *= 1.25;
   v *= p.loyalty >= 80 ? 1.1 : p.loyalty < 30 ? 0.5 : 1;

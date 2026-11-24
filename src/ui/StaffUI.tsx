@@ -7,6 +7,7 @@ import {
   autoFillOffice,
   cabinetOf,
   canAppointPost,
+  fitPct,
   personPostPower,
   postCandidates,
   postCount,
@@ -20,6 +21,8 @@ import type { GameState } from '../game/state';
 import { Card } from './common';
 import { Help, Modal } from './kit';
 import { PersonFace, PersonModal } from './CabinetUI';
+import { NEEDS } from '../data/needs';
+import { FitTag, NeedBox } from './PersonCards';
 import { useTab } from './kit';
 import type { ScreenProps } from './screens';
 
@@ -42,6 +45,7 @@ export function StaffPanel(props: ScreenProps) {
   const c = cabinetOf(state);
   const [office, setOffice] = useTab<OfficeId>('staff-office', 'sec');
   const [open, setOpen] = useState<PostId | null>(null);
+  const [view, setView] = useTab<'tree' | 'list'>('staff-view', 'tree');
   const of = OFFICES.find((o) => o.id === office) ?? OFFICES[0];
   const posts = postsOf(of.id);
   const free = c.people.filter((p) => p.group === '내각' && !p.seat && !p.post).length;
@@ -56,7 +60,7 @@ export function StaffPanel(props: ScreenProps) {
           <Help title="대통령실 참모진">
             <p>실제 대통령실처럼 비서실·정책실·국가안보실 3실장과 수석비서관, 안보실 차장, 경호처장을 둬요. 국무총리와 기관장(검찰총장·경찰청장·국세청장·감사원장·한국은행 총재·방위사업청장)도 여기서 임명해요.</p>
             <p>👤 영입한 내 사람만 앉힐 수 있어요(개인 → 인재). 청문회 없이 바로 임명돼요. 장관·차관과 겹쳐 앉을 수는 없어요.</p>
-            <p>💪 자리 힘 = 보는 스탯 2개 평균 ÷ 12(보통 사람 100%). 특화가 맞으면 ×1.3, 충성 80↑ ×1.1, 30↓ 절반.</p>
+            <p>💪 자리 힘 = 주 스탯 2개 평균 80% + 보조 스탯 20%, ÷ 12(보통 사람 100%). 특화가 맞으면 ×1.3, 성향이 맞으면 ×1.1, 출신이 맞으면 ×1.05, 충성 80↑ ×1.1, 30↓ 절반. 자리를 누르면 무엇이 중요한지 나와요.</p>
             <p>🗝️ 실장 덤: 비서실장·정책실장·안보실장의 힘 1(100%)마다 그 실 참모 힘 +{Math.round(HEAD_BOOST * 100)}%.</p>
             <p>🕶️ 경호처장 힘이 {pct(GUARD_COUNTER_AT)} 넘으면 정적의 방해 공작을 막아요.</p>
             <p>🏛️ 국무총리는 모든 장관의 힘을 올려 줘요.</p>
@@ -66,6 +70,18 @@ export function StaffPanel(props: ScreenProps) {
         <p className="small muted" style={{ margin: '0 0 4px' }}>
           {sum.length ? `📈 ${sum.join(' · ')}` : '아직 비어 있어요. 내 사람을 자리에 앉혀 보세요.'}
         </p>
+        <div className="seg cab-seg">
+          <button className={view === 'tree' ? 'on' : ''} onClick={() => setView('tree')}>
+            🌳 나무
+          </button>
+          <button className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>
+            📋 실별
+          </button>
+        </div>
+        {view === 'tree' ? (
+          <StaffTree state={state} onOpen={setOpen} />
+        ) : (
+          <>
         <div className="seg cab-seg">
           {OFFICES.map((o) => {
             const n = postsOf(o.id).filter((p) => postHolder(c, p.id)).length;
@@ -99,7 +115,9 @@ export function StaffPanel(props: ScreenProps) {
             );
           })}
         </div>
-        {empty > 0 && (
+          </>
+        )}
+        {view === 'list' && empty > 0 && (
           <button className="wide" disabled={!free} onClick={() => actions.apply((s) => autoFillOffice(s, of.id))}>
             ✨ 빈 자리 {empty}곳 추천 인물로 채우기 <small>{free ? `쉬는 내 사람 ${free}명` : '쉬는 내 사람이 없어요(인재 탭에서 영입)'}</small>
           </button>
@@ -128,6 +146,7 @@ export function PostModal({ state, actions, id, onClose }: Pick<ScreenProps, 'st
             {p.spec} · {p.trait} · 충성 {Math.round(p.loyalty)}
           </small>
         </span>
+        <FitTag p={p} need={NEEDS[id]} spec={post.spec} />
       </button>
       <span className="cab-cand-acts">{right}</span>
     </div>
@@ -140,10 +159,6 @@ export function PostModal({ state, actions, id, onClose }: Pick<ScreenProps, 'st
       <div className="cab-kv small">
         <span>🎯 효과(보통 사람)</span>
         <b>{effLine(post.eff)}</b>
-        <span>📊 보는 스탯</span>
-        <b>
-          {post.stats.join('·')} · 특화 {post.spec.join('·')}
-        </b>
         {h && (
           <>
             <span>💪 지금 힘</span>
@@ -167,6 +182,7 @@ export function PostModal({ state, actions, id, onClose }: Pick<ScreenProps, 'st
           </>
         )}
       </div>
+      <NeedBox need={NEEDS[id]} spec={post.spec} />
       <h4 className="cab-h">지금 자리</h4>
       {h ? (
         row(h, <button onClick={() => actions.apply((s) => unpost(s, h.id))}>내리기</button>)
@@ -204,7 +220,7 @@ export function PostPick({ state, actions, p, onDone }: Pick<ScreenProps, 'state
             {postsOf(o.id).map((post) => {
               const why = canAppointPost(state, p.id, post.id);
               const h = postHolder(c, post.id);
-              const fit = post.spec.includes(p.spec);
+              const fit = fitPct(p, NEEDS[post.id], post.spec) >= 65;
               return (
                 <button key={post.id} disabled={!!why} title={why ?? (h ? `${h.name}과(와) 교체` : '')} onClick={() => (actions.apply((s) => appointPost(s, p.id, post.id)), onDone())}>
                   <span>{post.icon}</span>
@@ -213,13 +229,75 @@ export function PostPick({ state, actions, p, onDone }: Pick<ScreenProps, 'state
                     {pct(personPostPower(p, post.id))}
                     {h ? '·교체' : ''}
                   </small>
+                  <FitTag p={p} need={NEEDS[post.id]} spec={post.spec} />
                 </button>
               );
             })}
           </div>
         </div>
       ))}
-      <p className="small muted">숫자는 그 자리에서 낼 힘(100% = 보통), 노란색은 특화가 맞는 곳. 청문회 없이 바로 앉아요.</p>
+      <p className="small muted">위 숫자는 그 자리에서 낼 힘(100% = 보통), 아래 %는 적합도, 노란색은 잘 맞는 곳. 청문회 없이 바로 앉아요.</p>
+    </div>
+  );
+}
+
+/** 대통령실 나무: 대통령 → 3실장 → 수석·차장(매달린 카드), 옆 가지 경호처·총리·기관장 */
+function StaffTree({ state, onOpen }: { state: GameState; onOpen: (id: PostId) => void }) {
+  const c = cabinetOf(state);
+  const card = (id: PostId, head = false) => {
+    const post = postById(id);
+    const h = postHolder(c, id);
+    return (
+      <button key={id} className={`tcard ${h ? 'on' : 'empty'}${head ? ' head' : ''}`} onClick={() => onOpen(id)}>
+        <span className="tcard-clip" />
+        {h ? (
+          <>
+            <PersonFace p={h} size={head ? 40 : 32} />
+            <b>{h.name}</b>
+            <small>
+              {post.icon}
+              {post.name.replace('안보실 ', '').replace('한국은행 ', '한은 ')}
+            </small>
+            <small className="tcard-pw">{pct(postPower(state, id))}</small>
+          </>
+        ) : (
+          <>
+            <span className="tcard-plus">＋</span>
+            <b>임명</b>
+            <small>
+              {post.icon}
+              {post.name.replace('안보실 ', '').replace('한국은행 ', '한은 ')}
+            </small>
+          </>
+        )}
+      </button>
+    );
+  };
+  const main = OFFICES.filter((o) => o.head);
+  const side = OFFICES.filter((o) => !o.head);
+  return (
+    <div className="stree">
+      <div className="stree-top">
+        <span className="stree-pres">👑 대통령 {state.player.name}</span>
+      </div>
+      <div className="stree-trunk" />
+      {main.map((o) => (
+        <div key={o.id} className="stree-branch">
+          <small className="stree-label">
+            {o.icon} {o.name}
+          </small>
+          <div className="stree-head">{card(o.head!, true)}</div>
+          <div className="stree-rail">{postsOf(o.id).filter((p) => p.id !== o.head).map((p) => card(p.id))}</div>
+        </div>
+      ))}
+      {side.map((o) => (
+        <div key={o.id} className="stree-branch side">
+          <small className="stree-label">
+            {o.icon} {o.name} <span className="muted">· 옆 가지</span>
+          </small>
+          <div className="stree-rail">{postsOf(o.id).map((p) => card(p.id))}</div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -721,3 +721,76 @@ select.wide, button.wide { width: 100%; }
   .cdetail .cmap svg { height: 360px; }
   .cdetail-side { flex: 1; min-width: 0; }
 }
+
+/* ── 11-24 인물 카드 2열·정렬·필터·스탯 18·자리 안내·대통령실 나무 ── */
+.pgrid-bar { display: flex; gap: 4px; align-items: center; margin: 2px 0; }
+.pgrid-bar select { flex: 1; min-width: 0; font-size: 11px; padding: 3px; background: var(--panel, #1c2630); color: inherit; border: 1px solid var(--hud-dim); }
+.pgrid-fbtn { font-size: 11px; padding: 3px 8px; }
+.pgrid-fbtn.on { border-color: var(--accent, #f0a040); color: var(--accent, #f0a040); }
+.pgrid-chips { display: flex; gap: 3px; margin: 2px 0 4px; }
+.pgrid-chips button { font-size: 10.5px; padding: 2px 7px; border-radius: 10px; }
+.pgrid-chips button.on { background: var(--hud, #3fb5a8); color: #08151a; }
+.pgrid-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 4px; }
+.pgrid-filters select, .pgrid-filters button { font-size: 10.5px; padding: 3px; min-width: 0; background: var(--panel, #1c2630); color: inherit; border: 1px solid var(--hud-dim); }
+.pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.pcard { position: relative; display: flex; gap: 5px; align-items: flex-start; text-align: left; padding: 4px; border: 1px solid var(--hud-dim); background: rgba(255,255,255,.03); min-width: 0; }
+.pcard.on { border-color: var(--hud, #3fb5a8); }
+.pcard-face { position: relative; flex: none; }
+.pcard-grade { position: absolute; right: -3px; bottom: -3px; font-size: 11px; }
+.pcard-main { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.pcard-name { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pcard-name small { font-weight: 400; color: var(--muted); font-size: 9.5px; }
+.pcard-seat, .pcard-org { font-size: 9.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pcard-seat { color: var(--hud, #3fb5a8); }
+.pcard-stats { display: flex; gap: 3px; font-size: 9px; flex-wrap: wrap; }
+.pcard-stats span { white-space: nowrap; }
+.pcard-stats b { margin-left: 1px; }
+.pcard-loy { height: 3px; background: rgba(255,255,255,.1); margin-top: 1px; }
+.pcard-loy i { display: block; height: 100%; }
+.pcard-loy i.g { background: #4caf7a; } .pcard-loy i.y { background: #d8b440; } .pcard-loy i.r { background: #d65a4a; }
+.pcard-badge { position: absolute; top: 3px; right: 4px; display: flex; flex-direction: column; align-items: flex-end; font-size: 9.5px; }
+.stats18 { display: flex; flex-direction: column; gap: 2px; margin: 4px 0; }
+.stats18-row { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 3px; }
+.stats18-g { font-size: 9.5px; color: var(--muted); }
+.stats18-v { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.stats18-v span { display: flex; flex-direction: column; align-items: center; border: 1px solid var(--hud-dim); padding: 1px 0; }
+.stats18-v span.top { border-color: var(--accent, #f0a040); }
+.stats18-v small { font-size: 9px; color: var(--muted); }
+.stats18-v b { font-size: 11.5px; }
+.needbox { border: 1px solid var(--hud-dim); border-left: 3px solid var(--accent, #f0a040); padding: 4px 6px; margin: 4px 0; display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; }
+.fit { display: inline-flex; flex-direction: column; align-items: center; font-size: 9.5px; line-height: 1.05; color: var(--muted); }
+.fit b { font-size: 10.5px; }
+.fit.good { color: #4caf7a; } .fit.low { color: #d65a4a; }
+.stree { display: flex; flex-direction: column; align-items: stretch; gap: 2px; }
+.stree-top { display: flex; justify-content: center; }
+.stree-pres { border: 1px solid var(--accent, #f0a040); padding: 3px 12px; font-size: 12px; font-weight: 700; background: rgba(240,160,64,.08); }
+.stree-trunk { width: 2px; height: 8px; background: var(--hud-dim); margin: 0 auto; }
+.stree-branch { position: relative; border-top: 2px solid var(--hud-dim); padding: 4px 0 6px; }
+.stree-branch.side { border-top-style: dashed; }
+.stree-label { display: block; font-size: 10.5px; margin-bottom: 2px; }
+.stree-head { display: flex; justify-content: center; }
+.stree-head .tcard { width: 48%; }
+.stree-rail { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 4px; padding-top: 10px; margin-top: 4px; border-top: 2px solid var(--hud-dim); }
+.stree-branch.side .stree-rail { border-top: none; margin-top: 0; }
+.tcard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px 3px; border: 1px solid var(--hud, #3fb5a8); background: rgba(63,181,168,.06); min-width: 0; font-size: 11px; }
+.tcard::before { content: ''; position: absolute; top: -11px; left: 50%; width: 1px; height: 10px; background: var(--hud-dim); }
+.stree-head .tcard::before { display: none; }
+.tcard-clip { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 12px; height: 7px; border: 2px solid #b8c4cc; border-bottom: none; border-radius: 3px 3px 0 0; }
+.tcard.empty { border: 1px dashed var(--hud-dim); background: transparent; color: var(--muted); }
+.tcard.empty .tcard-clip { border-color: var(--hud-dim); }
+.tcard b { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tcard small { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tcard-plus { font-size: 18px; line-height: 1; }
+.tcard-pw { color: var(--hud, #3fb5a8) !important; }
+.advice-bar { border: 1px solid var(--hud-dim); border-left: 3px solid var(--hud, #3fb5a8); margin: 3px 0; background: rgba(63,181,168,.05); }
+.advice-bar.empty { padding: 3px 6px; margin: 3px 0; }
+.advice-head { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; padding: 3px 6px; background: none; border: none; }
+.advice-line { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.advice-line small { font-size: 9.5px; color: var(--muted); }
+.advice-line b { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.advice-bar.open .advice-line b { white-space: normal; }
+.advice-list { display: flex; flex-direction: column; gap: 3px; padding: 0 6px 5px; }
+.advice-card { display: grid; grid-template-columns: 16px 1fr auto; gap: 4px; align-items: center; border: 1px solid var(--hud-dim); padding: 3px 4px; }
+.advice-n { font-size: 10px; color: var(--accent, #f0a040); font-weight: 700; text-align: center; }
+.advice-card small { font-size: 10.5px; }
+.advice-card button { font-size: 10px; padding: 2px 6px; }

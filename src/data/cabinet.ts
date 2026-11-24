@@ -1,5 +1,6 @@
 // 정부 부처 15곳(11-24: 9곳 + 통일·법무·교육·국토교통·해양수산·고용노동) · 인물 특화·성향·숨은 특성·파벌·등급(11-23 대장 결정). 계산은 src/game/cabinet.ts
 import type { StatId } from './officers';
+import type { AnyStat } from './stats2';
 
 export type MinistryId = 'mnd' | 'nis' | 'mofa' | 'mof' | 'moti' | 'mois' | 'mohw' | 'msit' | 'kocis' | 'mou' | 'moj' | 'moe' | 'molit' | 'mofs' | 'moel';
 export type FieldTab = 'defense' | 'diplo' | 'society' | 'economy';
@@ -16,7 +17,8 @@ export interface Ministry {
   role: string;
   /** 정보창 긴 설명 */
   text: string;
-  stats: StatId[];
+  /** 중요한 스탯 2개(보조·성향·출신은 data/needs.ts) */
+  stats: AnyStat[];
   spec: SpecId[];
   /** 장관 효과 설명(p = 장관 힘, 0~약 1.5) */
   effText: string;
@@ -27,7 +29,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mnd', icon: '🛡️', name: '국방부', short: '국방', tab: 'defense', role: '군대 살림과 모집',
     text: '군대에 필요한 사람·장비·예산을 챙기는 부처예요. 부대를 얼마나 빨리 모으고, 병력을 얼마나 오래 지키는지가 국방부 손에 달려 있어요.',
-    stats: ['통솔', '군수'], spec: ['육군통', '해군통', '공군통', '군수통'], effText: '모든 부대 모집 속도 · 징병',
+    stats: ['통솔', '지휘'], spec: ['육군통', '해군통', '공군통', '군수통'], effText: '모든 부대 모집 속도 · 징병',
     tasks: [
       { id: 'reform', icon: '🔧', name: '국방 개혁', hours: 6, text: '하루 동안 모든 모집 +20%(장관 힘만큼 더)' },
       { id: 'drill', icon: '🎖️', name: '합동 훈련', hours: 4, text: '안보 점수 +8(12시간) · 병력 조금 +' },
@@ -36,7 +38,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'nis', icon: '🕵️', name: '국가정보원', short: '정보', tab: 'defense', role: '첩보와 방첩',
     text: '다른 나라의 비밀을 캐고, 우리 나라에 들어온 공작원을 잡는 곳이에요. 인물 신원 조회도 여기서 해요.',
-    stats: ['정보', '은밀'], spec: ['정보통'], effText: '첩보 성공률 · 임무 성공률',
+    stats: ['정보', '정치'], spec: ['정보통'], effText: '첩보 성공률 · 임무 성공률',
     tasks: [
       { id: 'counter', icon: '🧲', name: '방첩 작전', hours: 6, text: '정보 점수 + · 하루 동안 정적 방해 공작을 막음' },
       { id: 'vet', icon: '🗂️', name: '인재 신원 조회', hours: 3, text: '인재 명단의 숨은 특성을 모두 알아냄' },
@@ -45,7 +47,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mofa', icon: '🌐', name: '외교부', short: '외교', tab: 'diplo', role: '다른 나라와 관계',
     text: '다른 나라와 대화하고 협정을 지키는 부처예요. 호감이 오르는 속도와 정상회담 성공이 외교부에 달려 있어요.',
-    stats: ['정치', '정보'], spec: ['외교통'], effText: '모든 나라 호감',
+    stats: ['외교', '언변'], spec: ['외교통'], effText: '모든 나라 호감',
     tasks: [
       { id: 'envoy', icon: '✈️', name: '특사 파견', hours: 6, text: '가장 긴장된 나라 호감 +10(장관 힘만큼 더)' },
       { id: 'summit', icon: '🤝', name: '정상회담 준비', hours: 4, text: '하루 동안 외교 위상 +8 · 친서 성공 +' },
@@ -54,7 +56,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mof', icon: '💼', name: '기획재정부', short: '재정', tab: 'economy', role: '나라 돈과 세금',
     text: '나라 살림을 짜고 세금을 걷는 부처예요. 장관이 유능하면 같은 세금으로도 수입이 늘고 국민 불만은 줄어요.',
-    stats: ['군수', '정치'], spec: ['경제통'], effText: '국방예산 수입 · 세금 불만 줄이기',
+    stats: ['경제', '행정'], spec: ['경제통'], effText: '국방예산 수입 · 세금 불만 줄이기',
     tasks: [
       { id: 'stimulus', icon: '📈', name: '경기 부양', hours: 6, text: '12시간 동안 경제 지수 +10 · 지지도 +3' },
       { id: 'bond', icon: '🏦', name: '국채 발행', hours: 2, text: '금고 +6시간치 수입(대신 하루 동안 경제 지수 −5)' },
@@ -63,7 +65,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'moti', icon: '🏭', name: '산업자원부', short: '산업', tab: 'economy', role: '공장과 자원',
     text: '공장을 돌리고 광산·자원을 관리하는 부처예요. 장관이 자원 생산과 가공을 키워요.',
-    stats: ['군수', '전술'], spec: ['경제통', '과학자', '군수통'], effText: '모든 자원 생산',
+    stats: ['경제', '과학'], spec: ['경제통', '과학자', '군수통'], effText: '모든 자원 생산',
     tasks: [
       { id: 'survey', icon: '⛏️', name: '자원 탐사', hours: 6, text: '부족한 기본 자원 3가지를 넉넉히 얻음' },
       { id: 'overtime', icon: '⚙️', name: '공장 특근', hours: 4, text: '하루 동안 자원 +15%(대신 사회 안정 −3)' },
@@ -72,7 +74,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mois', icon: '🏛️', name: '행정안전부', short: '행정', tab: 'society', role: '도시·치안·재난',
     text: '도시 행정과 치안, 재난 대응을 맡는 부처예요. 점령지를 조용히 하고 도시 민심을 받쳐 줘요.',
-    stats: ['통솔', '정치'], spec: ['행정통'], effText: '모든 도시 민심',
+    stats: ['행정', '통솔'], spec: ['행정통'], effText: '모든 도시 민심',
     tasks: [
       { id: 'disaster', icon: '🚒', name: '재난 대비', hours: 6, text: '모든 도시 민심 +5 · 하루 동안 사회 안정 +5' },
       { id: 'police', icon: '🚓', name: '치안 강화', hours: 4, text: '점령지 민심 +10' },
@@ -81,7 +83,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mohw', icon: '🏥', name: '보건복지부', short: '복지', tab: 'society', role: '국민 생활과 병원',
     text: '병원과 복지를 맡는 부처예요. 민심과 인구 성장을 돕고, 다친 병사가 빨리 돌아오게 해요.',
-    stats: ['정치', '군수'], spec: ['복지통'], effText: '인구 성장 · 민심',
+    stats: ['행정', '매력'], spec: ['복지통'], effText: '인구 성장 · 민심',
     tasks: [
       { id: 'welfare', icon: '🍲', name: '복지 정책', hours: 6, text: '민심이 가장 낮은 도시 민심 +12' },
       { id: 'vaccine', icon: '💉', name: '예방 접종', hours: 4, text: '하루 동안 지지도 +4' },
@@ -90,7 +92,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'msit', icon: '🔬', name: '과학기술부', short: '과학', tab: 'society', role: '연구',
     text: '군사·사회 연구를 이끄는 부처예요. 장관이 똑똑할수록 연구가 빨라져요.',
-    stats: ['정보', '전술'], spec: ['과학자'], effText: '연구 속도(군사·사회 둘 다)',
+    stats: ['과학', '행정'], spec: ['과학자'], effText: '연구 속도(군사·사회 둘 다)',
     tasks: [
       { id: 'focus', icon: '🧪', name: '연구 집중', hours: 6, text: '지금 연구 두 줄에 3시간치 점수(장관 힘만큼 더)' },
       { id: 'expo', icon: '🚀', name: '과학 박람회', hours: 4, text: '하루 동안 지지도 +3 · 명성 +' },
@@ -99,7 +101,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'kocis', icon: '📺', name: '문화홍보처', short: '홍보', tab: 'society', role: '언론과 홍보',
     text: '정부 소식을 국민에게 알리고 언론을 상대하는 곳이에요. 지지도가 쉽게 떨어지지 않게 받쳐 줘요.',
-    stats: ['정치', '정보'], spec: ['홍보통'], effText: '지지도 덤 · 연설 효과',
+    stats: ['언변', '매력'], spec: ['홍보통'], effText: '지지도 덤 · 연설 효과',
     tasks: [
       { id: 'campaign', icon: '📣', name: '홍보 캠페인', hours: 6, text: '12시간 동안 지지도 +5(장관 힘만큼 더)' },
       { id: 'brief', icon: '🎙️', name: '정례 브리핑', hours: 3, text: '신뢰도 +3' },
@@ -109,7 +111,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mou', icon: '🕊️', name: '통일부', short: '통일', tab: 'diplo', role: '남북 관계·평화',
     text: '갈라진 이웃과 대화하고 평화를 준비하는 부처예요. 장관이 유능하면 사이 나쁜 나라와도 말이 통하고 외교 위상이 올라요.',
-    stats: ['정치', '정보'], spec: ['외교통'], effText: '모든 나라 호감 · 외교 점수',
+    stats: ['외교', '정치'], spec: ['외교통'], effText: '모든 나라 호감 · 외교 점수',
     tasks: [
       { id: 'talks', icon: '🤝', name: '고위급 회담', hours: 6, text: '가장 사이 나쁜 나라 호감 +12(장관 힘만큼 더)' },
       { id: 'family', icon: '👪', name: '이산가족 상봉', hours: 4, text: '하루 동안 지지도 +4 · 외교 위상 +4' },
@@ -118,7 +120,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'moj', icon: '⚖️', name: '법무부', short: '법무', tab: 'society', role: '법질서·검찰·출입국',
     text: '법을 지키게 하고 검찰과 교정·출입국을 맡는 부처예요. 의회와 국민이 정부를 믿게 받쳐 줘요.',
-    stats: ['정치', '정보'], spec: ['행정통', '정보통'], effText: '신뢰도 · 정적 견제',
+    stats: ['법률', '청렴'], spec: ['행정통', '정보통'], effText: '신뢰도 · 정적 견제',
     tasks: [
       { id: 'probe', icon: '🔍', name: '부패 수사', hours: 6, text: '하루 동안 정적 방해 공작을 막음 · 신뢰도 +2' },
       { id: 'amnesty', icon: '🕊️', name: '특별 사면', hours: 3, text: '12시간 동안 지지도 +4(대신 신뢰도 −1)' },
@@ -127,7 +129,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'moe', icon: '🎓', name: '교육부', short: '교육', tab: 'society', role: '학교·대학·인재 기르기',
     text: '학교와 대학을 맡아 나라의 인재를 길러요. 연구가 빨라지고 사람이 늘어요.',
-    stats: ['정보', '정치'], spec: ['과학자', '복지통'], effText: '연구 속도 · 인구 성장',
+    stats: ['행정', '과학'], spec: ['과학자', '복지통'], effText: '연구 속도 · 인구 성장',
     tasks: [
       { id: 'scholar', icon: '📚', name: '국비 장학생', hours: 6, text: '인재 명단에 🔵우수 후보 2명' },
       { id: 'reform', icon: '🏫', name: '교육 개혁', hours: 4, text: '하루 동안 사회 안정 +6' },
@@ -136,7 +138,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'molit', icon: '🛣️', name: '국토교통부', short: '국토', tab: 'economy', role: '도로·철도·주택·도시',
     text: '길과 철도, 집과 도시를 짓는 부처예요. 부대가 빨리 움직이고 자원이 잘 돌아요.',
-    stats: ['군수', '통솔'], spec: ['행정통', '경제통'], effText: '부대 모집 속도 · 자원 생산',
+    stats: ['행정', '경제'], spec: ['행정통', '경제통'], effText: '부대 모집 속도 · 자원 생산',
     tasks: [
       { id: 'soc', icon: '🚄', name: 'SOC 투자', hours: 6, text: '12시간 동안 경제 지수 +8 · 모집 +10%' },
       { id: 'housing', icon: '🏘️', name: '주택 공급', hours: 4, text: '모든 도시 민심 +4' },
@@ -145,7 +147,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mofs', icon: '⚓', name: '해양수산부', short: '해양', tab: 'economy', role: '바다·항만·수산',
     text: '바다와 항만, 고기잡이를 맡는 부처예요. 바닷길 자원과 항구가 튼튼해져요.',
-    stats: ['군수', '전술'], spec: ['해군통', '경제통'], effText: '자원 생산 · 호감 조금',
+    stats: ['경제', '군수'], spec: ['해군통', '경제통'], effText: '자원 생산 · 호감 조금',
     tasks: [
       { id: 'port', icon: '🚢', name: '항만 정비', hours: 6, text: '하루 동안 자원 +12%' },
       { id: 'fish', icon: '🐟', name: '수산물 비축', hours: 3, text: '부족한 기본 자원 2가지를 얻음' },
@@ -154,7 +156,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'moel', icon: '👷', name: '고용노동부', short: '노동', tab: 'economy', role: '일자리·노사',
     text: '일자리를 만들고 노동자와 회사 사이를 조율하는 부처예요. 세금 불만이 줄고 공장이 멈추지 않아요.',
-    stats: ['정치', '통솔'], spec: ['복지통', '경제통'], effText: '세금 불만 줄이기 · 경제 점수',
+    stats: ['경제', '언변'], spec: ['복지통', '경제통'], effText: '세금 불만 줄이기 · 경제 점수',
     tasks: [
       { id: 'jobs', icon: '💼', name: '일자리 정책', hours: 6, text: '12시간 동안 경제 지수 +6 · 지지도 +3' },
       { id: 'deal', icon: '🤝', name: '노사 대타협', hours: 4, text: '하루 동안 사회 안정 +5 · 자원 +5%' },
@@ -207,7 +209,7 @@ export const FACTIONS: Array<{ id: Faction; icon: string; bonus: string }> = [
 /** 같은 파벌이 이만큼 자리에 앉으면 보너스 */
 export const FACTION_BONUS_AT = 3;
 
-export type Trait = '청렴' | '야심' | '충직' | '인기인' | '강경파' | '원칙주의' | '실용주의' | '신중파';
+export type Trait = '청렴' | '야심' | '충직' | '인기인' | '강경파' | '원칙주의' | '실용주의' | '신중파' | '협상가' | '혁신가' | '현장형' | '냉철';
 export const TRAITS: Record<Trait, { icon: string; text: string }> = {
   청렴: { icon: '🤍', text: '스캔들이 없고 청문회에 유리 · 회유·빼 가기에 안 넘어감' },
   야심: { icon: '🔥', text: '능력 +15% · 대신 충성이 잘 떨어짐' },
@@ -217,6 +219,10 @@ export const TRAITS: Record<Trait, { icon: string; text: string }> = {
   원칙주의: { icon: '📏', text: '청문회에 조금 유리 · 법안 반대 줄임' },
   실용주의: { icon: '🧰', text: '부처 업무 시간 −20%' },
   신중파: { icon: '🧐', text: '부처 업무 결과 +10%' },
+  협상가: { icon: '🤝', text: '외교·통일·노동처럼 말로 푸는 자리에서 능력 +10%' },
+  혁신가: { icon: '💡', text: '과학·산업·교육 자리에서 능력 +10%' },
+  현장형: { icon: '🥾', text: '국방·행정·복지처럼 발로 뛰는 자리에서 능력 +10%' },
+  냉철: { icon: '🧊', text: '정보·안보·수사 자리에서 능력 +10%' },
 };
 export const TRAIT_IDS = Object.keys(TRAITS) as Trait[];
 

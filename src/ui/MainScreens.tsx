@@ -32,6 +32,7 @@ import { scheduleOf } from '../game/schedule';
 import { cabinetOf, postCount } from '../game/cabinet';
 import { POSTS } from '../data/staff';
 import { StaffPanel } from './StaffUI';
+import { AdviceBar } from './AdviceBar';
 
 /** 시설 15개를 효과가 닿는 분야로 나눔 */
 export const DEFENSE_BUILDINGS: readonly BuildingId[] = ['철도망', '군항', '공군기지', '방공포대', '훈련소', '비축창고', '정보본부', '우주기지'];
@@ -126,6 +127,7 @@ export function DefenseScreen(props: ScreenProps) {
   return (
     <>
       <FieldBar state={state} field="defense" />
+      <AdviceBar state={state} apply={props.actions.apply} field="defense" go={(t) => setTab(t as DefenseTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'ops' && <OpsScreen {...props} />}
       {tab === 'forces' && <ForcesScreen {...props} />}
@@ -162,6 +164,7 @@ export function SocietyScreen(props: ScreenProps) {
   return (
     <>
       <FieldBar state={state} field="society" />
+      <AdviceBar state={state} apply={props.actions.apply} field="society" go={(t) => setTab(t as SocietyTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'mins' && (
         <>
@@ -206,6 +209,7 @@ export function EconomyScreen(props: ScreenProps) {
   return (
     <>
       <FieldBar state={props.state} field="economy" />
+      <AdviceBar state={props.state} apply={props.actions.apply} field="economy" go={(t) => setTab(t as EconomyTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'vault' && <TreasuryPanel {...props} />}
       {tab === 'tax' && (
