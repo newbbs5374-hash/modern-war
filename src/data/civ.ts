@@ -119,7 +119,7 @@ export const MIL_TECHS: Tech[] = [
   // 제공기
   T({ id: 'm-active', line: 'mil', name: '능동 방호', icon: '🧿', era: 3, hours: 6, needs: ['m-armor'], eff: { power: { dom: '육', v: 0.1 } }, text: '날아오는 포탄을 맞혀 떨어뜨려요 · 육군 전투력 +10%', eureka: { key: { kind: 'mission', name: '안보회의' }, text: '방어 안보회의 성공' } }),
   T({ id: 'm-vls', line: 'mil', name: '수직 발사관', icon: '🎯', era: 3, hours: 6, needs: ['m-aegis'], eff: { power: { dom: '해', v: 0.1 } }, text: '군함에서 미사일을 한꺼번에 · 해군 전투력 +10%', eureka: { key: { kind: 'district', id: 'harbor' }, text: '항만 구역 첫 완공' } }),
-  T({ id: 'm-awacs', line: 'mil', name: '공중 조기경보', icon: '🛩️', era: 3, hours: 6.5, needs: ['m-radar', 'm-jet'], eff: { power: { dom: '공', v: 0.1 }, mission: 0.02 }, text: '하늘의 눈 · 공군 전투력 +10% · 임무 +2%', eureka: { key: { kind: 'district', id: 'airfield' }, text: '비행장 구역 첫 완공' } }),
+  T({ id: 'm-awacs', line: 'mil', name: '공중 조기경보', icon: '🛩️', era: 3, hours: 6.5, needs: ['m-jet'], eff: { power: { dom: '공', v: 0.1 }, mission: 0.02 }, text: '하늘의 눈 · 공군 전투력 +10% · 임무 +2%', eureka: { key: { kind: 'district', id: 'airfield' }, text: '비행장 구역 첫 완공' } }),
   T({ id: 'm-ai', line: 'mil', name: '인공지능 표적', icon: '🤖', era: 3, hours: 7, needs: ['m-ew'], eff: { power: { dom: 'all', v: 0.05 }, research: 0.05 }, text: '모든 전투력 +5% · 연구 +5%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
   T({ id: 'm-sealift', line: 'mil', name: '전략 수송', icon: '🚛', era: 3, hours: 6, needs: ['m-depot', 'm-supply'], cards: ['군-기동'], eff: { build: { dom: 'all', v: 0.1 } }, text: '모든 부대 모집 −10% · 카드 1장', eureka: { key: { kind: 'army', count: 12 }, text: '부대 12개 보유' } }),
   // 대양기
