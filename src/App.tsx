@@ -13,6 +13,8 @@ import { addReports as addReports0, dismissReport } from './game/report';
 import { trackGoals } from './game/goals';
 import { summarizeAway, type AwaySummary } from './game/orders';
 import { AwayModal, OrdersModal } from './ui/OrdersModal';
+import { useCloudSync } from './ui/useCloud';
+import { CloudAskModal } from './ui/CloudUI';
 
 /** 이만큼 넘게 비웠다 오면 '자리 비운 동안' 보고 창 */
 const AWAY_REPORT_MS = 20 * 60e3;
@@ -112,6 +114,21 @@ export function App() {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // 카카오 서버 저장: 다른 기기에서 더 나중에 했으면 그 판으로 바꿈
+  const cloud = useCloudSync({
+    stateRef,
+    adopt: (saved, note) => {
+      const r = resume(saved, Date.now());
+      stateRef.current = r.state;
+      setState(r.state);
+      saveGame(r.state);
+      setNotice(note);
+      setNotice(r.notice);
+      setAway(r.away ?? null);
+    },
+    notice: (t) => setNotice(t),
+  });
+
   // 실시간 시계
   useEffect(() => {
     const t = setInterval(() => {
@@ -166,8 +183,9 @@ export function App() {
     setNotice(r.notice);
     setAway(r.away ?? null);
     saveGame(r.state);
+    cloud.markDirty(true);
     return null;
-  }, []);
+  }, [cloud.markDirty]);
 
   if (!state) {
     return (
@@ -175,10 +193,13 @@ export function App() {
         onStart={(name, countryId, pick) => {
           const s = firstTestGrant(G.newGame(name, countryId, Date.now(), pick));
           saveGame(s);
+          stateRef.current = s;
           setState(s);
           setNotices([]);
+          cloud.markDirty(true);
         }}
         onImport={doImport}
+        onCloud={() => void cloud.sync(true)}
       />
     );
   }
@@ -190,11 +211,16 @@ export function App() {
     stateRef.current = next;
     setState(next);
     saveGame(next);
+    cloud.markDirty();
   };
 
   const actions: GameActions = {
     claim: () => update(G.claimSalary),
-    save: () => saveGame(G.catchUp(state, Date.now(), speedRef.current)),
+    save: () => {
+      saveGame(G.catchUp(state, Date.now(), speedRef.current));
+      cloud.markDirty(true);
+    },
+    cloudSync: () => void cloud.sync(),
     load: () => {
       const saved = loadGame();
       if (saved) {
@@ -252,6 +278,7 @@ export function App() {
           <>
             <AideReport state={state} onNext={() => update(dismissReport)} />
             {away && <AwayModal sum={away} onClose={() => setAway(null)} onOrders={() => (setAway(null), setOrdersOpen(true))} />}
+            {cloud.ask && <CloudAskModal ask={cloud.ask} local={state} onPick={(p) => void cloud.choose(p)} onClose={cloud.dismiss} />}
             {ordersOpen && <OrdersModal state={state} apply={update} onClose={() => setOrdersOpen(false)} />}
           </>
         )

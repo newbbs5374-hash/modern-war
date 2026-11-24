@@ -805,3 +805,17 @@ select.wide, button.wide { width: 100%; }
 .stat-ico { display: inline-block; vertical-align: -2px; object-fit: contain; }
 .cdetail-banner { width: 100%; max-height: 110px; object-fit: cover; display: block; margin-bottom: 4px; border: 1px solid var(--hud-dim); }
 .gfac-ico img { width: 26px; height: 26px; object-fit: contain; }
+
+/* 카카오 로그인·서버 저장(11/24) */
+.kakao-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: 8px; background: #fee500; color: #191919; font-weight: 700; text-decoration: none; font-size: 14px; white-space: nowrap; }
+.kakao-btn:active { filter: brightness(0.92); }
+.cloud-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; }
+.cloud-row > small { flex: 1 1 160px; line-height: 1.35; }
+.cloud-row.is-in { justify-content: space-between; padding: 6px 8px; border-left: 3px solid #fee500; background: #fee50014; }
+.cloud-who { display: flex; flex-direction: column; min-width: 0; }
+.cloud-btns { display: flex; gap: 6px; }
+.cloud-btns button { font-size: 12px; padding: 4px 8px; }
+.cloud-start { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 6px 0 10px; text-align: center; }
+.cloud-pick { display: grid; gap: 8px; margin: 10px 0; }
+.cloud-pick button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.cloud-pick small { font-weight: 400; opacity: 0.8; }

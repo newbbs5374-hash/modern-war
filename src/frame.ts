@@ -37,6 +37,13 @@ export function setupFrame(): boolean {
   f.setAttribute('allow', 'clipboard-write');
   Object.assign(f.style, { position: 'fixed', left: '0', top: '0', border: '0', display: 'block', transformOrigin: '0 0', background: '#0b1220' });
   body.appendChild(f);
+  // 카카오 로그인 결과(?kakao=ok)는 안쪽 게임에만 넘기고 바깥 주소에선 지움(새로고침해도 다시 안 뜨게)
+  if (/[?&]kakao=/.test(q)) {
+    const o = new URL(location.href);
+    o.searchParams.delete('kakao');
+    o.searchParams.delete('why');
+    history.replaceState(history.state, '', o.pathname + o.search + o.hash);
+  }
   const touch = () => matchMedia('(hover: none) and (pointer: coarse)').matches;
   const fit = () => {
     const W = window.innerWidth;
