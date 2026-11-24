@@ -1,6 +1,7 @@
 // 법안·법(11-23 기획 ⑤): 법안 카드와 통과된 법의 효과. 계산 파일을 부르지 않아 어디서든 읽을 수 있어요.
 // 국회 표결·재신임 투표 시간 흐름은 assembly.ts
 import type { GameState } from './state';
+import { domEff, domRows } from './domestic';
 
 const H = 3600e3;
 /** 통과된 법이 살아 있는 기간(실제 7일) */
@@ -67,11 +68,13 @@ export const liveLaws = (s: GameState): Law[] => (s.assembly?.laws ?? []).filter
 export function lawEff(s: GameState, key: LawKey): number {
   let v = 0;
   for (const l of liveLaws(s)) v += billById(l.id).eff[key] ?? 0;
-  return v;
+  // 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산)도 같은 이름으로 더함
+  return v + domEff(s, key);
 }
 /** 화면용 한 줄 이름(살아 있는 법 중 이 효과를 가진 것) */
 export function lawRows(s: GameState, key: LawKey): Array<[string, number]> {
   return liveLaws(s)
     .filter((l) => billById(l.id).eff[key])
-    .map((l) => [`📜 ${billById(l.id).name}`, billById(l.id).eff[key]!]);
+    .map((l): [string, number] => [`📜 ${billById(l.id).name}`, billById(l.id).eff[key]!])
+    .concat(domRows(s, key));
 }
