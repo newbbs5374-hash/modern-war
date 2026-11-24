@@ -854,3 +854,6 @@ select.wide, button.wide { width: 100%; }
 .bottom .ico .ui-emo { line-height: 1; }
 .res-bubble .bubble-row b { font-size: 13px; }
 .res-bubble .bubble-row small { font-size: 10.5px; line-height: 1.25; }
+/* 11-24 아이콘 그림 16장 들어감: 그림은 덜 흐리게, 오른쪽은 조금 크게 */
+.bottom button:not(.active) .ico:has(.ui-ico) { filter: grayscale(0.2) drop-shadow(0 1px 2px #000a); opacity: 0.9; }
+.bld-col .bld-ico:has(.ui-ico), .bld-col .bld-ico .ui-ico { width: 32px; height: 32px; }
