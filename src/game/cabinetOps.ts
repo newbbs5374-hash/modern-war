@@ -3,9 +3,11 @@ import { BASIC_RES } from '../data/economy';
 import { COUNTRIES } from '../data/world';
 import { CITIES } from '../data/cities';
 import { ministryById, type MinistryId } from '../data/cabinet';
+import { postById } from '../data/staff';
 import { STAT_IDS } from '../data/officers';
 import { addPresMod } from './approval';
 import {
+  postEff,
   POOL_ADD,
   POOL_EVERY_MS,
   POOL_MAX,
@@ -47,7 +49,7 @@ export function hearingChance(s: GameState, p: Person): number {
 export function taskHours(s: GameState, min: MinistryId, taskId: string): number {
   const t = ministryById(min).tasks.find((x) => x.id === taskId)!;
   const m = ministerOf(cabinetOf(s), min);
-  return t.hours * (m?.trait === '실용주의' ? 0.8 : 1);
+  return t.hours * (m?.trait === '실용주의' ? 0.8 : 1) * (1 - postEff(s, 'taskTime'));
 }
 export function canTask(s: GameState, min: MinistryId): string | null {
   const c = cabinetOf(s);
@@ -298,16 +300,18 @@ export function cabinetTick(s: GameState, tickMs: number): GameState {
   c.buffs = c.buffs.filter((b) => b.untilMs > s.worldMs);
   // 사람마다: 충성 · 성장 · 빼 가기 · 은퇴 · 스캔들
   const trust = ns.officer.trust;
+  const cabLoyalBonus = postEff(ns, 'cabLoyal');
+  const scandalCut = postEff(ns, 'scandal');
   const leave = new Set<number>();
   for (const p of c.people) {
     if (p.group !== '내각') continue;
-    const target = 50 + (trust - 50) * 0.3 + (p.seat ? 8 : 0) + (p.trait === '충직' ? 15 : p.trait === '야심' ? -10 : 0) + (p.buddy ? 15 : 0);
+    const target = 50 + (trust - 50) * 0.3 + (p.seat || p.post ? 8 : 0) + cabLoyalBonus + (p.trait === '충직' ? 15 : p.trait === '야심' ? -10 : 0) + (p.buddy ? 15 : 0);
     p.loyalty = clamp(p.loyalty + (target - p.loyalty) * (1 - Math.pow(0.97, h)));
-    if (p.seat) {
+    if (p.seat || p.post) {
       p.workMs = (p.workMs ?? 0) + tickMs;
       if (p.workMs >= 24 * H) {
         p.workMs -= 24 * H;
-        const key = ministryById(p.seat.id).stats[0];
+        const key = p.seat ? ministryById(p.seat.id).stats[0] : postById(p.post!).stats[0];
         p.stats[key] = Math.min(40, p.stats[key] + 1);
       }
     }
@@ -324,14 +328,14 @@ export function cabinetTick(s: GameState, tickMs: number): GameState {
       notes.push(`🎗️ ${p.name}이(가) ${p.hidden === '건강 문제' ? '건강 문제로' : '나이가 들어'} 은퇴했어요.`);
       continue;
     }
-    if (p.seat && p.hidden === '비리 전력' && rng.chance(0.01 * h)) {
+    if ((p.seat || p.post) && p.hidden === '비리 전력' && rng.chance(0.01 * h * (1 - scandalCut))) {
       p.known = true;
       ns = addPresMod(ns, `💸 ${p.name} 비리 스캔들`, -5, 12);
       notes.push(`💸 ${p.name} 비리 스캔들! 지지도가 흔들려요(−5, 12시간).`);
     }
   }
   // 앙숙끼리 같이 자리에 있으면 가끔 다툼
-  const on = c.people.filter((p) => p.seat);
+  const on = c.people.filter((p) => p.seat || p.post);
   for (const a of on)
     for (const b of on)
       if (a.id < b.id && a.foes.includes(b.id) && rng.chance(0.03 * h)) {
@@ -360,7 +364,7 @@ export function bestFor(s: GameState, min: MinistryId, n = 3): Person[] {
   const c = cabinetOf(s);
   const m = ministryById(min);
   return c.people
-    .filter((p) => p.group === '내각' && !(p.seat?.kind === 'min'))
+    .filter((p) => p.group === '내각' && !(p.seat?.kind === 'min') && !p.post)
     .sort((a, b) => scoreFor(b, m.stats, m.spec) - scoreFor(a, m.stats, m.spec))
     .slice(0, n);
 }
@@ -377,7 +381,7 @@ export function personGeneralSkill(p: Person): number {
 export function canPersonGeneral(s: GameState, pid: number, field: GeneralField): string | null {
   const p = cabinetOf(s).people.find((x) => x.id === pid);
   if (!p || p.group !== '내각') return '영입한 사람만 장군이 될 수 있어요';
-  if (p.seat) return '부처 자리에서 먼저 내려와야 해요';
+  if (p.seat || p.post) return '자리(부처·대통령실)에서 먼저 내려와야 해요';
   if (cabinetOf(s).hearing?.pid === pid) return '청문회 중';
   if (fieldTaken(s, field)) return `${field} 장군이 이미 있어요`;
   return canAppointGeneralSlot(s);

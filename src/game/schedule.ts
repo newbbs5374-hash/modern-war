@@ -138,7 +138,7 @@ export function doAct(s: GameState, id: ActId): { state: GameState; text: string
     case 'cabinet': {
       const c = ns.cabinet ? structuredClone(ns.cabinet) : null;
       if (c) {
-        for (const p of c.people) if (p.seat) p.loyalty = clamp(p.loyalty + 4);
+        for (const p of c.people) if (p.seat || p.post) p.loyalty = clamp(p.loyalty + 4);
         for (const t of Object.values(c.tasks)) if (t) t.endMs = Math.max(s.worldMs, t.endMs - H);
         ns = { ...ns, cabinet: c };
       }

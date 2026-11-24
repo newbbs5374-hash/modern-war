@@ -24,6 +24,7 @@ import {
   type SpecId,
   type Trait,
 } from '../data/cabinet';
+import { EFF_CAP, GUARD_COUNTER_AT, HEAD_BOOST, OFFICES, POSTS, postById, type PostEff, type PostId } from '../data/staff';
 import { Rng } from './rng';
 import type { GameState } from './state';
 
@@ -36,6 +37,8 @@ export const HEARING_MS = 0.5 * H;
 export const VICE_POWER = 0.4;
 export const REFRESH_RUBY = 10;
 export const VET_INTEL = 30;
+/** 시험판: 장관 청문회 생략(11-24 대장 지시 "테스트 한정 청문회는 생략"). 시험에서는 skip=false로 */
+export const HEARING = { skip: true };
 
 export type Seat = { kind: 'min' | 'vice'; id: MinistryId };
 export interface Person {
@@ -58,6 +61,8 @@ export interface Person {
   /** 직함(정계·재계·언론·시민·외국 인물) */
   title?: string;
   seat: Seat | null;
+  /** 대통령실 참모·국무총리·기관장 자리(11-24, data/staff.ts). 부처 자리(seat)와 같이 앉을 수 없음 */
+  post?: PostId;
   pals: number[];
   foes: number[];
   pay: number;
@@ -224,7 +229,7 @@ export function newCabinet(s: Pick<GameState, 'world' | 'worldMs' | 'player'>): 
 }
 
 /** 얼굴이 몇 번째에 놓이는지: 자리에 앉은 사람 > 내 나라 정계·군 > 인재 > 외국 */
-const faceRank = (p: Person) => (p.seat ? 100 : 0) + (p.buddy ? 50 : 0) + (p.group === '외국' ? 0 : p.group === '인재' ? 10 : 20);
+const faceRank = (p: Person) => (p.seat || p.post ? 100 : 0) + (p.buddy ? 50 : 0) + (p.group === '외국' ? 0 : p.group === '인재' ? 10 : 20);
 /** 한 화면에 같이 나오는 무리: 인재 명단과 내 내각은 한 화면, 나머지는 무리마다 */
 const faceScreen = (p: Person) => (p.group === '인재' || p.group === '내각' ? 'cab' : p.group);
 /** 얼굴 나눠 주기(빈 사람만, 겹치면 순위 낮은 쪽이 바꿈). c를 고침 */
@@ -261,12 +266,13 @@ export function personPower(p: Person, min: MinistryId, c?: CabinetState): numbe
   if (p.hidden === '숨은 천재') v *= 1.25;
   v *= p.loyalty >= 80 ? 1.1 : p.loyalty < 30 ? 0.5 : 1;
   if (c) {
-    const seated = c.people.filter((x) => x.seat && x.id !== p.id);
+    const seated = c.people.filter((x) => (x.seat || x.post) && x.id !== p.id);
     if (p.pals.some((id) => seated.some((x) => x.id === id))) v *= 1.1;
   }
   return Math.max(0, v);
 }
-export const seated = (c: CabinetState) => c.people.filter((p) => p.seat);
+/** 자리에 앉은 사람(부처·대통령실·기관장 모두) */
+export const seated = (c: CabinetState) => c.people.filter((p) => p.seat || p.post);
 export const ministerOf = (c: CabinetState, id: MinistryId) => c.people.find((p) => p.seat?.kind === 'min' && p.seat.id === id) ?? null;
 export const viceOf = (c: CabinetState, id: MinistryId) => c.people.find((p) => p.seat?.kind === 'vice' && p.seat.id === id) ?? null;
 /** 부처 힘 = 장관 + 차관 × 0.4 */
@@ -275,8 +281,51 @@ export function ministryPower(s: GameState, id: MinistryId): number {
   if (!c) return 0;
   const m = ministerOf(c, id);
   const v = viceOf(c, id);
-  return (m ? personPower(m, id, c) : 0) + (v ? personPower(v, id, c) * VICE_POWER : 0);
+  return ((m ? personPower(m, id, c) : 0) + (v ? personPower(v, id, c) * VICE_POWER : 0)) * (1 + postEff(s, 'minPower'));
 }
+
+/* ───────── 대통령실 참모 · 국무총리 · 기관장(11-24) ───────── */
+
+export const postHolder = (c: CabinetState, id: PostId) => c.people.find((p) => p.post === id) ?? null;
+/** 사람 한 명이 그 자리에서 내는 힘(실장 덤 빼고, 보통 ≈ 1) */
+export function personPostPower(p: Person, id: PostId): number {
+  const m = postById(id);
+  let v = avgStats(p, m.stats) / 12;
+  if (m.spec.includes(p.spec)) v *= 1.3;
+  if (p.trait === '야심') v *= 1.15;
+  if (p.hidden === '숨은 천재') v *= 1.25;
+  v *= p.loyalty >= 80 ? 1.1 : p.loyalty < 30 ? 0.5 : 1;
+  return Math.max(0, v);
+}
+/** 자리 힘 = 사람 힘 × (1 + 실장 힘 × 0.2) */
+export function postPower(s: GameState, id: PostId): number {
+  const c = s.cabinet;
+  if (!c) return 0;
+  const p = postHolder(c, id);
+  if (!p) return 0;
+  const office = OFFICES.find((o) => o.id === postById(id).office)!;
+  let v = personPostPower(p, id);
+  if (office.head && office.head !== id) {
+    const h = postHolder(c, office.head);
+    if (h) v *= 1 + personPostPower(h, office.head) * HEAD_BOOST;
+  }
+  return v;
+}
+/** 대통령실·기관장 효과 합(자리 여럿이 같은 효과면 더함, 최대치 있음) */
+export function postEff(s: GameState, key: PostEff): number {
+  const c = s.cabinet;
+  if (!c) return 0;
+  let v = 0;
+  for (const p of c.people) {
+    if (!p.post) continue;
+    const k = postById(p.post).eff[key];
+    if (k) v += k * postPower(s, p.post);
+  }
+  const cap = EFF_CAP[key];
+  return cap !== undefined ? Math.min(cap, v) : v;
+}
+export const postCount = (c: CabinetState) => c.people.filter((p) => p.post).length;
+export const guardOn = (s: GameState) => postPower(s, 'guard') >= GUARD_COUNTER_AT;
 export const ministerCount = (c: CabinetState) => c.people.filter((p) => p.seat?.kind === 'min').length;
 export const ministerSlotsOf = (s: GameState) => ministerSlots(s.player.rankIndex);
 
@@ -302,18 +351,18 @@ export function factionTilt(s: GameState): Faction | null {
 }
 const seatedTrait = (s: GameState, t: Trait) => (s.cabinet ? seated(s.cabinet) : []).filter((p) => p.trait === t).length;
 
-export const cabBuild = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.06 + buffSum(s, 'build') + (factionOn(s, '군부파') ? 0.06 : 0);
-export const cabTroop = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.05;
+export const cabBuild = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.06 + postEff(s, 'build') + buffSum(s, 'build') + (factionOn(s, '군부파') ? 0.06 : 0);
+export const cabTroop = (s: GameState) => 1 + ministryPower(s, 'mnd') * 0.05 + postEff(s, 'troop');
 export const cabSpy = (s: GameState) => ministryPower(s, 'nis') * 0.05;
-export const cabMission = (s: GameState) => ministryPower(s, 'nis') * 0.03;
-export const cabFavor = (s: GameState) => ministryPower(s, 'mofa') * 6 + (factionOn(s, '온건파') ? 5 : 0);
-export const cabBudget = (s: GameState) => 1 + ministryPower(s, 'mof') * 0.06 + (factionOn(s, '경제파') ? 0.05 : 0);
-export const cabTaxSoft = (s: GameState) => Math.min(0.6, ministryPower(s, 'mof') * 0.25);
+export const cabMission = (s: GameState) => ministryPower(s, 'nis') * 0.03 + postEff(s, 'mission');
+export const cabFavor = (s: GameState) => ministryPower(s, 'mofa') * 6 + postEff(s, 'favor') + (factionOn(s, '온건파') ? 5 : 0);
+export const cabBudget = (s: GameState) => 1 + ministryPower(s, 'mof') * 0.06 + postEff(s, 'budget') + (factionOn(s, '경제파') ? 0.05 : 0);
+export const cabTaxSoft = (s: GameState) => Math.min(0.7, ministryPower(s, 'mof') * 0.25 + postEff(s, 'taxSoft'));
 export const cabRes = (s: GameState) => 1 + ministryPower(s, 'moti') * 0.08 + buffSum(s, 'res');
-export const cabLoyalty = (s: GameState) => ministryPower(s, 'mois') * 4 + ministryPower(s, 'mohw') * 2 + (factionOn(s, '개혁파') ? 3 : 0);
-export const cabGrowth = (s: GameState) => ministryPower(s, 'mohw') * 0.12;
-export const cabResearch = (s: GameState) => ministryPower(s, 'msit') * 0.15;
-export const cabSpeech = (s: GameState) => ministryPower(s, 'kocis') * 0.2;
+export const cabLoyalty = (s: GameState) => ministryPower(s, 'mois') * 4 + ministryPower(s, 'mohw') * 2 + postEff(s, 'loyalty') + (factionOn(s, '개혁파') ? 3 : 0);
+export const cabGrowth = (s: GameState) => ministryPower(s, 'mohw') * 0.12 + postEff(s, 'growth');
+export const cabResearch = (s: GameState) => ministryPower(s, 'msit') * 0.15 + postEff(s, 'research');
+export const cabSpeech = (s: GameState) => ministryPower(s, 'kocis') * 0.2 + postEff(s, 'speech');
 /** 지지도 목표 덤 [이유, 값] */
 export function cabApprovalRows(s: GameState): Array<[string, number]> {
   const rows: Array<[string, number]> = [];
@@ -325,6 +374,8 @@ export function cabApprovalRows(s: GameState): Array<[string, number]> {
   if (tilt) rows.push([`⚠️ 파벌 쏠림(${tilt})`, -2]);
   const b = buffSum(s, 'approval');
   if (b) rows.push(['🏛️ 부처 업무', b]);
+  const st = postEff(s, 'approval');
+  if (st) rows.push(['🏢 대통령실', Math.round(st * 10) / 10]);
   return rows;
 }
 /** 분야 점수 덤 */
@@ -336,16 +387,18 @@ export function cabFieldRows(s: GameState, f: 'defense' | 'diplo' | 'society' | 
   const hawk = seatedTrait(s, '강경파');
   if (hawk && f === 'defense') rows.push(['⚔️ 강경파 각료', 2 * hawk]);
   if (hawk && f === 'diplo') rows.push(['⚔️ 강경파 각료', -2 * hawk]);
+  const pe = postEff(s, ({ defense: 'sec', diplo: 'diplo', society: 'soc', economy: 'econ' } as const)[f]);
+  if (pe) rows.push(['🏢 대통령실·기관장', Math.round(pe * 10) / 10]);
   return rows;
 }
 /** 신뢰도 목표 덤(파벌 쏠림) */
-export const cabTrust = (s: GameState) => (factionTilt(s) ? -5 : 0);
-export const counterOn = (s: GameState) => buffSum(s, 'counter') > 0;
+export const cabTrust = (s: GameState) => (factionTilt(s) ? -5 : 0) + Math.round(postEff(s, 'trust') * 10) / 10;
+export const counterOn = (s: GameState) => buffSum(s, 'counter') > 0 || guardOn(s);
 
 /* ───────── 영입 · 임명 ───────── */
 
 // 11-24: 호칭(혜택 단계)과 상관없이 몸값 그대로(PR #99 뒤 단계가 늘 최고라 2.5배로 비싸졌던 것 바로잡음)
-export const recruitCost = (_s: GameState, p: Person) => Math.round(p.pay);
+export const recruitCost = (s: GameState, p: Person) => Math.round(p.pay * (1 - postEff(s, 'recruit')));
 
 function withCab(s: GameState, f: (c: CabinetState, ns: GameState) => GameState | void): GameState {
   const c = structuredClone(cabinetOf(s));
@@ -380,6 +433,7 @@ export function canAppointMinister(s: GameState, pid: number, min: MinistryId): 
   const c = cabinetOf(s);
   const p = c.people.find((x) => x.id === pid);
   if (!p || p.group !== '내각') return '영입한 사람만 앉힐 수 있어요';
+  if (p.post) return `${postById(p.post).name} 자리에서 먼저 내려와야 해요`;
   if (c.hearing) {
     const h = c.people.find((x) => x.id === c.hearing!.pid);
     const left = Math.max(1, Math.ceil((c.hearing.endMs - s.worldMs) / 60000));
@@ -390,9 +444,16 @@ export function canAppointMinister(s: GameState, pid: number, min: MinistryId): 
   if (ministerCount(c) + cur > ministerSlots(s.player.rankIndex)) return `장관 자리가 다 찼어요(${ministerSlots(s.player.rankIndex)}석)`;
   return null;
 }
-/** 장관 임명: 국회 인사청문회(실제 30분) 뒤 결과 */
+/** 장관 임명: 국회 인사청문회(실제 30분) 뒤 결과. 시험판(HEARING.skip)은 바로 임명 */
 export function appointMinister(s: GameState, pid: number, min: MinistryId): GameState {
   if (canAppointMinister(s, pid, min)) return s;
+  if (HEARING.skip)
+    return withCab(s, (c) => {
+      const p = c.people.find((x) => x.id === pid)!;
+      p.seat = { kind: 'min', id: min };
+      p.loyalty = clamp(p.loyalty + 10);
+      cabLog(c, `✅ ${p.name}을(를) ${ministryById(min).name} 장관으로 임명했어요(시험판: 청문회 생략).`);
+    });
   return withCab(s, (c, ns) => {
     c.hearing = { pid, min, endMs: ns.worldMs + HEARING_MS };
     cabLog(c, `🏛️ ${c.people.find((x) => x.id === pid)!.name} ${ministryById(min).name} 장관 후보 인사청문회가 열렸어요.`);
@@ -402,6 +463,7 @@ export function canAppointVice(s: GameState, pid: number, min: MinistryId): stri
   const c = cabinetOf(s);
   const p = c.people.find((x) => x.id === pid);
   if (!p || p.group !== '내각') return '영입한 사람만 앉힐 수 있어요';
+  if (p.post) return `${postById(p.post).name} 자리에서 먼저 내려와야 해요`;
   if (viceOf(c, min)) return '이미 차관이 있어요';
   if (c.hearing?.pid === pid) return '청문회 중';
   return null;
@@ -423,10 +485,63 @@ export function unseat(s: GameState, pid: number): GameState {
     p.loyalty = clamp(p.loyalty - 8);
   });
 }
+/** 대통령실·기관장 자리에 앉히기: 청문회 없이 바로(대통령실 참모는 실제로도 청문회 없음). 앉아 있던 사람은 내려옴 */
+export function canAppointPost(s: GameState, pid: number, id: PostId): string | null {
+  const c = cabinetOf(s);
+  const p = c.people.find((x) => x.id === pid);
+  if (!p || p.group !== '내각') return '영입한 사람만 앉힐 수 있어요';
+  if (p.post === id) return '이미 이 자리에 있어요';
+  if (p.seat) return '부처 자리에서 먼저 내려와야 해요';
+  if (c.hearing?.pid === pid) return '청문회 중';
+  return null;
+}
+export function appointPost(s: GameState, pid: number, id: PostId): GameState {
+  if (canAppointPost(s, pid, id)) return s;
+  return withCab(s, (c) => {
+    const old = c.people.find((x) => x.post === id);
+    if (old) {
+      old.post = undefined;
+      old.loyalty = clamp(old.loyalty - 5);
+    }
+    const p = c.people.find((x) => x.id === pid)!;
+    p.post = id;
+    p.loyalty = clamp(p.loyalty + 8);
+    cabLog(c, `🏢 ${p.name}을(를) ${postById(id).name}(으)로 임명했어요.${old ? ` ${old.name}은(는) 물러났어요.` : ''}`);
+  });
+}
+export function unpost(s: GameState, pid: number): GameState {
+  return withCab(s, (c) => {
+    const p = c.people.find((x) => x.id === pid);
+    if (!p?.post) return;
+    cabLog(c, `↩️ ${p.name}이(가) ${postById(p.post).name}에서 물러났어요.`);
+    p.post = undefined;
+    p.loyalty = clamp(p.loyalty - 5);
+  });
+}
+/** 자리에 가장 잘 맞는 내 사람(빈 사람만, 힘 큰 순) */
+export function postCandidates(s: GameState, id: PostId, n = 4): Person[] {
+  const c = cabinetOf(s);
+  return c.people
+    .filter((p) => p.group === '내각' && !p.seat && !p.post && c.hearing?.pid !== p.id)
+    .sort((a, b) => personPostPower(b, id) - personPostPower(a, id))
+    .slice(0, n);
+}
+/** 빈 자리를 실 하나 안에서 가장 잘 맞는 사람으로 채우기(실장부터) */
+export function autoFillOffice(s: GameState, office: string): GameState {
+  let ns = s;
+  const posts = POSTS.filter((p) => p.office === office).sort((a, b) => Number(OFFICES.find((o) => o.head === b.id) != null) - Number(OFFICES.find((o) => o.head === a.id) != null));
+  for (const post of posts) {
+    if (postHolder(cabinetOf(ns), post.id)) continue;
+    const best = postCandidates(ns, post.id, 1)[0];
+    if (best) ns = appointPost(ns, best.id, post.id);
+  }
+  return ns;
+}
+
 export function dismiss(s: GameState, pid: number): GameState {
   return withCab(s, (c) => {
     const p = c.people.find((x) => x.id === pid);
-    if (!p || p.group !== '내각') return;
+    if (!p || p.group !== '내각' || p.post) return;
     c.people = c.people.filter((x) => x.id !== pid);
     cabLog(c, `👋 ${p.name}을(를) 내보냈어요.`);
   });

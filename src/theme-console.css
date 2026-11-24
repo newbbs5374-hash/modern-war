@@ -598,6 +598,13 @@ button.on { outline: 1px solid var(--amber); }
 .set-art { margin-top: 8px; }
 .modal-foot .set-yes { margin-top: 0; }
 
+/* 대통령실 참모진(11-24) */
+.cab-mins.staff-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cab-mins.staff-grid > .cab-min { min-width: 0; }
+.cab-min.staff-head { border-color: var(--gold, #e6b800); }
+.staff-pick { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.staff-pick .cab-pick { margin-top: 2px; }
+.cab-cand > .cab-row { text-align: left; min-height: 0; margin: 0; }
 /* 시작: 지도자 얼굴 고르기 · 지금 세계 정세(11-24) */
 .look-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
 .look-tile { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 3px; }

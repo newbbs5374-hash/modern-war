@@ -75,7 +75,7 @@ export function legacyRoute(screen: string, tab?: string): { screen: Screen; set
       if (t === 'spy') return { screen: 'defense', set: [['defense', 'spy']] };
       return { screen: 'defense', set: [['defense', 'ops'], ...(t ? ([['ops', t]] as Array<[string, string]>) : [])] };
     case 'officer':
-      if (t === 'aides') return { screen: 'personal', set: [['personal', 'aides']] };
+      if (t === 'aides') return { screen: 'personal', set: [['personal', 'aides'], ['staff-view', 'aide']] };
       if (t === 'generals') return { screen: 'defense', set: [['defense', 'command']] };
       if (t === 'rivals') return { screen: 'society', set: [['society', 'politics']] };
       return { screen: 'personal', set: [['personal', 'profile']] };
