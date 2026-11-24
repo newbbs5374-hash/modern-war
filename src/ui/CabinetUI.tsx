@@ -52,6 +52,7 @@ import type { GameState } from '../game/state';
 import { Card, fmt } from './common';
 import { Help, Meter, Modal } from './kit';
 import { countryFaceUrl } from './Portrait';
+import { BoostBar } from './BoostBar';
 import { Flag } from './flag';
 import { iconArt } from './iconArt';
 import { timeLeft } from './officerScreens';
@@ -307,6 +308,7 @@ export function TalentPanel(props: ScreenProps) {
             🏛️ {hearing.name} {ministryById(c.hearing!.min).name} 장관 청문회 · {timeLeft(c.hearing!.endMs - state.worldMs)} 남음 · 통과 {pct(hearingChance(state, hearing))}
           </p>
         )}
+        {hearing && <BoostBar state={state} apply={actions.apply} target={{ kind: 'hearing' }} compact />}
         <FactionLine state={state} />
       </Card>
       {view === 'pool' && (

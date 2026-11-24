@@ -12,7 +12,10 @@ export type BoostTarget =
   | { kind: 'chore' }
   | { kind: 'build'; fac: string }
   | { kind: 'queue'; id: number }
-  | { kind: 'grand' };
+  | { kind: 'grand' }
+  | { kind: 'hearing' };
+
+import { hearingNow } from './cabinetOps';
 
 export const boostsOf = (s: GameState) => s.officer.boosts ?? 0;
 
@@ -30,7 +33,9 @@ export function boostLeft(s: GameState, t: BoostTarget): number {
             ? (s.economy.buildings as Record<string, { buildEndMs: number }>)[t.fac]?.buildEndMs || undefined
             : t.kind === 'queue'
               ? s.economy.queue.find((q) => q.id === t.id)?.endMs
-              : s.officer.grandReadyMs;
+              : t.kind === 'hearing'
+                ? s.cabinet?.hearing?.endMs
+                : s.officer.grandReadyMs;
   return end ? Math.max(0, end - now) : 0;
 }
 
@@ -58,5 +63,11 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
     const i = e.queue.findIndex((q) => q.id === t.id);
     e = { ...e, queue: e.queue.map((q, j) => (j < i ? q : j === i ? { ...q, endMs: q.endMs - cut } : { ...q, startMs: q.startMs - cut, endMs: q.endMs - cut })) };
   }
-  return { ...s, officer: o, economy: e };
+  let ns: GameState = { ...s, officer: o, economy: e };
+  // 청문회(11-24): 줄인 만큼 당기고, 다 줄였으면 바로 결과
+  if (t.kind === 'hearing' && s.cabinet?.hearing) {
+    ns = { ...ns, cabinet: { ...s.cabinet, hearing: { ...s.cabinet.hearing, endMs: s.cabinet.hearing.endMs - cut } } };
+    ns = hearingNow(ns);
+  }
+  return ns;
 }

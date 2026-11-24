@@ -217,6 +217,49 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
 /**
  * AI 판단마다(실제 15분): 인재 명단 채우기 · 청문회 · 부처 업무 · 충성 · 성장 · 빼 가기·은퇴·스캔들·다툼.
  */
+/** 끝난 청문회 결과 내기(c는 이미 복사본). 결과 글은 notes로 */
+function settleHearing(s: GameState): { state: GameState; notes: string[] } {
+  let ns = s;
+  const c = ns.cabinet!;
+  const notes: string[] = [];
+  if (!c.hearing || s.worldMs < c.hearing.endMs) return { state: ns, notes };
+  const rng = new Rng(c.seed);
+  const p = c.people.find((x) => x.id === c.hearing!.pid);
+  const min = c.hearing.min;
+  c.hearing = null;
+  if (p && p.group === '내각') {
+    const ok = rng.chance(hearingChance(s, p));
+    if (p.hidden === '비리 전력') p.known = true;
+    if (ok && !c.people.some((x) => x.seat?.kind === 'min' && x.seat.id === min)) {
+      p.seat = { kind: 'min', id: min };
+      p.loyalty = clamp(p.loyalty + 10);
+      notes.push(`✅ ${p.name}, 청문회 통과! ${ministryById(min).name} 장관이 되었어요.`);
+    } else {
+      p.loyalty = clamp(p.loyalty - 10);
+      ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust - 4) } };
+      notes.push(`❌ ${p.name}, 청문회에서 떨어졌어요${p.hidden === '비리 전력' ? '(비리 전력이 드러남)' : ''}. 신뢰도 −4`);
+    }
+  }
+  c.seed = rng.seed;
+  return { state: ns, notes };
+}
+
+/** 가속권으로 끝낸 청문회를 바로 결과 내기(11-24) */
+export function hearingNow(s: GameState): GameState {
+  const c0 = s.cabinet;
+  if (!c0?.hearing || s.worldMs < c0.hearing.endMs) return s;
+  const r = settleHearing({ ...s, cabinet: structuredClone(c0) });
+  let ns = r.state;
+  if (r.notes.length) {
+    ns = { ...ns, world: { ...ns.world, events: [...ns.world.events] } };
+    for (const t of r.notes) {
+      note(ns, t);
+      cabLog(ns.cabinet!, t);
+    }
+  }
+  return ns;
+}
+
 export function cabinetTick(s: GameState, tickMs: number): GameState {
   let ns: GameState = { ...s, cabinet: structuredClone(cabinetOf(s)) };
   let c = ns.cabinet!;
@@ -237,22 +280,12 @@ export function cabinetTick(s: GameState, tickMs: number): GameState {
   const notes: string[] = [];
   // 청문회
   if (c.hearing && s.worldMs >= c.hearing.endMs) {
-    const p = c.people.find((x) => x.id === c.hearing!.pid);
-    const min = c.hearing.min;
-    c.hearing = null;
-    if (p && p.group === '내각') {
-      const ok = rng.chance(hearingChance(s, p));
-      if (p.hidden === '비리 전력') p.known = true;
-      if (ok && !c.people.some((x) => x.seat?.kind === 'min' && x.seat.id === min)) {
-        p.seat = { kind: 'min', id: min };
-        p.loyalty = clamp(p.loyalty + 10);
-        notes.push(`✅ ${p.name}, 청문회 통과! ${ministryById(min).name} 장관이 되었어요.`);
-      } else {
-        p.loyalty = clamp(p.loyalty - 10);
-        ns = { ...ns, officer: { ...ns.officer, trust: clamp(ns.officer.trust - 4) } };
-        notes.push(`❌ ${p.name}, 청문회에서 떨어졌어요${p.hidden === '비리 전력' ? '(비리 전력이 드러남)' : ''}. 신뢰도 −4`);
-      }
-    }
+    c.seed = rng.seed;
+    const r = settleHearing({ ...ns, cabinet: c });
+    ns = r.state;
+    c = ns.cabinet!;
+    rng.seed = c.seed;
+    notes.push(...r.notes);
   }
   // 부처 업무
   for (const [min, t] of Object.entries(c.tasks)) {

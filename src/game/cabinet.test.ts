@@ -98,3 +98,21 @@ describe('장관 임명 조건(11-24)', () => {
     expect(C.cabinetOf(s).hearing).toBeNull();
   });
 });
+
+describe('청문회 가속권(11-24)', () => {
+  it('가속권 1장 → 청문회 바로 결과', async () => {
+    const { newGame } = await import('./state');
+    const C = await import('./cabinet');
+    const B = await import('./boost');
+    let s = newGame('t', 'kr', 0, { seed: 2 });
+    s = { ...s, officer: { ...s.officer, boosts: 3 } };
+    const p = C.cabinetOf(s).people.find((x) => x.group === '인재')!;
+    s = C.appointMinister(C.recruit(s, p.id), p.id, 'mnd');
+    expect(C.cabinetOf(s).hearing).not.toBeNull();
+    expect(B.boostsToFinish(s, { kind: 'hearing' })).toBe(1);
+    s = B.useBoost(s, { kind: 'hearing' }, 1);
+    expect(C.cabinetOf(s).hearing).toBeNull();
+    expect(B.boostsOf(s)).toBe(2);
+    expect(s.world.events.some((e) => e.text.includes('청문회'))).toBe(true);
+  });
+});
