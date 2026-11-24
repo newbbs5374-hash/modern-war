@@ -211,6 +211,8 @@ export function TradePanel({ state, actions }: ScreenProps) {
 }
 
 /* ───────── 국가정보: 나라 카드 ───────── */
+/** 카드 한 줄 수치: 천 단위 k, 백만 넘으면 M(칸이 좁아서) */
+const kShort = (v: number) => (v >= 999_500 ? `${(v / 1_000_000).toFixed(1)}M` : `${Math.round(v / 1000)}k`);
 function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) => void }) {
   const me = state.player.countryId;
   return (
@@ -220,28 +222,28 @@ function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) =>
         const rel = c.id === me ? '나' : relationOf(state.world, me, c.id);
         return (
           <button key={c.id} className={`ncard ${alive ? '' : 'dead'}`} style={{ borderColor: REL_COLORS[rel as Relation | '나'] }} onClick={() => onPick(c.id)}>
-            <span className="ncard-pics">
-              <span className="ncard-flagbig">
-                <Flag id={c.id} />
-              </span>
-              <span className="ncard-face">
-                <PersonFace who={{ kind: 'leader', country: c.id }} keys={[`leader-${c.id}`]} fallback="👤" />
-              </span>
+            <span className="ncard-face">
+              <PersonFace who={{ kind: 'leader', country: c.id }} keys={[`leader-${c.id}`]} fallback="👤" />
             </span>
-            <span className="ncard-name">
-              <b>{c.name}</b>
-              <small>
+            <span className="ncard-body">
+              <span className="ncard-head">
+                <span className="ncard-flagbig">
+                  <Flag id={c.id} />
+                </span>
+                <b>{c.name}</b>
+              </span>
+              <small className="ncard-who">
                 {LEADERS[c.id].title} {LEADERS[c.id].name}
               </small>
-            </span>
-            <span className="ncard-tags">
-              <RelTag state={state} id={c.id} />
-              <span className="tag">{state.world.personalities[c.id]}</span>
-            </span>
-            <span className="ncard-stats">
-              <small>🏙️{citiesOf(state.world, c.id).length}</small>
-              <small>🪖{fmt(state.nations[c.id].troops / 1000)}k</small>
-              <small>💰{fmt(state.nations[c.id].treasury / 1000)}k</small>
+              <span className="ncard-tags">
+                <RelTag state={state} id={c.id} />
+                <span className="tag">{state.world.personalities[c.id]}</span>
+              </span>
+              <span className="ncard-stats">
+                <small>🏙️{citiesOf(state.world, c.id).length}</small>
+                <small>🪖{kShort(state.nations[c.id].troops)}</small>
+                <small>💰{kShort(state.nations[c.id].treasury)}</small>
+              </span>
             </span>
           </button>
         );
