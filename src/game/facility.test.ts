@@ -8,7 +8,7 @@ import { BUILDINGS } from '../data/economy';
 describe('시설 15개(11-23)', () => {
   it('새 시설 6개는 빈 땅에서 시작하고 지으면 1단계가 된다', () => {
     let s = newGame('t', 'kr', 0, { seed: 3 });
-    expect(BUILDINGS.length).toBe(15);
+    expect(BUILDINGS.length).toBe(31);
     expect(s.economy.buildings['국방과학연구소'].level).toBe(0);
     expect(s.economy.buildings['군수공장'].level).toBe(1);
     expect(facBonus(s, '국방과학연구소')).toBe(0);
