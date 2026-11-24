@@ -1,6 +1,7 @@
 // 나라별 이름 목록(11-23 대장 결정): 성 + 남자/여자 이름을 섞어 판마다 다른 인물을 만듦.
 // 실존 정치인과 똑같은 이름이 되지 않게, 유명 정치인 이름(이름 부분)은 목록에 넣지 않았고 BLOCK으로 한 번 더 막음.
 import type { Rng } from '../game/rng';
+import { US_ETH, US_ETH_WEIGHT, type UsEth } from './faces';
 
 interface Pool {
   sur: string[];
@@ -70,9 +71,27 @@ export const NAME_POOLS: Record<string, Pool> = {
   },
   us: {
     order: 'west',
-    sur: W('존슨 윌리엄스 브라운 존스 가르시아 밀러 데이비스 로드리게스 마르티네스 에르난데스 로페스 곤잘레스 윌슨 앤더슨 토머스 테일러 무어 잭슨 마틴 톰프슨 화이트 클라크 루이스 워커 홀 영 앨런 킹 라이트 스콧'),
-    m: W('제임스 존 로버트 마이클 윌리엄 데이비드 리처드 조지프 토머스 찰스 크리스토퍼 대니얼 매슈 앤서니 마크 스티븐 폴 앤드루 조슈아 케네스 케빈 브라이언 에릭 제이슨 라이언 제이컵 게리 티머시 호세 래리 제프리 프랭크 스콧 브랜던 벤저민 새뮤얼 그레고리 패트릭 레이먼드 타일러'),
+    sur: W('존슨 윌리엄스 브라운 존스 밀러 데이비스 윌슨 앤더슨 토머스 테일러 무어 마틴 톰프슨 화이트 클라크 루이스 워커 홀 영 앨런 킹 라이트 스콧 베이커 애덤스 넬슨 캠벨 미첼 카터 로버츠'),
+    m: W('제임스 존 로버트 마이클 윌리엄 데이비드 리처드 조지프 토머스 찰스 크리스토퍼 대니얼 매슈 앤서니 마크 스티븐 폴 앤드루 조슈아 케네스 케빈 브라이언 에릭 제이슨 라이언 제이컵 게리 티머시 래리 제프리 프랭크 스콧 브랜던 벤저민 새뮤얼 그레고리 패트릭 레이먼드 타일러 더글러스'),
     f: W('메리 퍼트리샤 제니퍼 린다 엘리자베스 바버라 수전 제시카 세라 캐런 낸시 리사 베티 마거릿 샌드라 애슐리 킴벌리 에밀리 도나 미셸 캐럴 어맨다 멀리사 데버라 스테파니 레베카 로라 섀런 신시아 캐슬린'),
+  },
+  'us-bl': {
+    order: 'west',
+    sur: W('워싱턴 제퍼슨 브룩스 뱅크스 우즈 리버스 콜먼 하딩 그레이브스 먼로 터커 바틀릿 윈스턴 맥닐 오볼레 은와추쿠 아데예미 크로퍼드 홀리데이 프리먼'),
+    m: W('마커스 드숀 자말 테렌스 안드레 대리우스 말릭 레지널드 오티스 클래런스 라숀 트래비스 코리 데릭 다넬 케빈 앤서니 모리스 카림 이사이아'),
+    f: W('케이샤 타샤 라토야 에보니 이마니 자스민 코레타 로레타 샤니스 니아 미셸 앤젤라 도로시 버니스 키아라 알리시아 자넬 브리애나 티아 서리나'),
+  },
+  'us-hi': {
+    order: 'west',
+    sur: W('가르시아 로드리게스 마르티네스 에르난데스 로페스 곤잘레스 페레스 산체스 라미레스 토레스 플로레스 리베라 고메스 디아스 크루스 모랄레스 오르티스 구티에레스 차베스 라모스'),
+    m: W('호세 루이스 카를로스 후안 미겔 안토니오 하비에르 라파엘 알레한드로 에두아르도 페르난도 마누엘 리카르도 디에고 세르히오 라몬 에밀리오 빅토르 아르투로 엔리케'),
+    f: W('마리아 소피아 이사벨 카르멘 루시아 엘레나 가브리엘라 다니엘라 로사 테레사 파트리시아 베로니카 알레한드라 마리솔 이네스 로레나 클라우디아 아나 비비아나 마르타'),
+  },
+  'us-as': {
+    order: 'west',
+    sur: W('킴 리 박 웡 챈 응우옌 탕 야마모토 다나카 파텔 싱 첸 우 황 린 오 정 하야시 루 트란'),
+    m: W('대니얼 케빈 데이비드 마이클 앤드루 에릭 저스틴 브라이언 제임스 리처드 토니 스티븐 앨런 레이먼드 피터 빈센트 데니스 해리 에드윈 로이'),
+    f: W('그레이스 미셸 제니퍼 크리스틴 에이미 줄리 캐서린 수전 리사 엘레인 비비언 캐럴 앨리스 헬렌 조이 아이린 메이 린다 세리나 클로이'),
   },
   in: {
     order: 'west',
@@ -103,9 +122,32 @@ export const NAME_POOLS: Record<string, Pool> = {
 /** 실존 정치인과 같은 이름이면 다시 뽑음 */
 const BLOCK = new Set(['김정은', '김정일', '김일성', '윤석열', '이재명', '문재인', '박근혜', '이명박', '시진핑', '리창', '왕이', '블라디미르 푸틴']);
 
-/** 그 나라 이름 하나(성별 m/f) */
-export function makeName(country: string, sex: 'm' | 'f', rng: Rng, taken?: Set<string>): string {
-  const p = NAME_POOLS[country] ?? NAME_POOLS.us;
+/** 미국 인물의 갈래(백인·흑인·히스패닉·아시아계)를 비율대로 고름 */
+export function pickUsEth(rng: Rng): UsEth {
+  let r = rng.next();
+  for (const e of US_ETH) if ((r -= US_ETH_WEIGHT[e]) < 0) return e;
+  return 'we';
+}
+const poolKey = (country: string, eth?: string) => (country === 'us' && eth && eth !== 'we' ? `us-${eth}` : country);
+
+/** 이름 + 얼굴 갈래(미국만 4갈래, 나머지는 나라 그대로). 이름은 그 갈래 이름표에서 뽑음 */
+export function makeNameEth(country: string, sex: 'm' | 'f', rng: Rng, taken?: Set<string>): { name: string; eth?: UsEth } {
+  const eth = country === 'us' ? pickUsEth(rng) : undefined;
+  return { name: makeName(country, sex, rng, taken, eth), eth };
+}
+
+/** 이름에서 미국 갈래 알아내기(옛 저장용: 성으로 찾음, 없으면 백인) */
+export function ethOfName(country: string, name: string): UsEth | undefined {
+  if (country !== 'us') return undefined;
+  const sur = name.split(' ').pop() ?? '';
+  for (const e of ['bl', 'hi', 'as'] as const) if (NAME_POOLS[`us-${e}`].sur.includes(sur)) return e;
+  if (['가르시아', '로드리게스', '마르티네스', '에르난데스', '로페스', '곤잘레스'].includes(sur)) return 'hi';
+  return 'we';
+}
+
+/** 그 나라 이름 하나(성별 m/f, 미국은 갈래 eth) */
+export function makeName(country: string, sex: 'm' | 'f', rng: Rng, taken?: Set<string>, eth?: string): string {
+  const p = NAME_POOLS[poolKey(country, eth)] ?? NAME_POOLS[country] ?? NAME_POOLS.us;
   for (let i = 0; i < 40; i++) {
     const sur0 = rng.pick(p.sur);
     const sur = sex === 'f' && p.femSur ? p.femSur(sur0) : sur0;

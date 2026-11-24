@@ -3,7 +3,8 @@
 import { COUNTRIES } from '../data/world';
 import { LEADERS } from '../data/leaders';
 import { STAT_IDS, type StatId } from '../data/officers';
-import { LOOK, makeName } from '../data/names';
+import { LOOK, ethOfName, makeNameEth } from '../data/names';
+import { assignFaces } from '../data/faces';
 import {
   FACTION_BONUS_AT,
   GRADES,
@@ -65,6 +66,9 @@ export interface Person {
   workMs?: number;
   /** 지도자 출신의 옛 동료 */
   buddy?: boolean;
+  /** 얼굴 갈래(미국만: we·bl·hi·as) · 얼굴 번호(data/faces.ts, 11-24) */
+  eth?: string;
+  face?: number;
 }
 export interface CabBuff {
   key: 'build' | 'res' | 'secScore' | 'diploScore' | 'econScore' | 'socScore' | 'approval' | 'counter';
@@ -118,9 +122,11 @@ export function genPerson(c: CabinetState, rng: Rng, o: GenOpt, worldMs: number,
   // 10%는 출신과 다른 특화(숨은 재능)
   const spec = rng.chance(0.1) ? rng.pick(['경제통', '외교통', '행정통', '복지통', '과학자', '홍보통', '육군통', '해군통', '공군통', '정보통', '군수통'] as SpecId[]) : rng.pick(info.spec);
   const hidden: Hidden | null = rng.chance(0.3) ? rng.pick(HIDDEN_IDS) : null;
+  const nm = makeNameEth(o.country, sex, rng, taken);
   return {
     id: c.nextId++,
-    name: makeName(o.country, sex, rng, taken),
+    name: nm.name,
+    eth: nm.eth,
     sex,
     age,
     country: o.country,
@@ -202,7 +208,17 @@ export function newCabinet(s: Pick<GameState, 'world' | 'worldMs' | 'player'>): 
   for (let i = 0; i < 16; i++) c.people.push(poolPerson(c, rng, me, s.worldMs, taken));
   linkPeople(c.people.filter((p) => p.group === '인재' || p.group === '군'), rng, 10);
   c.seed = rng.seed;
+  giveFaces(c);
   return c;
+}
+
+/** 얼굴이 몇 번째에 놓이는지: 자리에 앉은 사람 > 내 나라 정계·군 > 인재 > 외국 */
+const faceRank = (p: Person) => (p.seat ? 100 : 0) + (p.buddy ? 50 : 0) + (p.group === '외국' ? 0 : p.group === '인재' ? 10 : 20);
+/** 얼굴 나눠 주기(빈 사람만, 겹치면 순위 낮은 쪽이 바꿈). c를 고침 */
+export function giveFaces(c: CabinetState) {
+  for (const p of c.people) if (p.country === 'us' && !p.eth) p.eth = ethOfName('us', p.name);
+  const m = assignFaces(c.people.map((p) => ({ id: p.id, sex: p.sex, age: p.age, country: p.country, eth: p.eth, face: p.face, rank: faceRank(p) })));
+  for (const p of c.people) p.face = m.get(p.id);
 }
 
 /** 인재 명단 후보 한 명(나라 사람 90%, 다른 나라에서 온 사람 10%) */
@@ -454,4 +470,5 @@ export function peopleCount(s: GameState): number {
 export function lookOf(p: Person) {
   return LOOK[p.country] ?? 'we';
 }
+export { faceTag } from '../data/faces';
 export { MINISTRIES };

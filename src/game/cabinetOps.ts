@@ -11,6 +11,7 @@ import {
   POOL_MAX,
   cabLog,
   cabinetOf,
+  giveFaces,
   ministerOf,
   ministryPower,
   poolPerson,
@@ -307,6 +308,7 @@ export function cabinetTick(s: GameState, tickMs: number): GameState {
       }
   if (leave.size) c.people = c.people.filter((p) => !leave.has(p.id));
   c.seed = rng.seed;
+  giveFaces(c);
   ns = { ...ns, cabinet: c };
   if (notes.length) {
     ns = { ...ns, world: { ...ns.world, events: [...ns.world.events] } };

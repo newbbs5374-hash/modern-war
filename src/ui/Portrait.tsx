@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { COUNTRIES } from '../data/world';
 import { LEADERS } from '../data/leaders';
 import { AIDE_SPECIALTIES, NAME_POOL } from '../data/officers';
+import { faceFile, faceTag } from '../data/faces';
 
 const FILES = import.meta.glob('../assets/portraits/*.{png,jpg,jpeg,webp,PNG,JPG,JPEG,WEBP}', {
   eager: true,
@@ -90,4 +91,18 @@ export function personFaceUrl(look: string, sex: 'm' | 'f', age: number, id: num
     if (list.length) return URLS[list[id % list.length]];
   }
   return null;
+}
+
+/**
+ * 나라별 얼굴(11-24, 나라별 40장): face-{묶음}-{성별}-{나이대}-{번호}. 사람마다 나눠 받은 얼굴 번호(face)의 그림 →
+ * 없으면 같은 묶음·성별 그림 중 하나 → 없으면 옛 지역 묶음(face-ea-… 등) → 없으면 null(아이콘).
+ */
+export function countryFaceUrl(p: { country: string; eth?: string; sex: 'm' | 'f'; age: number; id: number; face?: number }, look: string): string | null {
+  const tag = faceTag(p.country, p.eth);
+  const i = p.face ?? p.id;
+  const exact = URLS[faceFile(tag, p.sex, i)];
+  if (exact) return exact;
+  const list = Object.keys(URLS).filter((k) => k.startsWith(`face-${tag}-${p.sex}-`)).sort();
+  if (list.length) return URLS[list[i % list.length]];
+  return personFaceUrl(look, p.sex, p.age, p.id);
 }

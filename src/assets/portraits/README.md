@@ -41,3 +41,9 @@
 - 생김새 ea·sa·we·ee·me·tr / 성별 m·f / 나이대 50(59세까지)·60(60세부터)
 - 같은 묶음 그림을 사람 약 100명이 나눠 써요. 없으면 출신 아이콘이 보여요.
 - 명령문: 프로젝트 파일 `guides/face-art-prompts.md`, 참고 그림 `guides/face-art-ref.zip`
+
+## 나라별 얼굴 520장(11/24)
+- 이름 규칙: `face-{묶음}-{성별}-{나이대}-{번호}.webp` · 묶음 = 나라 id(kr·kp·jp·cn·in·uk·de·ru·ua·ir·il·tr), 미국은 `us-we`(백인)·`us-bl`(흑인)·`us-hi`(히스패닉)·`us-as`(아시아계).
+- 장 수·배치: `src/data/faces.ts`(FACE_PLAN). 명령문: `npm run faces` → `docs/face-country-prompts.md`.
+- 3×3 그림 자르기: `python3 scripts/cut_faces.py <sheet 그림 폴더>` → 이 폴더에 바로 저장 + 너무 닮은 쌍 알려 줌.
+- 옛 지역 묶음(`face-ea-…`)은 나라별 그림이 없을 때만 씀.

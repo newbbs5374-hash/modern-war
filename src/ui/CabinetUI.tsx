@@ -51,7 +51,7 @@ import { generalSlots } from '../data/officers';
 import type { GameState } from '../game/state';
 import { Card, fmt } from './common';
 import { Help, Meter, Modal } from './kit';
-import { personFaceUrl } from './Portrait';
+import { countryFaceUrl } from './Portrait';
 import { Flag } from './flag';
 import { iconArt } from './iconArt';
 import { timeLeft } from './officerScreens';
@@ -70,7 +70,7 @@ export function MinIcon({ id, size = 30 }: { id: MinistryId; size?: number }) {
 }
 
 export function PersonFace({ p, size = 44 }: { p: Person; size?: number }) {
-  const url = personFaceUrl(lookOf(p), p.sex, p.age, p.id);
+  const url = countryFaceUrl(p, lookOf(p));
   return (
     <span className="cab-face" style={{ width: size, height: size, fontSize: size * 0.55 }}>
       {url ? <img className="face-img" src={url} alt="" draggable={false} /> : PERSON_ORIGINS[p.origin].icon}
