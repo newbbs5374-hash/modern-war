@@ -45,7 +45,7 @@ export function billRows(s: GameState, id: BillId): Array<[string, number]> {
     else rows.push([`🗳️ 야당 대표 영향력 ${Math.round(influenceOf(rv))}`, -influenceOf(rv) / 300]);
   });
   const c = s.cabinet ? cabinetOf(s) : null;
-  const pr = c ? c.people.filter((p) => p.seat && p.trait === '원칙주의').length : 0;
+  const pr = c ? c.people.filter((p) => (p.seat || p.post) && p.trait === '원칙주의').length : 0;
   if (pr) rows.push(['📏 원칙주의 각료', pr * 0.03]);
   const og = originEff(s, 'law');
   if (og) rows.push(['🎓 출신', og]);

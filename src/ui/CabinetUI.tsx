@@ -18,6 +18,8 @@ import {
 import { COUNTRIES } from '../data/world';
 import {
   ENCOURAGE_COST,
+  HEARING,
+  unpost,
   REFRESH_RUBY,
   VET_INTEL,
   appointMinister,
@@ -46,7 +48,9 @@ import {
   type Person,
 } from '../game/cabinet';
 import { appointPersonGeneral, bestFor, canPersonGeneral, canTask, hearingChance, personGeneralSkill, startTask, statTotal, taskHours } from '../game/cabinetOps';
-import { FIELD_ICON, freeFields, type GeneralField } from '../game/loyal';
+import { FIELD_ICON, GENERAL_TITLE, freeFields, type GeneralField } from '../game/loyal';
+import { postById } from '../data/staff';
+import { PostPick } from './StaffUI';
 import { generalSlots } from '../data/officers';
 import type { GameState } from '../game/state';
 import { Card, fmt } from './common';
@@ -80,7 +84,7 @@ export function PersonFace({ p, size = 44 }: { p: Person; size?: number }) {
 }
 
 function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Person; onOpen: () => void; right?: React.ReactNode }) {
-  const seat = p.seat ? `${ministryById(p.seat.id).short} ${p.seat.kind === 'min' ? '장관' : '차관'}` : null;
+  const seat = p.seat ? `${ministryById(p.seat.id).short} ${p.seat.kind === 'min' ? '장관' : '차관'}` : p.post ? postById(p.post).name : null;
   const hearing = cabinetOf(state).hearing?.pid === p.id;
   return (
     <div className="cab-row" onClick={onOpen} role="button">
@@ -113,7 +117,7 @@ function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Person; o
 
 export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 'state' | 'actions'> & { pid: number; onClose: () => void }) {
   const p = personById(state, pid);
-  const [pick, setPick] = useState<'min' | 'vice' | 'gen' | null>(null);
+  const [pick, setPick] = useState<'min' | 'vice' | 'gen' | 'post' | null>(null);
   if (!p) return null;
   const c = cabinetOf(state);
   const apply = actions.apply;
@@ -171,14 +175,16 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
       {p.group === '인재' && recWhy && <p className="small muted">{recWhy}</p>}
       {mine && (
         <div className="cab-acts">
-          {!p.seat && (
+          {!p.seat && !p.post && (
             <>
-              <button onClick={() => setPick(pick === 'min' ? null : 'min')}>🏛️ 장관 후보로</button>
+              <button onClick={() => setPick(pick === 'post' ? null : 'post')}>🏢 대통령실·기관장</button>
+              <button onClick={() => setPick(pick === 'min' ? null : 'min')}>🏛️ 장관으로</button>
               <button onClick={() => setPick(pick === 'vice' ? null : 'vice')}>📌 차관으로</button>
               <button onClick={() => setPick(pick === 'gen' ? null : 'gen')}>⭐ 장군으로</button>
             </>
           )}
           {p.seat && <button onClick={() => apply((s) => unseat(s, p.id))}>↩️ 자리에서 내리기</button>}
+          {p.post && <button onClick={() => apply((s) => unpost(s, p.id))}>↩️ {postById(p.post).name}에서 내리기</button>}
           <button disabled={state.player.salary < ENCOURAGE_COST} onClick={() => apply((s) => encourage(s, p.id))}>
             💬 격려 <small>봉급 {ENCOURAGE_COST}</small>
           </button>
@@ -187,7 +193,7 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
               🗂️ 신원 조회 <small>정보 {VET_INTEL}</small>
             </button>
           )}
-          {!p.seat && !p.buddy && (
+          {!p.seat && !p.post && !p.buddy && (
             <button className="danger" onClick={() => (apply((s) => dismiss(s, p.id)), onClose())}>
               👋 내보내기
             </button>
@@ -230,13 +236,16 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
           })()}
           <p className="small muted" style={{ gridColumn: '1 / -1' }}>
             {pick === 'min'
-              ? `장관은 인사청문회(실제 30분)를 거쳐요. 통과 확률 ${pct(hearingChance(state, p))} · 장관 ${ministerCount(c)}/${ministerSlots(state.player.rankIndex)}석`
+              ? HEARING.skip
+                ? `시험판이라 청문회 없이 바로 장관이 돼요. 장관 ${ministerCount(c)}/${ministerSlots(state.player.rankIndex)}석`
+                : `장관은 인사청문회(실제 30분)를 거쳐요. 통과 확률 ${pct(hearingChance(state, p))} · 장관 ${ministerCount(c)}/${ministerSlots(state.player.rankIndex)}석`
               : '차관은 청문회 없이 바로 앉고, 부처 힘에 40%를 보태요.'}{' '}
             숫자는 그 부처에서 낼 힘(100% = 보통 장관), 노란색은 특화가 맞는 곳.
           </p>
         </div>
       ) : null}
       {pick === 'gen' && <GeneralPick state={state} actions={actions} p={p} onDone={onClose} />}
+      {pick === 'post' && <PostPick state={state} actions={actions} p={p} onDone={() => setPick(null)} />}
     </Modal>
   );
 }
@@ -251,7 +260,7 @@ function GeneralPick({ state, actions, p, onDone }: Pick<ScreenProps, 'state' | 
         return (
           <button key={f} disabled={!!why} title={why ?? ''} onClick={() => (actions.apply((s) => appointPersonGeneral(s, p.id, f)), onDone())}>
             <span>{FIELD_ICON[f]}</span>
-            <small>{f}</small>
+            <small>{GENERAL_TITLE[f]}</small>
           </button>
         );
       })}
@@ -286,7 +295,7 @@ export function TalentPanel(props: ScreenProps) {
           <Help title="인재·인물">
             <p>나라 안팎에 약 100명이 나와요. 모두 지도자와 같은 스탯 9개와 특화·성향·숨은 특성·파벌을 가져요.</p>
             <p>📋 인재 명단: 실제 1시간마다 새 후보 2명(최대 20명). 국방예산으로 영입해요. 🔵우수·🟡전설은 드물어요.</p>
-            <p>🏛️ 내 사람: 영입한 사람을 장관(청문회)·차관·장군으로 앉혀요. 특화가 맞는 부처에서 힘이 30% 더 나요.</p>
+            <p>🏛️ 내 사람: 영입한 사람을 대통령실 참모·기관장·장관·차관·장군으로 앉혀요(시험판은 청문회 없음). 특화가 맞는 부처에서 힘이 30% 더 나요.</p>
             <p>💞 궁합: 친한 사람끼리 같이 앉으면 힘 +10%, 앙숙끼리 앉으면 가끔 다퉈요. 파벌이 3자리 넘게 모이면 덤, 한 파벌이 60% 넘으면 지지도·신뢰도가 떨어져요.</p>
             <p>충성이 35 밑이면 다른 나라가 빼 갈 수 있어요. 격려로 올려 주세요.</p>
           </Help>
@@ -509,7 +518,7 @@ export function GeneralCandidates({ state, actions }: Pick<ScreenProps, 'state' 
   const [open, setOpen] = useState<number | null>(null);
   const c = cabinetOf(state);
   const list = c.people
-    .filter((p) => p.group === '내각' && !p.seat)
+    .filter((p) => p.group === '내각' && !p.seat && !p.post)
     .sort((a, b) => personGeneralSkill(b) - personGeneralSkill(a))
     .slice(0, 4);
   if (!list.length) return null;

@@ -86,7 +86,7 @@ const wa = (w: string) => {
 const wars = (s: GameState) => COUNTRIES.filter((c) => c.id !== me(s) && isAlive(s.world, c.id) && relationOf(s.world, me(s), c.id) === '전쟁');
 const coldest = (s: GameState) =>
   COUNTRIES.filter((c) => c.id !== me(s) && isAlive(s.world, c.id) && relationOf(s.world, me(s), c.id) !== '전쟁').sort((a, b) => favorOf(s, a.id) - favorOf(s, b.id))[0] ?? null;
-const scandal = (s: GameState) => (s.cabinet ? cabinetOf(s).people.find((p) => p.seat && p.known && p.hidden === '비리 전력') ?? null : null);
+const scandal = (s: GameState) => (s.cabinet ? cabinetOf(s).people.find((p) => (p.seat || p.post) && p.known && p.hidden === '비리 전력') ?? null : null);
 const lowCity = (s: GameState) => {
   const civ = civOf(s);
   return CITIES.filter((c) => s.world.owner[c.id] === me(s) && civ.cities[c.id]).sort((a, b) => civ.cities[a.id].loyalty - civ.cities[b.id].loyalty)[0] ?? null;
@@ -264,7 +264,10 @@ export function answerPress(s: GameState, n: number): GameState {
     if (p) {
       const cab = structuredClone(cabinetOf(ns));
       const x = cab.people.find((y) => y.id === p.id);
-      if (x) x.seat = null;
+      if (x) {
+        x.seat = null;
+        x.post = undefined;
+      }
       ns = { ...ns, cabinet: cab };
     }
   }

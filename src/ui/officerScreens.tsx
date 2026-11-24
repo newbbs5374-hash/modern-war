@@ -59,7 +59,7 @@ import { PersonFace } from './People';
 import { AideCareer, BondLoyalty } from './AideCareer';
 import { AidePickModal } from './AidePick';
 import { dismissAide } from '../game/aidePick';
-import { FIELD_ICON, branchSummary, generalEffectText, loyaltyOf } from '../game/loyal';
+import { FIELD_ICON, GENERAL_TITLE, branchSummary, generalEffectText, loyaltyOf, type GeneralField } from '../game/loyal';
 import { BLOCK_AT, PLOT_MIN, ROLE_INFO } from '../game/rivals';
 import { TrainIcon } from './iconArt';
 import { TitleBox } from './TitleUI';
@@ -641,7 +641,7 @@ export function GeneralsPanel({ state, actions }: ScreenProps) {
           </span>
           <span className="li-main">
             <b>
-              {g.name} <small className="muted">{g.field} · {g.style}</small>
+              {g.name} <small className="muted">{GENERAL_TITLE[g.field as GeneralField] ?? g.field} · {g.style}</small>
             </b>
             <small>
               능력 {g.skill} · 충성 {Math.round(g.loyalty)} · {g.from}
