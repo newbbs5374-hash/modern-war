@@ -39,7 +39,7 @@ import {
 import { RES_ICON } from '../data/economy';
 import { specialsFor } from '../data/specials';
 import { EDGE_DIR, HEX_DIRS, HEX_SIZE, PIONEER_ISLANDS, hexCorners, hexDist, hexKey } from '../data/hexmap';
-import { CityView, type CityCell, type CityLabel, type CityThing } from './CityView';
+import { CityView, cityArt, type CityCell, type CityLabel, type CityThing } from './CityView';
 import { cityMap } from '../data/cityMap';
 import { CITY_STAGES, cityPeopleAtStart, cityStage, stageOfPeople } from '../game/growth';
 import { busyProjects, projectById } from '../game/projects';
@@ -831,7 +831,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
         building: (d && d.doneMs > now) || (m && m.doneMs > now) || (st && st.doneMs > now) || false,
         deposit: dp && !d ? RES_ICON[dp] : null,
         mined: !!m,
-        mark: mk ? { icon: MARK_KIND[mk.kind].icon, lv: markLv(mk.id), color: MARK_COLOR[mk.kind], nature: mk.kind === 'nature' && !mk.home, home: !!mk.home } : undefined,
+        mark: mk ? { icon: MARK_KIND[mk.kind].icon, lv: markLv(mk.id), color: MARK_COLOR[mk.kind], nature: mk.kind === 'nature' && !mk.home, home: !!mk.home, art: markLv(mk.id) > 0 ? cityArt(`city-mark-${id}-${mk.id}`) : null } : undefined,
         dist: hexDist(t, { q: 0, r: 0 }),
       };
     });

@@ -71,3 +71,9 @@ export function originStrongWeak(shape: Partial<Record<AnyStat, number>>): { str
     weak: e.filter(([, v]) => v < 0).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k]) => k),
   };
 }
+
+/** 그림 파일 이름표(icon-stat-<영문>.png, 11-24) */
+export const STAT_SLUG: Record<AnyStat, string> = {
+  체력: 'fitness', 사격: 'shooting', 은밀: 'stealth', 포격: 'artillery', 통솔: 'leadership', 지휘: 'command', 전술: 'tactics', 군수: 'logistics',
+  정치: 'politics', 행정: 'admin', 경제: 'economy', 외교: 'diplomacy', 법률: 'law', 정보: 'intel', 과학: 'science', 언변: 'speech', 청렴: 'integrity', 매력: 'charisma',
+};

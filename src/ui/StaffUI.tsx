@@ -26,6 +26,7 @@ import type { GameState } from '../game/state';
 import { Card } from './common';
 import { Help, Modal } from './kit';
 import { PersonFace, PersonModal } from './CabinetUI';
+import { iconArt } from './iconArt';
 import { NEEDS } from '../data/needs';
 import { FitTag, NeedBox } from './PersonCards';
 import { useTab } from './kit';
@@ -337,7 +338,7 @@ function FacList({ state, actions, list }: Pick<ScreenProps, 'state' | 'actions'
         const city = cityById(govFacCity(state, f))?.name ?? '';
         return (
           <div key={f.id} className="gfac">
-            <span className="gfac-ico">{f.icon}</span>
+            <span className="gfac-ico">{iconArt(`icon-gfac-${f.id}`) ? <img src={iconArt(`icon-gfac-${f.id}`)!} alt="" draggable={false} /> : f.icon}</span>
             <span className="cab-main">
               <b>
                 {f.name} <small>📍{city}</small>
@@ -384,7 +385,14 @@ export function AgencySection({ state, actions, id }: Pick<ScreenProps, 'state' 
               const h = postHolder(c, p.id);
               return (
                 <button key={p.id} className="cab-min" onClick={() => setOpen(p.id)}>
-                  <span className="cab-min-ico">{h ? <PersonFace p={h} size={30} /> : p.icon}</span>
+                  <span className="cab-min-ico">
+                    {iconArt(`icon-ag-${p.id}`) ? <img className="cab-min-art" src={iconArt(`icon-ag-${p.id}`)!} alt="" draggable={false} style={{ width: 44, height: 44 }} /> : p.icon}
+                    {h && (
+                      <span className="cab-min-face">
+                        <PersonFace p={h} size={18} />
+                      </span>
+                    )}
+                  </span>
                   <span className="cab-main">
                     <b>
                       {p.icon} {p.name.replace('청장', '청')}

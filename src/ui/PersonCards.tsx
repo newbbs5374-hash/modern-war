@@ -1,9 +1,10 @@
 // 인물 카드 2열 · 정렬 · 필터 · 자리 안내(11-24 대장 요청 3번)
 import { useState } from 'react';
-import { FACTIONS, GRADES, PERSON_ORIGINS, SPECS, TRAITS, ministryById, type PersonOrigin, type SpecId, type Trait } from '../data/cabinet';
+import { FACTIONS, GRADES, PERSON_ORIGINS, SPECS, TRAITS, TRAIT_SLUG, ministryById, type PersonOrigin, type SpecId, type Trait } from '../data/cabinet';
 import type { Need } from '../data/needs';
 import { postById } from '../data/staff';
-import { ALL_STATS, STAT18, STAT_GROUPS18, originStrongWeak, type AnyStat } from '../data/stats2';
+import { ALL_STATS, STAT18, STAT_GROUPS18, STAT_SLUG, originStrongWeak, type AnyStat } from '../data/stats2';
+import { iconArt } from './iconArt';
 import { COUNTRIES } from '../data/world';
 import { cabinetOf, fitPct, type Person } from '../game/cabinet';
 import { statTotal } from '../game/cabinetOps';
@@ -31,13 +32,13 @@ export function PersonCard({ state, p, onOpen, badge }: { state: GameState; p: P
         <small className="pcard-seat">{hearing ? '🏛️ 청문회 중' : seat || '자리 없음'}</small>
         <small className="pcard-org">
           {o.icon}
-          {o.name} · {TRAITS[p.trait].icon}
+          {o.name} · <TraitIco t={p.trait} size={10} />
           {p.trait}
         </small>
         <span className="pcard-stats">
           {top3.map((id) => (
             <span key={id}>
-              {STAT18[id].icon}
+              <StatIco id={id} size={10} />
               {id}
               <b>{p.stats[id]}</b>
             </span>
@@ -183,6 +184,17 @@ export function PeopleGrid({ state, list, onOpen, badge, empty }: { state: GameS
   );
 }
 
+/** 스탯 아이콘: 그림(icon-stat-<영문>)이 있으면 그림, 없으면 이모지 */
+export function StatIco({ id, size = 14 }: { id: AnyStat; size?: number }) {
+  const url = iconArt(`icon-stat-${STAT_SLUG[id]}`);
+  return url ? <img className="stat-ico" src={url} alt="" draggable={false} style={{ width: size, height: size }} /> : <>{STAT18[id].icon}</>;
+}
+/** 성향 아이콘 */
+export function TraitIco({ t, size = 14 }: { t: Trait; size?: number }) {
+  const url = iconArt(`icon-trait-${TRAIT_SLUG[t]}`);
+  return url ? <img className="stat-ico" src={url} alt="" draggable={false} style={{ width: size, height: size }} /> : <>{TRAITS[t].icon}</>;
+}
+
 /** 인물 창 스탯 18개(5갈래) */
 export function Stats18({ p }: { p: Person }) {
   const best = Math.max(...ALL_STATS.map((id) => p.stats[id] ?? 0));
@@ -196,7 +208,10 @@ export function Stats18({ p }: { p: Person }) {
           <span className="stats18-v">
             {g.ids.map((id) => (
               <span key={id} className={(p.stats[id] ?? 0) === best ? 'top' : ''} title={STAT18[id].text}>
-                <small>{id}</small>
+                <small>
+                  <StatIco id={id} size={11} />
+                  {id}
+                </small>
                 <b>{p.stats[id] ?? '-'}</b>
               </span>
             ))}

@@ -55,7 +55,7 @@ export interface CityCell {
   deposit?: string | null;
   mined?: boolean;
   /** 실제 시설: 아이콘·단계 */
-  mark?: { icon: string; lv: number; color: string; nature?: boolean; home?: boolean };
+  mark?: { icon: string; lv: number; color: string; nature?: boolean; home?: boolean; art?: string | null };
 }
 /** 글씨(구·군 이름, 시설 이름). x,y는 땅 좌표 */
 export interface CityLabel {
@@ -454,7 +454,7 @@ function shade(hex: string, f: number): string {
 }
 
 /** 실제 시설: 단계만큼 높아지는 건물 + 아이콘 */
-function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: string; lv: number; color: string; nature?: boolean; home?: boolean } }) {
+function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: string; lv: number; color: string; nature?: boolean; home?: boolean; art?: string | null } }) {
   const u = w / 10;
   const h = (2.2 + m.lv * 1.1) * u;
   // 고향 전용 시설 빈 터(아직 안 지음): 점선 터 + 공사 표지
@@ -466,6 +466,17 @@ function Mark({ x, y, w, m }: { x: number; y: number; w: number; m: { icon: stri
         <text x={x} y={y - 1.0 * u} fontSize={2.0 * u} textAnchor="middle">
           🏗️
         </text>
+      </g>
+    );
+  // 시설 그림(city-mark-<도시>-<시설>.png)이 있으면 그림 + 단계 점(11-24)
+  if (m.art)
+    return (
+      <g>
+        <image href={m.art} x={x - w * 0.62} y={y - w * 1.0} width={w * 1.24} height={w * 1.24} />
+        {m.home && <circle cx={x + w * 0.4} cy={y - w * 0.85} r={0.9 * u} fill="#f59e0b" />}
+        {Array.from({ length: m.lv }, (_, i) => (
+          <circle key={i} cx={x - (m.lv - 1) * 0.55 * u + i * 1.1 * u} cy={y + 2.6 * u} r={0.38 * u} fill="#fde047" />
+        ))}
       </g>
     );
   if (m.nature)
