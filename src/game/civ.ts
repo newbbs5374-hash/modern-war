@@ -72,7 +72,7 @@ import { HEX_DIRS, PIONEER_ISLANDS, hexKey } from '../data/hexmap';
 import { cityMap, isSeaCell, type CityTile } from '../data/cityMap';
 import { CITY_EFF_CAP, HOME_BELT, HOMETOWNS, HOMETOWN_LOYALTY, KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, homeBuildCost, isHometown, type CityEff, type Landmark } from '../data/krCities';
 import { COUNTRIES, countryById } from '../data/world';
-import { facBonus } from './facility';
+import { facBonus, facilityEffects } from './facility';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { isAlive, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
@@ -233,6 +233,7 @@ export function civEffects(s: GameState): Eff[] {
     if (card) out.push(card.eff);
   });
   for (const a of c.council.active) if (a.untilMs > s.worldMs) out.push(agendaById(a.agenda).yes);
+  out.push(...facilityEffects(s));
   return out;
 }
 type NumKey = 'research' | 'budget' | 'res' | 'loyalty' | 'favor' | 'influence' | 'mission' | 'trade' | 'contracts' | 'votes' | 'growth' | 'district';

@@ -53,8 +53,10 @@ describe('내정', () => {
     const s = newGame('t', 'kr', 0, { seed: 2 });
     const s2 = { ...s, economy: { ...s.economy, buildings: { ...s.economy.buildings, 징병소: { level: 5, buildEndMs: 0, buffEndMs: 0 }, 철도망: { level: 5, buildEndMs: 0, buffEndMs: 0 } } } };
     expect(troopsPerDay(s2, 'kr')).toBeCloseTo(troopsPerDay(s, 'kr') * 2, 5);
-    expect(buildMs(s2, '보병', false)).toBeCloseTo(buildMs(s, '보병', false) / 2, 5);
-    expect(buildMs(s2, '구축함', false)).toBeCloseTo(buildMs(s, '구축함', false), 5);
+    // 철도망 5단계는 육군만 2배 빠르게(분야 성장 보너스는 모든 부대에 똑같이 붙음, 11-24)
+    const navy = buildMs(s2, '구축함', false) / buildMs(s, '구축함', false);
+    expect(navy).toBeLessThanOrEqual(1);
+    expect(buildMs(s2, '보병', false) / buildMs(s, '보병', false)).toBeCloseTo(navy / 2, 2);
   });
   it('정기 무역 계약: 매시간 수입, 전쟁이 나면 멈춤', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 9 }));

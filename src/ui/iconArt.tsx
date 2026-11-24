@@ -168,6 +168,10 @@ export const BUILDING_KEY: Record<string, string> = {
   징병소: 'draft', 군병원: 'hospital', 치안청: 'police',
   국방과학연구소: 'lab', 정보본부: 'intel', 우주기지: 'space',
   방공포대: 'airdef', 훈련소: 'camp', 비축창고: 'depot',
+  반도체팹: 'fab', 석유화학단지: 'petro', 조선소: 'shipyard', 항공우주단지: 'aerospace',
+  발전소: 'power', 고속도로망: 'highway', 국제무역항: 'tradeport', 정보통신망: 'telecom',
+  공공주택단지: 'housing', 국립대학교: 'univ', 문화체육센터: 'sports', 보훈복지관: 'veterans',
+  기초과학연구원: 'basicsci', 원자력연구원: 'nuclear', 인공지능센터: 'ai', 해양과학기지: 'ocean',
 };
 /** 그 단계 그림 → 없으면 아래 단계 그림 → 없으면 위 단계 그림 → 없으면 null */
 export function facilityArtUrl(id: string, level: number, max = 5): string | null {

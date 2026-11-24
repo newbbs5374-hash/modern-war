@@ -64,6 +64,8 @@ import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 import { canResearch, civOf, deposits, extraResPerHour, myIslands, processOn, processPerHour } from '../game/civ';
 import { PIONEER_ISLANDS } from '../data/hexmap';
+import { FAC_EFF, FAC_MILESTONE, FAC_NEED, FIELD_TIER_EFF, FIELD_TIER_NAME, describeEff, scaleEff } from '../data/facilityGrowth';
+import { facNeedWhy, fieldTier, fieldTierProgress } from '../game/facility';
 import { TECHS } from '../data/civ';
 
 /** 고를 수 있는 연구가 있는데 비어 있는 줄이 있으면 */
@@ -186,6 +188,11 @@ function VaultLabel({ n, emoji }: { n: VaultName; emoji: string }) {
 }
 /** 시설 효과 %(그 단계 기준, 특별 가동 빼고) */
 const levelPct = (id: BuildingId, lv: number) => Math.round(levelEff(id, lv) * (BUILDING_SCALE[id] ?? 1) * 1000) / 10;
+/** 그 단계 효과를 글로(새 16개는 효과 글, 나머지는 +n%) */
+const levelText = (id: BuildingId, lv: number) => {
+  const f = FAC_EFF[id];
+  return f ? describeEff(scaleEff(f.eff, levelEff(id, lv))) : `+${levelPct(id, lv)}%`;
+};
 /** 시설 그림(단계마다 다름) 또는 이모지 */
 function FacArt({ id, level, cls = '' }: { id: BuildingId; level: number; cls?: string }) {
   const url = facilityArtUrl(id, level);
@@ -515,6 +522,8 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
   const all = BUILDINGS.filter((b) => b.fac === fac);
   const list = all.filter((b) => !only || only.includes(b.id));
   const lowest = Math.min(...all.map((b) => upgradeCost(state, b.id).exp));
+  const tier = fieldTier(state, fac);
+  const tp = fieldTierProgress(state, fac);
   return (
     <div className="fac-group">
       <div className="fac-head">
@@ -523,6 +532,14 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
         </span>
         <small className="muted">경험 {fmt(e.facilities[fac].exp)}</small>
       </div>
+      <div className="list-row small fac-tier">
+        <span>
+          📈 분야 성장 <b>{tier}단계 · {FIELD_TIER_NAME[tier]}</b>
+          <small className="muted"> · 단계마다 {FIELD_TIER_EFF[fac].text}{tier > 0 ? ` (지금 ${describeEff(scaleEff(FIELD_TIER_EFF[fac].eff, tier))})` : ''}</small>
+        </span>
+        <small className="muted">{tier >= 5 ? '최고' : `시설 단계 ${tp.sum}/${tp.next}`}</small>
+      </div>
+      {tier < 5 && <Meter value={tp.sum} max={tp.next} />}
       {list
         .filter((b) => e.buildings[b.id].buildEndMs > state.worldMs)
         .map((b) => (
@@ -545,7 +562,15 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
               {buff && <i className="badge">⚡</i>}
               <FacArt id={b.id} level={st.level} />
               <b>{b.id}</b>
-              <small>{empty ? '빈 땅 · 지을 수 있어요' : `Lv.${st.level} · +${Math.round(buildingEff(state, b.id) * (BUILDING_SCALE[b.id] ?? 1) * 1000) / 10}%`}</small>
+              <small>
+                {empty
+                  ? facNeedWhy(state, b.id)
+                    ? `🔒 ${facNeedWhy(state, b.id)}`
+                    : '빈 땅 · 지을 수 있어요'
+                  : FAC_EFF[b.id]
+                    ? `Lv.${st.level} · ${describeEff(scaleEff(FAC_EFF[b.id]!.eff, buildingEff(state, b.id))).split(' · ')[0]}`
+                    : `Lv.${st.level} · +${Math.round(buildingEff(state, b.id) * (BUILDING_SCALE[b.id] ?? 1) * 1000) / 10}%`}
+              </small>
               {building ? (
                 <small className="ok">🏗️ {timeLeft(st.buildEndMs - state.worldMs)}</small>
               ) : st.level < 5 ? (
@@ -617,13 +642,13 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
       </p>
       <div className="kv2">
         <span>지금</span>
-        <b>{empty ? '빈 땅(아직 안 지음)' : `${st.level}단계 · +${levelPct(id, st.level)}%`}</b>
+        <b>{empty ? '빈 땅(아직 안 지음)' : `${st.level}단계 · ${levelText(id, st.level)}`}</b>
         <span>특별 가동</span>
         <b>{buffActive(state, id) ? `⚡ +${Math.round(BUFF_EFF * (BUILDING_SCALE[id] ?? 1) * 1000) / 10}% · ${timeLeft(st.buffEndMs - state.worldMs)}` : '없음'}</b>
         {st.level < 5 && (
           <>
             <span>다음 단계</span>
-            <b>+{levelPct(id, st.level + 1)}%</b>
+            <b>{levelText(id, st.level + 1)}</b>
             <span>{info.fac} 경험</span>
             <b>
               {fmt(state.economy.facilities[info.fac].exp)} / {c.exp}
@@ -635,6 +660,27 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
             <span>올릴 수 있는 최고</span>
             <b>{maxLevel(state.player.rankIndex)}단계</b>
           </>
+        )}
+      </div>
+      {FAC_NEED[id] && (
+        <p className="small" style={{ marginTop: 6 }}>
+          🔗 먼저 지을 시설: <b>{FAC_NEED[id]!.id} {FAC_NEED[id]!.lv}단계</b>{' '}
+          {(state.economy.buildings[FAC_NEED[id]!.id]?.level ?? 0) >= FAC_NEED[id]!.lv ? <span className="ok">✓ 갖춤</span> : <span className="bad">아직</span>}
+        </p>
+      )}
+      <div className="fac-miles">
+        <small className="muted">단계 보너스(그 단계가 되면 계속 붙음)</small>
+        {([3, 5] as const).map((lv) => (
+          <div key={lv} className={`list-row small ${st.level >= lv ? 'ok' : 'muted'}`}>
+            <span>
+              {st.level >= lv ? '✅' : '🔒'} {lv}단계 · {FAC_MILESTONE[id][lv].text}
+            </span>
+          </div>
+        ))}
+        {FAC_EFF[id] && (
+          <div className="list-row small muted">
+            <span>⭐ 5단계 본 효과 · {FAC_EFF[id]!.text}</span>
+          </div>
         )}
       </div>
       {(id === '군항' || id === '공군기지') && (

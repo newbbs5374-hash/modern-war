@@ -42,7 +42,7 @@ import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { generalBuildMult, generalPowerMult, generalResMult } from './loyal';
 import { isAlive, relationOf } from './world';
-import { facBonus, facEff } from './facility';
+import { facBonus, facEff, facNeedWhy } from './facility';
 import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, tradeEdge, unitTechLock } from './civ';
 import { EXCLUSIVES, exclusiveLock, specialById, specialsOf, type SpecialDef } from '../data/specials';
 
@@ -276,6 +276,8 @@ export function canUpgrade(s: GameState, id: BuildingId): string | null {
     return `${RANKS[next]?.name ?? '다음 호칭'}부터 더 올려요`;
   }
   if (st.buildEndMs) return '공사 중';
+  const need = facNeedWhy(s, id);
+  if (need) return need;
   const c = upgradeCost(s, id);
   const fac = buildingInfo(id).fac;
   if (s.economy.facilities[fac].exp < c.exp) return `${fac} 경험치 ${Math.floor(s.economy.facilities[fac].exp)} / ${c.exp}`;
