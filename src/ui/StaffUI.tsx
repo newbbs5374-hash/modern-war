@@ -1,5 +1,8 @@
 // 대통령실 참모진 · 국무총리 · 기관장 화면(11-24 대장 요청 "참모진 직급 세분화·임명 직책 반영").
 // 개인 → 대통령실 탭. 실마다 자리 카드 → 누르면 자리 창(효과·지금 사람·추천 후보 바로 임명).
+import { NationTraits } from './NationUI';
+import { countryById } from '../data/world';
+import { headTitle, officeName } from '../game/nation';
 import { useState } from 'react';
 import { EFF_INFO, HEAD_BOOST, GUARD_COUNTER_AT, OFFICES, POSTS, agenciesOf, effLine, postById, postsOf, type OfficeId, type PostEff, type PostId } from '../data/staff';
 import { GRADES, ministryById, type MinistryId } from '../data/cabinet';
@@ -61,11 +64,11 @@ export function StaffPanel(props: ScreenProps) {
   return (
     <>
       <Card
-        title={`대통령실·기관장 ${postCount(c)}/${POSTS.length}`}
+        title={`${officeName(state.player.countryId)}·기관장 ${postCount(c)}/${POSTS.length}`}
         icon="🏢"
         right={
-          <Help title="대통령실 참모진">
-            <p>실제 대통령실처럼 비서실·정책실·국가안보실 3실장과 수석비서관, 안보실 차장, 경호처장을 둬요. 국무총리와 기관장(검찰총장·경찰청장·국세청장·감사원장·한국은행 총재·방위사업청장)도 여기서 임명해요.</p>
+          <Help title={`${officeName(state.player.countryId)} 참모진`}>
+            <p>모든 나라가 같은 틀(비서실·정책실·안보실)을 쓰고, 자리 이름만 그 나라 실제 이름으로 바뀌어요. 실제 대통령실처럼 비서실·정책실·국가안보실 3실장과 수석비서관, 안보실 차장, 경호처장을 둬요. 국무총리와 기관장(검찰총장·경찰청장·국세청장·감사원장·한국은행 총재·방위사업청장)도 여기서 임명해요.</p>
             <p>👤 영입한 내 사람만 앉힐 수 있어요(개인 → 인재). 청문회 없이 바로 임명돼요. 장관·차관과 겹쳐 앉을 수는 없어요.</p>
             <p>💪 자리 힘 = 주 스탯 2개 평균 80% + 보조 스탯 20%, ÷ 12(보통 사람 100%). 특화가 맞으면 ×1.3, 성향이 맞으면 ×1.1, 출신이 맞으면 ×1.05, 충성 80↑ ×1.1, 30↓ 절반. 자리를 누르면 무엇이 중요한지 나와요.</p>
             <p>🗝️ 실장 덤: 비서실장·정책실장·안보실장의 힘 1(100%)마다 그 실 참모 힘 +{Math.round(HEAD_BOOST * 100)}%.</p>
@@ -77,6 +80,10 @@ export function StaffPanel(props: ScreenProps) {
         <p className="small muted" style={{ margin: '0 0 4px' }}>
           {sum.length ? `📈 ${sum.join(' · ')}` : '아직 비어 있어요. 내 사람을 자리에 앉혀 보세요.'}
         </p>
+        <details className="nt-fold">
+          <summary className="small">🌟 {countryById(state.player.countryId).name} 나라 특징</summary>
+          <NationTraits id={state.player.countryId} />
+        </details>
         <RecommendButton state={state} actions={actions} />
         <div className="seg cab-seg">
           <button className={view === 'tree' ? 'on' : ''} onClick={() => setView('tree')}>
@@ -298,7 +305,7 @@ function StaffTree({ state, onOpen }: { state: GameState; onOpen: (id: PostId) =
   return (
     <div className="stree">
       <div className="stree-top">
-        <span className="stree-pres">👑 대통령 {state.player.name}</span>
+        <span className="stree-pres">👑 {headTitle(state.player.countryId)} {state.player.name}</span>
       </div>
       <div className="stree-trunk" />
       {main.map((o) => (

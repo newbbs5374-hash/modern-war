@@ -203,7 +203,8 @@ export function appointGeneral(s: GameState, id: number, field: GeneralField): G
 
 export const FIELD_ICON: Record<GeneralField, string> = { 합참: '🎖️', 육군: '🪖', 해군: '⚓', 공군: '✈️', 정보: '🔐', 군수: '📦' };
 /** 실제 직함(11-24 대장 요청: 대통령이 임명하는 군 수뇌부) */
-export const GENERAL_TITLE: Record<GeneralField, string> = { 합참: '합참의장', 육군: '육군참모총장', 해군: '해군참모총장', 공군: '공군참모총장', 정보: '국군정보사령관', 군수: '군수사령관' };
+// 장군 직함은 나라마다 달라서 game/nation.ts에 둠(11-25)
+export { GENERAL_TITLE } from './nation';
 export const FIELD_TEXT: Record<GeneralField, string> = {
   합참: '합참의장: 모든 부대 전투력·모집 속도가 조금씩 올라요.',
   육군: '육군 부대 전투력·모집 속도가 올라요.',
