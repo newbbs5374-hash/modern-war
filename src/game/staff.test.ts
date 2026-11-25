@@ -74,7 +74,7 @@ describe('부처 15곳(11-24)', () => {
     const { MINISTRIES, ministerSlots } = await import('../data/cabinet');
     const { startTask, cabinetTick } = await import('./cabinetOps');
     expect(MINISTRIES.length).toBe(24);
-    expect(ministerSlots(10)).toBe(15);
+    expect(ministerSlots(0)).toBe(MINISTRIES.length);
     let s = hire(rich(newGame('t', 'kr', 0, { seed: 21 })), 8);
     const ids = ['mou', 'moj', 'moe', 'molit', 'mofs', 'moel'] as const;
     const mine = C.cabinetOf(s).people.filter((p) => p.group === '내각' && !p.seat && !p.post);
@@ -86,5 +86,21 @@ describe('부처 15곳(11-24)', () => {
     s = cabinetTick(s, 60e3);
     expect(Object.keys(C.cabinetOf(s).tasks).length).toBe(0);
     expect(C.cabinetOf(s).people.filter((p) => p.group === '인재').length).toBeGreaterThanOrEqual(pool0 + 2);
+  });
+});
+
+describe('장관 자리(11-25)', () => {
+  it('모든 부처에 장관을 앉힐 수 있음(자리가 모자라지 않음)', async () => {
+    const { MINISTRIES } = await import('../data/cabinet');
+    let s = hire(rich(newGame('t', 'kr', 0, { seed: 22 })), 40);
+    for (const m of MINISTRIES) {
+      if (C.ministerOf(C.cabinetOf(s), m.id)) continue;
+      const free = C.cabinetOf(s).people.find((p) => p.group === '내각' && !p.seat && !p.post);
+      if (!free) break;
+      s = C.appointMinister(s, free.id, m.id);
+    }
+    const filled = MINISTRIES.filter((m) => C.ministerOf(C.cabinetOf(s), m.id)).length;
+    expect(filled).toBeGreaterThan(15);
+    expect(C.canAppointMinister(s, -1, MINISTRIES[0].id)).not.toMatch(/다 찼/);
   });
 });

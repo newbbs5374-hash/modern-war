@@ -90,7 +90,7 @@ export function DeployPanel({ state, actions }: ScreenProps) {
 
       <section className="card">
         <b>새로 파병하기</b>
-        <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+        <div className="deploy-hosts">
           {hosts.map((c) => {
             const no = canHost(state, c.id);
             return (

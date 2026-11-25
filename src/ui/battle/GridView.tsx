@@ -126,7 +126,7 @@ export function GridView({ spec, stats, rank, aides, playerName, onEnd }: FrameP
         </span>
         <span className="muted">{goalText(b.goal)}</span>
       </div>
-      <div className="grid-board" style={{ gridTemplateColumns: `repeat(${b.w}, 1fr)` }}>
+      <div className="grid-board" style={{ gridTemplateColumns: `repeat(${b.w}, minmax(0, 1fr))` }}>
         {b.tiles.map((t, i) => {
           const x = i % b.w;
           const y = Math.floor(i / b.w);
