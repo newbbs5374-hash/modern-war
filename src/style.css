@@ -1062,16 +1062,20 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .civ-city .city-logo { width: 42px !important; height: 42px !important; }
 
 /* 문화 탭 크게(11-25): 시설·행사 2열, 그림 크게 · 걸작 등급 · 스타 · 관광 */
-.cul-tiles .itile-ico .art-ico.cul-art, .cul-ev-tiles .itile-ico .art-ico.cul-art, .cul-course-tiles .itile-ico .art-ico.cul-art { width: 128px; height: 128px; }
+.cul-tiles .itile-ico .art-ico.cul-art { width: 128px; height: 128px; }
+.cul-ev-tiles .itile-ico .art-ico.cul-art, .cul-course-tiles .itile-ico .art-ico.cul-art, .cul-work-tiles .itile-ico .art-ico.cul-art { width: 74px; height: 74px; }
 .cul-star-tiles .itile-ico .art-ico.cul-art { width: 112px; height: 112px; }
-.cul-work-tiles .itile-ico .art-ico.cul-art { width: 84px; height: 84px; }
-.cul-tiles .cul-emoji, .cul-ev-tiles .cul-emoji, .cul-course-tiles .cul-emoji, .cul-star-tiles .cul-emoji { font-size: 72px; line-height: 1.5; }
-.cul-work-tiles .cul-emoji { font-size: 44px; line-height: 1.5; }
-.cul-tiles .itile b, .cul-ev-tiles .itile b, .cul-course-tiles .itile b, .cul-star-tiles .itile b { font-size: 14px; }
+.cul-tiles .cul-emoji, .cul-star-tiles .cul-emoji { font-size: 72px; line-height: 1.5; }
+.cul-ev-tiles .cul-emoji, .cul-course-tiles .cul-emoji { font-size: 46px; line-height: 1.5; }
+.cul-work-tiles .cul-emoji { font-size: 40px; line-height: 1.5; }
+.cul-tiles .itile b, .cul-star-tiles .itile b { font-size: 14px; }
+.cul-ev-tiles .itile, .cul-course-tiles .itile, .cul-work-tiles .itile { padding: 6px 2px 5px; }
+.cul-ev-tiles .itile b, .cul-course-tiles .itile b, .cul-work-tiles .itile b { font-size: 11px; line-height: 1.2; word-break: keep-all; }
+.cul-ev-tiles .itile small, .cul-course-tiles .itile small, .cul-work-tiles .itile small { font-size: 9.5px; }
 .cul-tiles .cul-stars { font-size: 13px; }
 .cul-tiles .cul-lvname, .cul-course-tiles .cul-lvname, .cul-star-tiles .cul-lvname { font-size: 11px; padding: 0 4px; }
 .cul-work-tiles .itile b { font-size: 11.5px; padding: 0 2px; }
-.cul-work-tiles .itile { min-height: 132px; }
+.cul-work-tiles .itile { min-height: 112px; }
 .cul-dim { display: block; opacity: 0.45; filter: grayscale(0.8); }
 .cul-hero .art-ico.big { width: 220px; height: 220px; }
 .cul-emoji.big { font-size: 110px; }
@@ -1100,3 +1104,6 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .cul-course-cell > .cul-tile-btn { position: absolute; left: 8px; right: 8px; bottom: 6px; margin: 0; }
 .cul-course-tiles .cul-lvname, .cul-star-tiles .cul-lvname, .cul-tiles .cul-lvname { white-space: normal; overflow: visible; margin-bottom: 2px; }
 .cul-course-cell > .itile { padding-bottom: 42px; }
+
+.cul-how { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.modal-foot:has(.wide + .wide) { flex-direction: column; }

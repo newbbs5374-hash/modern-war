@@ -18,10 +18,11 @@ import {
 import {
   aiStars, addWork, canAddWork, canHost, canPact, canUpgrade, cultureLines, cultureOf, culturePerHour, cultureProgress, cultureWinLeft,
   endPact, hostEvent, signPact, tourismPerHour, upgradeCost, upgradeVenue, workSlots, TOUR_INCOME,
-  baseTourism, canCreate, canOpenCourse, canRecruit, closeCourse, courseBonus, courseSlots, coursesOf, gradeOdds, nextStarCost, nextStarName, nextWorkCost,
+  baseTourism, canCreate, canOpenCourse, canRecruit, recruitMoney, starVenueOk, talentShort, closeCourse, courseBonus, courseSlots, coursesOf, gradeOdds, nextStarCost, nextStarName, nextWorkCost,
   openCourse, recruitStar, starLevel, starsOf, startCreate, talentPerHour, themeDone, workInfo, worksPower, type CultureStar,
 } from '../game/culture';
 import { RES_ICON, type Res } from '../data/economy';
+import type { StarKind } from '../data/culture';
 
 export type CultureTab = 'venue' | 'works' | 'stars' | 'tour' | 'event' | 'world';
 
@@ -257,7 +258,7 @@ function WorksPanel({ state, actions, go }: ScreenProps & { go: () => void }) {
                 </b>
                 {themeDone(c, k.id) ? <span className="cul-theme">✨ 테마 전시 ×{THEME_MULT}</span> : <small className="muted">{maker.icon} {maker.name}가 만들어요</small>}
               </div>
-              <div className="tiles c3 cul-work-tiles">
+              <div className="tiles c4 cul-work-tiles">
                 {/* 빈 칸·잠긴 칸은 다음 한 칸까지만 보여 줌(화면이 너무 길어지지 않게) */}
                 {Array.from({ length: Math.min(VENUE_MAX, Math.max(slots, have.length) + 1) }, (_, i) => {
                   if (i < have.length) {
@@ -318,6 +319,7 @@ function StarsPanel({ state, actions }: ScreenProps) {
   const c = cultureOf(state);
   const stars = starsOf(c);
   const [sel, setSel] = useState<number | null>(null);
+  const [rec, setRec] = useState<StarKind | null>(null);
   const cur = stars.find((x) => x.id === sel);
   return (
     <>
@@ -327,7 +329,7 @@ function StarsPanel({ state, actions }: ScreenProps) {
         right={<small className="muted">{stars.length}명</small>}
         help={
           <p>
-            문화 시설이 시간마다 <b>인재 점수</b>를 모아요(시설 단계가 높을수록 빨라요). 막대가 차면 그 분야 스타를 데려올 수 있어요(분야마다 {STAR_MAX}명). 고고학자·예술가·감독은 걸작을 만들고, 스포츠 스타·건축가는 데리고만 있어도 효과가 있어요.
+            <b>첫 스타는 그 분야 시설만 있으면 바로</b> 데려올 수 있어요. 두 번째부터는 시설이 시간마다 모으는 <b>인재 점수</b>가 필요하고, 모자라면 국방예산으로 채워서 바로 데려올 수도 있어요(분야마다 {STAR_MAX}명). 고고학자·예술가·감독은 걸작을 만들고, 스포츠 스타·건축가는 데리고만 있어도 효과가 있어요.
           </p>
         }
       >
@@ -358,7 +360,7 @@ function StarsPanel({ state, actions }: ScreenProps) {
                   )}
                 </span>
                 {have < STAR_MAX && (
-                  <button className={why ? '' : 'primary'} disabled={!!why} onClick={() => actions.apply((s) => recruitStar(s, k.id))}>
+                  <button className={why ? '' : 'primary'} onClick={() => setRec(k.id)}>
                     데려오기
                   </button>
                 )}
@@ -390,7 +392,60 @@ function StarsPanel({ state, actions }: ScreenProps) {
         </Card>
       )}
       {cur && <StarModal state={state} actions={actions} x={cur} onClose={() => setSel(null)} />}
+      {rec && <RecruitModal state={state} actions={actions} k={rec} onClose={() => setRec(null)} onDone={(id) => (setRec(null), setSel(id))} />}
     </>
+  );
+}
+
+/** 데려오기 창: 왜 못 데려오는지·언제 되는지·돈으로 바로 데려오기 */
+function RecruitModal({ state, actions, k, onClose, onDone }: Pick<ScreenProps, 'state' | 'actions'> & { k: StarKind; onClose: () => void; onDone: (id: number) => void }) {
+  const d = starKindById(k);
+  const c = cultureOf(state);
+  const need = nextStarCost(state, k);
+  const t = c.talent?.[k] ?? 0;
+  const short = talentShort(state, k);
+  const rate = talentPerHour(state, k);
+  const free = canRecruit(state, k);
+  const paid = canRecruit(state, k, true);
+  const money = recruitMoney(state, k);
+  const go = (payMoney: boolean) => {
+    const id = c.starNext ?? 1;
+    actions.apply((s) => recruitStar(s, k, payMoney));
+    onDone(id);
+  };
+  return (
+    <Modal
+      title={`${d.name} 데려오기`}
+      icon={d.icon}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="wide primary" disabled={!!free} onClick={() => go(false)}>
+            {d.icon} 「{nextStarName(state, k)}」 데려오기{need ? ` · 인재 ${need}` : ' · 무료'}
+            {free ? <small> ({free})</small> : null}
+          </button>
+          {short > 0 && starVenueOk(state, k) && (
+            <button className="wide" disabled={!!paid} onClick={() => go(true)}>
+              💰 국방예산 {fmt(money)}로 바로 데려오기{paid ? <small> ({paid})</small> : null}
+            </button>
+          )}
+        </>
+      }
+    >
+      <div className="cul-hero">
+        <Art k={`icon-cul-star-${k}`} icon={d.icon} big />
+      </div>
+      <p className="small result">{d.perk}</p>
+      <ol className="small cul-how">
+        <li>
+          {d.from.map((v) => venueById(v).name).join(' · ')} 시설이 있어야 해요 {starVenueOk(state, k) ? '✅' : '⬜ (시설 탭에서 지어요)'}
+        </li>
+        <li>
+          {need === 0 ? '첫 스타는 인재 점수 없이 바로 데려와요 ✅' : `인재 점수 ${Math.floor(Math.min(t, need))}/${need} ${short ? `— ${short}점 모자람${rate > 0 ? ` (약 ${Math.ceil(short / rate)}시간 뒤)` : ''}` : '✅'}`}
+        </li>
+        <li>데려오면 「우리 스타」에 카드가 생겨요. {d.work ? `카드를 눌러 「걸작 만들기」를 누르면 ${workKindById(d.work).name} 걸작을 만들어요.` : '데리고만 있어도 효과가 바로 붙어요.'}</li>
+      </ol>
+    </Modal>
   );
 }
 
@@ -437,6 +492,7 @@ function TourPanel({ state, actions }: ScreenProps) {
   const lines = cultureLines(state).filter((l) => l.mult > 0);
   const tw = lines.reduce((v, l) => v + l.mult, 0) || 1;
   const from = [...lines].sort((a, b) => b.mult - a.mult || b.pct - a.pct).slice(0, 5);
+  const [sel, setSel] = useState<CourseId | null>(null);
   return (
     <>
       <div className="cul-tour-top">
@@ -461,29 +517,20 @@ function TourPanel({ state, actions }: ScreenProps) {
         right={cb.tour || cb.income ? <small className="muted">✈️ +{Math.round(cb.tour * 100)}%{cb.income ? ` · 💰 +${Math.round(cb.income * 100)}%` : ''}</small> : null}
         help={<p>시설 두 곳 이상을 묶어 관광 코스를 열면 관광·문화·관광 수입이 올라요. 한 번에 {courseSlots(c)}개까지 열 수 있고(관광 단지 5단계면 +1), 닫는 건 공짜예요. 다시 열면 돈이 또 들어요.</p>}
       >
-        <div className="tiles c2 cul-course-tiles">
+        <div className="tiles c4 cul-course-tiles">
           {COURSES.map((d) => {
             const on = open.includes(d.id);
-            const why = canOpenCourse(state, d.id);
             const needOk = Object.entries(d.needs).every(([v, n]) => c.venues[v as VenueId] >= n!);
-            const eff = [d.tour ? `✈️+${Math.round(d.tour * 100)}%` : '', d.perHit ? `히트작마다 ✈️+${Math.round(d.perHit * 100)}%` : '', d.cul ? `🎨+${Math.round(d.cul * 100)}%` : '', d.income ? `💰+${Math.round(d.income * 100)}%` : '', d.mood ? `🙂+${d.mood}` : '']
-              .filter(Boolean)
-              .join(' ');
             return (
-              <div key={d.id} className="bcard-cell cul-course-cell">
-                <Tile icon={<Art k={`icon-cul-course-${d.id}`} icon={d.icon} dim={!needOk} />} label={d.name} sub={eff} tone={on ? 'gold' : undefined} badge={on ? '✓' : null}>
-                  <small className="muted cul-lvname">{needOk ? d.text : `필요: ${needText(d.needs)}`}</small>
-                </Tile>
-                {on ? (
-                  <button className="mini cul-tile-btn" onClick={() => actions.apply((s) => closeCourse(s, d.id as CourseId))}>
-                    닫기
-                  </button>
-                ) : (
-                  <button className="mini cul-tile-btn primary" disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => openCourse(s, d.id as CourseId))}>
-                    열기 💰{fmt(d.money)}
-                  </button>
-                )}
-              </div>
+              <Tile
+                key={d.id}
+                icon={<Art k={`icon-cul-course-${d.id}`} icon={d.icon} dim={!needOk} />}
+                label={d.name}
+                sub={on ? '열림' : needOk ? `💰${fmt(d.money)}` : '조건 부족'}
+                tone={on ? 'gold' : !canOpenCourse(state, d.id) ? 'green' : undefined}
+                badge={on ? '✓' : null}
+                onClick={() => setSel(d.id)}
+              />
             );
           })}
         </div>
@@ -502,7 +549,45 @@ function TourPanel({ state, actions }: ScreenProps) {
           </div>
         ))}
       </Card>
+      {sel && <CourseModal state={state} actions={actions} id={sel} onClose={() => setSel(null)} />}
     </>
+  );
+}
+
+const courseEff = (d: (typeof COURSES)[number]) =>
+  [d.tour ? `✈️ 관광 +${Math.round(d.tour * 100)}%` : '', d.perHit ? `히트작마다 ✈️ +${Math.round(d.perHit * 100)}%` : '', d.cul ? `🎨 문화 +${Math.round(d.cul * 100)}%` : '', d.income ? `💰 관광 수입 +${Math.round(d.income * 100)}%` : '', d.mood ? `🙂 민심 +${d.mood}` : '', d.eventPlus ? `🎉 행사 덤 +${Math.round(d.eventPlus * 100)}%` : '']
+    .filter(Boolean)
+    .join(' · ');
+
+function CourseModal({ state, actions, id, onClose }: Pick<ScreenProps, 'state' | 'actions'> & { id: CourseId; onClose: () => void }) {
+  const d = COURSES.find((x) => x.id === id)!;
+  const on = coursesOf(cultureOf(state)).includes(id);
+  const why = canOpenCourse(state, id);
+  return (
+    <Modal
+      title={d.name}
+      icon={d.icon}
+      onClose={onClose}
+      footer={
+        on ? (
+          <button className="wide" onClick={() => actions.apply((s) => closeCourse(s, id))}>
+            코스 닫기(공짜)
+          </button>
+        ) : (
+          <button className="wide primary" disabled={!!why} onClick={() => actions.apply((s) => openCourse(s, id))}>
+            {d.icon} 코스 열기 · 💰{fmt(d.money)}
+            {why ? <small> ({why})</small> : null}
+          </button>
+        )
+      }
+    >
+      <div className="cul-hero">
+        <Art k={`icon-cul-course-${id}`} icon={d.icon} big />
+      </div>
+      <p className="small">{d.text}</p>
+      <p className="small result">{courseEff(d)}</p>
+      <p className="small muted">필요: {needText(d.needs)}</p>
+    </Modal>
   );
 }
 
@@ -519,7 +604,7 @@ function EventPanel({ state, actions }: ScreenProps) {
             {CULTURE_EVENTS.find((e) => e.id === on.id)!.icon} {CULTURE_EVENTS.find((e) => e.id === on.id)!.name} 진행 중{on.target ? ` → ${countryById(on.target).name}` : ''} · {timeLeft(on.endMs - state.worldMs)} 남음
           </p>
         )}
-        <div className="tiles c2 cul-ev-tiles">
+        <div className="tiles c4 cul-ev-tiles">
           {CULTURE_EVENTS.map((e) => {
             const cool = (c.cool[e.id] ?? 0) - state.worldMs;
             const needOk = Object.entries(e.needs).every(([v, n]) => c.venues[v as VenueId] >= n!);

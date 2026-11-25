@@ -55,10 +55,16 @@ describe('문화', () => {
     s = pass(upgradeVenue(s, 'museum'), 3 * H);
     s = { ...s, culture: { ...cultureOf(s), points: 1000 } };
     expect(canAddWork(s, 'relic')).toMatch(/고고학자/);
-    // 인재 점수가 차면 고고학자를 데려옴
-    expect(canRecruit(s, 'arch')).toMatch(/인재/);
-    s = { ...s, culture: { ...cultureOf(s), talent: { arch: 30 } } };
+    // 감독은 방송·영화가 없어서 못 데려옴, 첫 고고학자는 박물관만 있으면 바로
+    expect(canRecruit(s, 'director')).toMatch(/방송/);
+    expect(canRecruit(s, 'arch')).toBeNull();
     s = recruitStar(s, 'arch');
+    // 두 번째는 인재 점수 40 — 모자라면 돈으로 채워 바로
+    expect(canRecruit(s, 'arch')).toMatch(/모자람/);
+    const money = s.nations.kr.treasury;
+    const s2 = recruitStar(s, 'arch', true);
+    expect(starsOf(cultureOf(s2)).length).toBe(2);
+    expect(s2.nations.kr.treasury).toBeLessThan(money);
     const star = starsOf(cultureOf(s))[0];
     expect(star.kind).toBe('arch');
     s = addWork(s, 'relic');
@@ -81,6 +87,7 @@ describe('문화', () => {
     expect(talentPerHour(s, 'arch')).toBe(5);
     s = pass(s, 10 * H);
     expect(cultureOf(s).talent?.arch).toBeCloseTo(50);
+    expect(canRecruit(s, 'arch')).toBeNull();
     const t0 = tourismPerHour(s);
     expect(canOpenCourse(s, 'stage')).toMatch(/공연장/);
     expect(canOpenCourse(s, 'history')).toBeNull();

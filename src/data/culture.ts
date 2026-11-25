@@ -150,14 +150,16 @@ export const starKindById = (id: StarKind) => STAR_KINDS.find((k) => k.id === id
 export const STAR_MAX = 2;
 /** 인재 점수: 시설 단계 힘 1마다 시간당 */
 export const TALENT_RATE = 1;
-/** n번째(0부터) 스타를 데려오는 데 드는 인재 점수 */
-export const starCost = (n: number) => 30 * (n + 1);
+/** n번째(0부터) 스타를 데려오는 데 드는 인재 점수: 첫 스타는 시설만 있으면 바로(11-25) */
+export const starCost = (n: number) => (n === 0 ? 0 : 40 * n);
+/** 인재 점수가 모자라면 1점마다 국방예산으로 채워 바로 데려옴 */
+export const TALENT_MONEY = 60;
 export const ATHLETE_EVENT = 0.15;
 export const ATHLETE_MOOD = 0.5;
 export const ARCHITECT_FAST = 0.15;
 
 /* ── 관광 코스(11-25) ── */
-export type CourseId = 'history' | 'stage' | 'sports' | 'resort' | 'filmset' | 'grand';
+export type CourseId = 'history' | 'stage' | 'sports' | 'resort' | 'filmset' | 'grand' | 'food' | 'night' | 'village' | 'festival' | 'cruise' | 'wellness';
 export interface CourseDef {
   id: CourseId;
   name: string;
@@ -172,6 +174,8 @@ export interface CourseDef {
   mood?: number;
   /** 히트작 하나마다 관광 +비율 */
   perHit?: number;
+  /** 행사 중 관광 덤 +비율 */
+  eventPlus?: number;
 }
 export const COURSES: CourseDef[] = [
   { id: 'history', name: '역사 탐방', icon: '🏯', text: '박물관과 옛 유적을 하루에 도는 코스.', needs: { museum: 2, heritage: 2 }, money: 1500, tour: 0.15, cul: 0.1 },
@@ -179,6 +183,13 @@ export const COURSES: CourseDef[] = [
   { id: 'sports', name: '스포츠 관전', icon: '⚽', text: '경기 보고 놀이공원까지 가는 코스.', needs: { stadium: 2, park: 2 }, money: 1500, tour: 0.1, mood: 2 },
   { id: 'resort', name: '가족 휴양', icon: '🏖️', text: '리조트에서 쉬며 돈을 많이 쓰는 코스.', needs: { park: 3 }, money: 2500, income: 0.5 },
   { id: 'filmset', name: '촬영지 순례', icon: '🎥', text: '드라마·영화에 나온 곳을 찾아가는 코스. 히트작이 많을수록 더 와요.', needs: { studio: 3, park: 2 }, money: 3000, tour: 0.1, perHit: 0.04 },
+  // 11-25 추가 6개
+  { id: 'food', name: '미식 여행', icon: '🍲', text: '시장과 맛집을 도는 코스. 싸고 관광 수입이 쏠쏠해요.', needs: { park: 1 }, money: 800, tour: 0.05, income: 0.2 },
+  { id: 'night', name: '야경 투어', icon: '🌃', text: '밤에 다리·궁궐·전망대를 도는 코스.', needs: { park: 2, heritage: 1 }, money: 1200, tour: 0.12 },
+  { id: 'village', name: '전통 마을 체험', icon: '🏘️', text: '옛 마을에서 자고 전통 놀이를 해 보는 코스.', needs: { heritage: 3 }, money: 2000, tour: 0.1, cul: 0.12 },
+  { id: 'festival', name: '축제 따라가기', icon: '🎊', text: '행사가 열리는 곳을 찾아다니는 코스. 행사 중이면 관광 덤이 더 커져요.', needs: { stage: 3, stadium: 2 }, money: 2500, tour: 0.1, eventPlus: 0.3 },
+  { id: 'cruise', name: '바다 크루즈', icon: '🛳️', text: '큰 배로 해안 도시를 도는 고급 코스.', needs: { park: 4 }, money: 4000, tour: 0.15, income: 0.4 },
+  { id: 'wellness', name: '휴양·건강 여행', icon: '♨️', text: '온천과 숲에서 쉬어 가는 코스. 국민 기분도 좋아져요.', needs: { park: 3, heritage: 2 }, money: 3000, tour: 0.1, mood: 3 },
   { id: 'grand', name: '세계 명소 일주', icon: '🌍', text: '나라의 보물을 모두 도는 최고급 코스.', needs: { heritage: 4, park: 4, museum: 3 }, money: 8000, tour: 0.3, cul: 0.15, income: 0.3 },
 ];
 export const courseById = (id: CourseId) => COURSES.find((c) => c.id === id)!;
@@ -188,7 +199,7 @@ export const COURSE_SLOTS = 2;
 export const VISITORS_PER_TOUR = 1000;
 
 /* ── 문화 행사 ── */
-export type CultureEventId = 'exhibit' | 'tour' | 'film' | 'expo' | 'worldcup' | 'olympics';
+export type CultureEventId = 'exhibit' | 'tour' | 'film' | 'expo' | 'worldcup' | 'olympics' | 'food' | 'books' | 'fireworks' | 'music' | 'folk' | 'marathon' | 'fashion' | 'esports';
 export interface CultureEventDef {
   id: CultureEventId;
   name: string;
@@ -215,6 +226,15 @@ export const CULTURE_EVENTS: CultureEventDef[] = [
   { id: 'film', name: '국제 영화제', icon: '🎬', text: '세계 영화인이 모여요. 행사 동안 관광 +50%, 끝나면 지지도 +4(하루).', needs: { studio: 3 }, money: 2500, hours: 12, coolHours: 48, boost: 0.5, reward: { approval: 4, approvalHours: 24, points: 200 } },
   { id: 'expo', name: '세계 박람회', icon: '🎪', text: '온 세계가 기술·문화를 뽐내요. 행사 동안 관광 2배, 끝나면 모든 나라 호감 +3.', needs: { park: 4, museum: 3 }, money: 6000, hours: 24, coolHours: 5 * 24, boost: 1, reward: { points: 600, favorAll: 3 } },
   { id: 'worldcup', name: '월드컵 유치', icon: '⚽', text: '세계가 열광하는 축구 대회. 행사 동안 관광 2.2배, 끝나면 지지도 +8(이틀)·모든 나라 호감 +3. 전쟁 중엔 못 열어요.', needs: { stadium: 4 }, money: 8000, hours: 36, coolHours: 7 * 24, boost: 1.2, peace: true, reward: { approval: 8, approvalHours: 48, favorAll: 3 } },
+  // 11-25 추가 8개(작은 행사부터 큰 행사까지)
+  { id: 'food', name: '음식 축제', icon: '🍜', text: '거리마다 나라 음식을 맛보는 축제. 끝나면 문화 점수 +80·지지도 +2(반나절).', needs: { park: 1 }, money: 400, hours: 4, coolHours: 12, boost: 0.2, reward: { points: 80, approval: 2, approvalHours: 12 } },
+  { id: 'books', name: '국제 도서전', icon: '📚', text: '세계 출판사가 모여 책을 소개해요. 끝나면 문화 점수 +120.', needs: { museum: 1 }, money: 500, hours: 6, coolHours: 18, boost: 0.15, reward: { points: 120 } },
+  { id: 'fireworks', name: '불꽃 축제', icon: '🎆', text: '밤하늘을 수놓는 불꽃놀이. 행사 동안 관광 +40%, 끝나면 지지도 +3(하루).', needs: { park: 2 }, money: 900, hours: 4, coolHours: 24, boost: 0.4, reward: { approval: 3, approvalHours: 24 } },
+  { id: 'music', name: '음악 축제', icon: '🎸', text: '사흘 밤낮 이어지는 야외 음악 축제. 행사 동안 관광 +40%, 끝나면 문화 점수 +180.', needs: { stage: 2 }, money: 1200, hours: 10, coolHours: 30, boost: 0.4, reward: { points: 180 } },
+  { id: 'folk', name: '전통 문화제', icon: '🏮', text: '옛 궁궐·성터에서 전통 공연과 놀이를 열어요. 끝나면 문화 점수 +220·모든 나라 호감 +1.', needs: { heritage: 2 }, money: 1400, hours: 8, coolHours: 36, boost: 0.3, reward: { points: 220, favorAll: 1 } },
+  { id: 'marathon', name: '국제 마라톤', icon: '🏃', text: '세계 선수가 도시를 달려요. 끝나면 지지도 +4(하루)·모든 나라 호감 +1.', needs: { stadium: 2 }, money: 1500, hours: 6, coolHours: 48, boost: 0.3, peace: true, reward: { approval: 4, approvalHours: 24, favorAll: 1 } },
+  { id: 'fashion', name: '패션 위크', icon: '👗', text: '한 나라를 골라 패션쇼를 열어요. 그 나라에 우리 문화가 퍼지고(관광 20시간치) 호감 +4.', needs: { studio: 2, park: 2 }, money: 2000, hours: 8, coolHours: 36, boost: 0.3, target: true, reward: { burst: 20, favor: 4, points: 100 } },
+  { id: 'esports', name: 'e스포츠 세계 대회', icon: '🎮', text: '게임 세계 대회. 행사 동안 관광 +80%, 끝나면 문화 점수 +400·지지도 +5(하루).', needs: { stadium: 3, studio: 3 }, money: 4000, hours: 16, coolHours: 4 * 24, boost: 0.8, reward: { points: 400, approval: 5, approvalHours: 24 } },
   { id: 'olympics', name: '올림픽 유치', icon: '🏅', text: '가장 큰 세계 축제. 행사 동안 관광 3배, 끝나면 지지도 +10(사흘)·모든 나라 호감 +5. 전쟁 중엔 못 열어요.', needs: { stadium: 5, park: 3 }, money: 15000, hours: 48, coolHours: 14 * 24, boost: 2, peace: true, reward: { approval: 10, approvalHours: 72, favorAll: 5, points: 800 } },
 ];
 export const cultureEventById = (id: CultureEventId) => CULTURE_EVENTS.find((e) => e.id === id)!;
