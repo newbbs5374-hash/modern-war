@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FACE_PLAN, allFaceFiles, assignFaces, deckSize, faceFile, faceTag } from './faces';
+import { EXTRA2_READY, FACE_PLAN, allFaceFiles, assignFaces, deckSize, faceFile, faceTag } from './faces';
 import { ethOfName, makeNameEth } from './names';
 import { Rng } from '../game/rng';
 import { newGame } from '../game/state';
@@ -19,10 +19,12 @@ describe('나라별 얼굴 40장(11-24)', () => {
   });
   it('추가 얼굴(11-24) 켜짐: 나라마다 62장, 모두 806장, 그림 파일이 모두 있음', () => {
     const have = new Set(Object.keys(import.meta.glob('../assets/portraits/face-*.webp')).map((k) => k.replace(/^.*\//, '').replace(/\.webp$/, '')));
+    expect(allFaceFiles(true, false).length).toBe(806);
+    expect(deckSize('kr', 'm', true, false) + deckSize('kr', 'f', true, false)).toBe(62);
+    // 셋째 묶음이 켜진 나라(EXTRA2_READY)는 80장씩 더(11-25)
     const files = allFaceFiles(true);
-    expect(files.length).toBe(806);
-    expect(new Set(files).size).toBe(806);
-    expect(deckSize('kr', 'm') + deckSize('kr', 'f')).toBe(62);
+    expect(files.length).toBe(806 + 80 * EXTRA2_READY.length);
+    expect(new Set(files).size).toBe(files.length);
     const missing = files.filter((f) => !have.has(f));
     expect(missing).toEqual([]);
   });
@@ -82,7 +84,7 @@ describe('추가 얼굴 22장(11-24)', () => {
     expect(new Set(files).size).toBe(286);
     const base = new Set(F.allFaceFiles(false));
     expect(files.some((f) => base.has(f))).toBe(false);
-    expect(F.allFaceFiles(true).length).toBe(806);
+    expect(F.allFaceFiles(true, false).length).toBe(806);
     for (let i = 0; i < 26; i++) expect(F.faceFile('kr', 'm', i, true)).toBe(F.faceFile('kr', 'm', i, false));
     expect(F.faceFile('kr', 'm', 26, true)).toBe('face-kr-m-50-15');
     expect(F.faceFile('kr', 'm', 33, true)).toBe('face-kr-m-60-13');
