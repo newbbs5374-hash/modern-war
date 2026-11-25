@@ -33,7 +33,7 @@ import { TRAININGS } from '../data/catalog';
 import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { CAPTURED_DEFENSE, REAL_MS_PER_GAME_DAY } from './balance';
+import { CAPTURED_DEFENSE, REAL_MS_PER_GAME_DAY, TEST_MODE } from './balance';
 import { Rng } from './rng';
 import { talkTick, type Promise_, type Talk } from './talk';
 import type { GameState } from './state';
@@ -409,8 +409,8 @@ export function canTrain(s: GameState, name: string): string | null {
   const t = TRAININGS.find((x) => x.name === name);
   if (!t) return '없는 훈련';
   if (s.player.rankIndex < t.rank) return `${rankName(t.rank)}부터 할 수 있어요`;
-  if (s.officer.training) return `하던 ${s.officer.training.name} 훈련을 먼저 끝내세요`;
-  if (drillsNow(s.officer, s.worldMs).count <= 0) return '훈련 일정이 없어요';
+  if (s.officer.training && !TEST_MODE.freeTraining) return `하던 ${s.officer.training.name} 훈련을 먼저 끝내세요`;
+  if (!TEST_MODE.freeTraining && drillsNow(s.officer, s.worldMs).count <= 0) return '훈련 일정이 없어요';
   return null;
 }
 
@@ -418,7 +418,7 @@ export function canTrain(s: GameState, name: string): string | null {
 export function startTraining(s: GameState, name: string): GameState {
   if (canTrain(s, name)) return s;
   return withOfficer(s, (o, rng, ns) => {
-    useDrill(o, ns.worldMs);
+    if (!TEST_MODE.freeTraining) useDrill(o, ns.worldMs);
     o.training = { name, seed: Math.floor(rng.next() * 1e9) };
   });
 }

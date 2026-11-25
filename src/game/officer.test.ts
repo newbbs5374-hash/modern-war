@@ -17,6 +17,7 @@ import {
   startTraining,
 } from './officer';
 import { parseSave } from './save';
+import { TEST_MODE } from './balance';
 import { appointGeneral } from './loyal';
 
 const H = 3600e3;
@@ -33,6 +34,7 @@ function finishMission(s: GameState): GameState {
 
 describe('장교', () => {
   it('훈련: 일정 1개 쓰고 별·스탯이 오름, 일정은 4시간마다 1개 회복', () => {
+    TEST_MODE.freeTraining = false;
     let s = newGame('t', 'kr', 0, { seed: 1 });
     const r = train(s, '사격');
     expect(r.result.ok).toBe(true);
@@ -45,6 +47,7 @@ describe('장교', () => {
     expect(train(s, '체력').result.ok).toBe(false);
     expect(drillsNow(s.officer, s.worldMs + 4 * H).count).toBe(1);
     expect(drillsNow(s.officer, s.worldMs + 30 * H).count).toBe(DRILL_MAX);
+    TEST_MODE.freeTraining = true;
   });
   it('11-24: 호칭과 상관없이 처음부터 모든 훈련이 열림', () => {
     const s = newGame('t', 'kr', 0, { seed: 1 });

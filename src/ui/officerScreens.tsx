@@ -54,6 +54,7 @@ import {
 } from '../game/officer';
 import { AIDE_EFFECT } from '../battle/grid';
 import { minisFor } from '../battle/minigames';
+import { TEST_MODE } from '../game/balance';
 import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
@@ -850,7 +851,7 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
         <>
           <button onClick={onClose}>닫기</button>
           <button className={featured ? 'gold' : 'primary'} disabled={!!why} onClick={() => onStart(mini)}>
-            {why ?? '▶ 시작 (일정 1개)'}
+            {why ?? (TEST_MODE.freeTraining ? '▶ 시작 (시험 중 · 일정 안 씀)' : '▶ 시작 (일정 1개)')}
           </button>
         </>
       }
