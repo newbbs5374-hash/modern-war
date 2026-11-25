@@ -5,11 +5,11 @@
 // 꾸밈 그림: src/assets/field/land-*.png 가 있으면 건물·나무·산을 그 그림으로 그림(명령문 src/assets/field/LAND.md). 도로·강·차량·날씨·전쟁 연출은 그대로 코드로 그림.
 import { Carrier, Escort } from './units';
 import { iconArt } from './iconArt';
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES, type City } from '../data/cities';
 import { CITY_DEFENSE_MAX } from '../game/balance';
 import { FLAG_DEF } from './flag';
-import { LAND_ART, fieldArt, landPick } from './fieldArt';
+import { CITY_LANDMARK, LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
 import { homeTerrain } from './homeTerrain';
 import { landOwners } from '../game/territory';
@@ -25,6 +25,7 @@ import groundSand from '../assets/city/city-ground-beach.webp';
 import HOME_BOUNDS from '../assets/home/bounds.json';
 import { GEO } from '../data/realGeo';
 import { useHomeGeo } from './homeGeo';
+import { geoRect, satUrl, sunMix, useHomeSat } from './homeSat';
 export type { HomeGeo } from './homeGeo';
 
 const HOME_IMG = import.meta.glob('../assets/home/*.webp', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
@@ -119,6 +120,8 @@ export function HomeLand(props: {
 }) {
   const { countryId, world, atWar, dayMode, onDayMode, onCity, focus, cityGrowth, cityTags } = props;
   const geo = useHomeGeo(countryId);
+  // 11-25 실제 위성 바탕·정밀 해안선·바다 깊이·해 방향 그림자(없으면 예전 그림 바닥)
+  const sat = useHomeSat(countryId);
   const vw = homeTerrain(countryId).view;
   const worldT = `translate(${(-vw.tx * vw.s).toFixed(2)},${(-vw.ty * vw.s).toFixed(2)}) scale(${vw.s.toFixed(4)})`;
   const imgRect = boundsRect(countryId);
@@ -127,7 +130,15 @@ export function HomeLand(props: {
   const r = rng(hash(countryId));
   // 땅 = 수도 둘레 실제 해안선(homeTerrain.ts)
   const terrain = homeTerrain(countryId);
-  const land = terrain.land;
+  // 정밀 해안선(세계 좌표) → 본부 좌표. 없으면 예전 해안선
+  const coastH = useMemo(
+    () =>
+      sat?.coast
+        ? sat.coast.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_m, a, b) => `${((+a - vw.tx) * vw.s).toFixed(1)},${((+b - vw.ty) * vw.s).toFixed(1)}`)
+        : null,
+    [sat, vw.tx, vw.ty, vw.s],
+  );
+  const land = coastH ?? terrain.land;
   const flag = FLAG_DEF[countryId];
   const mine = flag?.color ?? '#3b82f6';
   // 본부 지도 = 우리나라 전체(11/24 대장 결정 2안). 내 도시 모두 실제 위치, 수도가 맨 앞
@@ -270,6 +281,26 @@ export function HomeLand(props: {
   };
 
   const nightOn = night > 0.05;
+  // 위성 사진: 확대 1배는 한 장, 1.5배 넘게 확대하면 화면에 보이는 고해상 조각만 더 불러옴
+  const satRect = sat ? geoRect(sat.b) : null;
+  const reliefRect = sat?.rb ? geoRect(sat.rb) : null;
+  const satTiles =
+    sat && satRect && view.k >= 1.5
+      ? sat.tiles.filter(([tx, ty]) => {
+          const wx0 = satRect.x + ((tx * sat.tile) / sat.w1) * satRect.w;
+          const wy0 = satRect.y + ((ty * sat.tile) / sat.h1) * satRect.h;
+          const wx1 = satRect.x + (Math.min(sat.w1, (tx + 1) * sat.tile) / sat.w1) * satRect.w;
+          const wy1 = satRect.y + (Math.min(sat.h1, (ty + 1) * sat.tile) / sat.h1) * satRect.h;
+          const sx0 = (wx0 - vw.tx) * vw.s * view.k + view.x;
+          const sx1 = (wx1 - vw.tx) * vw.s * view.k + view.x;
+          const sy0 = (wy0 - vw.ty) * vw.s * view.k + view.y;
+          const sy1 = (wy1 - vw.ty) * vw.s * view.k + view.y;
+          return sx1 > -40 && sx0 < W + 40 && sy1 > -40 && sy0 < H + 40;
+        })
+      : [];
+  // 해 방향 그림자: 실제 시각(낮 고정이면 한낮), 밤에는 사라짐
+  const sm = sunMix();
+  const sun = dayMode === '낮' && sm.am + sm.noon + sm.pm === 0 ? { am: 0, noon: 1, pm: 0 } : sm;
   return (
     <div className="homeland-wrap">
       <svg
@@ -315,6 +346,18 @@ export function HomeLand(props: {
           <filter id="plane-shadow" x="-50%" y="-50%" width="220%" height="220%">
             <feDropShadow dx="5" dy="9" stdDeviation="1.6" floodColor="#0b1a10" floodOpacity="0.35" />
           </filter>
+          {/* 11-25 흐르는 물결(바다 그림을 두 겹으로 반대로 천천히 움직임) */}
+          <pattern id="g-ripple1" patternUnits="userSpaceOnUse" width="200" height="200">
+            <image href={groundSea} width="200" height="200" />
+            <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="200 100" dur="60s" repeatCount="indefinite" />
+          </pattern>
+          <pattern id="g-ripple2" patternUnits="userSpaceOnUse" width="140" height="140" patternTransform="rotate(30)">
+            <image href={groundSea} width="140" height="140" />
+            <animateTransform attributeName="patternTransform" type="translate" from="140 0" to="0 70" dur="45s" repeatCount="indefinite" additive="sum" />
+          </pattern>
+          <filter id="g-soft2">
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
           <filter id="g-soft">
             <feGaussianBlur stdDeviation="6" />
           </filter>
@@ -345,6 +388,44 @@ export function HomeLand(props: {
           {Array.from({ length: 12 }, (_, i) => (
             <path key={i} className="wave" d={`M${-20 + (i % 3) * 40},${30 + i * 52} q20,-6 40,0 t40,0`} fill="none" stroke="#ffffff22" strokeWidth="2" style={{ animationDelay: `${-i * 0.7}s` }} />
           ))}
+          {sat && satRect ? (
+            <>
+              {/* 11-25 실제 바다 깊이 색(얕은 청록 → 깊은 남색) + 흐르는 물결 */}
+              {reliefRect && (
+                <g transform={worldT} pointerEvents="none">
+                  <image href={satUrl(`${countryId}-depth.webp`)} x={reliefRect.x} y={reliefRect.y} width={reliefRect.w} height={reliefRect.h} preserveAspectRatio="none" />
+                </g>
+              )}
+              <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#g-ripple1)" opacity="0.22" style={{ mixBlendMode: 'soft-light' }} pointerEvents="none" />
+              <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#g-ripple2)" opacity="0.16" style={{ mixBlendMode: 'screen' }} pointerEvents="none" />
+              {/* 해안 얕은 물빛 + 모래 띠(얇게) */}
+              <path d={land} fill="none" stroke="#7fe3e0" strokeOpacity="0.22" strokeWidth="9" strokeLinejoin="round" filter="url(#g-soft2)" pointerEvents="none" />
+              <path d={land} fill="#7d8a5a" stroke="#d9c79a" strokeWidth="1.6" strokeOpacity="0.8" strokeLinejoin="round" pointerEvents="none" />
+              {/* 실제 위성 사진(1배 한 장 + 확대 조각) */}
+              <g transform={worldT} pointerEvents="none">
+                <image href={satUrl(`${countryId}-0.webp`)} x={satRect.x} y={satRect.y} width={satRect.w} height={satRect.h} preserveAspectRatio="none" />
+                {satTiles.map(([tx, ty]) => {
+                  const x = satRect.x + ((tx * sat.tile) / sat.w1) * satRect.w;
+                  const y = satRect.y + ((ty * sat.tile) / sat.h1) * satRect.h;
+                  const w = (Math.min(sat.tile, sat.w1 - tx * sat.tile) / sat.w1) * satRect.w;
+                  const h = (Math.min(sat.tile, sat.h1 - ty * sat.tile) / sat.h1) * satRect.h;
+                  // 조각 사이 실금 방지: 아주 조금 겹침
+                  const e = (0.6 / sat.tile) * (satRect.w / sat.w1) * sat.tile;
+                  return <image key={`${tx}-${ty}`} href={satUrl(`${countryId}/1-${tx}-${ty}.webp`)} x={x} y={y} width={w + e} height={h + e} preserveAspectRatio="none" />;
+                })}
+                {/* 해 방향 산 그림자(아침 동쪽 해 → 저녁 서쪽 해) */}
+                {reliefRect &&
+                  (['am', 'noon', 'pm'] as const).map((k) =>
+                    sun[k] * (1 - night) > 0.02 ? (
+                      <image key={k} href={satUrl(`${countryId}-sh-${k}.webp`)} x={reliefRect.x} y={reliefRect.y} width={reliefRect.w} height={reliefRect.h} preserveAspectRatio="none" opacity={(sun[k] * (1 - night) * 0.42).toFixed(2)} />
+                    ) : null,
+                  )}
+              </g>
+              {/* 해안 파도 거품 */}
+              <path className="foam" d={land} fill="none" stroke="#f0fdff" strokeWidth="0.9" strokeLinejoin="round" pointerEvents="none" />
+            </>
+          ) : (
+            <>
           {/* 땅 층(나중에 제작 이미지로 바꿀 자리) */}
           {/* 얕은 바다 띠 → 모래 해안 → 풀밭 + 들판 + 높낮이 얼룩 + 파도 거품 */}
           <path d={land} fill="none" stroke="url(#g-shoal)" strokeWidth="40" strokeLinejoin="round" />
@@ -360,6 +441,8 @@ export function HomeLand(props: {
             </g>
           ) : (
             <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.3" />
+          )}
+            </>
           )}
           {/* 빼앗긴 도: 점령한 나라 색 + 빗금 */}
           <defs>
@@ -523,7 +606,13 @@ export function HomeLand(props: {
                   </g>
                     );
                   })}
-                {c.capital && art.landmark && <image href={art.landmark} x={x - 30} y={y - 64} width="60" height="60" />}
+                {(() => {
+                  // 도시별 랜드마크 그림(있으면), 수도는 없으면 공용 랜드마크
+                  const lm = (CITY_LANDMARK[c.name] && fieldArt(CITY_LANDMARK[c.name])) || (c.capital ? art.landmark : null);
+                  if (!lm) return null;
+                  const sz = c.capital ? 64 : 84;
+                  return <image href={lm} x={x - sz / 2} y={y - sz - (c.capital ? 2 : 8)} width={sz} height={sz} />;
+                })()}
                 {nightOn && st !== '공격받음' && st !== '점령당함' && (
                   <circle cx={x} cy={y - 4} r={(c.capital ? 110 : 24) * (0.7 + 0.8 * (cityGrowth?.[c.id] ?? 0.4))} fill="url(#glow)" opacity={night * (0.45 + 0.5 * (cityGrowth?.[c.id] ?? 0.4))} />
                 )}
