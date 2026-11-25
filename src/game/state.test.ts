@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { civBudgetMult } from './civ';
 import { firstTestGrant } from './testgrant';
+import { CITIES } from '../data/cities';
 import { COUNTRIES, startingRelation } from '../data/world';
 import { advance, catchUp, claimSalary, gameClock, newGame, pendingCap, salaryPerDay, setRank, skip } from './state';
 import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } from './save';
@@ -8,13 +9,17 @@ import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } f
 const HOUR = 60 * 60 * 1000;
 
 describe('세계 데이터', () => {
-  it('나라 13개, 도시 2~10개(모티브 면적), 대륙 5개 안', () => {
+  it('나라 13개, 내정 도시 8~13개·점령 도시 5~6개(11-25), 대륙 5개 안', () => {
     expect(COUNTRIES).toHaveLength(13);
     for (const c of COUNTRIES) {
-      expect(c.cities.length).toBeGreaterThanOrEqual(2);
-      expect(c.cities.length).toBeLessThanOrEqual(11);
+      expect(c.cities.length).toBeGreaterThanOrEqual(8);
+      expect(c.cities.length).toBeLessThanOrEqual(13);
+      const front = CITIES.filter((x) => x.home === c.id && x.front).length;
+      expect(front, c.id).toBeGreaterThanOrEqual(5);
+      expect(front, c.id).toBeLessThanOrEqual(6);
     }
-    expect(COUNTRIES.find((c) => c.id === 'ru')!.cities).toHaveLength(10);
+    expect(COUNTRIES.find((c) => c.id === 'ru')!.cities).toHaveLength(13);
+    expect(CITIES.filter((c) => c.home === 'kr' && c.front).map((c) => c.name)).toEqual(['서울', '부산', '대전', '전주', '강릉', '여수']);
     expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(5);
   });
   it('시작 구도', () => {

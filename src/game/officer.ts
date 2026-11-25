@@ -5,7 +5,7 @@ import { noteCapture } from './territory';
 import { originEff } from './origin';
 import { cabMission } from './cabinet';
 import { TEST_BOOSTS } from './boost';
-import { CITIES, cityById } from '../data/cities';
+import { CITIES, FRONT, cityById } from '../data/cities';
 import {
   AIDE_SPECIALTIES,
   GENERAL_FIELDS,
@@ -42,7 +42,7 @@ import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
 import { addPresMod } from './approval';
 import { facBonus } from './facility';
-import { citiesOf, eul, ga, isAlive, relationOf, type WorldEvent } from './world';
+import { citiesOf, eul, ga, isAlive, relationOf, syncFollowers, type WorldEvent } from './world';
 import { RIVAL_ROLES, hasAlly, rivalTick, shiftInfluence, type RivalRole } from './rivals';
 import { addLoyalty, generalMissionBonus, loyaltyMissionBonus, loyaltyMissionMult, loyaltyRewardMult, loyaltyTick, schoolTick, touchAide } from './loyal';
 
@@ -704,12 +704,12 @@ function buildBoard(s: GameState, o: OfficerState, rng: Rng): Mission[] {
   const w = s.world;
   const mine = citiesOf(w, me);
   const enemies = COUNTRIES.map((c) => c.id).filter((id) => id !== me && isAlive(w, id) && relationOf(w, me, id) === '전쟁');
-  const enemyCities = CITIES.filter((c) => enemies.includes(w.owner[c.id])).map((c) => c.id);
+  const enemyCities = FRONT.filter((c) => enemies.includes(w.owner[c.id])).map((c) => c.id);
   const near = enemyCities.filter((id) => countryById(cityById(id).home).continent === countryById(me).continent);
   const out: Mission[] = [];
   const r = s.player.rankIndex;
   const weakest = [...mine].sort((a, b) => w.defense[a] - w.defense[b])[0];
-  const any = CITIES.filter((c) => w.owner[c.id] !== me).map((c) => c.id);
+  const any = FRONT.filter((c) => w.owner[c.id] !== me).map((c) => c.id);
   // 지도자 임무 하나 만들기(어느 도시에서 하는 일인지 정함)
   const mk = (k: MissionKind) => {
     const front = enemyCities.length ? rng.pick(near.length ? near : enemyCities) : rng.pick(any.length ? any : mine);
@@ -895,6 +895,7 @@ function captureCity(ns: GameState, city: string) {
   noteCapture(w, city, me);
   w.owner[city] = me;
   w.defense[city] = CAPTURED_DEFENSE;
+  syncFollowers(w);
   const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전)`, mine: true };
   w.events.unshift(ev);
 }
@@ -903,7 +904,7 @@ function captureCity(ns: GameState, city: string) {
 export function grandTargets(s: GameState): string[] {
   const me = s.player.countryId;
   const w = s.world;
-  return CITIES.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁')
+  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁')
     .map((c) => c.id)
     .sort((a, b) => w.defense[a] - w.defense[b]);
 }

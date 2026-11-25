@@ -8,6 +8,7 @@ describe('도(주·성) 땅', () => {
   it('13개 나라 모두 도가 있고, 도시마다 자기 도가 있음', () => {
     for (const c of COUNTRIES) expect(provincesOf(c.id).length).toBeGreaterThan(c.id === 'il' ? 3 : 5);
     for (const city of CITIES) {
+      if (!city.front) continue; // 11-25 내정 도시는 거점을 따라가므로 도가 없어도 됨(해안·작은 섬은 경계 자료 밖일 수 있음)
       // 같은 도에 도시가 둘이면(전남 여수·순천) 한 도시만 다스림: 그 도의 주인이 같은 나라면 됨
       const own = provinces().filter((p) => p.seat === city.id || (inProv(p, city.x, city.y) && cityById(p.seat).home === city.home));
       expect(own.length, city.name).toBeGreaterThan(0);

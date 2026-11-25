@@ -5,7 +5,7 @@
 //  강화 조약으로 넘겨받은 도시는 민정부터 시작하고 투표 없이 편입(국제 반발 절반).
 //  편입하면 원래 나라 호감 크게 ↓, 같은 진영 나라 호감 조금 ↓.
 //  상태는 world.annex(진행) · world.annexed(끝난 것). 주인이 바뀌면 territory.noteCapture가 지움.
-import { CITIES, cityById } from '../data/cities';
+import { FRONT, cityById } from '../data/cities';
 import { COUNTRIES, countryById } from '../data/world';
 import type { GameState } from './state';
 import { addFavorNote, cityCiv, registerCityLoyaltyRows } from './civ';
@@ -14,7 +14,7 @@ import { ministryPower } from './cabinet';
 import { pushReport } from './report';
 import { Rng } from './rng';
 import { canDiplo, diploChance, DIPLO_COOLDOWN_HOURS } from './command';
-import { eul, homeOf, isAlive, pairKey, relationOf, sameBloc, type AnnexCity, type WorldEvent } from './world';
+import { eul, homeOf, isAlive, pairKey, relationOf, sameBloc, syncFollowers, type AnnexCity, type WorldEvent } from './world';
 
 const H = 3600e3;
 /** 군정 기간(시간) */
@@ -37,7 +37,8 @@ export const CIVIL_LOYALTY = 12;
 export const CEDE_RATE = 0.75;
 
 const annexOf = (s: GameState) => s.world.annex ?? {};
-export const annexEntry = (s: GameState, cityId: string): AnnexCity | null => annexOf(s)[cityId] ?? null;
+/** 편입 진행(내정 도시는 따라가는 점령 도시의 진행을 봄) */
+export const annexEntry = (s: GameState, cityId: string): AnnexCity | null => annexOf(s)[cityById(cityId).hub] ?? null;
 export const isAnnexed = (s: GameState, cityId: string) => s.world.annexed?.[cityId] === s.player.countryId;
 /** 편입한 도시 수 */
 export const annexedCount = (s: GameState) => Object.entries(s.world.annexed ?? {}).filter(([id, who]) => who === s.player.countryId && s.world.owner[id] === who).length;
@@ -45,7 +46,7 @@ export const annexedCount = (s: GameState) => Object.entries(s.world.annexed ?? 
 /** 편입할 수 있는 점령지(내 것이지만 아직 우리 땅이 아님) */
 export function occupiedCities(s: GameState): string[] {
   const me = s.player.countryId;
-  return CITIES.filter((c) => s.world.owner[c.id] === me && homeOf(s.world, c.id) !== me).map((c) => c.id);
+  return FRONT.filter((c) => s.world.owner[c.id] === me && homeOf(s.world, c.id) !== me).map((c) => c.id);
 }
 
 /** 군정 기간(ms): 치안청이 있으면 최대 절반, 원래 나라가 망했으면 절반 */
@@ -73,6 +74,7 @@ export function voteYes(s: GameState, cityId: string): { pct: number; rows: Arra
 /** 주민투표를 열 수 있는지(안 되면 이유) */
 export function canVote(s: GameState, cityId: string): string | null {
   const a = annexEntry(s, cityId);
+  if (!cityById(cityId).front) return `${cityById(cityById(cityId).hub).name}에서 투표하면 함께 편입돼요`;
   if (!a || s.world.owner[cityId] !== s.player.countryId) return '편입할 수 있는 점령지가 아니에요';
   if (a.treaty) return '조약으로 받은 도시라 투표 없이 편입돼요';
   if (a.stage === '군정') return '군정이 끝나야 해요';
@@ -162,6 +164,12 @@ export function annexTick(s: GameState): GameState {
         out = pushReport(out, { icon: '🗳️', text: `대장님, ${c.name} 주민투표가 찬성 ${got}%로 부결됐습니다. 민심이 조금 내려갔고, ${RETRY_HOURS / 24}일 뒤 다시 열 수 있습니다.` });
       }
     }
+  }
+  // 편입한 점령 도시의 내정 도시도 함께 편입
+  if (out.world.annexed !== s.world.annexed) {
+    const w = { ...out.world, owner: { ...out.world.owner }, defense: { ...out.world.defense } };
+    syncFollowers(w);
+    out = { ...out, world: w };
   }
   return out;
 }

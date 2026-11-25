@@ -84,7 +84,7 @@ const C = (o: Omit<Country, 'label'> & { label?: { x: number; y: number } }): Co
 export const COUNTRIES: Country[] = [
   C({
     id: 'us', name: '미국', continent: 'amern', intro: '세계 최강의 해군과 항공모함을 가진 부유한 나라',
-    cities: ['워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '덴버', '피닉스', '피츠버그', '휴스턴'],
+    cities: ['워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '덴버', '피닉스', '피츠버그', '휴스턴', '로스앤젤레스', '시카고', '시애틀', '보스턴', '애틀랜타'],
     economy: 100, budget: 100, military: 100, difficulty: '쉬움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '중',
     specialUnit: { name: '항모 타격단', base: '항공모함', effect: '함재기 출격 2배 · 호위함 보호막' },
@@ -93,7 +93,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'cn', name: '중국', continent: 'asien', intro: '사람이 많고 공장이 쉬지 않는 넓은 나라',
-    cities: ['베이징', '톈진', '광저우', '선전', '바오터우', '우한', '란저우', '상하이'],
+    cities: ['베이징', '톈진', '광저우', '선전', '바오터우', '우한', '란저우', '상하이', '충칭', '청두', '시안', '하얼빈', '칭다오'],
     economy: 80, budget: 59, military: 80, difficulty: '쉬움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '대규모 동원 사단', base: '보병', effect: '병력 1.5배 · 쓰러져도 빨리 채워짐' },
@@ -102,7 +102,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'ru', name: '러시아', continent: 'norga', intro: '세계에서 가장 넓은 땅. 춥지만 미사일 기술이 앞선 나라',
-    cities: ['모스크바', '상트페테르부르크', '튜멘', '무르만스크', '예카테린부르크', '아르한겔스크', '노릴스크', '야쿠츠크', '블라디보스토크', '노보시비르스크'],
+    cities: ['모스크바', '상트페테르부르크', '튜멘', '무르만스크', '예카테린부르크', '아르한겔스크', '노릴스크', '야쿠츠크', '블라디보스토크', '노보시비르스크', '카잔', '칼리닌그라드', '이르쿠츠크'],
     economy: 29, budget: 45, military: 94, difficulty: '쉬움',
     bloc: 'continental', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '전략 미사일 여단', base: '미사일', effect: '사거리 +50% · 방공 뚫기 +20%' },
@@ -111,7 +111,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'de', name: '독일', continent: 'eurona', intro: '유럽 한가운데의 공업 강국. 기갑 공장이 자랑',
-    cities: ['베를린', '함부르크'],
+    cities: ['베를린', '함부르크', '뮌헨', '프랑크푸르트', '쾰른', '슈투트가르트', '드레스덴', '라이프치히'],
     economy: 41, budget: 35, military: 30, difficulty: '보통',
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '기갑 군단', base: '전차', effect: '장갑 +20% · 돌파 후 추격' },
@@ -120,7 +120,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'jp', name: '일본', continent: 'amern', intro: '긴 섬나라. 정밀 기술과 이지스 함대가 강함',
-    cities: ['도쿄', '후쿠오카'],
+    cities: ['도쿄', '후쿠오카', '오사카', '나고야', '삿포로', '히로시마', '센다이', '나하'],
     economy: 38, budget: 26, military: 39, difficulty: '보통',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '이지스 함대', base: '구축함', effect: '미사일 요격 +40%' },
@@ -129,7 +129,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'uk', name: '영국', continent: 'eurona', intro: '오랜 해양 강국. 정보기관과 잠수함이 강함',
-    cities: ['런던', '버밍엄'],
+    cities: ['런던', '버밍엄', '맨체스터', '글래스고', '포츠머스', '에든버러', '카디프', '벨파스트'],
     economy: 36, budget: 31, military: 39, difficulty: '보통',
     bloc: 'europe', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '특수 공정대', base: '특수부대', effect: '잠입 성공 +30% · 기습 피해 2배' },
@@ -138,7 +138,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'in', name: '인도', continent: 'asien', intro: '인구가 가장 많은 나라. 산악 부대가 강함',
-    cities: ['뉴델리', '콜카타', '벵갈루루', '첸나이', '뭄바이'],
+    cities: ['뉴델리', '콜카타', '벵갈루루', '첸나이', '뭄바이', '하이데라바드', '아마다바드', '푸네', '자이푸르', '러크나우', '코치', '비샤카파트남', '나그푸르'],
     economy: 36, budget: 31, military: 55, difficulty: '보통',
     bloc: 'independent', faith: 'pantheon', faithStrength: '중',
     specialUnit: { name: '산악 보병 사단', base: '보병', effect: '산·고지 전투 +30%' },
@@ -147,7 +147,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'kr', name: '한국', continent: 'asien', intro: '작지만 반도체와 무기 수출이 강한 나라. 포병이 정밀함',
-    cities: ['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천', '익산'],
+    cities: ['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천', '익산', '인천', '울산'],
     economy: 25, budget: 22, military: 45, difficulty: '어려움',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '자주포 포병대', base: '포병', effect: '쏘고 바로 이동 · 정확도 +30%' },
@@ -156,7 +156,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'tr', name: '튀르키예', continent: 'sahar', intro: '두 바다를 잇는 해협의 나라. 무인기와 통행세로 힘을 키움',
-    cities: ['앙카라', '이스탄불', '이즈미르'],
+    cities: ['앙카라', '이스탄불', '이즈미르', '아다나', '트라브존', '부르사', '안탈리아', '가지안테프'],
     economy: 23, budget: 18, military: 37, difficulty: '어려움',
     bloc: 'independent', faith: 'blade', faithStrength: '중',
     specialUnit: { name: '무인기 비행대', base: '무인드론', effect: '드론 비용 −40% · 동시 출격 +' },
@@ -165,7 +165,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'il', name: '이스라엘', continent: 'sahar', intro: '성지 곁의 작은 나라. 하늘을 지키는 방공망이 촘촘함',
-    cities: ['텔아비브', '하이파'],
+    cities: ['텔아비브', '하이파', '베르셰바', '아슈도드', '에일라트', '네타냐', '나사렛', '티베리아'],
     economy: 14, budget: 22, military: 27, difficulty: '어려움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '강',
     specialUnit: { name: '다층 방공망', base: '방공부대', effect: '미사일·로켓·드론 요격 +50%' },
@@ -174,7 +174,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'ir', name: '이란', continent: 'sahar', intro: '사막과 산의 나라. 종교 지도자가 다스리고 고속정 떼가 바다를 누빔',
-    cities: ['테헤란', '이스파한', '반다르아바스', '시라즈'],
+    cities: ['테헤란', '이스파한', '반다르아바스', '시라즈', '타브리즈', '마슈하드', '아흐바즈', '부셰르'],
     economy: 15, budget: 9, military: 23, difficulty: '어려움',
     bloc: 'continental', faith: 'blade', faithStrength: '강',
     specialUnit: { name: '고속정 떼 함대', base: '구축함', effect: '싸고 많은 고속정 · 큰 함선 상대 +30%' },
@@ -183,7 +183,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'ua', name: '우크라이나', continent: 'eurona', intro: '밀밭과 해바라기의 나라. 땅을 지키려는 마음이 가장 단단함',
-    cities: ['키이우', '하르키우', '오데사'],
+    cities: ['키이우', '하르키우', '오데사', '리비우', '드니프로', '자포리자', '미콜라이우', '빈니차'],
     economy: 10, budget: 30, military: 20, difficulty: '매우 어려움',
     bloc: 'europe', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '해상 드론 부대', base: '무인드론', effect: '바다 위 드론으로 함선 공격 · 해군 없이도 바다 막기' },
@@ -192,7 +192,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'kp', name: '북한', continent: 'norga', intro: '땅굴과 특수부대로 버티는 닫힌 나라',
-    cities: ['평양', '남포'],
+    cities: ['평양', '남포', '원산', '신의주', '함흥', '청진', '개성', '나선'],
     economy: 3, budget: 10, military: 12, difficulty: '매우 어려움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '특수작전군', base: '특수부대', effect: '땅굴 침투 · 적 후방 도시 기습' },

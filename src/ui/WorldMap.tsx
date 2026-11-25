@@ -1040,17 +1040,17 @@ export function WorldMap({
             <circle
               cx={city.x}
               cy={city.y}
-              r={(city.capital ? 3.2 : 2.3) * zr * grow}
+              r={(city.capital ? 3.2 : city.front ? 2.3 : 1.5) * zr * grow}
               fill={colorOf(o)}
               stroke={occupied ? "#fff" : "#0c1a2b"}
               strokeWidth={(occupied ? 1.6 : 1) * zr}
             />
-            {!mini && (
+            {!mini && (city.front || cv.k >= 2) && (
               <text
                 x={city.x}
-                y={city.y - 4.2 * zr}
+                y={city.y - (city.front ? 4.2 : 3.2) * zr}
                 textAnchor="middle"
-                className="map-cityname"
+                className={city.front ? "map-cityname" : "map-cityname sub"}
               >
                 {city.capital ? "★" : ""}
                 {city.name}
@@ -1077,6 +1077,7 @@ export function WorldMap({
               {city.capital ? "(수도)" : ""} ·{" "}
               {COUNTRIES.find((c) => c.id === o)!.name}
               {occupied ? " 점령 중" : ""}
+              {city.front ? "\n⚔️ 점령 도시(직접 공격할 수 있는 거점)" : `\n🏘️ 내정 도시(${CITIES.find((x) => x.id === city.hub)!.name}을 따라감)`}
               {"\n자원: "}
               {(Object.entries(CITY_RES[city.name] ?? {}) as Array<[Res, number]>)
                 .map(([r, n]) => `${RES_ICON[r]}${r} ${n}`)
