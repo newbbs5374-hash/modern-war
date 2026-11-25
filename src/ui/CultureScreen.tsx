@@ -1,4 +1,4 @@
-// 🎭 문화 탭(11-23): 시설 · 걸작 · 행사 · 세계 (승리 조건은 11-24 개인 → 승리로 옮김)
+// 🎭 문화 탭(11-23): 시설 · 걸작 · 스타 · 관광 · 행사 · 세계(스타·관광은 11-25) (승리 조건은 11-24 개인 → 승리로 옮김)
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, startAndFinish } from '../game/boost';
 import { useState } from 'react';
@@ -12,15 +12,18 @@ import { countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import {
   BUILD_TEAMS, CULTURE_EVENTS, CULTURE_SPECIAL, CULTURE_WIN_DAYS, CULTURE_WIN_SHARE, CULTURE_WIN_TOP, LEVEL_POWER, PACT_COST, PACT_MAX, PACT_MULT,
-  SPECIAL_BONUS, VENUES, VENUE_MAX, WORK_KINDS, venueById, workCost, type CultureEventId, type VenueId, type WorkKind,
+  SPECIAL_BONUS, VENUES, VENUE_MAX, WORK_KINDS, venueById, type CultureEventId, type VenueId, type WorkKind,
+  COURSES, CREATE_HOURS, GRADES, STAR_KINDS, STAR_MAX, THEME_MIN, THEME_MULT, VISITORS_PER_TOUR, starKindById, workKindById, type CourseId,
 } from '../data/culture';
 import {
   aiStars, addWork, canAddWork, canHost, canPact, canUpgrade, cultureLines, cultureOf, culturePerHour, cultureProgress, cultureWinLeft,
-  endPact, hostEvent, nextWorkName, signPact, tourismPerHour, upgradeCost, upgradeVenue, workSlots, TOUR_INCOME,
+  endPact, hostEvent, signPact, tourismPerHour, upgradeCost, upgradeVenue, workSlots, TOUR_INCOME,
+  baseTourism, canCreate, canOpenCourse, canRecruit, closeCourse, courseBonus, courseSlots, coursesOf, gradeOdds, nextStarCost, nextStarName, nextWorkCost,
+  openCourse, recruitStar, starLevel, starsOf, startCreate, talentPerHour, themeDone, workInfo, worksPower, type CultureStar,
 } from '../game/culture';
 import { RES_ICON, type Res } from '../data/economy';
 
-export type CultureTab = 'venue' | 'works' | 'event' | 'world';
+export type CultureTab = 'venue' | 'works' | 'stars' | 'tour' | 'event' | 'world';
 
 /** 시설 그림(src/assets/icons/icon-cul-<시설>-<단계>.webp), 없으면 이모지 */
 export function VenueArt({ id, level, big }: { id: VenueId; level: number; big?: boolean }) {
@@ -29,10 +32,20 @@ export function VenueArt({ id, level, big }: { id: VenueId; level: number; big?:
   if (url) return <img className={`art-ico cul-art ${big ? 'big' : ''} ${level === 0 ? 'dim' : ''}`} src={url} alt={d.name} draggable={false} />;
   return <span className={`cul-emoji ${big ? 'big' : ''} ${level === 0 ? 'dim' : ''}`}>{d.icon}</span>;
 }
-function EventArt({ id, icon }: { id: CultureEventId; icon: string }) {
+function EventArt({ id, icon, big }: { id: CultureEventId; icon: string; big?: boolean }) {
   const url = iconArt(`icon-cul-ev-${id}`);
-  return url ? <img className="art-ico" src={url} alt="" draggable={false} /> : <>{icon}</>;
+  return url ? <img className={`art-ico cul-art ${big ? 'big' : ''}`} src={url} alt="" draggable={false} /> : <span className={`cul-emoji ${big ? 'big' : ''}`}>{icon}</span>;
 }
+/** 그림 칸(없으면 이모지): 걸작 icon-cul-work-<id>, 스타 icon-cul-star-<종류>, 관광 코스 icon-cul-course-<id> */
+function Art({ k, icon, big, dim }: { k: string; icon: string; big?: boolean; dim?: boolean }) {
+  const url = k ? iconArt(k) : null;
+  if (url) return <img className={`art-ico cul-art ${big ? 'big' : ''} ${dim ? 'dim' : ''}`} src={url} alt="" draggable={false} />;
+  return <span className={`cul-emoji ${big ? 'big' : ''} ${dim ? 'dim' : ''}`}>{icon}</span>;
+}
+const needText = (needs: Partial<Record<VenueId, number>>) =>
+  Object.entries(needs)
+    .map(([v, n]) => `${venueById(v as VenueId).name} ${n}`)
+    .join(' · ');
 const lv = (n: number) => '★'.repeat(n) + '☆'.repeat(VENUE_MAX - n);
 const r1 = (n: number) => (Math.round(n * 10) / 10).toLocaleString('ko-KR');
 const resText = (res: Partial<Record<Res, number>>) =>
@@ -49,6 +62,8 @@ export function CultureScreen(props: ScreenProps) {
   const tabs: TabDef<CultureTab>[] = [
     { id: 'venue', label: '시설', icon: '🏛️', badge: c.builds.length || null },
     { id: 'works', label: '걸작', icon: '🏺', badge: WORK_KINDS.some((k) => !canAddWork(state, k.id)) ? '!' : null },
+    { id: 'stars', label: '스타', icon: '🌟', badge: STAR_KINDS.some((k) => !canRecruit(state, k.id)) ? '!' : starsOf(c).filter((x) => x.job).length || null },
+    { id: 'tour', label: '관광', icon: '✈️', badge: coursesOf(c).length || null },
     { id: 'event', label: '행사', icon: '🎉', badge: evOn ? '●' : null },
     { id: 'world', label: '세계', icon: '🌏' },
   ];
@@ -75,7 +90,9 @@ export function CultureScreen(props: ScreenProps) {
       </div>
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       {tab === 'venue' && <VenuePanel {...props} />}
-      {tab === 'works' && <WorksPanel {...props} />}
+      {tab === 'works' && <WorksPanel {...props} go={() => setTab('stars')} />}
+      {tab === 'stars' && <StarsPanel {...props} />}
+      {tab === 'tour' && <TourPanel {...props} />}
       {tab === 'event' && <EventPanel {...props} />}
       {tab === 'world' && <WorldPanel {...props} />}
       {c.log.length > 0 && (
@@ -109,7 +126,7 @@ function VenuePanel({ state, actions }: ScreenProps) {
             <BoostBar state={state} apply={actions.apply} target={{ kind: 'venue', venue: b.venue }} compact />
           </div>
         ))}
-        <div className="tiles c3 cul-tiles">
+        <div className="tiles c2 cul-tiles">
           {VENUES.map((d) => {
             const n = c.venues[d.id];
             const building = c.builds.some((b) => b.venue === d.id);
@@ -133,7 +150,7 @@ function VenuePanel({ state, actions }: ScreenProps) {
                 <BoostStart
                   state={state}
                   apply={actions.apply}
-                  need={Math.ceil((upgradeCost(d.id, n + 1).hours * 3600e3) / BOOST_MS)}
+                  need={Math.ceil((upgradeCost(d.id, n + 1, state).hours * 3600e3) / BOOST_MS)}
                   label={n ? '올리기' : '짓기'}
                   run={(s) => startAndFinish(s, (x) => upgradeVenue(x, d.id), { kind: 'venue', venue: d.id })}
                 />
@@ -154,7 +171,7 @@ function VenueModal({ state, actions, id, onClose }: Pick<ScreenProps, 'state' |
   const n = c.venues[id];
   const to = n + 1;
   const why = canUpgrade(state, id);
-  const cost = to <= VENUE_MAX ? upgradeCost(id, to) : null;
+  const cost = to <= VENUE_MAX ? upgradeCost(id, to, state) : null;
   const sp = CULTURE_SPECIAL[state.player.countryId]?.venue === id;
   return (
     <Modal
@@ -195,43 +212,297 @@ function VenueModal({ state, actions, id, onClose }: Pick<ScreenProps, 'state' |
 }
 
 /* ── 걸작 ── */
-function WorksPanel({ state, actions }: ScreenProps) {
+function WorksPanel({ state, actions, go }: ScreenProps & { go: () => void }) {
   const c = cultureOf(state);
-  const total = c.works.relic.length + c.works.show.length + c.works.hit.length;
+  const [sel, setSel] = useState<{ k: WorkKind; name: string } | null>(null);
+  const wp = worksPower(c);
+  const stars = starsOf(c);
   return (
-    <Card
-      title="걸작"
-      icon="🏺"
-      right={<small className="muted">다음 걸작 💠{workCost(total)}</small>}
-      help={<p>박물관·공연장·방송영화 단계만큼 걸작 칸이 생겨요. 걸작 하나마다 시간당 🎨 문화 +0.5, ✈️ 관광 +1. 문화 점수 💠로 들여요(들일수록 비싸져요).</p>}
-    >
-      {WORK_KINDS.map((k) => {
-        const slots = workSlots(state, k.id);
-        const have = c.works[k.id];
-        const why = canAddWork(state, k.id);
-        return (
-          <div key={k.id} className="cul-works">
-            <div className="list-row small">
-              <b>
-                {k.icon} {k.name} <span className="muted">({venueById(k.venue).name}) {have.length}/{slots}</span>
-              </b>
-              <button disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => addWork(s, k.id as WorkKind))}>
-                + 「{nextWorkName(state, k.id)}」
-              </button>
+    <>
+      <Card
+        title="걸작"
+        icon="🏺"
+        right={<small className="muted">다음 💠{fmt(nextWorkCost(state))}</small>}
+        help={
+          <>
+            <p>
+              <b>걸작은 스타가 만들어요.</b> 🌟스타 탭에서 고고학자(🏺유물)·예술가(🎻공연)·감독(📀히트작)을 데려온 뒤, 빈 칸의 ＋를 누르면 그 스타가 문화 점수 💠를 써서 몇 시간 동안 작품을 만들어요.
+            </p>
+            <p>
+              다 만들면 등급이 정해져요: 보통(🎨+{GRADES.C.cul} ✈️+{GRADES.C.tour}) · 귀한(🎨+{GRADES.B.cul} ✈️+{GRADES.B.tour}) · 전설(🎨+{GRADES.A.cul} ✈️+{GRADES.A.tour} · 민심 +{GRADES.A.mood}). 스타가 작품을 많이 만들수록 좋은 등급이 잘 나와요.
+            </p>
+            <p>
+              칸 수 = 박물관·공연장·방송영화 단계. {THEME_MIN}칸 이상을 모두 채우면 <b>테마 전시 완성</b>: 그 종류 걸작 효과 ×{THEME_MULT}.
+            </p>
+          </>
+        }
+      >
+        <div className="cul-sum small">
+          <span>걸작 효과</span>
+          <b>🎨 +{r1(wp.cul)}/h</b>
+          <b>✈️ +{r1(wp.tour)}/h</b>
+          {wp.mood > 0 && <b>🙂 +{wp.mood}</b>}
+        </div>
+        {WORK_KINDS.map((k) => {
+          const slots = workSlots(state, k.id);
+          const have = c.works[k.id];
+          const jobs = stars.filter((x) => x.job?.kind === k.id);
+          const maker = STAR_KINDS.find((d) => d.work === k.id)!;
+          const why = canAddWork(state, k.id);
+          return (
+            <div key={k.id} className="cul-works">
+              <div className="list-row small">
+                <b>
+                  {k.icon} {k.name} <span className="muted">· {venueById(k.venue).name} {have.length}/{slots}칸</span>
+                </b>
+                {themeDone(c, k.id) ? <span className="cul-theme">✨ 테마 전시 ×{THEME_MULT}</span> : <small className="muted">{maker.icon} {maker.name}가 만들어요</small>}
+              </div>
+              <div className="tiles c3 cul-work-tiles">
+                {/* 빈 칸·잠긴 칸은 다음 한 칸까지만 보여 줌(화면이 너무 길어지지 않게) */}
+                {Array.from({ length: Math.min(VENUE_MAX, Math.max(slots, have.length) + 1) }, (_, i) => {
+                  if (i < have.length) {
+                    const w = workInfo(have[i], k.id);
+                    const g = GRADES[w.grade];
+                    return <Tile key={i} icon={<Art k={w.id ? `icon-cul-work-${w.id}` : ''} icon={k.icon} />} label={w.name} sub={<span className={`cul-grade g-${w.grade}`}>{g.name}</span>} tone={g.tone} onClick={() => setSel({ k: k.id, name: w.name })} />;
+                  }
+                  const j = jobs[i - have.length];
+                  if (j) return <Tile key={i} icon={<span className="cul-emoji">⏳</span>} label="만드는 중" sub={`${j.name} · ${timeLeft(j.job!.endMs - state.worldMs)}`} />;
+                  if (i < slots)
+                    return (
+                      <Tile
+                        key={i}
+                        icon={<span className="cul-emoji">＋</span>}
+                        label={why ? '빈 칸' : '만들기'}
+                        sub={why ?? `💠${fmt(nextWorkCost(state))} · ${CREATE_HOURS[k.id]}시간`}
+                        tone={why ? undefined : 'green'}
+                        onClick={() => (why ? go() : actions.apply((s) => addWork(s, k.id)))}
+                      />
+                    );
+                  return <Tile key={i} icon={<span className="cul-emoji dim">🔒</span>} label={`${i + 1}칸째`} sub={`${venueById(k.venue).name} ${i + 1}단계`} />;
+                })}
+              </div>
             </div>
-            <div className="cul-slots">
-              {Array.from({ length: VENUE_MAX }, (_, i) => (
-                <span key={i} className={`cul-slot ${i < have.length ? 'on' : i < slots ? 'open' : ''}`} title={have[i] ?? ''}>
-                  {i < have.length ? k.icon : i < slots ? '＋' : '🔒'}
-                  <small>{have[i] ?? ''}</small>
+          );
+        })}
+      </Card>
+      {sel && <WorkModal state={state} k={sel.k} name={sel.name} onClose={() => setSel(null)} />}
+    </>
+  );
+}
+
+function WorkModal({ state, k, name, onClose }: Pick<ScreenProps, 'state'> & { k: WorkKind; name: string; onClose: () => void }) {
+  const c = cultureOf(state);
+  const w = workInfo(name, k);
+  const g = GRADES[w.grade];
+  const m = themeDone(c, k) ? THEME_MULT : 1;
+  return (
+    <Modal title={w.name} icon={workKindById(k).icon} onClose={onClose}>
+      <div className="cul-hero">
+        <Art k={w.id ? `icon-cul-work-${w.id}` : ''} icon={workKindById(k).icon} big />
+      </div>
+      <p className="small">
+        <span className={`cul-grade g-${w.grade}`}>{g.name} 걸작</span> · {workKindById(k).name} · {venueById(workKindById(k).venue).name}에 있어요
+      </p>
+      {w.text && <p className="small">{w.text}</p>}
+      <p className="small result">
+        시간당 🎨 문화 +{r1(g.cul * m)} · ✈️ 관광 +{r1(g.tour * m)}
+        {g.mood ? ` · 🙂 민심 +${g.mood}` : ''}
+        {m > 1 ? ` (테마 전시 ×${THEME_MULT})` : ''}
+      </p>
+    </Modal>
+  );
+}
+
+/* ── 스타(문화 인물, 11-25) ── */
+function StarsPanel({ state, actions }: ScreenProps) {
+  const c = cultureOf(state);
+  const stars = starsOf(c);
+  const [sel, setSel] = useState<number | null>(null);
+  const cur = stars.find((x) => x.id === sel);
+  return (
+    <>
+      <Card
+        title="문화 스타"
+        icon="🌟"
+        right={<small className="muted">{stars.length}명</small>}
+        help={
+          <p>
+            문화 시설이 시간마다 <b>인재 점수</b>를 모아요(시설 단계가 높을수록 빨라요). 막대가 차면 그 분야 스타를 데려올 수 있어요(분야마다 {STAR_MAX}명). 고고학자·예술가·감독은 걸작을 만들고, 스포츠 스타·건축가는 데리고만 있어도 효과가 있어요.
+          </p>
+        }
+      >
+        <div className="cul-talent">
+          {STAR_KINDS.map((k) => {
+            const have = stars.filter((x) => x.kind === k.id).length;
+            const need = nextStarCost(state, k.id);
+            const t = c.talent?.[k.id] ?? 0;
+            const why = canRecruit(state, k.id);
+            const rate = talentPerHour(state, k.id);
+            return (
+              <div key={k.id} className="cul-talent-row">
+                <span className="cul-talent-ico">
+                  <Art k={`icon-cul-star-${k.id}`} icon={k.icon} />
                 </span>
-              ))}
-            </div>
-            {why && <small className="muted">{why}</small>}
+                <span className="cul-talent-mid">
+                  <b>
+                    {k.name} <small className="muted">{have}/{STAR_MAX}명</small>
+                  </b>
+                  <small className="muted">{k.perk}</small>
+                  {have < STAR_MAX && (
+                    <>
+                      <Meter value={t} max={need} tone="gold" />
+                      <small className="muted">
+                        다음 「{nextStarName(state, k.id)}」 · 인재 {Math.floor(Math.min(t, need))}/{need} · {rate > 0 ? `+${r1(rate)}/h` : `${k.from.map((v) => venueById(v).name).join('·')}을 지어요`}
+                      </small>
+                    </>
+                  )}
+                </span>
+                {have < STAR_MAX && (
+                  <button className={why ? '' : 'primary'} disabled={!!why} onClick={() => actions.apply((s) => recruitStar(s, k.id))}>
+                    데려오기
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+      {stars.length > 0 && (
+        <Card title="우리 스타" icon="⭐">
+          <div className="tiles c2 cul-star-tiles">
+            {stars.map((x) => {
+              const d = starKindById(x.kind);
+              const why = d.work ? canCreate(state, x.id) : null;
+              return (
+                <Tile
+                  key={x.id}
+                  icon={<Art k={`icon-cul-star-${x.kind}`} icon={d.icon} />}
+                  label={x.name}
+                  sub={`${d.name} · ${'★'.repeat(starLevel(x))}`}
+                  tone={x.job ? 'blue' : !why && d.work ? 'green' : undefined}
+                  onClick={() => setSel(x.id)}
+                >
+                  <small className="muted cul-lvname">{x.job ? `⏳ ${workKindById(x.job.kind).name} 만드는 중 · ${timeLeft(x.job.endMs - state.worldMs)}` : d.work ? (why ?? `💠${fmt(nextWorkCost(state))}로 걸작을 만들 수 있어요`) : '효과 주는 중'}</small>
+                </Tile>
+              );
+            })}
           </div>
-        );
-      })}
-    </Card>
+        </Card>
+      )}
+      {cur && <StarModal state={state} actions={actions} x={cur} onClose={() => setSel(null)} />}
+    </>
+  );
+}
+
+function StarModal({ state, actions, x, onClose }: Pick<ScreenProps, 'state' | 'actions'> & { x: CultureStar; onClose: () => void }) {
+  const d = starKindById(x.kind);
+  const why = d.work ? canCreate(state, x.id) : null;
+  const odds = gradeOdds(state, x);
+  return (
+    <Modal
+      title={x.name}
+      icon={d.icon}
+      onClose={onClose}
+      footer={
+        d.work && (
+          <button className="wide primary" disabled={!!why} onClick={() => actions.apply((s) => startCreate(s, x.id))}>
+            {workKindById(d.work).icon} 걸작 만들기 · 💠{fmt(nextWorkCost(state))} · ⏱{CREATE_HOURS[d.work]}시간{why ? <small> ({why})</small> : null}
+          </button>
+        )
+      }
+    >
+      <div className="cul-hero">
+        <Art k={`icon-cul-star-${x.kind}`} icon={d.icon} big />
+      </div>
+      <p className="small">
+        {d.name} · {'★'.repeat(starLevel(x))} · 만든 걸작 {x.made}개
+      </p>
+      <p className="small result">{d.perk}</p>
+      {d.work && (
+        <p className="small muted">
+          나올 등급: 전설 {odds.A}% · 귀한 {odds.B}% · 보통 {odds.C}%{x.kind === 'arch' ? ' (문화유산 단계가 높을수록 좋아요)' : ''}
+        </p>
+      )}
+      {x.job && <p className="small">⏳ 만드는 중 · {timeLeft(x.job.endMs - state.worldMs)} 남음</p>}
+    </Modal>
+  );
+}
+
+/* ── 관광(11-25) ── */
+function TourPanel({ state, actions }: ScreenProps) {
+  const c = cultureOf(state);
+  const open = coursesOf(c);
+  const cb = courseBonus(c);
+  const tour = tourismPerHour(state);
+  const lines = cultureLines(state).filter((l) => l.mult > 0);
+  const tw = lines.reduce((v, l) => v + l.mult, 0) || 1;
+  const from = [...lines].sort((a, b) => b.mult - a.mult || b.pct - a.pct).slice(0, 5);
+  return (
+    <>
+      <div className="cul-tour-top">
+        <div>
+          <b>{fmt(Math.round(tour * VISITORS_PER_TOUR))}명</b>
+          <small>하루 관광객</small>
+        </div>
+        <div>
+          <b>💰 {r1(baseTourism(state) * TOUR_INCOME * (1 + cb.income))}/h</b>
+          <small>관광 수입</small>
+        </div>
+        <div>
+          <b>
+            {open.length}/{courseSlots(c)}
+          </b>
+          <small>관광 코스</small>
+        </div>
+      </div>
+      <Card
+        title="관광 코스"
+        icon="🧳"
+        right={cb.tour || cb.income ? <small className="muted">✈️ +{Math.round(cb.tour * 100)}%{cb.income ? ` · 💰 +${Math.round(cb.income * 100)}%` : ''}</small> : null}
+        help={<p>시설 두 곳 이상을 묶어 관광 코스를 열면 관광·문화·관광 수입이 올라요. 한 번에 {courseSlots(c)}개까지 열 수 있고(관광 단지 5단계면 +1), 닫는 건 공짜예요. 다시 열면 돈이 또 들어요.</p>}
+      >
+        <div className="tiles c2 cul-course-tiles">
+          {COURSES.map((d) => {
+            const on = open.includes(d.id);
+            const why = canOpenCourse(state, d.id);
+            const needOk = Object.entries(d.needs).every(([v, n]) => c.venues[v as VenueId] >= n!);
+            const eff = [d.tour ? `✈️+${Math.round(d.tour * 100)}%` : '', d.perHit ? `히트작마다 ✈️+${Math.round(d.perHit * 100)}%` : '', d.cul ? `🎨+${Math.round(d.cul * 100)}%` : '', d.income ? `💰+${Math.round(d.income * 100)}%` : '', d.mood ? `🙂+${d.mood}` : '']
+              .filter(Boolean)
+              .join(' ');
+            return (
+              <div key={d.id} className="bcard-cell cul-course-cell">
+                <Tile icon={<Art k={`icon-cul-course-${d.id}`} icon={d.icon} dim={!needOk} />} label={d.name} sub={eff} tone={on ? 'gold' : undefined} badge={on ? '✓' : null}>
+                  <small className="muted cul-lvname">{needOk ? d.text : `필요: ${needText(d.needs)}`}</small>
+                </Tile>
+                {on ? (
+                  <button className="mini cul-tile-btn" onClick={() => actions.apply((s) => closeCourse(s, d.id as CourseId))}>
+                    닫기
+                  </button>
+                ) : (
+                  <button className="mini cul-tile-btn primary" disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => openCourse(s, d.id as CourseId))}>
+                    열기 💰{fmt(d.money)}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+      <Card title="어디서 많이 오나" icon="🛬" help={<p>우리 문화가 잘 퍼지는 나라(협약·무역·연합·호감)에서 관광객이 많이 와요. 전쟁 중인 나라에선 안 와요.</p>}>
+        {from.length === 0 && <p className="small muted">아직 오는 관광객이 없어요.</p>}
+        {from.map((l) => (
+          <div key={l.id} className="list-row small cul-row">
+            <span className="cul-who">
+              {FLAG[l.id]} {countryById(l.id).name}
+            </span>
+            <span className="cul-meter">
+              <Meter value={l.mult} max={from[0].mult} tone="blue" />
+              <small>하루 약 {fmt(Math.round((tour * VISITORS_PER_TOUR * l.mult) / tw))}명</small>
+            </span>
+          </div>
+        ))}
+      </Card>
+    </>
   );
 }
 
@@ -248,17 +519,20 @@ function EventPanel({ state, actions }: ScreenProps) {
             {CULTURE_EVENTS.find((e) => e.id === on.id)!.icon} {CULTURE_EVENTS.find((e) => e.id === on.id)!.name} 진행 중{on.target ? ` → ${countryById(on.target).name}` : ''} · {timeLeft(on.endMs - state.worldMs)} 남음
           </p>
         )}
-        <div className="tiles c3">
+        <div className="tiles c2 cul-ev-tiles">
           {CULTURE_EVENTS.map((e) => {
             const cool = (c.cool[e.id] ?? 0) - state.worldMs;
             const needOk = Object.entries(e.needs).every(([v, n]) => c.venues[v as VenueId] >= n!);
             return (
               <Tile
                 key={e.id}
-                icon={<EventArt id={e.id} icon={e.icon} />}
+                icon={
+                  <span className={needOk ? '' : 'cul-dim'}>
+                    <EventArt id={e.id} icon={e.icon} />
+                  </span>
+                }
                 label={e.name}
-                sub={cool > 0 ? `⏳${timeLeft(cool)}` : `💰${fmt(e.money)}`}
-                locked={!needOk}
+                sub={cool > 0 ? `⏳${timeLeft(cool)}` : needOk ? `💰${fmt(e.money)} · ⏱${e.hours}시간` : `필요: ${needText(e.needs)}`}
                 badge={on?.id === e.id ? '●' : null}
                 onClick={() => setSel(e.id)}
               />
@@ -279,7 +553,7 @@ function EventModal({ state, actions, id, onClose }: Pick<ScreenProps, 'state' |
   return (
     <Modal
       title={e.name}
-      icon={<EventArt id={id} icon={e.icon} />}
+      icon={e.icon}
       onClose={onClose}
       footer={
         <button
@@ -294,6 +568,9 @@ function EventModal({ state, actions, id, onClose }: Pick<ScreenProps, 'state' |
         </button>
       }
     >
+      <div className="cul-hero">
+        <EventArt id={id} icon={e.icon} big />
+      </div>
       <p className="small">{e.text}</p>
       <p className="small muted">
         필요: {Object.entries(e.needs).map(([v, n]) => `${venueById(v as VenueId).name} ${n}단계`).join(' · ')} · 다시 열기까지 {e.coolHours >= 24 ? `${e.coolHours / 24}일` : `${e.coolHours}시간`}
