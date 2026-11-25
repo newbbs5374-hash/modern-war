@@ -1,7 +1,7 @@
 // 도시 기관 효과 합치기(data/institutions.ts). 내 나라가 가진 도시의 기관만, 점령지는 절반.
 import { CITIES } from '../data/cities';
 import { CITY_INST, type InstId } from '../data/institutions';
-import type { WorldState } from './world';
+import { homeOf, type WorldState } from './world';
 
 const VALUE: Record<InstId, number> = { lab: 0.15, univ: 0.1, bank: 0.04, army: 0.08, navy: 0.1, air: 0.1, nuke: 0.03, intel: 0.03 };
 
@@ -11,7 +11,7 @@ export function instSum(w: WorldState, countryId: string, id: InstId): number {
   for (const c of CITIES) {
     if (w.owner[c.id] !== countryId) continue;
     const n = (CITY_INST[c.name] ?? []).filter((x) => x === id).length;
-    v += n * VALUE[id] * (c.home === countryId ? 1 : 0.5);
+    v += n * VALUE[id] * (homeOf(w, c.id) === countryId ? 1 : 0.5);
   }
   return v;
 }

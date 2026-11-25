@@ -109,6 +109,8 @@ function defenseRows(s: GameState): Rows {
   }
   if (lost) rows.push([`빼앗긴 우리 도시 ${lost}곳`, -12 * lost]);
   if (won) rows.push([`차지한 도시 ${won}곳`, Math.min(15, 3 * won)]);
+  const ann = CITIES.filter((c) => s.world.annexed?.[c.id] === me && s.world.owner[c.id] === me).length;
+  if (ann) rows.push([`🗺️ 편입한 도시 ${ann}곳`, Math.min(10, 2 * ann)]);
   const sp = splitDefenseScore(s);
   if (sp) rows.push([`국방 예산 ${splitOf(s).def}%`, sp]);
   return rows;
