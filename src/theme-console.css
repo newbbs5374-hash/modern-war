@@ -900,3 +900,4 @@ select.wide, button.wide { width: 100%; }
 .rec-why { display: block; margin-top: 2px; }
 .rec-none { opacity: 0.85; }
 .rec-empty { text-align: center; padding: 12px 0; }
+.rec-urg { font-weight: 700; } .rec-urg.u1 { color: #8fbf9a; } .rec-urg.u2 { color: #e0a03c; } .rec-urg.u3, .rec-urg.u4 { color: #ef6a5a; }

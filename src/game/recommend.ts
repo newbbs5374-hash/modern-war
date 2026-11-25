@@ -1,6 +1,6 @@
 // 비서 인사 추천(11-25 대장 요청 "각 내정에 임명할 인사들을 추천하는 기능, 비서가 보고하는 형식, 부처별로 합쳐도 됨").
-// 빈 자리(장관·대통령실 참모·국무총리·기관장·청장)마다 가장 잘 맞는 사람을 한 명씩 겹치지 않게 골라요.
-// 후보 = 자리 없는 내 사람 + 인재 명단(영입비가 들어서 적합도 8점 덜 쳐 줌).
+// 11-25 후속: 가장 시급한 공석부터 차례로, 자리 없는 '내 사람' 중에서 먼저 고르고(적합 OWN_OK 밑이면)
+// 인재 명단에 더 나은 사람이 있을 때만 영입 추천. 한 사람은 한 자리에만.
 // 이미 앉은 사람보다 20점 넘게 잘 맞는 사람이 남아 있으면 교체도 건의해요.
 import { NEEDS, type Need } from '../data/needs';
 import { MINISTRIES, PERSON_ORIGINS, TRAITS, ministerSlots, ministryById, type MinistryId } from '../data/cabinet';
@@ -23,6 +23,8 @@ import {
   type Person,
 } from './cabinet';
 import type { GameState } from './state';
+import { atWar } from './peace';
+import { presOf } from './approval';
 
 export type RecSeat = { kind: 'min'; id: MinistryId } | { kind: 'post'; id: PostId };
 export interface Rec {
@@ -39,6 +41,8 @@ export interface Rec {
   holder: { pid: number; name: string; fit: number } | null;
   /** 비서 보고 말투 한 줄 */
   say: string;
+  /** 시급도 1~4(클수록 급함) */
+  urgency: number;
 }
 export interface SeatInfo {
   seat: RecSeat;
@@ -61,8 +65,6 @@ export interface RecReport {
 
 /** 교체를 건의하는 적합도 차이 */
 export const SWAP_GAP = 20;
-/** 인재 명단 사람(영입비 듦)은 이만큼 덜 쳐 줌 */
-export const POOL_PENALTY = 8;
 /** 이 적합도 밑이면 추천하지 않음(차라리 비워 둠) */
 export const MIN_FIT = 25;
 
@@ -99,78 +101,100 @@ export function reasonLine(p: Person, seat: RecSeat): string {
   return plus.length ? `${head}에 ${plus.join('·')}이라 딱 맞습니다.` : `${head}로 이 자리에 가장 낫습니다.`;
 }
 
-/** 비서 보고 만들기 */
+/* ───────── 시급도(11-25 대장 요청 "가장 시급한 공석부터") ───────── */
+// 기본: 총리·3실장·안보 4부처(국방·국정원·외교·기재) 장관 = 매우 시급(3),
+// 나머지 장관·수석·차장·경호처장·검찰총장·감사원장·한은 총재 = 시급(2), 청장 = 보통(1).
+// 상황 덤: 전쟁 중이면 국방·안보 자리 +1, 지지도 40 밑이면 홍보·소통 자리 +1.
+const TOP: string[] = ['pm', 'chief', 'policy', 'nsa', 'mnd', 'nis', 'mofa', 'mof'];
+const WAR_SEATS: string[] = ['mnd', 'nis', 'nsa', 'nsa2', 'guard', 'dapa', 'mma', 'kcg', 'mpva'];
+const PR_SEATS: string[] = ['press', 'spokes', 'kocis', 'society', 'polit'];
+export const URGENCY_NAME = ['', '🟢 보통', '🟠 시급', '🔴 매우 시급', '🚨 지금 당장'];
+
+export function urgencyOf(s: GameState, seat: RecSeat): number {
+  let u = TOP.includes(seat.id) ? 3 : seat.kind === 'post' && postById(seat.id).office === 'agency' ? 1 : 2;
+  if (WAR_SEATS.includes(seat.id) && atWar(s)) u++;
+  if (PR_SEATS.includes(seat.id) && presOf(s).approval < 40) u++;
+  return Math.min(4, u);
+}
+/** 같은 시급도 안에서 앞세울 순서(위 자리일수록 먼저) */
+function rankBonus(seat: RecSeat): number {
+  if (seat.kind === 'min') return 2;
+  const o = postById(seat.id).office;
+  return o === 'gov' || OFFICE_HEADS.includes(seat.id) ? 3 : o === 'agency' ? 0 : 1;
+}
+const OFFICE_HEADS: string[] = ['chief', 'policy', 'nsa'];
+
+/** 내 사람이 이 적합도 밑이면 인재 명단에서 더 나은 사람을 찾아봄 */
+export const OWN_OK = 45;
+
+/** 비서 보고 만들기: 시급한 공석부터 차례로, 내 사람 먼저 → 모자라면 인재 명단 */
 export function recommend(s: GameState): RecReport {
   const c = cabinetOf(s);
   const busy = c.hearing?.pid;
-  const cands = c.people.filter(
-    (p) => p.id !== busy && ((p.group === '내각' && !p.seat && !p.post) || p.group === '인재'),
-  );
-  const seats = allSeats().map((seat) => {
-    const h = holderOf(s, seat);
-    return { seat, holder: h, holderFit: h ? seatFit(h, seat) : 0 };
-  });
-  // 장관 석: 청문회 중인 부처는 비어도 추천하지 않음
+  const own = c.people.filter((p) => p.id !== busy && p.group === '내각' && !p.seat && !p.post);
+  const pool = c.people.filter((p) => p.id !== busy && p.group === '인재');
   const hearingMin = c.hearing?.min;
   const minLeft = Math.max(0, ministerSlots(s.player.rankIndex) - ministerCount(c) - (c.hearing ? 1 : 0));
-  const open = seats.filter((x) => !(x.seat.kind === 'min' && x.seat.id === hearingMin));
-
-  // 짝(자리·사람) 점수 → 큰 것부터 겹치지 않게
-  type Pair = { i: number; p: Person; fit: number; score: number };
-  const pairs: Pair[] = [];
-  open.forEach((x, i) => {
-    for (const p of cands) {
-      const fit = seatFit(p, x.seat);
-      if (fit < MIN_FIT) continue;
-      // 앉은 사람이 있으면 그보다 SWAP_GAP 넘게 나아야 후보
-      if (x.holder && fit - x.holderFit < SWAP_GAP) continue;
-      const score = fit - (p.group === '인재' ? POOL_PENALTY : 0) - (x.holder ? 5 : 0);
-      pairs.push({ i, p, fit, score });
-    }
-  });
-  pairs.sort((a, b) => b.score - a.score);
-  const usedSeat = new Set<number>();
-  const usedP = new Set<number>();
+  const seats = allSeats()
+    .filter((seat) => !(seat.kind === 'min' && seat.id === hearingMin))
+    .map((seat) => {
+      const h = holderOf(s, seat);
+      return { seat, holder: h, holderFit: h ? seatFit(h, seat) : 0, urg: urgencyOf(s, seat), bonus: rankBonus(seat) };
+    });
+  const used = new Set<number>();
   let minUsed = 0;
   let minBlocked = 0;
-  const blockedSeat = new Set<number>();
   const recs: Rec[] = [];
-  for (const pr of pairs) {
-    if (usedSeat.has(pr.i) || usedP.has(pr.p.id)) continue;
-    const x = open[pr.i];
-    // 빈 장관 자리는 남은 석만큼만
-    if (x.seat.kind === 'min' && !x.holder) {
-      if (minUsed >= minLeft) {
-        if (!blockedSeat.has(pr.i)) (blockedSeat.add(pr.i), minBlocked++);
-        continue;
-      }
-      minUsed++;
+  const noOne: SeatInfo[] = [];
+  const best = (list: Person[], seat: RecSeat, floor: number) => {
+    let top: { p: Person; fit: number } | null = null;
+    for (const p of list) {
+      if (used.has(p.id)) continue;
+      const fit = seatFit(p, seat);
+      if (fit >= floor && (!top || fit > top.fit)) top = { p, fit };
     }
-    usedSeat.add(pr.i);
-    usedP.add(pr.p.id);
-    const p = pr.p;
+    return top;
+  };
+  /** 내 사람 먼저: OWN_OK 넘는 사람이 있으면 그 사람, 없으면 인재 명단이 더 나을 때만 인재 */
+  const pick = (seat: RecSeat, floor: number) => {
+    const a = best(own, seat, floor);
+    if (a && a.fit >= OWN_OK) return a;
+    const b = best(pool, seat, floor);
+    if (b && (!a || b.fit > a.fit)) return b;
+    return a;
+  };
+  const push = (x: (typeof seats)[number], p: Person, fit: number) => {
+    used.add(p.id);
     const cost = p.group === '인재' ? recruitCost(s, p) : 0;
     const name = seatName(x.seat);
     const why = reasonLine(p, x.seat);
     const say = x.holder
-      ? `각하, ${name} ${x.holder.name}(적합 ${x.holderFit}%)보다 ${p.name}(${pr.fit}%)이(가) 훨씬 낫습니다. ${why} 교체를 건의드립니다.`
-      : `각하, ${name} 자리가 비어 있습니다. ${p.name}을(를) 추천드립니다. ${why}${cost ? ' 아직 영입 전이라 영입비가 듭니다.' : ''}`;
-    recs.push({
-      seat: x.seat,
-      name,
-      icon: seatIcon(x.seat),
-      pid: p.id,
-      fit: pr.fit,
-      cost,
-      holder: x.holder ? { pid: x.holder.id, name: x.holder.name, fit: x.holderFit } : null,
-      say,
-    });
+      ? `각하, ${name} ${x.holder.name}(적합 ${x.holderFit}%)보다 ${p.name}(${fit}%)이(가) 훨씬 낫습니다. ${why} 교체를 건의드립니다.`
+      : `각하, ${name} 자리가 비어 있습니다. ${cost ? '내 사람 중엔 맞는 분이 없어 인재 명단에서 ' : ''}${p.name}을(를) 추천드립니다. ${why}`;
+    recs.push({ seat: x.seat, name, icon: seatIcon(x.seat), pid: p.id, fit, cost, holder: x.holder ? { pid: x.holder.id, name: x.holder.name, fit: x.holderFit } : null, say, urgency: x.urg });
+  };
+  // 1) 빈 자리: 시급한 순
+  const empty = seats.filter((x) => !x.holder).sort((a, b) => b.urg - a.urg || b.bonus - a.bonus);
+  for (const x of empty) {
+    if (x.seat.kind === 'min' && minUsed >= minLeft) {
+      minBlocked++;
+      continue;
+    }
+    const top = pick(x.seat, MIN_FIT);
+    if (!top) {
+      noOne.push({ seat: x.seat, name: seatName(x.seat), icon: seatIcon(x.seat), holder: null, holderFit: 0 });
+      continue;
+    }
+    if (x.seat.kind === 'min') minUsed++;
+    push(x, top.p, top.fit);
   }
-  const noOne: SeatInfo[] = open
-    .filter((x, i) => !x.holder && !usedSeat.has(i) && !blockedSeat.has(i))
-    .map((x) => ({ seat: x.seat, name: seatName(x.seat), icon: seatIcon(x.seat), holder: null, holderFit: 0 }));
-  const good = seats.filter((x) => x.holder && !recs.some((r) => seatKey(r.seat) === seatKey(x.seat))).length;
-  // 실제로 부족한 장관 석: 추천 못 한 빈 부처 수(blocked) — 다른 자리로 간 사람 때문일 수 있어 seat 기준
+  // 2) 교체 건의: 남은 사람으로, 시급한 자리부터
+  const filled = seats.filter((x) => x.holder).sort((a, b) => b.urg - a.urg || b.bonus - a.bonus);
+  for (const x of filled) {
+    const top = pick(x.seat, Math.max(MIN_FIT, x.holderFit + SWAP_GAP));
+    if (top) push(x, top.p, top.fit);
+  }
+  const good = seats.filter((x) => x.holder).length - recs.filter((r) => r.holder).length;
   return { recs, noOne, good, minLeft, minBlocked };
 }
 

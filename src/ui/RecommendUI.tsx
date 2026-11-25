@@ -4,14 +4,14 @@ import { useMemo, useState } from 'react';
 import { MINISTRIES, type FieldTab, type MinistryId } from '../data/cabinet';
 import { OFFICES, postById } from '../data/staff';
 import { REFRESH_RUBY, cabinetOf, postHolder, refreshPool, type Person } from '../game/cabinet';
-import { canTakeRec, recommend, seatKey, takeRec, takeRecs, type Rec, type RecReport, type SeatInfo } from '../game/recommend';
+import { URGENCY_NAME, canTakeRec, recommend, seatKey, takeRec, takeRecs, urgencyOf, type Rec, type RecReport, type SeatInfo } from '../game/recommend';
 import type { GameState } from '../game/state';
 import { fmt } from './common';
 import { Modal } from './kit';
 import { PersonFace, PersonModal } from './CabinetUI';
 import type { ScreenProps } from './screens';
 
-type Part = 'office' | 'gov' | 'min';
+type Part = 'urgent' | 'office' | 'gov' | 'min';
 const FIELD_NAME: Record<FieldTab, string> = { defense: '🛡️ 국방', diplo: '🌐 외교', society: '🏘️ 사회', economy: '📈 경제' };
 
 /** 이 추천이 어느 묶음인지 */
@@ -45,14 +45,13 @@ export function RecommendButton({ state, actions }: Pick<ScreenProps, 'state' | 
 
 export function RecommendModal({ state, actions, onClose }: Pick<ScreenProps, 'state' | 'actions'> & { onClose: () => void }) {
   const rep = useMemo(() => recommend(state), [state]);
-  const counts: Record<Part, number> = { office: 0, gov: 0, min: 0 };
+  const counts: Record<Part, number> = { urgent: rep.recs.length, office: 0, gov: 0, min: 0 };
   for (const r of rep.recs) counts[partOf(r)]++;
-  const first: Part = counts.min ? 'min' : counts.office ? 'office' : counts.gov ? 'gov' : 'min';
-  const [part, setPart] = useState<Part>(first);
+  const [part, setPart] = useState<Part>('urgent');
   const [who, setWho] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const chief = postHolder(cabinetOf(state), 'chief');
-  const list = rep.recs.filter((r) => partOf(r) === part);
+  const list = part === 'urgent' ? rep.recs : rep.recs.filter((r) => partOf(r) === part);
   const ok = list.filter((r) => !canTakeRec(state, r));
   const swaps = rep.recs.filter((r) => r.holder).length;
   const take = (r: Rec) => {
@@ -90,6 +89,9 @@ export function RecommendModal({ state, actions, onClose }: Pick<ScreenProps, 's
       </div>
       {msg && <p className="small rec-msg">{msg}</p>}
       <div className="seg cab-seg">
+        <button className={part === 'urgent' ? 'on' : ''} onClick={() => setPart('urgent')}>
+          🚨 시급한 순 {counts.urgent}
+        </button>
         <button className={part === 'min' ? 'on' : ''} onClick={() => setPart('min')}>
           🏛️ 부처별 {counts.min}
         </button>
@@ -100,9 +102,9 @@ export function RecommendModal({ state, actions, onClose }: Pick<ScreenProps, 's
           ⚖️ 총리·기관장 {counts.gov}
         </button>
       </div>
-      {part === 'min' && rep.minBlocked > 0 && (
+      {(part === 'min' || part === 'urgent') && rep.minBlocked > 0 && (
         <p className="small muted" style={{ margin: '2px 0' }}>
-          📌 장관 석이 모자라 빈 부처 {rep.minBlocked}곳은 이번에 추천하지 않았어요(잘 맞는 부처부터). 지금 남은 장관 석 {rep.minLeft}석.
+          📌 장관 석이 모자라 빈 부처 {rep.minBlocked}곳은 이번에 추천하지 않았어요(시급한 부처부터). 지금 남은 장관 석 {rep.minLeft}석.
         </p>
       )}
       <RecGroups state={state} rep={rep} part={part} onTake={take} onFace={setWho} />
@@ -122,15 +124,23 @@ function headLine(rep: RecReport, swaps: number): string {
     return rep.noOne.length
       ? `각하, 빈 자리 ${rep.noOne.length}곳에 맞는 사람이 아직 없습니다. 인재 명단을 새로 받아 보시길 권합니다.`
       : '각하, 모든 자리에 알맞은 분들이 앉아 있습니다. 지금은 바꿀 곳이 없습니다.';
-  return `각하, 인사 보고 올립니다. 빈 자리 ${fill}곳에 추천드릴 분을 골랐습니다.${swaps ? ` 교체를 건의드릴 자리도 ${swaps}곳 있습니다.` : ''} 적합도는 스탯·특화·성향·출신으로 따졌습니다.`;
+  const fromPool = rep.recs.filter((r) => r.cost).length;
+  const urgent = rep.recs.filter((r) => !r.holder && r.urgency >= 3).length;
+  return `각하, 인사 보고 올립니다. 빈 자리 ${fill}곳을 시급한 순으로 올립니다${urgent ? `(매우 시급 ${urgent}곳)` : ''}. 내 사람 중에서 먼저 골랐고${fromPool ? `, 맞는 분이 없는 ${fromPool}곳만 인재 명단에서 골랐습니다` : ''}.${swaps ? ` 교체를 건의드릴 자리도 ${swaps}곳 있습니다.` : ''}`;
 }
 
 /** 묶음별로 줄 세우기 */
 function RecGroups({ state, rep, part, onTake, onFace }: { state: GameState; rep: RecReport; part: Part; onTake: (r: Rec) => void; onFace: (id: number) => void }) {
-  const recs = rep.recs.filter((r) => partOf(r) === part);
-  const none = rep.noOne.filter((x) => partOf(x) === part);
+  const recs = part === 'urgent' ? rep.recs : rep.recs.filter((r) => partOf(r) === part);
+  const none = part === 'urgent' ? [...rep.noOne].sort((a, b) => urgencyOf(state, b.seat) - urgencyOf(state, a.seat)) : rep.noOne.filter((x) => partOf(x) === part);
   if (!recs.length && !none.length)
     return <p className="small muted rec-empty">이 쪽은 모두 알맞은 분들이 앉아 있습니다. 👍</p>;
+  if (part === 'urgent')
+    return (
+      <div className="rec-group">
+        <RecRows state={state} recs={recs} none={none} onTake={onTake} onFace={onFace} />
+      </div>
+    );
   if (part === 'min') {
     // 분야 → 부처 → (장관 + 청장)
     const fields: FieldTab[] = ['defense', 'diplo', 'society', 'economy'];
@@ -195,7 +205,7 @@ function RecRows({ state, recs, none, onTake, onFace }: { state: GameState; recs
             <div className="rec-top">
               <span className="rec-seat">
                 {r.icon} <b>{r.name}</b>
-                {r.holder ? <small className="rec-swap">교체 건의</small> : <small className="muted">빈 자리</small>}
+                {r.holder ? <small className="rec-swap">교체 건의</small> : <small className={`rec-urg u${r.urgency}`}>{URGENCY_NAME[r.urgency]}</small>}
               </span>
             </div>
             <div className="rec-mid">
