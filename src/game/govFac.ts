@@ -5,13 +5,19 @@ import type { MinistryId } from '../data/cabinet';
 import type { PostEff } from '../data/staff';
 import { cabinetOf, ministerOf, postHolder } from './cabinet';
 import { domOf } from './domestic';
+import { nationFacCity } from './nation';
 import type { GameState } from './state';
 
 /** 시설이 있는 도시(한국은 실제 도시, 다른 나라는 내 나라 도시에 차례로) */
 export function govFacCity(s: GameState, f: GovFacility): string {
   const me = s.player.countryId;
-  const n = COUNTRIES.find((c) => c.id === me)?.cities.length ?? 1;
-  return `${me}-${me === 'kr' ? f.city : f.city % n}`;
+  const cities = COUNTRIES.find((c) => c.id === me)?.cities ?? [];
+  const n = cities.length || 1;
+  if (me === 'kr') return `${me}-${f.city}`;
+  // 11-25: 나라마다 실제 자리(이름)로. 그 도시가 없으면 차례로
+  const at = nationFacCity(me, f.id);
+  const i = at ? cities.indexOf(at) : -1;
+  return `${me}-${i >= 0 ? i : f.city % n}`;
 }
 /** 지금 단계(국가 사업을 끝내면 +1 덤) */
 export function govFacLevel(s: GameState, id: string): number {

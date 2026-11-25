@@ -1,3 +1,4 @@
+import { applyNation } from './game/nation';
 import { checkVictory } from './game/victory';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as G from './game/state';
@@ -75,6 +76,7 @@ export function App() {
     return saved ? resume(saved, Date.now()) : { state: null, notice: '', away: undefined };
   });
   const [state, setState] = useState<G.GameState | null>(init.state);
+  if (state) applyNation(state.player.countryId); // 11-25 나라별 부처·참모 이름
   const [away, setAway] = useState<AwaySummary | null>(init.away ?? null);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [notices, setNotices] = useState<string[]>(init.notice ? [init.notice] : []);

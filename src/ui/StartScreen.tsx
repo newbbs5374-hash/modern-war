@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NationTraits } from './NationUI';
 import { BLOCS, COUNTRIES } from '../data/world';
 import { HallList } from './victoryScreens';
 import { loadHall } from '../game/victory';
@@ -189,6 +190,7 @@ export function StartScreen({ onStart, onImport, onCloud }: Props) {
                       );
                     })}
                   </div>
+                  <NationTraits id={c.id} />
                   <div>
                     ⭐ <b>{c.ability.name}</b> <span className="muted">{c.ability.effect}</span>
                   </div>

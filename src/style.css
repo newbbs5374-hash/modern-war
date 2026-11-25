@@ -1112,3 +1112,16 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .safe-err { border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 6px; }
 .safe-err.small { padding: 8px; }
 .safe-err p { margin: 0; }
+
+/* 11-25 나라 특징 상자(NationUI) */
+.nation-traits { margin: 4px 0; }
+.nation-traits .nt-style { margin: 0 0 4px; }
+.nation-traits .nt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.nation-traits .nt-chip { display: flex; gap: 4px; align-items: center; padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); min-width: 0; }
+.nation-traits .nt-chip.weak { border-color: var(--red); }
+.nation-traits .nt-ico { flex: none; width: 26px; height: 26px; display: grid; place-items: center; font-size: 18px; }
+.nation-traits .nt-ico img { width: 26px; height: 26px; object-fit: contain; }
+.nation-traits .nt-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.nation-traits .nt-txt b { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nation-traits .nt-txt small { font-size: 10px; color: var(--muted); }
+.nation-traits .nt-chip.weak .nt-txt b { color: var(--red); }
