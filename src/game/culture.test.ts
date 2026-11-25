@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { advance, newGame, setRank, type GameState } from './state';
 import { COUNTRIES } from '../data/world';
 import { pairKey } from './world';
-import { VENUE_IDS } from '../data/culture';
+import { CREATE_HOURS, VENUE_IDS, WORKS } from '../data/culture';
 import {
-  addWork, canHost, canUpgrade, cultureOf, cultureProgress, cultureTick, hostEvent, signPact, tourismPerHour, upgradeVenue,
+  addWork, canAddWork, canCreate, canOpenCourse, canRecruit, openCourse, recruitStar, starsOf, talentPerHour, worksPower, canHost, canUpgrade, cultureOf, cultureProgress, cultureTick, hostEvent, signPact, tourismPerHour, upgradeVenue,
 } from './culture';
 import { checkVictory, VICTORY_RANK } from './victory';
 
@@ -50,15 +50,52 @@ describe('문화', () => {
     expect(canUpgrade(s, 'park')).toMatch(/공사 팀/);
   });
 
-  it('걸작은 시설 단계만큼 칸이 있고 문화 점수를 쓴다', () => {
+  it('걸작은 스타가 만들고, 시설 단계만큼 칸이 있고, 시간이 지나면 등급이 정해진다', () => {
     let s = rich(newGame('테스트', 'kr', 0));
     s = pass(upgradeVenue(s, 'museum'), 3 * H);
     s = { ...s, culture: { ...cultureOf(s), points: 1000 } };
+    expect(canAddWork(s, 'relic')).toMatch(/고고학자/);
+    // 인재 점수가 차면 고고학자를 데려옴
+    expect(canRecruit(s, 'arch')).toMatch(/인재/);
+    s = { ...s, culture: { ...cultureOf(s), talent: { arch: 30 } } };
+    s = recruitStar(s, 'arch');
+    const star = starsOf(cultureOf(s))[0];
+    expect(star.kind).toBe('arch');
     s = addWork(s, 'relic');
-    expect(cultureOf(s).works.relic.length).toBe(1);
-    s = addWork(s, 'relic');
-    expect(cultureOf(s).works.relic.length).toBe(1); // 박물관 1단계 = 1칸
     expect(cultureOf(s).points).toBe(880);
+    expect(starsOf(cultureOf(s))[0].job).toBeTruthy();
+    expect(canCreate(s, star.id)).toMatch(/만드는 중/);
+    s = pass(s, CREATE_HOURS.relic * H + 1000);
+    const c = cultureOf(s);
+    expect(c.works.relic.length).toBe(1);
+    expect(starsOf(c)[0].made).toBe(1);
+    expect(starsOf(c)[0].job).toBeFalsy();
+    expect(WORKS.find((w) => w.name === c.works.relic[0])).toBeTruthy();
+    // 박물관 1단계 = 1칸
+    expect(canCreate(s, star.id)).toMatch(/칸이 다 찼/);
+  });
+
+  it('시설이 인재 점수를 모으고, 관광 코스는 조건·자리·돈을 본다', () => {
+    let s = rich(newGame('테스트', 'kr', 0));
+    s = { ...s, culture: { ...cultureOf(s), venues: { museum: 2, stage: 0, stadium: 0, studio: 0, park: 0, heritage: 2 } } };
+    expect(talentPerHour(s, 'arch')).toBe(5);
+    s = pass(s, 10 * H);
+    expect(cultureOf(s).talent?.arch).toBeCloseTo(50);
+    const t0 = tourismPerHour(s);
+    expect(canOpenCourse(s, 'stage')).toMatch(/공연장/);
+    expect(canOpenCourse(s, 'history')).toBeNull();
+    s = openCourse(s, 'history');
+    expect(tourismPerHour(s)).toBeCloseTo(t0 * 1.15);
+    expect(canOpenCourse(s, 'history')).toMatch(/이미/);
+  });
+
+  it('전설 걸작·테마 전시는 효과가 더 크다', () => {
+    let s = rich(newGame('테스트', 'kr', 0));
+    s = { ...s, culture: { ...cultureOf(s), venues: { museum: 3, stage: 0, stadium: 0, studio: 0, park: 0, heritage: 0 }, works: { relic: ['청동 투구', '왕실 도장'], show: [], hit: [] } } };
+    const a = worksPower(cultureOf(s)).tour;
+    expect(a).toBe(2);
+    s = { ...s, culture: { ...cultureOf(s), works: { relic: ['청동 투구', '왕실 도장', '고대 왕관'], show: [], hit: [] } } };
+    expect(worksPower(cultureOf(s)).tour).toBe((1 + 1 + 4) * 1.5);
   });
 
   it('관광은 다른 나라에 영향력으로 쌓이고, 전쟁 중인 나라엔 안 퍼진다', () => {
