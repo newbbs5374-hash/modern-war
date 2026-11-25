@@ -4,6 +4,8 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CAPTURERS,
   FIELD_HEX,
+  FIELD_REAL_HALF,
+  hasRealField,
   FIELD_LIMIT,
   FUNIT,
   SUPPLY_CARRIER,
@@ -389,6 +391,8 @@ export function FieldView(props: FrameProps) {
             return (
               <g key={u.id} transform={`translate(${x},${y})`} pointerEvents="none" className={u.side === 'me' && u.supply < 0.95 ? 'low-supply' : ''}>
                 {u.id === sel && <ellipse cx={0} cy={half * 0.55} rx={half * 0.95} ry={half * 0.38} fill="none" stroke="#fde047" strokeWidth={1} strokeDasharray="2 1.5" />}
+                {/* 위성 바탕 위 그림자(하늘 부대는 땅에 멀리 떨어진 그림자) */}
+                <ellipse cx={air ? -4 : 0} cy={air ? half * 1.4 : half * 0.5} rx={half * (air ? 0.55 : 0.8)} ry={half * (air ? 0.2 : 0.28)} fill="#000" opacity={air ? 0.25 : 0.38} />
                 <Sprite x={0} y={-1} art={artKey} emoji={FUNIT[u.kind].icon} size={size} flip={u.face < 0} filter={filter} />
                 {u.sp && (
                   <text x={-half} y={-half + 3} fontSize={6}>
@@ -595,7 +599,31 @@ function Sprite({ x, y, art, emoji, size, flip, opacity, filter }: { x: number; 
 const BLEND_ORDER: FTerrain[] = ['바다', '해협', '해안', '평지', '숲', '산', '시가지', '도심'];
 /** 바다 쪽 지형(이 위에 땅이 얹힘) */
 const SEA_T: FTerrain[] = ['바다', '해협'];
+const SAT_BASE = `${import.meta.env.BASE_URL}field-sat/`;
 const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox }: { field: FieldBattle['field']; viewBox: string }) {
+  // 11-25 메인 전투 ③: 실제 위성 사진 바탕(도시 둘레 약 41km). 못 불러오면 예전 그림 땅
+  const [satFail, setSatFail] = useState(false);
+  if (hasRealField(f.city) && !satFail) {
+    const H = FIELD_REAL_HALF;
+    return (
+      <svg className="field-ground" viewBox={viewBox} aria-hidden="true">
+        <rect x={-H * 4} y={-H * 4} width={H * 8} height={H * 8} fill="#0b2f4f" />
+        <image href={`${SAT_BASE}${f.city}.webp`} x={-H} y={-H} width={H * 2} height={H * 2} preserveAspectRatio="none" onError={() => setSatFail(true)} />
+        {/* 전장 밖은 조금 어둡게 */}
+        <defs>
+          <radialGradient id="sat-vig" cx="0" cy="0" r={H} gradientUnits="userSpaceOnUse">
+            <stop offset="0.78" stopColor="#000" stopOpacity="0" />
+            <stop offset="1" stopColor="#000" stopOpacity="0.45" />
+          </radialGradient>
+        </defs>
+        <rect x={-H} y={-H} width={H * 2} height={H * 2} fill="url(#sat-vig)" />
+      </svg>
+    );
+  }
+  return <PaintedTerrain field={f} viewBox={viewBox} />;
+});
+
+const PaintedTerrain = memo(function PaintedTerrain({ field: f, viewBox }: { field: FieldBattle['field']; viewBox: string }) {
   const minX = Math.min(...f.cells.map((c) => c.x)) - FIELD_HEX * 2;
   const minY = Math.min(...f.cells.map((c) => c.y)) - FIELD_HEX * 2;
   const W = f.w + FIELD_HEX * 4;

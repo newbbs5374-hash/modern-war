@@ -81,10 +81,10 @@ export function trainingScale(name: string, rank: number): string {
 
 /** 훈련 = 미니게임 1판(11-25). mini = 고른 미니게임 id(없으면 씨앗으로) */
 export function trainingPlan(name: string, rank: number, seed: number, mini?: string): BattlePlan {
-  const scale = trainingScale(name, rank);
+  void rank;
   const m = pickMini(name, seed, mini);
   return {
-    title: `${name} 훈련 · ${m.name}${scale ? ` · ${scale}` : ''}`,
+    title: `${name} 훈련 · ${m.name}`,
     source: 'training',
     training: name,
     mainIdx: 0,
@@ -137,7 +137,7 @@ export const GRAND_STAGES: Pick[] = [
 ];
 export const GRAND_MAIN = 3;
 /** 지도 위 전투로 하는 대전투(한 판, 안에서 큰 싸움은 직접 지휘로 기존 틀) */
-export const FIELD_PICK: Pick = { frame: 'field', variant: 'capture', label: '지도 위 전투' };
+export const FIELD_PICK: Pick = { frame: 'field', variant: 'capture', label: '위성 지도 전투' };
 
 /** 승급 심사 작전(계급 순서대로) */
 const EXAM_BATTLE: Pick[] = [
@@ -205,7 +205,7 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 
 /** 연습장 목록(보상 없음) */
 export const PRACTICE: Array<{ label: string } & Pick> = [
-  { label: '지도 위 전투', frame: 'field', variant: 'capture' },
+  { label: '위성 지도 전투', frame: 'field', variant: 'capture' },
   { label: '방어(깃발)', frame: 'grid', variant: 'survive' },
   { label: '구출(인질)', frame: 'grid', variant: 'rescue' },
   { label: '정찰(목표)', frame: 'grid', variant: 'reach' },
