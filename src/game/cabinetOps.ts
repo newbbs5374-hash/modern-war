@@ -35,7 +35,7 @@ import { GENERAL_STYLES } from '../data/officers';
 import { originEff } from './origin';
 import { Rng } from './rng';
 import { budgetPerDay, type GameState } from './state';
-import { isAlive, pairKey, relationOf } from './world';
+import { homeOf, isAlive, pairKey, relationOf } from './world';
 
 const H = 3600e3;
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -181,7 +181,7 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
         addBuff(c, 'socScore', 5 * k, now + 24 * H, name);
         text = `모든 도시 민심 +${Math.round(5 * k)} · 사회 안정 +${Math.round(5 * k)}(하루)`;
       } else if (taskId === 'police') {
-        const occ = mine.filter((ct) => ct.home !== me);
+        const occ = mine.filter((ct) => homeOf(s.world, ct.id) !== me);
         for (const ct of occ) civ.cities[ct.id].loyalty = clamp(civ.cities[ct.id].loyalty + 10 * k);
         text = occ.length ? `점령지 ${occ.length}곳 민심 +${Math.round(10 * k)}` : '점령지가 없어 치안만 다졌어요';
       } else {

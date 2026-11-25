@@ -109,6 +109,20 @@ export function noteCapture(w: WorldState, target: string, att: string): void {
     if (s) via[target] = s;
   }
   w.via = via;
+  // 주인이 바뀌면 편입 진행·편입 기록은 끝남(되찾기·반란·다른 나라 점령 모두)
+  if (w.annex?.[target]) {
+    const { [target]: _a, ...rest } = w.annex;
+    w.annex = rest;
+  }
+  if (w.annexed?.[target]) {
+    const { [target]: _b, ...rest } = w.annexed;
+    w.annexed = rest;
+  }
+}
+
+/** 편입한 도시가 다스리는 도(빗금 없이 그 나라 땅처럼 그림) */
+export function annexedProv(w: WorldState, p: Prov, landOwner: string): boolean {
+  return !!p.seat && w.annexed?.[p.seat] === landOwner;
 }
 
 /** 길목 너비(지도 px): 1도 = 6px → 약 2도 */

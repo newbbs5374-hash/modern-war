@@ -41,7 +41,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { generalBuildMult, generalPowerMult, generalResMult } from './loyal';
-import { isAlive, relationOf } from './world';
+import { homeOf, isAlive, relationOf } from './world';
 import { facBonus, facEff, facNeedWhy } from './facility';
 import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, tradeEdge, unitTechLock } from './civ';
 import { EXCLUSIVES, exclusiveLock, specialById, specialsOf, type SpecialDef } from '../data/specials';
@@ -178,7 +178,7 @@ export function resPerDay(s: GameState): Stock {
   for (const c of CITIES) {
     if (s.world.owner[c.id] !== me) continue;
     const r = CITY_RES[c.name] ?? {};
-    const k = c.home === me ? 1 : OCCUPIED_RES;
+    const k = homeOf(s.world, c.id) === me ? 1 : OCCUPIED_RES;
     for (const [res, v] of Object.entries(r)) out[res as Res] += v! * k * resMult(s, res as Res) * civ;
   }
   return out;

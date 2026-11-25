@@ -54,7 +54,7 @@ import {
   upgradeFacility,
 } from '../game/economy';
 import { budgetBreakdown, budgetPerDay, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
-import { citiesOf, isAlive, relationOf } from '../game/world';
+import { citiesOf, homeOf, isAlive, relationOf } from '../game/world';
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, startAndFinish } from '../game/boost';
 import { CountryInfo, RelTag, fmt, leaderText } from './common';
@@ -206,7 +206,7 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
   const e = state.economy;
   const mine = citiesOf(w, me.id);
   const home = CITIES.filter((c) => c.home === me.id);
-  const occupied = mine.filter((id) => CITIES.find((c) => c.id === id)!.home !== me.id).length;
+  const occupied = mine.filter((id) => homeOf(w, id) !== me.id).length;
   const others = COUNTRIES.filter((c) => c.id !== me.id && isAlive(w, c.id));
   const relCount = (r: string) => others.filter((c) => relationOf(w, me.id, c.id) === r).length;
   const stockValue = RESOURCES.reduce((a, r) => a + (e.stock[r] ?? 0) * RES_PRICE[r], 0);
@@ -396,7 +396,7 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
   const uses = Object.entries(UNIT_COST).filter(([, c]) => c.res[res]);
   const sellers = COUNTRIES.filter((c) => c.id !== me && isAlive(w, c.id) && producesOf(state, c.id).includes(res));
   const perCountry = (id: string) =>
-    CITIES.filter((c) => w.owner[c.id] === id).reduce((a, c) => a + (CITY_RES[c.name]?.[res] ?? 0) * (c.home === id ? 1 : OCCUPIED_RES), 0);
+    CITIES.filter((c) => w.owner[c.id] === id).reduce((a, c) => a + (CITY_RES[c.name]?.[res] ?? 0) * (homeOf(w, c.id) === id ? 1 : OCCUPIED_RES), 0);
   const contracts = (state.economy.contracts ?? []).filter((c) => c.res === res);
   const mineSpots = CITIES.filter((c) => w.owner[c.id] === me && deposits(c.id).some((d) => d.res === res));
   const islands = PIONEER_ISLANDS.filter((p) => p.res === res);
@@ -423,7 +423,7 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
           {myCities.map((c) => (
             <span key={c.id} className="mini-chip">
               🏙️ {c.name}
-              {c.home !== me ? '(점령)' : ''} +{r1((CITY_RES[c.name]![res] ?? 0) * (c.home === me ? 1 : OCCUPIED_RES) * mult)}/시간
+              {homeOf(state.world, c.id) !== me ? '(점령)' : ''} +{r1((CITY_RES[c.name]![res] ?? 0) * (homeOf(state.world, c.id) === me ? 1 : OCCUPIED_RES) * mult)}/시간
             </span>
           ))}
         </div>

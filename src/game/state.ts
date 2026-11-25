@@ -3,6 +3,7 @@
 import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
+import { annexTick } from './annex';
 import { applyOrigin, type OriginId } from './origin';
 import type { LeaderLook } from '../data/looks';
 import { START_SANCTIONS } from '../data/conflicts';
@@ -288,7 +289,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = deployTick(civTick(cur, pairsBefore));
+    cur = annexTick(deployTick(civTick(cur, pairsBefore)));
     cur = domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))));
     world = cur.world;
   }

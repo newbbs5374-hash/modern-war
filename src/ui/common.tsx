@@ -7,7 +7,7 @@ import { CITIES } from '../data/cities';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { BLOCS, FAITHS, countryById } from '../data/world';
 import { gameClock } from '../game/state';
-import { citiesOf, isAlive, pairKey, relationOf, type WorldEvent } from '../game/world';
+import { citiesOf, homeOf, isAlive, pairKey, relationOf, type WorldEvent } from '../game/world';
 import { REL_COLORS } from './WorldMap';
 import { RANKS } from '../data/ranks';
 import { EXCLUSIVES, specialsOf } from '../data/specials';
@@ -109,7 +109,7 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
         {owned
           .map((cid) => {
             const x = CITIES.find((y) => y.id === cid)!;
-            return `${x.name}${x.capital && x.home === id ? '(수도)' : ''}${x.home !== id ? '(점령)' : ''} ${Math.round(w.defense[cid])}`;
+            return `${x.name}${x.capital && x.home === id ? '(수도)' : ''}${homeOf(w, cid) !== id ? '(점령)' : ''} ${Math.round(w.defense[cid])}`;
           })
           .join(' · ') || '없음'}
       </p>

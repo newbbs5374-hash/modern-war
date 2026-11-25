@@ -30,6 +30,8 @@ import {
   FAITH_EVENT_TENSION,
   INVADE_CHANCE,
   OCCUPIED_INCOME,
+  CIVIL_INCOME,
+  CIVIL_REBEL,
   OVERSEAS_PENALTY,
   PLAYER_TARGET_BONUS,
   TENSION_DECAY,
@@ -83,6 +85,30 @@ export interface WorldState {
   events: WorldEvent[];
   /** 점령한 도시 → 공격을 시작한 도시(땅 길목 색칠용, territory.ts). 옛 저장은 없음 */
   via?: Record<string, string>;
+  /** 편입 중인 점령 도시(11-25, annex.ts). 옛 저장은 없음 */
+  annex?: Record<string, AnnexCity>;
+  /** 편입이 끝난 도시 → 새 주인 나라(이 나라 '우리 땅'으로 대접). 옛 저장은 없음 */
+  annexed?: Record<string, string>;
+}
+
+/** 편입 단계: 군정(점령 직후) → 민정(치안 확보 후) → 주민투표 → 편입 */
+export interface AnnexCity {
+  stage: '군정' | '민정';
+  /** 지금 단계를 시작한 시각 */
+  since: number;
+  /** 민심 60 이상을 지키기 시작한 시각(아래로 내려가면 null) */
+  okSince: number | null;
+  /** 주민투표 결과가 나오는 시각(투표 중이 아니면 null) */
+  voteAt: number | null;
+  /** 투표에 떨어진 뒤 다시 열 수 있는 시각 */
+  retryMs: number;
+  /** 강화 조약으로 넘겨받은 도시(투표 없이 편입) */
+  treaty?: boolean;
+}
+
+/** 그 도시를 '우리 땅'으로 여기는 나라: 편입했으면 편입한 나라, 아니면 처음 나라 */
+export function homeOf(w: WorldState, cityId: string): string {
+  return w.annexed?.[cityId] ?? cityById(cityId).home;
 }
 
 export const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
@@ -155,7 +181,7 @@ export function incomeShare(w: WorldState, countryId: string): number {
   let v = 0;
   for (const c of CITIES) {
     if (w.owner[c.id] !== countryId) continue;
-    v += c.home === countryId ? c.value : c.value * OCCUPIED_INCOME;
+    v += homeOf(w, c.id) === countryId ? c.value : c.value * (w.annex?.[c.id]?.stage === '민정' ? CIVIL_INCOME : OCCUPIED_INCOME);
   }
   return v / homeValue(countryId);
 }
@@ -370,9 +396,9 @@ function invasions(ctx: Ctx) {
       let dp = power(ctx, def, garrison + allyHelp, true, false);
       if (city.capital) dp *= CAPITAL_DEFENSE;
       dp *= instDefense(city.name) * (ctx.deployHelp[def] ?? 1);
-      if (city.home === def) dp *= HOMELAND_DEFENSE;
+      if (homeOf(w, target) === def) dp *= HOMELAND_DEFENSE;
       if (targets.length === 1) dp *= LAST_STAND_DEFENSE;
-      if (def === ctx.player && city.home === def) dp *= PLAYER_HOME_DEFENSE * ctx.playerDefense;
+      if (def === ctx.player && homeOf(w, target) === def) dp *= PLAYER_HOME_DEFENSE * ctx.playerDefense;
       // 내가 만든 부대가 지켜 줌(내 땅 · 점령지 모두)
       if (def === ctx.player) dp *= ctx.playerHold.defense;
       const ratio = ap / Math.max(1, dp);
@@ -412,9 +438,9 @@ function rebellions(ctx: Ctx) {
   const { w, rng, nations } = ctx;
   for (const c of CITIES) {
     const occ = w.owner[c.id];
-    if (occ === c.home) continue;
+    if (occ === homeOf(w, c.id)) continue;
     const faithDiff = countryById(occ).faith !== countryById(c.home).faith;
-    const hold = occ === ctx.player ? ctx.playerHold.rebel : 1;
+    const hold = occ === ctx.player ? ctx.playerHold.rebel * (w.annex?.[c.id]?.stage === '민정' ? CIVIL_REBEL : 1) : 1;
     if (!rng.chance(REBEL_CHANCE * (faithDiff ? REBEL_FAITH_MULT : 1) * hold)) continue;
     const revived = !isAlive(w, c.home);
     noteCapture(w, c.id, c.home);

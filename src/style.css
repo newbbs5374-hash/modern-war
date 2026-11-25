@@ -1125,3 +1125,13 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .nation-traits .nt-txt b { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nation-traits .nt-txt small { font-size: 10px; color: var(--muted); }
 .nation-traits .nt-chip.weak .nt-txt b { color: var(--red); }
+/* 영토 편입(11-25) */
+.annex-box { margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: rgba(63, 184, 201, 0.1); border: 1px solid rgba(63, 184, 201, 0.55); }
+.annex-box.done { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.6); }
+.annex-box p { margin: 4px 0; }
+.annex-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+.annex-steps span { padding: 3px 4px; border-radius: 8px; text-align: center; font-size: 12px; background: rgba(0, 0, 0, 0.25); opacity: 0.6; }
+.annex-steps span.done { background: rgba(34, 197, 94, 0.25); opacity: 1; }
+.annex-steps span.now { background: rgba(255, 176, 32, 0.3); border: 1px solid #ffb020; opacity: 1; }
+.cede-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.cede-row button { flex: 1 1 45%; margin-top: 0; }

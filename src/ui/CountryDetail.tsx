@@ -1,7 +1,7 @@
 // 외교 → 국가정보 → 나라 누르면 열리는 큰 팝업(11-24 대장 요청 4번).
 // 위: 그 나라 실제 지도(도·도시·점령·분쟁 지역·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
 import { useMemo, useState } from 'react';
-import { CITIES } from '../data/cities';
+import { CITIES, cityById } from '../data/cities';
 import { COUNTRY_FACTS } from '../data/countryFacts';
 import { CITY_RES, type Res } from '../data/economy';
 import { PIONEER_ISLANDS } from '../data/hexmap';
@@ -14,6 +14,7 @@ import { BLOCS, COUNTRIES, countryById } from '../data/world';
 import { cabinetOf } from '../game/cabinet';
 import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
+import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { deployOf } from '../game/deploy';
 import { scoutView } from '../game/spy';
 import { landOwners, provincesOf } from '../game/territory';
@@ -236,6 +237,33 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                       >
                         {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : '🤝'} {act}
                         <small>{why ?? (act === '선전포고' ? '' : `성공 ${Math.round(diploChance(state, id, act) * 100)}%`)}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {top && id !== me && cedeCities(state, id).length > 0 && (
+                <div className="cede-row">
+                  <small className="muted" style={{ flexBasis: '100%' }}>📜 강화 조약: 전쟁을 끝내며 점령한 도시를 넘겨받아요(투표 없이 편입 · 반발 절반)</small>
+                  {cedeCities(state, id).map((cid) => {
+                    const why = canCede(state, id, cid);
+                    return (
+                      <button
+                        key={cid}
+                        className="primary"
+                        disabled={!!why}
+                        title={why ?? ''}
+                        onClick={() =>
+                          setMsg(
+                            actions.applyWith((s) => {
+                              const r = doCede(s, id, cid);
+                              return { state: r.state, out: r.text };
+                            }) ?? '',
+                          )
+                        }
+                      >
+                        📜 {cityById(cid).name} 넘겨받기
+                        <small>{why ?? `성공 ${Math.round(cedeChance(state, id) * 100)}%`}</small>
                       </button>
                     );
                   })}

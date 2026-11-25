@@ -54,6 +54,7 @@ import { CITY_INST, instById } from '../data/institutions';
 import { SIZE_NAME } from '../data/hexmap';
 import { smoothPath, type Seg } from './smoothHex';
 import { CityLogo } from './CityLogo';
+import { AnnexBox, annexTag } from './AnnexBox';
 import { CITY_LOGO } from '../data/cityLogos';
 import { useDragScroll } from './dragScroll';
 import { CARD_H, CARD_W, COL_GAP, cardPath, colX, layoutCards } from './techCards';
@@ -678,7 +679,7 @@ export function CityPanel(props: ScreenProps) {
                 </span>
                 <small className="civ-city-nick">
                   {KR_CITY_INFO[city.name] ? `${KR_CITY_INFO[city.name].trait.icon} ${KR_CITY_INFO[city.name].nick}` : `${SIZE_NAME[city.size]} · ${countryById(city.home).name}`}
-                  {city.home !== me ? ' · 점령지' : ''}
+                  {annexTag(state, city.id)}
                 </small>
                 <Meter value={cc.loyalty} max={100} tone={cc.loyalty >= LOYALTY_OK ? 'green' : 'red'} />
                 <span className="civ-city-facts">
@@ -946,6 +947,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           </span>
         ))}
       </div>
+      <AnnexBox state={state} id={id} apply={(f) => actions.apply(f)} />
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
       <div className="city-info">
         <button className="city-info-top" onClick={() => setOpen(!open)}>
