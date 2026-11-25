@@ -48,3 +48,26 @@
 | 키이우 | [COA of Kyiv Kurovskyi.svg](https://commons.wikimedia.org/wiki/File:COA_of_Kyiv_Kurovskyi.svg) | Public domain | Leonid76 |
 | 하르키우 | [Coat of arms of Kharkiv.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Kharkiv.svg) | Public domain | Лобачев Владимир |
 | 오데사 | [Coat of Arms of Odesa.svg](https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Odesa.svg) | Public domain | Autor of SVG image: Ivangricenko  derived work: Perhelion |
+| 로스앤젤레스 | [Coat of arms of Los Angeles.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Los_Angeles.svg) | Public domain | Original:  Vectorization:  Ssolbergj |
+| 시카고 | [Seal of Chicago.svg](https://commons.wikimedia.org/wiki/File:Seal_of_Chicago.svg) | Public domain | http://www.chicagob2b.net/ |
+| 애틀랜타 | [Seal of Atlanta.svg](https://commons.wikimedia.org/wiki/File:Seal_of_Atlanta.svg) | Public domain | United Statesman (talk) |
+| 카잔 | [Coat of arms of Kazan 1859.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Kazan_1859.svg) | Public domain | Лобачев Владимир |
+| 칼리닌그라드 | [Coat of arms of Kaliningrad.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Kaliningrad.svg) | Public domain | И.Д.Бакрымов, Э.Григо, С.Колеватов |
+| 이르쿠츠크 | [Coat of Arms of Irkutsk.svg](https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Irkutsk.svg) | Public domain | Igor Apukhtin |
+| 하이데라바드 | [Hyderabad City Flag.png](https://commons.wikimedia.org/wiki/File:Hyderabad_City_Flag.png) | CC0 | PhoSupremacist - Founder, Aml-401 - Uploader |
+| 인천 | [Emblem of Incheon.svg](https://commons.wikimedia.org/wiki/File:Emblem_of_Incheon.svg) | Public domain | Incheon Metropolitan City Government |
+| 울산 | [Emblem of Ulsan.svg](https://commons.wikimedia.org/wiki/File:Emblem_of_Ulsan.svg) | Public domain | Ulsan Metropolitan City Government |
+| 라이프치히 | [Coat of arms of Leipzig.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Leipzig.svg) | Public domain |  |
+| 나고야 | [Emblem of Nagoya, Aichi.svg](https://commons.wikimedia.org/wiki/File:Emblem_of_Nagoya,_Aichi.svg) | Public domain | Nagoya_CitySymbol.png: User:Nihonjin derivative work: WilliamTheaker (talk) |
+| 삿포로 | [Emblem of Sapporo, Hokkaido.svg](https://commons.wikimedia.org/wiki/File:Emblem_of_Sapporo,_Hokkaido.svg) | Public domain | Lexicon |
+| 센다이 | [Emblem of Sendai, Miyagi.svg](https://commons.wikimedia.org/wiki/File:Emblem_of_Sendai,_Miyagi.svg) | Public domain | Nameneko |
+| 나하 | [Emblem of Naha, Okinawa.svg](https://commons.wikimedia.org/wiki/File:Emblem_of_Naha,_Okinawa.svg) | Public domain | Nameneko at English Wikipedia  (Original text: SVG reproduction by Nameneko) |
+| 베르셰바 | [Coat of arms of Beersheba.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Beersheba.svg) | Public domain | Designed by חזי מור. Prepared and uploaded by Drork |
+| 아슈도드 | [City of Ashdod, Israel — 60th anniversary logo with COA — colorful.svg](https://commons.wikimedia.org/wiki/File:City_of_Ashdod,_Israel_%E2%80%94_60th_anniversary_logo_with_COA_%E2%80%94_colorful.svg) | CC0 | Pery Oish |
+| 나사렛 | [Coat of Arms of Nazareth.svg](https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Nazareth.svg) | Public domain | User:Matan2001 |
+| 티베리아 | [Coat of arms of Tiberias.png](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Tiberias.png) | Public domain | Philip Schäfer |
+| 리비우 | [Coat of arms of Lviv.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Lviv.svg) | Public domain |  |
+| 드니프로 | [Coat of arms of Dnipro.svg](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Dnipro.svg) | Public domain | Chris die Seele |
+| 자포리자 | [Flag of Zaporizhzhia(2022).png](https://commons.wikimedia.org/wiki/File:Flag_of_Zaporizhzhia(2022).png) | Public domain | CuboidalBrake06 |
+| 빈니차 | [Coat of Arms of Vinnytsia.svg](https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Vinnytsia.svg) | Public domain | UP9 |
+| 나선 | [Flag of Rason.png](https://commons.wikimedia.org/wiki/File:Flag_of_Rason.png) | Public domain | Unknown |

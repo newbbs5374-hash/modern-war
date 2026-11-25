@@ -42,7 +42,7 @@ describe('세계 움직이기', () => {
         expect(Number.isFinite(n.treasury) && n.treasury >= 0).toBe(true);
       }
     }
-  }, 20000); // 긴 모의(2주 × 3판) — 지지도 계산이 붙어 기본 5초를 넘길 수 있음
+  }, 60000); // 긴 모의(2주 × 3판) — 지지도 계산이 붙고 11-25 도시가 129곳으로 늘어 20초를 넘길 수 있음
   it('맞수 판정', () => {
     expect(isRival('us', 'cn')).toBe(true);
     expect(isRival('ru', 'de')).toBe(true);
