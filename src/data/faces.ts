@@ -63,7 +63,7 @@ export const FACE_EXTRA2: Record<string, FacePlan> = {
   'us-hi': N(5, 5, 3, 3),
   'us-as': N(3, 2, 2, 1),
 };
-export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn'];
+export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr'];
 const tagCountry = (tag: string) => (tag.startsWith('us-') ? 'us' : tag);
 const extra2On = (tag: string) => EXTRA2_READY.includes(tagCountry(tag));
 
