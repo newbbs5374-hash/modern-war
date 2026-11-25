@@ -1,3 +1,4 @@
+import { Safe } from './Safe';
 // 🎭 문화 탭(11-23): 시설 · 걸작 · 스타 · 관광 · 행사 · 세계(스타·관광은 11-25) (승리 조건은 11-24 개인 → 승리로 옮김)
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, startAndFinish } from '../game/boost';
@@ -90,6 +91,7 @@ export function CultureScreen(props: ScreenProps) {
         </Help>
       </div>
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      <Safe key={tab} where={`culture/${tab}`}>
       {tab === 'venue' && <VenuePanel {...props} />}
       {tab === 'works' && <WorksPanel {...props} go={() => setTab('stars')} />}
       {tab === 'stars' && <StarsPanel {...props} />}
@@ -106,6 +108,7 @@ export function CultureScreen(props: ScreenProps) {
           </div>
         </details>
       )}
+      </Safe>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { Safe } from './Safe';
 // 화면 부품: 팝업 · 도움말(?) · 접기 · 탭 · 아이콘 타일 · 막대
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -20,7 +21,11 @@ export function Modal({ title, icon, onClose, children, footer, big }: { title: 
             ✕
           </button>
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body">
+          <Safe where={`팝업 ${title}`} small>
+            {children}
+          </Safe>
+        </div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>,

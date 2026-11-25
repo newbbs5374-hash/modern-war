@@ -21,10 +21,16 @@ export function loadHomeGeo(id: string): Promise<HomeGeo | null> {
   if (p0) return p0;
   const load = FILES[`../assets/home/geo-${id}.json`];
   if (!load) return Promise.resolve(null);
-  const p = load().then((d) => {
-    CACHE.set(id, d);
-    return d;
-  });
+  const p = load()
+    .then((d) => {
+      CACHE.set(id, d);
+      return d;
+    })
+    .catch(() => {
+      // 새 버전이 올라와 옛 파일이 없어졌거나 연결이 끊김: 지도 선만 빼고 계속(다음에 다시 시도)
+      PENDING.delete(id);
+      return null;
+    });
   PENDING.set(id, p);
   return p;
 }
@@ -33,7 +39,10 @@ export function useHomeGeo(id: string): HomeGeo | null {
   const [g, setG] = useState<HomeGeo | null>(() => CACHE.get(id) ?? null);
   useEffect(() => {
     const hit = CACHE.get(id);
-    if (hit) return setG(hit);
+    if (hit) {
+      setG(hit);
+      return;
+    }
     let live = true;
     loadHomeGeo(id).then((d) => live && setG(d));
     return () => {

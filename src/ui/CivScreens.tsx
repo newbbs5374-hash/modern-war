@@ -237,7 +237,10 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
     if (!el) return;
     const focus = list.find((t) => st[t.id] === 'now') ?? list.find((t) => st[t.id] === 'open');
     const n = focus && L.nodes[focus.id];
-    if (!n) return el.scrollTo({ left: 0, top: 0 });
+    if (!n) {
+      el.scrollTo({ left: 0, top: 0 }); // scrollTo는 요즘 Chrome에서 Promise를 돌려줘서 return 하면 탭을 바꿀 때 게임이 꺼졌음(11/25)
+      return;
+    }
     el.scrollTo({ left: Math.max(0, n.x + TT_PAD.x - 16), top: Math.max(0, n.y + TT_PAD.top - el.clientHeight / 2) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [line]);

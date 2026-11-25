@@ -1,3 +1,4 @@
+import { Safe } from './Safe';
 // 상점 탭: 매일 할 일 · 업적 · 루비 상점
 import { Card, fmt } from './common';
 import { Tabs, useTab } from './kit';
@@ -52,6 +53,7 @@ export function ShopScreen({ state, actions }: ScreenProps) {
           { id: 'shop', icon: '🛒', label: '루비 상점' },
         ]}
       />
+      <Safe key={tab} where={`shop/${tab}`}>
       {tab === 'daily' && (
         <Card title="오늘 할 일" right={<small className="muted">새로 바뀌기까지 {timeLeft(resetIn)}</small>}>
           {!sameDay && <p className="small muted">새 할 일을 불러오는 중…</p>}
@@ -113,6 +115,7 @@ export function ShopScreen({ state, actions }: ScreenProps) {
           <p className="small muted">진짜 돈 결제는 없어요. 루비는 게임 안에서만 얻어요.</p>
         </Card>
       )}
+      </Safe>
     </>
   );
 }
