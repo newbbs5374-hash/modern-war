@@ -3,7 +3,8 @@
 // - 평소: 도로에 자동차·버스, 바다에 배, 하늘에 여객기, 구름 그림자, 흐르는 강, 실제 시각에 맞춘 낮·밤과 불빛
 // - 전쟁 때만: 공격받는 도시에 연기·불꽃, 군 차량 행렬, 전투기 / 빼앗긴 도시에는 상대 깃발
 // 꾸밈 그림: src/assets/field/land-*.png 가 있으면 건물·나무·산을 그 그림으로 그림(명령문 src/assets/field/LAND.md). 도로·강·차량·날씨·전쟁 연출은 그대로 코드로 그림.
-import { Carrier, Escort, Jet } from './units';
+import { Carrier, Escort } from './units';
+import { iconArt } from './iconArt';
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES, type City } from '../data/cities';
 import { CITY_DEFENSE_MAX } from '../game/balance';
@@ -83,6 +84,23 @@ const clampView = (v: View): View => {
   const k = Math.max(1, Math.min(MAX_K, v.k));
   return { k, x: Math.min(0, Math.max(W - W * k, v.x)), y: Math.min(0, Math.max(H - H * k, v.y)) };
 };
+
+// 11-25 대장 요청: 하늘의 비행체를 실사 그림으로(부대·연구 그림 재사용). 그림은 오른쪽(여객기는 왼쪽)을 봄.
+const PLANE_ART = { fighter: iconArt('icon-unit-fighter'), airliner: iconArt('icon-tech-m-tanker') };
+/** 실사 비행기: 길 방향으로 돌고(rotate=auto), 그림자를 땅에 드리움. flipY = 오른쪽→왼쪽 길에서 뒤집힘 방지 */
+function PlaneArt({ kind, size, flipY = false, trail = false }: { kind: 'fighter' | 'airliner'; size: number; flipY?: boolean; trail?: boolean }) {
+  const href = PLANE_ART[kind];
+  if (!href) return null;
+  // 여객기 그림은 왼쪽을 보므로 좌우를 뒤집어 진행 방향(오른쪽)에 맞춤
+  const sx = kind === 'airliner' ? -1 : 1;
+  const sy = flipY ? -1 : 1;
+  return (
+    <g transform={`scale(${sx},${sy})`}>
+      {trail && <path d={`M${-size * 0.35 * sx},-1.2 l${-size * 1.4 * sx},0 M${-size * 0.35 * sx},1.2 l${-size * 1.4 * sx},0`} stroke="#ffffff" strokeOpacity="0.4" strokeWidth="0.9" />}
+      <image href={href} x={-size / 2} y={-size / 2} width={size} height={size} filter="url(#plane-shadow)" />
+    </g>
+  );
+}
 
 const CAR_COLORS = ['#f8fafc', '#ef4444', '#3b82f6', '#facc15', '#22c55e', '#a855f7', '#0ea5e9', '#f97316'];
 
@@ -294,6 +312,9 @@ export function HomeLand(props: {
             <feColorMatrix type="matrix" values="0 0 0 0 .2  0 0 0 0 .25  0 0 0 0 .1  0 0 0 .9 -.3" />
             <feComposite in2="SourceGraphic" operator="in" />
           </filter>
+          <filter id="plane-shadow" x="-50%" y="-50%" width="220%" height="220%">
+            <feDropShadow dx="5" dy="9" stdDeviation="1.6" floodColor="#0b1a10" floodOpacity="0.35" />
+          </filter>
           <filter id="g-soft">
             <feGaussianBlur stdDeviation="6" />
           </filter>
@@ -340,7 +361,6 @@ export function HomeLand(props: {
           ) : (
             <path d={land} fill="#000" filter="url(#g-relief)" opacity="0.3" />
           )}
-          <path d={land} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="1 5" />
           {/* 빼앗긴 도: 점령한 나라 색 + 빗금 */}
           <defs>
             <pattern id="home-occ" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -355,7 +375,7 @@ export function HomeLand(props: {
                 <path d={p.d} fill="url(#home-occ)" />
               </g>
             ))}
-          {terrain.inner && <path d={terrain.inner} fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.2" strokeDasharray="6 4" pointerEvents="none" />}
+          {/* 11-25 대장 요청: 나라·도 윤곽선(흰 점선) 없앰 */}
           {geo ? (
             <g clipPath={`url(#home-land-${countryId})`} pointerEvents="none">
               <g transform={worldT}>
@@ -364,8 +384,8 @@ export function HomeLand(props: {
                 <path className="river-flow" d={geo.river} fill="none" stroke="#e0f2fe" strokeWidth="0.9" strokeDasharray="3 9" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                 {/* 실제 국도(작은 나라만)·철도·고속도로 */}
                 {geo.road2 && <path d={geo.road2} fill="none" stroke="#e7dcc0" strokeOpacity="0.55" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
-                <path d={geo.rail} fill="none" stroke="#3b3f46" strokeOpacity="0.75" strokeWidth="1.3" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                <path d={geo.rail} fill="none" stroke="#f1f5f9" strokeOpacity="0.8" strokeWidth="0.7" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+                {/* 11-25: 철도의 흰 점선이 나라 경계선처럼 보여서 은은한 실선만 남김 */}
+                <path d={geo.rail} fill="none" stroke="#3b3f46" strokeOpacity="0.4" strokeWidth="0.9" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                 <path d={geo.road} fill="none" stroke="#3a3d42" strokeOpacity="0.55" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                 <path d={geo.road} fill="none" stroke="#f3c969" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
               </g>
@@ -603,8 +623,8 @@ export function HomeLand(props: {
           {!hot &&
             [0, 1].map((j) => (
               <g key={`pj${j}`}>
-                <g transform={`translate(${-j * 10},${j * 9})`}>
-                  <Jet s={1.7} color="#cbd5e1" />
+                <g transform={`translate(${-j * 14},${j * 12})`}>
+                  <PlaneArt kind="fighter" size={36} trail />
                 </g>
                 <animateMotion dur="22s" begin="-6s" repeatCount="indefinite" rotate="auto">
                   <mpath href={`#cap-${countryId}`} />
@@ -619,8 +639,8 @@ export function HomeLand(props: {
             </g>
           ))}
           <g>
-            <path d="M-7,0 L7,0 M0,-5 L-2,0 L0,5 M-6,-2 L-7,0 L-6,2" stroke="#f8fafc" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-            {nightOn && <circle cx="-7" cy="0" r="1.2" fill="#ef4444" className="blink" />}
+            <PlaneArt kind="airliner" size={40} />
+            {nightOn && <circle cx="-8" cy="0" r="1.2" fill="#ef4444" className="blink" />}
             <animateMotion dur="26s" repeatCount="indefinite" rotate="auto">
               <mpath href={`#air-${countryId}`} />
             </animateMotion>
@@ -628,8 +648,7 @@ export function HomeLand(props: {
           {hot &&
             [0, 1].map((j) => (
               <g key={`jet${j}`}>
-                <path d="M-6,0 L6,0 M1,-4 L-1,0 L1,4 M-5,-2 L-6,0 L-5,2" stroke="#9ca3af" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-                <path d="M-6,0 L-22,0" stroke="#ffffff66" strokeWidth="1" />
+                <PlaneArt kind="fighter" size={34} flipY trail />
                 <animateMotion dur="7s" begin={`${-j * 0.6}s`} repeatCount="indefinite" rotate="auto">
                   <mpath href={`#jet-${countryId}`} />
                 </animateMotion>

@@ -1042,3 +1042,15 @@ select.wide, button.wide { width: 100%; }
 .cul-work-tiles .itile small { font-size: 9px; }
 .cul-work-tiles .cul-emoji { font-size: 32px; }
 .vbox:has(.vbox-art) > small:first-of-type { margin-right: 0; white-space: nowrap; }
+
+/* 11-25 대장 요청: 맨 위 자원칸 투명·작게(이름을 가리지 않게), 확대 버튼을 아래 소식 줄 위로 */
+.top .wallet { gap: 1px; padding: 0; flex-shrink: 1; min-width: 0; }
+.top .wallet span { background: transparent; border: 0; padding: 0 2px; font-size: 10.5px; gap: 0; text-shadow: 0 1px 2px #0009; }
+.top .who { min-width: 110px; }
+.map-zoom { bottom: 44px; }
+.map-zoom button { width: 30px; height: 30px; font-size: 14px; }
+.top .who > span:last-child { min-width: 0; overflow: hidden; }
+.top .wallet { align-self: center; height: auto; }
+/* 자원 4개를 2줄(2×2)로 → 이름 칸이 넓어짐 */
+.top .wallet { display: grid; grid-template-columns: auto auto; row-gap: 0; column-gap: 4px; line-height: 1.25; }
+.top .wallet span { justify-content: flex-start; }
