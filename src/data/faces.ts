@@ -63,7 +63,7 @@ export const FACE_EXTRA2: Record<string, FacePlan> = {
   'us-hi': N(5, 5, 3, 3),
   'us-as': N(3, 2, 2, 1),
 };
-export const EXTRA2_READY: readonly string[] = [];
+export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp'];
 const tagCountry = (tag: string) => (tag.startsWith('us-') ? 'us' : tag);
 const extra2On = (tag: string) => EXTRA2_READY.includes(tagCountry(tag));
 
@@ -126,7 +126,18 @@ export const YOUNG_PLAN: Record<string, YoungPlan> = {
 };
 /** 지금 게임에 들어 있는 젊은 얼굴 수(그림이 오면 늘림). 없는 나라는 부관이 옛 방식(장관 얼굴 묶음)으로 */
 export const YOUNG_READY: Record<string, YoungPlan> = {
-  kr: { m: 11, f: 9 },
+  kr: { m: 20, f: 16 },
+  kp: { m: 20, f: 12 },
+  jp: { m: 20, f: 12 },
+  cn: { m: 20, f: 12 },
+  'us-we': { m: 10, f: 6 },
+  'us-bl': { m: 4, f: 2 },
+  'us-hi': { m: 4, f: 2 },
+  'us-as': { m: 2, f: 2 },
+  uk: { m: 20, f: 12 },
+  de: { m: 20, f: 12 },
+  ru: { m: 20, f: 12 },
+  ua: { m: 20, f: 12 },
 };
 /** 한국 이름 부관 그림 → 젊은 얼굴 번호(옛 저장의 이름 부관이 같은 얼굴을 계속 쓰게) */
 export const KR_NAMED_YOUNG: Record<string, string> = {
