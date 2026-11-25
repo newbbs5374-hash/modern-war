@@ -1,7 +1,7 @@
 // 2단계: 세계가 스스로 움직이는 규칙(외교·긴장도·침공·점령). 화면과 떨어진 순수 계산.
 // 실제 15분(게임 6시간)마다 한 번 "판단"한다. 같은 씨앗이면 결과가 늘 같다.
 
-import { CITIES, cityById, homeValue } from '../data/cities';
+import { CITIES, FRONT, cityById, homeValue } from '../data/cities';
 import { LEADERS, PERSONALITIES, PERSONALITY_LIST, type Personality } from '../data/leaders';
 import { COUNTRIES, countryById, startingRelation, type Relation } from '../data/world';
 import {
@@ -171,6 +171,34 @@ export function relationOf(w: WorldState, a: string, b: string): Relation {
 export function citiesOf(w: WorldState, countryId: string): string[] {
   return CITIES.filter((c) => w.owner[c.id] === countryId).map((c) => c.id);
 }
+/** 나라가 가진 점령 도시(전쟁 목표가 되는 거점)만 */
+export function frontOf(w: WorldState, countryId: string): string[] {
+  return FRONT.filter((c) => w.owner[c.id] === countryId).map((c) => c.id);
+}
+
+/**
+ * 내정 도시는 자기 점령 도시(hub) 주인을 따라감(11-25). 편입도 함께.
+ * 주인이 바뀐 곳은 noteCapture로 땅·편입 기록을 맞춤. 바뀐 도시 id 목록을 돌려줌.
+ */
+export function syncFollowers(w: WorldState): string[] {
+  const changed: string[] = [];
+  let annexed = w.annexed;
+  for (const c of CITIES) {
+    if (c.front) continue;
+    const o = w.owner[c.hub];
+    if (o && w.owner[c.id] !== o) {
+      noteCapture(w, c.id, o);
+      w.owner[c.id] = o;
+      w.defense[c.id] = w.defense[c.hub] ?? CITY_DEFENSE_MAX;
+      changed.push(c.id);
+      annexed = w.annexed;
+    }
+    const hubAnnex = annexed?.[c.hub];
+    if (hubAnnex && hubAnnex === w.owner[c.id] && annexed?.[c.id] !== hubAnnex) annexed = { ...(annexed ?? {}), [c.id]: hubAnnex };
+  }
+  if (annexed !== w.annexed) w.annexed = annexed;
+  return changed;
+}
 
 export function isAlive(w: WorldState, countryId: string): boolean {
   return CITIES.some((c) => w.owner[c.id] === countryId);
@@ -181,14 +209,14 @@ export function incomeShare(w: WorldState, countryId: string): number {
   let v = 0;
   for (const c of CITIES) {
     if (w.owner[c.id] !== countryId) continue;
-    v += homeOf(w, c.id) === countryId ? c.value : c.value * (w.annex?.[c.id]?.stage === '민정' ? CIVIL_INCOME : OCCUPIED_INCOME);
+    v += homeOf(w, c.id) === countryId ? c.value : c.value * (w.annex?.[c.hub]?.stage === '민정' ? CIVIL_INCOME : OCCUPIED_INCOME);
   }
   return v / homeValue(countryId);
 }
 
 /** 처음 도시의 반 넘게 잃었는가 */
 export function isLosing(w: WorldState, id: string): boolean {
-  const home = CITIES.filter((c) => c.home === id);
+  const home = FRONT.filter((c) => c.home === id);
   const kept = home.filter((c) => w.owner[c.id] === id).length;
   return kept * 2 < home.length;
 }
@@ -363,7 +391,7 @@ function invasions(ctx: Ctx) {
     for (const def of enemies) {
       const bonus = def === ctx.player ? PLAYER_TARGET_BONUS : 1;
       if (!rng.chance(INVADE_CHANCE * agg * bonus)) continue;
-      const targets = citiesOf(w, def);
+      const targets = frontOf(w, def);
       // 가까운 도시(같은 대륙)를 먼저, 수도는 마지막에, 원래 내 도시였던 곳(되찾기)을 더 노림
       const target = rng.weighted(targets, (id) => {
         const c = cityById(id);
@@ -437,6 +465,7 @@ function invasions(ctx: Ctx) {
 function rebellions(ctx: Ctx) {
   const { w, rng, nations } = ctx;
   for (const c of CITIES) {
+    if (!c.front) continue;
     const occ = w.owner[c.id];
     if (occ === homeOf(w, c.id)) continue;
     const faithDiff = countryById(occ).faith !== countryById(c.home).faith;
@@ -479,6 +508,7 @@ export function aiTick(
   diplomacy(ctx);
   invasions(ctx);
   rebellions(ctx);
+  syncFollowers(w);
   regen(w);
   w.seed = ctx.rng.seed;
 }

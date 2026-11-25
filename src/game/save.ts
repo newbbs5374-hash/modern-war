@@ -13,7 +13,7 @@ import { TEST_BOOSTS } from './boost';
 import { SAVE_VERSION, type GameState } from './state';
 import { newBuildings, newEconomy } from './economy';
 import { BUILDING_IDS, FACILITIES, RESOURCES } from '../data/economy';
-import { newWorld } from './world';
+import { newWorld, syncFollowers } from './world';
 import { newOfficer } from './officer';
 import { migrateCityTiles, newCiv } from './civ';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
@@ -74,6 +74,8 @@ export function parseSave(text: string): GameState | null {
       if (typeof w.defense[c.id] !== 'number') w.defense[c.id] = w.defense[`${c.home}-0`] ?? 100;
     }
     if (CITIES.some((c) => typeof w.owner[c.id] !== 'string' || typeof w.defense[c.id] !== 'number')) return null;
+    // 11/25 점령 도시·내정 도시: 내정 도시는 거점 도시 주인을 따라감
+    syncFollowers(w);
     if (typeof s.worldMs !== 'number' || typeof s.lastRealTime !== 'number') return null;
     const p = s.player;
     if (!p || typeof p.name !== 'string' || !COUNTRIES.some((c) => c.id === p.countryId)) return null;

@@ -5,7 +5,7 @@
 //  ③ 평화 승리: 세계 평화 헌장(서명 2/3)을 7일 지킴 — peace.ts
 //  ④ 문화 승리: 다른 나라 2/3에서 문화 우세 + 5단계 문화 시설 2곳을 7일 지킴 — culture.ts
 //  둘 중 하나를 HOLD_DAYS일 동안 계속 지켜야 이김(지도자가 된 날 바로 끝나지 않게)
-import { CITIES } from '../data/cities';
+import { FRONT } from '../data/cities';
 import { countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
@@ -36,14 +36,15 @@ export const holdLeft = (s: GameState) => (s.officer.winSinceMs == null ? null :
 export function victoryProgress(s: GameState) {
   const me = s.player.countryId;
   const owner = s.world.owner;
-  const mine = CITIES.filter((c) => owner[c.id] === me);
-  const allied = CITIES.filter((c) => owner[c.id] === me || relationOf(s.world, me, owner[c.id]) === '연합').length;
+  // 11-25: 점령 도시(거점)만 셈. 내정 도시는 거점을 따라감
+  const mine = FRONT.filter((c) => owner[c.id] === me);
+  const allied = FRONT.filter((c) => owner[c.id] === me || relationOf(s.world, me, owner[c.id]) === '연합').length;
   return {
     mine: mine.length,
     allied,
-    total: CITIES.length,
-    needAllied: Math.ceil(CITIES.length * ALLIED_SHARE),
-    needAlone: Math.ceil(CITIES.length * ALONE_SHARE),
+    total: FRONT.length,
+    needAllied: Math.ceil(FRONT.length * ALLIED_SHARE),
+    needAlone: Math.ceil(FRONT.length * ALONE_SHARE),
     captured: mine.filter((c) => c.home !== me).map((c) => c.name),
   };
 }

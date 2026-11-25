@@ -581,6 +581,7 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #8b5
 .map-island { fill: #f5e6b8; font-size: calc(4.6px * var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #435260; stroke-width: calc(1.2px * var(--z, 1)); pointer-events: none; }
 .map-island.holy { fill: #ffd27a; }
 .map-cityname { fill: #f8fafc; font-size: calc(3.7px * var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #435260; stroke-width: calc(1.1px * var(--z, 1)); pointer-events: none; }
+.map-cityname.sub { font-size: calc(2.8px * var(--z, 1)); font-weight: 500; opacity: 0.85; }
 .map-label { paint-order: stroke; stroke: #435260; stroke-width: calc(1.7px * var(--z, 1)); font-weight: 700; }
 .map-cityres { font-size: calc(3.2px * var(--z, 1)); pointer-events: none; }
 .map-prov { fill: #e2e8f0; fill-opacity: 0.75; font-size: calc(3.5px * var(--z, 1)); paint-order: stroke; stroke: #1e293b; stroke-opacity: 0.6; stroke-width: calc(0.9px * var(--z, 1)); pointer-events: none; }

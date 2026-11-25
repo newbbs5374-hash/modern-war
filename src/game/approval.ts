@@ -3,7 +3,7 @@
 // 신뢰도는 지금 있던 '의회 신뢰도'(officer.trust)를 그대로 쓰고, 외교·안보·경제 점수 쪽으로 조금씩 끌려가요.
 import { cultureMood } from './culture';
 import { COUNTRIES, countryById } from '../data/world';
-import { CITIES } from '../data/cities';
+import { CITIES, FRONT } from '../data/cities';
 import { BASIC_RES } from '../data/economy';
 import { titlePenalty } from './title';
 import { budgetMult } from './economy';
@@ -102,7 +102,7 @@ function defenseRows(s: GameState): Rows {
   }
   let lost = 0;
   let won = 0;
-  for (const c of CITIES) {
+  for (const c of FRONT) {
     const o = s.world.owner[c.id];
     if (c.home === me && o !== me) lost++;
     if (c.home !== me && o === me) won++;

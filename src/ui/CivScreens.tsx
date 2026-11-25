@@ -683,6 +683,7 @@ export function CityPanel(props: ScreenProps) {
                 </small>
                 <Meter value={cc.loyalty} max={100} tone={cc.loyalty >= LOYALTY_OK ? 'green' : 'red'} />
                 <span className="civ-city-facts">
+                  {city.front ? <span title="점령 도시(전쟁 거점)">⚔️</span> : <span title={`내정 도시 · ${cityById(city.hub).name}을 따라감`}>🏘️</span>}
                   <span title="도시 단계">
                     {stg.stage.icon}
                     {stg.stage.name}
