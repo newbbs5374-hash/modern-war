@@ -26,7 +26,7 @@ export function FieldArtList() {
   );
 }
 
-/** 설정 화면: 부대·훈련·분쟁 섬 아이콘 그림 칸. 🗺️ = 아직 전투 말 그림을 빌려 쓰는 중 */
+/** 설정 화면: 부대·훈련·분쟁 지역 아이콘 그림 칸. 🗺️ = 아직 전투 말 그림을 빌려 쓰는 중 */
 export function IconArtList() {
   const slots = iconSlots();
   const own = slots.filter((s) => s.own).length;

@@ -19,7 +19,7 @@ export interface Eff {
   loyalty?: number;
   /** 모든 나라 호감 + */
   favor?: number;
-  /** 분쟁 섬 영향력 얻는 양 + 비율 */
+  /** 분쟁 지역 영향력 얻는 양 + 비율 */
   influence?: number;
   /** 임무 성공률 + (0.05 = 5%p) */
   mission?: number;
@@ -100,7 +100,7 @@ export const MIL_TECHS: Tech[] = [
   // 대양기
   T({ id: 'm-carrier', line: 'mil', name: '항모 운용', icon: '🛳️', era: 4, hours: 10, needs: ['m-jet', 'm-aegis'], units: ['항공모함'], text: '바다 위 비행장, 함재기 출격', eureka: { key: { kind: 'train', name: '항공', stars: 2 }, text: '항공 훈련 별 2개 이상(함재기 운용)' } }),
   T({ id: 'm-secret', line: 'mil', name: '국가 비밀 병기', icon: '🌟', era: 4, hours: 9, needs: ['m-armor'], text: '특화 유닛 전투력 +15%', eureka: { key: { kind: 'mission', name: '대전투' }, text: '대전투 승리' } }),
-  T({ id: 'm-crystal', line: 'mil', name: '갈륨 레이더', icon: '🧪', era: 4, hours: 10, needs: ['m-silent'], units: ['레이저 방공함'], eff: { power: { dom: 'all', v: 0.1 } }, text: '갈륨으로 모든 전투력 +10% · 특화 유닛 갈륨 개량형 · 레이저 방공함(독점)', eureka: { key: { kind: 'island' }, text: '분쟁 섬 한 곳에서 영향력 1등' } }),
+  T({ id: 'm-crystal', line: 'mil', name: '갈륨 레이더', icon: '🧪', era: 4, hours: 10, needs: ['m-silent'], units: ['레이저 방공함'], eff: { power: { dom: 'all', v: 0.1 } }, text: '갈륨으로 모든 전투력 +10% · 특화 유닛 갈륨 개량형 · 레이저 방공함(독점)', eureka: { key: { kind: 'island' }, text: '분쟁 지역 한 곳에서 영향력 1등' } }),
   T({ id: 'm-net', line: 'mil', name: '통합 전장망', icon: '🕸️', era: 4, hours: 11, needs: ['m-sat'], eff: { mission: 0.05, power: { dom: '육', v: 0.15 } }, text: '임무 성공률 +5% · 육군 전투력 +15%', eureka: { key: { kind: 'army', count: 20 }, text: '부대 20개 보유' } }),
   T({ id: 'm-fleet', line: 'mil', name: '대양 함대 교리', icon: '⚓', era: 4, hours: 12, needs: ['m-carrier'], eff: { build: { dom: '해', v: 0.2 }, power: { dom: '해', v: 0.15 } }, text: '해군 모집 −20% · 해군 전투력 +15%', eureka: { key: { kind: 'train', name: '해상', stars: 3 }, text: '해상 훈련 별 3개' } }),
   // ── 11-23 더 잘게 나눈 군사 기술 20개(분야: 육군·해군·공군·정보·보급) ──
@@ -125,7 +125,7 @@ export const MIL_TECHS: Tech[] = [
   // 대양기
   T({ id: 'm-hyper', line: 'mil', name: '극초음속 미사일', icon: '☄️', era: 4, hours: 11, needs: ['m-guided'], eff: { power: { dom: 'all', v: 0.08 } }, text: '막기 어려운 빠른 미사일 · 모든 전투력 +8%', eureka: { key: { kind: 'train', name: '포격', stars: 3 }, text: '포격 훈련 별 3개' } }),
   T({ id: 'm-swarm', line: 'mil', name: '드론 군집', icon: '🐝', era: 4, hours: 10, needs: ['m-ai'], eff: { power: { dom: '공', v: 0.1 }, build: { dom: '공', v: 0.1 } }, text: '드론 수백 대가 한 몸처럼 · 공군 전투력 +10% · 공군 모집 −10%', eureka: { key: { kind: 'train', name: '정보', stars: 3 }, text: '정보 훈련 별 3개' } }),
-  T({ id: 'm-laser', line: 'mil', name: '레이저 무기', icon: '🔆', era: 4, hours: 12, needs: ['m-vls'], eff: { power: { dom: '해', v: 0.12 } }, text: '빛으로 미사일을 떨어뜨려요 · 해군 전투력 +12%', eureka: { key: { kind: 'island' }, text: '분쟁 섬 한 곳에서 영향력 1등' } }),
+  T({ id: 'm-laser', line: 'mil', name: '레이저 무기', icon: '🔆', era: 4, hours: 12, needs: ['m-vls'], eff: { power: { dom: '해', v: 0.12 } }, text: '빛으로 미사일을 떨어뜨려요 · 해군 전투력 +12%', eureka: { key: { kind: 'island' }, text: '분쟁 지역 한 곳에서 영향력 1등' } }),
   T({ id: 'm-space', line: 'mil', name: '우주 작전', icon: '🌌', era: 4, hours: 12, needs: ['m-sat'], eff: { mission: 0.05, power: { dom: 'all', v: 0.05 } }, text: '위성으로 전장을 본다 · 임무 +5% · 모든 전투력 +5%', eureka: { key: { kind: 'mission', name: '대전투' }, text: '대전투 승리' } }),
   T({ id: 'm-exo', line: 'mil', name: '강화 외골격', icon: '🦾', era: 4, hours: 10, needs: ['m-active', 'm-nightvis'], eff: { power: { dom: '육', v: 0.12 }, build: { dom: '육', v: 0.1 } }, text: '로봇 옷을 입은 보병 · 육군 전투력 +12% · 육군 모집 −10%', eureka: { key: { kind: 'train', name: '체력', stars: 3 }, text: '체력 훈련 별 3개' } }),
 ];
@@ -135,7 +135,7 @@ export const SOC_TECHS: Tech[] = [
   // 도약기
   T({ id: 's-charter', line: 'soc', name: '국가 헌장', icon: '📜', era: 1, hours: 1, needs: [], cards: ['군-징집', '경-개척'], text: '체제 바꾸기 · 카드 2장', eureka: { key: { kind: 'rank', at: 1 }, text: '초보 지도자 호칭 얻기' } }),
   T({ id: 's-urban', line: 'soc', name: '도시 계획', icon: '🏘️', era: 1, hours: 1, needs: [], districts: ['industry', 'housing'], cards: ['경-도시'], text: '공업·주거 구역 짓기', eureka: { key: { kind: 'train', name: '보급', stars: 1 }, text: '보급 훈련 성공' } }),
-  T({ id: 's-envoy', line: 'soc', name: '사절단', icon: '🕊️', era: 1, hours: 1.5, needs: [], agree: ['route'], cards: ['외-사절'], text: '항로 개방 협정 · 분쟁 섬 사절 효율 ↑', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
+  T({ id: 's-envoy', line: 'soc', name: '사절단', icon: '🕊️', era: 1, hours: 1.5, needs: [], agree: ['route'], cards: ['외-사절'], text: '항로 개방 협정 · 분쟁 지역 사절 효율 ↑', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
   T({ id: 's-guild', line: 'soc', name: '항로 상회', icon: '⚖️', era: 1, hours: 1.5, needs: [], agree: ['swap'], cards: ['경-상회'], text: '자원 교환 계약 협정', eureka: { key: { kind: 'talk', att: '거래' }, text: '대화에서 거래 성공' } }),
   // 항로기
   T({ id: 's-harbor', line: 'soc', name: '항만법', icon: '⚓', era: 2, hours: 3, needs: ['s-urban'], cards: ['군-해병'], eff: { power: { dom: '해', v: 0.05 } }, text: '해군 전투력 +5% · 카드 1장', eureka: { key: { kind: 'train', name: '해상', stars: 1 }, text: '해상 훈련 성공' } }),
@@ -150,7 +150,7 @@ export const SOC_TECHS: Tech[] = [
   // 대양기
   T({ id: 's-federal', line: 'soc', name: '헌법 개정', icon: '🏛️', era: 4, hours: 10, needs: ['s-charter', 's-welfare'], cards: ['경-연방', '외-연방'], eff: { growth: 0.2 }, text: '도시 성장 +20% · 카드 2장', eureka: { key: { kind: 'rank', at: 6 }, text: '존경받는 지도자 호칭 얻기' } }),
   T({ id: 's-media', line: 'soc', name: '국민 방송', icon: '📺', era: 4, hours: 9, needs: ['s-welfare'], eff: { loyalty: 5, favor: 5 }, cards: ['외-방송'], text: '민심 +5 · 모든 나라 호감 +5', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
-  T({ id: 's-peace', line: 'soc', name: '국제 평화 헌장', icon: '☮️', era: 4, hours: 12, needs: ['s-council', 's-defense'], eff: { favor: 10, influence: 0.25 }, cards: ['외-평화'], text: '모든 나라 호감 +10 · 섬 영향력 +25%', eureka: { key: { kind: 'agree', id: 'defense' }, text: '방위 약속 협정 맺기' } }),
+  T({ id: 's-peace', line: 'soc', name: '국제 평화 헌장', icon: '☮️', era: 4, hours: 12, needs: ['s-council', 's-defense'], eff: { favor: 10, influence: 0.25 }, cards: ['외-평화'], text: '모든 나라 호감 +10 · 분쟁 지역 영향력 +25%', eureka: { key: { kind: 'agree', id: 'defense' }, text: '방위 약속 협정 맺기' } }),
   // ── 11-23 더 잘게 나눈 사회 제도 15개(분야: 경제·외교·내정·인구·국방) ──
   // 도약기
   T({ id: 's-census', line: 'soc', name: '인구 조사', icon: '📊', era: 1, hours: 1, needs: [], eff: { growth: 0.1 }, text: '도시 성장 +10%', eureka: { key: { kind: 'train', name: '통솔', stars: 1 }, text: '통솔 훈련 성공' } }),
@@ -169,7 +169,7 @@ export const SOC_TECHS: Tech[] = [
   T({ id: 's-veterans', line: 'soc', name: '보훈 제도', icon: '🎗️', era: 3, hours: 5, needs: ['s-reserve'], cards: ['군-보훈'], eff: { loyalty: 3, power: { dom: 'all', v: 0.03 } }, text: '민심 +3 · 모든 전투력 +3% · 카드 1장', eureka: { key: { kind: 'mission', name: '작전' }, text: '작전 성공' } }),
   // 대양기
   T({ id: 's-digital', line: 'soc', name: '디지털 정부', icon: '🖥️', era: 4, hours: 9, needs: ['s-school', 's-media'], eff: { research: 0.1, budget: 0.05 }, text: '연구 +10% · 국방예산 +5%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
-  T({ id: 's-aid', line: 'soc', name: '국제 원조', icon: '🎁', era: 4, hours: 10, needs: ['s-alliance'], cards: ['외-원조'], eff: { favor: 6, influence: 0.15 }, text: '모든 나라 호감 +6 · 섬 영향력 +15% · 카드 1장', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
+  T({ id: 's-aid', line: 'soc', name: '국제 원조', icon: '🎁', era: 4, hours: 10, needs: ['s-alliance'], cards: ['외-원조'], eff: { favor: 6, influence: 0.15 }, text: '모든 나라 호감 +6 · 분쟁 지역 영향력 +15% · 카드 1장', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
   T({ id: 's-unify', line: 'soc', name: '국민 통합', icon: '🫂', era: 4, hours: 11, needs: ['s-veterans', 's-press'], cards: ['외-중재'], eff: { loyalty: 6, votes: 1 }, text: '민심 +6 · 국제 회의 표 +1 · 카드 1장', eureka: { key: { kind: 'rank', at: 8 }, text: '위대한 지도자 호칭 얻기' } }),
 ];
 
@@ -198,7 +198,7 @@ export interface Gov {
   needs?: string;
 }
 export const GOVS: Gov[] = [
-  { id: 'assembly', name: '국민 의회', icon: '🏛️', slots: ['경제', '외교', '경제', '외교', '자유'], eff: { influence: 0.25 }, text: '분쟁 섬 영향력 +25%', play: '평화·연합 승리' },
+  { id: 'assembly', name: '국민 의회', icon: '🏛️', slots: ['경제', '외교', '경제', '외교', '자유'], eff: { influence: 0.25 }, text: '분쟁 지역 영향력 +25%', play: '평화·연합 승리' },
   { id: 'navy', name: '해군 통치', icon: '⚓', slots: ['군사', '군사', '경제', '군사', '자유'], eff: { build: { dom: '해', v: 0.2 } }, text: '군함·항모 모집 +20% 빠름', play: '바다 장악, 정복' },
   { id: 'merchant', name: '상업 연합', icon: '⚖️', slots: ['경제', '경제', '외교', '경제', '자유'], eff: { trade: 0.1, contracts: 1 }, text: '무역 값 10% 이득 · 정기 계약 +1칸', play: '자원 부자' },
   { id: 'sanctum', name: '성지 회의', icon: '🔷', slots: ['외교', '군사', '외교', '자유', '자유'], eff: { votes: 1, research: 0.1 }, text: '국제 회의 표 +1 · 연구 +10%(갈륨 연구 ×2)', play: '성소와 유적 중심' },
@@ -245,13 +245,13 @@ export const CARDS: Card[] = [
   C({ id: '경-학자', kind: '경제', name: '학자 초빙', icon: '🎓', eff: { research: 0.15 }, text: '연구 +15%' }),
   C({ id: '경-복지', kind: '경제', name: '배급 확대', icon: '🍞', eff: { loyalty: 8, budget: -0.05 }, text: '민심 +8 · 국방예산 −5%' }),
   C({ id: '경-연방', kind: '경제', name: '국가 투자', icon: '🏦', eff: { budget: 0.12, res: 0.1 }, text: '국방예산 +12% · 자원 +10%' }),
-  C({ id: '외-사절', kind: '외교', name: '상주 사절', icon: '🕊️', eff: { influence: 0.2 }, text: '섬 영향력 +20%' }),
+  C({ id: '외-사절', kind: '외교', name: '상주 사절', icon: '🕊️', eff: { influence: 0.2 }, text: '분쟁 지역 영향력 +20%' }),
   C({ id: '외-친선', kind: '외교', name: '친선 방문', icon: '🤝', eff: { favor: 5 }, text: '모든 나라 호감 +5' }),
   C({ id: '외-정보', kind: '외교', name: '외교 정보망', icon: '🗝️', eff: { mission: 0.03, favor: -2 }, text: '임무 성공률 +3% · 호감 −2' }),
   C({ id: '외-불가침', kind: '외교', name: '국경 안정', icon: '🧱', eff: { loyalty: 4, favor: 3 }, text: '민심 +4 · 호감 +3' }),
   C({ id: '외-방위', kind: '외교', name: '동맹 의무', icon: '🛡️', eff: { favor: 4, power: { dom: 'all', v: 0.04 } }, text: '호감 +4 · 전투력 +4%' }),
   C({ id: '외-회의', kind: '외교', name: '회의 로비', icon: '🗳️', eff: { votes: 1 }, text: '국제 회의 표 +1' }),
-  C({ id: '외-방송', kind: '외교', name: '국제 방송', icon: '📻', eff: { favor: 6, influence: 0.1 }, text: '호감 +6 · 섬 영향력 +10%' }),
+  C({ id: '외-방송', kind: '외교', name: '국제 방송', icon: '📻', eff: { favor: 6, influence: 0.1 }, text: '호감 +6 · 분쟁 지역 영향력 +10%' }),
   C({ id: '외-연방', kind: '외교', name: '국제 우호', icon: '🌐', eff: { favor: 8, contracts: 1 }, text: '호감 +8 · 정기 계약 +1칸' }),
   // 11-23 새 카드 12장(군사 4 · 경제 4 · 외교 4), 새 연구로 열림
   C({ id: '군-첩보', kind: '군사', name: '첩보 작전', icon: '🕶️', eff: { mission: 0.05 }, text: '임무 성공률 +5%' }),
@@ -264,8 +264,8 @@ export const CARDS: Card[] = [
   C({ id: '경-산업', kind: '경제', name: '산업 단지', icon: '🏗️', eff: { res: 0.08, district: 0.15 }, text: '자원 +8% · 구역 짓는 시간 −15%' }),
   C({ id: '외-문화', kind: '외교', name: '문화 교류', icon: '🎭', eff: { favor: 4, loyalty: 3 }, text: '호감 +4 · 민심 +3' }),
   C({ id: '외-동맹', kind: '외교', name: '동맹 강화', icon: '🤝', eff: { favor: 5, power: { dom: 'all', v: 0.03 } }, text: '호감 +5 · 전투력 +3%' }),
-  C({ id: '외-원조', kind: '외교', name: '원조 확대', icon: '🎁', eff: { favor: 4, influence: 0.2, budget: -0.05 }, text: '호감 +4 · 섬 영향력 +20% · 국방예산 −5%' }),
-  C({ id: '외-중재', kind: '외교', name: '분쟁 중재', icon: '⚖️', eff: { votes: 1, influence: 0.1 }, text: '국제 회의 표 +1 · 섬 영향력 +10%' }),
+  C({ id: '외-원조', kind: '외교', name: '원조 확대', icon: '🎁', eff: { favor: 4, influence: 0.2, budget: -0.05 }, text: '호감 +4 · 분쟁 지역 영향력 +20% · 국방예산 −5%' }),
+  C({ id: '외-중재', kind: '외교', name: '분쟁 중재', icon: '⚖️', eff: { votes: 1, influence: 0.1 }, text: '국제 회의 표 +1 · 분쟁 지역 영향력 +10%' }),
 ];
 // 처음부터 쓸 수 있는 8장
 export const START_CARDS = ['군-훈련', '군-보급', '경-세금', '경-광산', '외-친선', '외-정보', '경-학자', '경-개척'];
@@ -326,7 +326,7 @@ export const GRIEVANCE = {
   neighbor: 0.4, // 같은 지역·같은 협약 이웃은 이 비율만큼 같이 미워함
 };
 
-// ── 분쟁 섬 영향력 ──
+// ── 분쟁 지역 영향력 ──
 export const ENVOY_COST = 1500;
 export const ENVOY_INFLUENCE = 10;
 export const ENVOY_COOLDOWN_MS = 4 * 3600e3;
@@ -360,7 +360,7 @@ export const AGENDAS: Agenda[] = [
   { id: 'sanction', name: '항로 제재', icon: '🚫', yes: {}, text: '대상 나라의 국방예산 −20%, 하루 동안', target: true },
   { id: 'truce', name: '성지 휴전', icon: '☮️', yes: {}, text: '모든 나라 사이 긴장 −15 · 하루 동안 전쟁 선포 시 불만 큼' },
   { id: 'science', name: '연구 공유', icon: '📚', yes: { research: 0.15 }, text: '하루 동안 연구 +15%' },
-  { id: 'islands', name: '분쟁 섬 보호', icon: '🏝️', yes: { influence: 0.5 }, text: '하루 동안 섬 영향력 +50%' },
+  { id: 'islands', name: '분쟁 지역 보호', icon: '🏝️', yes: { influence: 0.5 }, text: '하루 동안 분쟁 지역 영향력 +50%' },
 ];
 export const agendaById = (id: AgendaId) => AGENDAS.find((a) => a.id === id)!;
 

@@ -1,4 +1,4 @@
-// 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 섬 영향력 · 국제 회의 · 도시 구역/민심/인구.
+// 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 지역 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
 import { CLAIM_INFLUENCE, CLAIM_TENSION, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { instSum } from './institutions';
@@ -580,7 +580,7 @@ export function defenseMult(s: GameState): number {
   return 1 + 0.05 * Math.min(3, activeAgreements(s).filter((a) => a.kind === 'defense').length);
 }
 
-// ── 분쟁 섬 영향력 ──
+// ── 분쟁 지역 영향력 ──
 
 export function islandLeader(s: GameState, island: string): { id: string | null; v: number } {
   const inf = civOf(s).influence[island] ?? {};
@@ -1462,7 +1462,7 @@ function cityResHas(name: string, r: Res): boolean {
   return (CITY_RES[name]?.[r] ?? 0) > 0;
 }
 
-/** AI 판단(실제 15분)마다: 섬 영향력 · 회의 · 끝난 구역 · 협정 중 긴장 막기 */
+/** AI 판단(실제 15분)마다: 분쟁 지역 영향력 · 회의 · 끝난 구역 · 협정 중 긴장 막기 */
 export function civTick(s: GameState, pairsBefore: Record<string, { tension: number }>): GameState {
   const c = cloneCiv(civOf(s));
   const me = s.player.countryId;
@@ -1589,7 +1589,7 @@ export function debugCouncil(s: GameState): GameState {
 
 export { AGREES, GOVS, DISTRICTS, AGENDAS };
 
-/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 분쟁 섬 · 채굴장 · 복합소재(재료는 −) */
+/** 도시 기본 생산 밖에서 실제 1시간에 들고 나는 자원: 분쟁 지역 · 채굴장 · 복합소재(재료는 −) */
 export function extraResPerHour(s: GameState): Partial<Record<Res, number>> {
   const out: Partial<Record<Res, number>> = { ...minePerHour(s) };
   for (const id of myIslands(s)) {

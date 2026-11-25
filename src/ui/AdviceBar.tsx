@@ -49,7 +49,7 @@ export function adviceTips(s: GameState, f: AdviceField): Tip[] {
     if (civ.council.open && civ.council.open.vote === null) out.push(T('council', '국제 회의 표결이 열려 있습니다. 표를 던지셔야 합니다.', 'council', 5));
     if (hot && !hot.war && hot.tension >= 45) out.push(T('tension', `${hot.name}과(와) 긴장이 ${hot.tension}입니다. 관계를 풀어야 합니다.`, 'rel', 4));
     if (hot?.war) out.push(T('war', `${hot.name}과(와) 전쟁 중입니다. 우방을 모아야 합니다.`, 'agree', 4));
-    out.push(T('isle', '분쟁 섬 영향력을 챙기면 다투는 나라를 앞설 수 있습니다.', 'isle', 1));
+    out.push(T('isle', '분쟁 지역 영향력을 챙기면 다투는 나라를 앞설 수 있습니다.', 'isle', 1));
     out.push(T('i-nat', '다른 나라 정보를 한번 훑어보시죠.', 'nations', 0), T('i-agree', '호감을 쌓아 두면 협정이 쉬워집니다.', 'agree', 0), T('i-mofa', '정상회담 일정을 챙겨 보시죠.', 'mofa', 0));
   } else if (f === 'society') {
     if (!civ.gov) out.push(T('gov', '아직 체제를 정하지 않으셨습니다. 체제부터 고르시죠.', 'gov', 5));

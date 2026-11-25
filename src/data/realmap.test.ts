@@ -30,7 +30,7 @@ describe("현실 세계지도", () => {
     }
     expect(land).toBeGreaterThanOrEqual(CITIES.length - 6);
   });
-  it("분쟁 섬·성지는 바다 위(다른 나라 땅과 겹치지 않음)", () => {
+  it("분쟁 지역·성지는 바다 위(다른 나라 땅과 겹치지 않음)", () => {
     for (const id of Object.keys(ISLAND_LONLAT)) {
       const p = project(...ISLAND_LONLAT[id]);
       expect(openSea(p.x, p.y, NARROW_SEA_ISLANDS.includes(id) ? 2 : 4)).toBe(true);

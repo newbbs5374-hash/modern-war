@@ -435,7 +435,7 @@ function ResourceModal({ state, go, res, onClose }: ScreenProps & { res: Res; on
           ⛏️ 매장지: {mineSpots.map((c) => c.name).join(', ')} <span className="muted">(도시를 열고 매장지 칸에 채굴장을 지어요)</span>
         </p>
       )}
-      {islands.length > 0 && <p className="small">🏝️ 분쟁 섬: {islands.map((p) => `${p.name}${myIslands(state).includes(p.id) ? '(우리 영향력 1등)' : ''}`).join(', ')}</p>}
+      {islands.length > 0 && <p className="small">🏝️ 분쟁 지역: {islands.map((p) => `${p.name}${myIslands(state).includes(p.id) ? '(우리 영향력 1등)' : ''}`).join(', ')}</p>}
       {PROCESSED.filter((p) => p.res === res).map((p) => (
         <p key={p.res} className="small">
           🏭 공업 구역 1곳마다 시간당 1개({Object.entries(p.input).map(([r, v]) => `${r} ${v}`).join(' + ')}을 씀)

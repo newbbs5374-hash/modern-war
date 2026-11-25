@@ -1,5 +1,5 @@
 // 외교 → 국가정보 → 나라 누르면 열리는 큰 팝업(11-24 대장 요청 4번).
-// 위: 그 나라 실제 지도(도·도시·점령·분쟁 섬·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
+// 위: 그 나라 실제 지도(도·도시·점령·분쟁 지역·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
 import { useMemo, useState } from 'react';
 import { CITIES } from '../data/cities';
 import { COUNTRY_FACTS } from '../data/countryFacts';
@@ -160,7 +160,7 @@ export function CountryMap({ state, id }: { state: GameState; id: string }) {
 const PERS_TEXT: Record<string, string> = {
   공격형: '약한 이웃을 먼저 치려 해요. 긴장이 높으면 선전포고할 수 있어요.',
   방어형: '먼저 치지는 않지만 공격받으면 끝까지 버텨요.',
-  경제형: '무역과 섬 영향력을 늘리는 데 힘을 써요.',
+  경제형: '무역과 분쟁 지역 영향력을 늘리는 데 힘을 써요.',
   기회주의: '전쟁 중인 나라의 빈틈을 노려요.',
 };
 
@@ -370,7 +370,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
               )}
               {isles.length > 0 && (
                 <>
-                  <small className="stat-group-name">🏝️ 다투는 섬</small>
+                  <small className="stat-group-name">🏝️ 다투는 분쟁 지역</small>
                   {isles.map((p) => {
                     const lead = islandLeader(state, p.id).id;
                     return (

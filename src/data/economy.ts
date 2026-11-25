@@ -184,7 +184,7 @@ export const BUILDINGS = [
   { id: '기초과학연구원', fac: '과학', icon: '⚛️', does: '연구 속도', unit: '연구', start: 0 },
   { id: '원자력연구원', fac: '과학', icon: '☢️', does: '자원 생산 · 국방예산', unit: '원자력', start: 0 },
   { id: '인공지능센터', fac: '과학', icon: '🤖', does: '모든 전투력 · 임무 성공률', unit: 'AI', start: 0 },
-  { id: '해양과학기지', fac: '과학', icon: '🌊', does: '분쟁 섬 영향력', unit: '영향력', start: 0 },
+  { id: '해양과학기지', fac: '과학', icon: '🌊', does: '분쟁 지역 영향력', unit: '영향력', start: 0 },
   { id: '방공포대', fac: '국방', icon: '🛡️', does: '우리 도시 방어도', unit: '방어', start: 0 },
   { id: '훈련소', fac: '국방', icon: '🎯', does: '훈련 경험치', unit: '훈련', start: 0 },
   { id: '비축창고', fac: '국방', icon: '📦', does: '대전투 연료·탄약 아끼기', unit: '보급', start: 0 },

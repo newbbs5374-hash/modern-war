@@ -849,7 +849,7 @@ select.wide, button.wide { width: 100%; }
 .bubble-more { width: 100%; margin-top: 4px; font-size: 12px; padding: 6px; }
 
 .home-side { top: 6px; left: 6px; }
-.home-side .home-mini.radar { margin-top: 2px; }
+.home-side .home-mini.radar { margin-top: 0; }
 
 .bld-col { top: 6px; right: 4px; gap: 4px; align-items: flex-end; }
 .bld-col .bld { width: 46px; height: auto; background: none; border: 0; border-radius: 0; box-shadow: none; gap: 0; }
@@ -973,6 +973,39 @@ select.wide, button.wide { width: 100%; }
 .cab-min-banner { max-height: 190px; }
 .line-item .li-ico { flex: 0 0 48px; }
 .li-ico .person-face { width: 46px; height: 46px; }
+
+/* 11-25 대장 요청: 부대 모집 화면 고정(모집 줄 5칸 자리 늘 차지) · 병과 줄 낮게(한 화면에) */
+.queue-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; height: 62px; }
+.qslot { min-width: 0; height: 62px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 2px; padding: 3px; border: 1px solid #768a9f; border-radius: 8px; background: #3f4d5bcc; }
+.qslot.run { border-color: var(--hud); }
+.qslot.empty { border-style: dashed; opacity: .55; align-items: center; justify-content: center; background: none; }
+.qslot.empty small { font-size: 10px; color: var(--muted); }
+.qslot-top { display: flex; align-items: center; gap: 3px; min-width: 0; height: 22px; }
+.qslot-top small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.qslot .queue-ico { flex: 0 0 22px; }
+.qslot .queue-ico .art-ico { width: 22px; height: 22px; object-fit: contain; }
+.qslot .meter { height: 5px; }
+.qslot-boost { min-height: 0 !important; height: 20px; padding: 0 2px !important; font-size: 11px !important; display: flex; align-items: center; justify-content: center; gap: 1px; white-space: nowrap; overflow: hidden; }
+.qslot-boost small { font-size: 9px; }
+.forces-msg { height: 16px; line-height: 16px; margin: 3px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+.fgroup { margin-bottom: 3px; }
+.fgroup > .stat-group-name { display: block; line-height: 1.2; margin: 0 0 2px; }
+.frow { height: 46px; box-sizing: border-box; margin-bottom: 3px; padding: 2px 4px; align-items: center; }
+.frow-main { height: 100%; padding: 0 2px; }
+.frow-ico .art-ico { width: 56px; height: 40px; margin: 0; }
+.frow-text { gap: 1px; height: 32px; justify-content: center; }
+.frow-text b { font-size: 12.5px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frow-text small, .frow-prog { line-height: 14px; height: 14px; }
+.frow-btns button { min-height: 30px; height: 30px; }
+.branch-tabs { margin: 4px 0; }
+.branch-tabs button { min-height: 30px; }
+.frow-btns button.gold { min-width: 52px; }
+.frow { height: 42px; margin-bottom: 2px; padding: 1px 4px; }
+.frow-ico .art-ico { width: 52px; height: 37px; }
+.frow-btns button { min-height: 28px; height: 28px; }
+.queue-slots, .qslot { height: 56px; }
+.qslot-top { height: 20px; }
+.qslot-boost { height: 18px; }
 
 /* 11-25 대장 요청(2): 부처 카드 3열 · 그림 크게 · 글씨와 안 겹치게 · 장관 사진 */
 .cab-mins.min-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
