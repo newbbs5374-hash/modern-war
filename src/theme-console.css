@@ -873,6 +873,10 @@ select.wide, button.wide { width: 100%; }
 .bcard-cell > .bcard { flex: 1; width: 100%; }
 .bcard-cell > .bcard.has-boost { padding-bottom: 26px; }
 .bcard-cell > .boost-mini { position: absolute; left: 3px; right: 3px; bottom: 4px; }
+/* 카드 안 가속 넓히기(11-25): 문화 시설·정책 카드·체제 카드도 같은 칸 */
+.bcard-cell > .itile, .bcard-cell > .civ-gov-card { flex: 1; width: 100%; }
+.boost-cell > .itile, .boost-cell > .civ-gov-card { padding-bottom: 26px; }
+.boost-mini.boost-start button { flex: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .tt-boost { position: static; }
 .tt-boost button { padding: 1px 3px; font-size: 10px; }
 .tt-boost button small { display: none; }

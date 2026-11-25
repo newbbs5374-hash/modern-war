@@ -55,7 +55,8 @@ import {
 } from '../game/economy';
 import { budgetBreakdown, budgetPerDay, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
-import { BoostBar, BoostMini } from './BoostBar';
+import { BoostBar, BoostMini, BoostStart } from './BoostBar';
+import { BOOST_MS, startAndFinish } from '../game/boost';
 import { CountryInfo, RelTag, fmt, leaderText } from './common';
 import { FLAG } from './flag';
 import { FACILITY_ICON, UNIT_ICON } from './icons';
@@ -557,9 +558,13 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
           const buff = buffActive(state, b.id);
           const ready = !canUpgrade(state, b.id);
           const empty = st.level < 1;
+          // 카드 안 가속(11-25): 공사 중 → ⏩/⚡ · 이 시설 업무 중 → 업무 가속 · 올릴 수 있으면 ⚡바로 짓기
+          const choring = !building && e.chore?.building === b.id && e.chore.endMs > state.worldMs;
+          const canNow = !building && !choring && ready;
+          const boost = building || choring || canNow;
           return (
             <div key={b.id} className="bcard-cell">
-            <button className={`bcard ${buff ? 'buff' : ''} ${ready ? 'ready' : ''} ${empty ? 'empty' : ''} ${building ? 'has-boost' : ''}`} onClick={() => onPick(b.id)}>
+            <button className={`bcard ${buff ? 'buff' : ''} ${ready ? 'ready' : ''} ${empty ? 'empty' : ''} ${boost ? 'has-boost' : ''}`} onClick={() => onPick(b.id)}>
               {buff && <i className="badge">⚡</i>}
               <FacArt id={b.id} level={st.level} />
               <b>{b.id}</b>
@@ -581,6 +586,16 @@ function FacilityGroup({ state, actions, fac, onPick, only }: ScreenProps & { fa
               )}
             </button>
             {building && <BoostMini state={state} apply={actions.apply} target={{ kind: 'build', fac: b.id }} />}
+            {choring && <BoostMini state={state} apply={actions.apply} target={{ kind: 'chore' }} />}
+            {canNow && (
+              <BoostStart
+                state={state}
+                apply={actions.apply}
+                need={Math.ceil((upgradeCost(state, b.id).hours * 3600e3) / BOOST_MS)}
+                label={empty ? '짓기' : '올리기'}
+                run={(s) => startAndFinish(s, (x) => upgradeFacility(x, b.id), { kind: 'build', fac: b.id })}
+              />
+            )}
             </div>
           );
         })}

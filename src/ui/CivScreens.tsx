@@ -4,7 +4,8 @@ import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
 import { GOV_FACILITIES } from '../data/govFacilities';
 import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
-import { BoostBar, BoostMini } from './BoostBar';
+import { BoostBar, BoostMini, BoostStart } from './BoostBar';
+import { BOOST_MS, boostLeft, startAndFinish } from '../game/boost';
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -17,6 +18,7 @@ import {
   ERAS,
   GOVS,
   GOV_CHANGE_COST,
+  GOV_CHAOS_MS,
   ISLAND_LEAD_MIN,
   ISLAND_RES_PER_HOUR,
   LOYALTY_OK,
@@ -275,6 +277,8 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
             const stage = C.techStage(state, t.id);
             const prog = s === 'now' ? C.techProgress(state, t) : 0;
             const icons = techUnlockIcons(t);
+            // 카드 안 가속(11-25): 연구 중 카드뿐 아니라 지금 연구할 수 있는 모든 카드
+            const few = s === 'now' || (s !== 'done' && !C.canResearch(state, t.id));
             return (
               <button
                 key={t.id}
@@ -296,12 +300,12 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
                     ) : (
                       <StagePips n={stage} cur={s === 'now'} />
                     )}
-                    {icons.slice(0, s === 'now' ? 1 : 4).map((u) => (
+                    {icons.slice(0, few ? 1 : 4).map((u) => (
                       <i key={u.key} className="tt-u" title={u.label}>
                         {u.node}
                       </i>
                     ))}
-                    {s !== 'now' && icons.length > 4 && <small>+{icons.length - 4}</small>}
+                    {!few && icons.length > 4 && <small>+{icons.length - 4}</small>}
                   </span>
                 </span>
                 {s === 'now' && <span className="tt-prog" style={{ width: `${Math.round(prog * 100)}%` }} />}
@@ -309,13 +313,13 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
             );
           })}
           {list
-            .filter((t) => st[t.id] === 'now' && L.nodes[t.id])
+            .filter((t) => L.nodes[t.id] && (st[t.id] === 'now' || (st[t.id] !== 'done' && !C.canResearch(state, t.id))))
             .map((t) => {
               const n = L.nodes[t.id];
-              // 연구 중 카드 안 오른쪽 아래(11-24): ⏩ 30분 · ⚡ 바로
+              // 카드 안 오른쪽 아래(11-24·11-25): ⏩ 30분 · ⚡ 바로. 연구 중이 아닌 카드는 그 카드만 진행(하던 연구는 그대로)
               return (
                 <span key={`b-${t.id}`} style={{ position: 'absolute', zIndex: 5, right: W - (n.x + TT_PAD.x + CARD_W) + 4, top: n.y + TT_PAD.top + CARD_H / 2 - 21 }}>
-                  <BoostMini state={state} apply={actions.apply} target={{ kind: 'research', line: t.line }} cls="tt-boost" />
+                  <BoostMini state={state} apply={actions.apply} target={st[t.id] === 'now' ? { kind: 'research', line: t.line } : { kind: 'tech', id: t.id }} cls="tt-boost" />
                 </span>
               );
           })}
@@ -353,9 +357,12 @@ function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech
             <BoostBar state={state} apply={actions.apply} target={{ kind: 'research', line: t.line }} />
           </span>
         ) : (
-          <button className="primary wide" disabled={!!why} onClick={() => (onGo(t.id), onClose())}>
-            {why ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간`)}
-          </button>
+          <span className="tech-now">
+            <button className="primary wide" disabled={!!why} onClick={() => (onGo(t.id), onClose())}>
+              {why ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간`)}
+            </button>
+            {!why && <BoostBar state={state} apply={actions.apply} target={{ kind: 'tech', id: t.id }} compact />}
+          </span>
         )
       }
     >
@@ -477,9 +484,11 @@ export function GovPanel(props: ScreenProps) {
               const open = i < slots.length;
               const card = open && c.cards[i] ? cardById(c.cards[i]!) : null;
               const needRank = RANKS.findIndex((_, r) => slotCount(r) > i);
+              // 카드 안 가속(11-25): 끼운 카드는 다음 무료 바꾸기까지 남은 시간을 줄임
+              const swapWait = !!card && boostLeft(state, { kind: 'swap' }) > 0;
               return (
+                <div key={i} className={`bcard-cell ${swapWait ? 'boost-cell' : ''}`}>
                 <Tile
-                  key={i}
                   icon={card ? <ArtIcon k={cardArtKey(card.id)} emoji={card.icon} alt={card.name} /> : SLOT_ICON[k as keyof typeof SLOT_ICON]}
                   label={card ? card.name : `${k} 칸`}
                   sub={open ? (card ? card.text : '비어 있음 · 누르기') : `${RANKS[needRank]?.name ?? ''}부터`}
@@ -487,6 +496,8 @@ export function GovPanel(props: ScreenProps) {
                   tone={card ? 'gold' : undefined}
                   onClick={() => open && setSlot(i)}
                 />
+                {swapWait && <BoostMini state={state} apply={actions.apply} target={{ kind: 'swap' }} />}
+                </div>
               );
             })}
           </div>
@@ -546,9 +557,12 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
     <div className="civ-gov-pick">
       {GOVS.map((g) => {
         const why = C.canSetGov(state, g.id as GovId);
+        // 카드 안 가속(11-25): 지금 체제가 혼란 중이면 혼란 줄이기 · 바꿀 수 있는 체제는 ⚡혼란 없이 바로 바꾸기
+        const calming = c.gov === g.id && C.chaos(state);
+        const swapNow = !!c.gov && !why;
         return (
+          <div key={g.id} className={`bcard-cell ${calming || swapNow ? 'boost-cell' : ''}`}>
           <button
-            key={g.id}
             className={`civ-gov-card ${c.gov === g.id ? 'on' : ''}`}
             disabled={!!why}
             onClick={() => {
@@ -565,6 +579,21 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
             {g.needs && !C.hasTech(state, g.needs) && <small className="warn">🔒 {techById(g.needs)?.name} 연구로 열림</small>}
             {why && c.gov && !(g.needs && !C.hasTech(state, g.needs)) && <small className="warn">{why}</small>}
           </button>
+          {calming && <BoostMini state={state} apply={actions.apply} target={{ kind: 'chaos' }} />}
+          {swapNow && (
+            <BoostStart
+              state={state}
+              apply={(f) => {
+                if (!window.confirm(`${g.name}로 바로 바꿀까요? 국방예산 ${fmt(GOV_CHANGE_COST)} · 혼란은 가속권으로 바로 끝내요`)) return;
+                actions.apply(f);
+                onDone();
+              }}
+              need={Math.ceil(GOV_CHAOS_MS / BOOST_MS)}
+              label="바로 바꾸기"
+              run={(s) => startAndFinish(s, (x) => C.setGov(x, g.id), { kind: 'chaos' })}
+            />
+          )}
+          </div>
         );
       })}
     </div>
