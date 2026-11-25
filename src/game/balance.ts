@@ -101,3 +101,6 @@ export const CIVIL_REBEL = 0.5;
 
 /** 전령에 남기는 소식 수 */
 export const EVENT_LOG_MAX = 150;
+
+/** 11-25 대장 요청: 시험하는 동안 훈련 일정 제한 없음(훈련을 몇 번이든 바로 시작). 다시 켜려면 false */
+export const TEST_MODE = { freeTraining: true };
