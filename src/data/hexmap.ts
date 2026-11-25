@@ -2,7 +2,7 @@
 // - 타일: 뾰족한 위(pointy-top) 육각형, 축 좌표(q, r). 픽셀 중심 x = S·√3·(q + r/2), y = S·1.5·r (S = HEX_SIZE, 꼭짓점까지 거리)
 // - 도시 = 육각 칸 묶음: 소도시 19칸 · 중도시 37칸 · 대도시 61칸. 정육각형이 아니라 자연스러운 모양으로 키워 이웃 도시·나라와 이어짐
 // - 나라 땅 = 그 나라 도시 묶음의 합. 도시 수는 모티브 나라 면적에 맞춰 정함(world.ts의 cities)
-// - 분쟁 섬 12개(19칸, 주인 없음) + 고대 성지(7칸). 나머지는 모두 바다 타일
+// - 분쟁 지역 12개(19칸, 주인 없음) + 고대 성지(7칸). 나머지는 모두 바다 타일
 // 배치는 정해진 규칙(목표 자리에 가장 가까운 빈 곳)으로 계산하므로 언제나 같은 결과가 나온다.
 import { COUNTRIES, type Country } from './world';
 import type { Res } from './economy';
@@ -75,7 +75,7 @@ export interface Tile {
   x: number;
   y: number;
   kind: TileKind;
-  /** 처음 주인 나라(분쟁 섬·성지는 '') */
+  /** 처음 주인 나라(분쟁 지역·성지는 '') */
   home: string;
   /** 도시 id(나라-번호) 또는 섬 id */
   place: string;
@@ -93,7 +93,7 @@ export interface PioneerIsland {
   y: number;
 }
 
-/** 분쟁 섬 12개(실제 분쟁 섬, 11-24): 이름 · 나는 자원 · 육각 자리(옛 지도 좌표). 실제 위치·다투는 나라는 data/islands.ts */
+/** 분쟁 지역 12개(실제 분쟁 지역, 11-24): 이름 · 나는 자원 · 육각 자리(옛 지도 좌표). 실제 위치·다투는 나라는 data/islands.ts */
 const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [number, number] }> = [
   { id: 'p-cheongseok', name: '스프래틀리 군도', res: '갈륨', at: [690, 120] },
   { id: 'p-whale', name: '남쿠릴 열도', res: '석유', at: [820, 60] },
@@ -109,7 +109,7 @@ const PIONEER_DEF: Array<{ id: string; name: string; res: Res | '항구'; at: [n
   { id: 'p-dawn', name: '센카쿠 열도', res: '항구', at: [770, 220] },
 ];
 const HOLY_AT: [number, number] = [150, 455];
-/** 분쟁 섬 크기(칸) */
+/** 분쟁 지역 크기(칸) */
 export const ISLAND_TILES = 7;
 /** 땅덩어리: 같은 대륙 나라끼리는 국경을 맞댈 수 있음. 나머지는 섬나라/따로 떨어진 대륙 */
 const LANDMASS: Record<string, string> = { de: 'eurasia', ua: 'eurasia', ru: 'eurasia', cn: 'eurasia', kp: 'eurasia', kr: 'eurasia', tr: 'mideast', ir: 'mideast', il: 'mideast' };
@@ -315,7 +315,7 @@ function ring(c: Hex, R: number): Hex[] {
 }
 
 const BUILT = build();
-/** 땅 타일 전부(도시·분쟁 섬·성지). 이 밖은 바다 */
+/** 땅 타일 전부(도시·분쟁 지역·성지). 이 밖은 바다 */
 export const TILES: Tile[] = BUILT.tiles;
 /** 도시 id → 한가운데 칸과 크기(반지름) */
 export const CITY_HEX = BUILT.centers;

@@ -139,6 +139,18 @@ export function HomeScreen(props: ScreenProps) {
       {brfOpen && <BriefingModal state={state} onClose={() => setBrfOpen(false)} goTab={goTab} />}
 
       <div className="home-side">
+        <button className="home-mini radar" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 레이더(세계 지도)">
+          <span className="radar-scope">
+            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
+            <i className="ring r1" />
+            <i className="ring r2" />
+            <i className="cross" />
+            <i className="sweep" />
+          </span>
+          <small className={`radar-label ${wars.length > 0 || tension >= 60 ? 'hot' : ''}`}>
+            ◤ 세계 레이더 · {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
+          </small>
+        </button>
         <div className="home-quests">
           <b className="hq-title">📌 주요 임무</b>
           {gstep && !guideOf(state).hidden && (
@@ -228,18 +240,6 @@ export function HomeScreen(props: ScreenProps) {
             </div>
           )}
         </div>
-        <button className="home-mini radar" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 레이더(세계 지도)">
-          <span className="radar-scope">
-            <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
-            <i className="ring r1" />
-            <i className="ring r2" />
-            <i className="cross" />
-            <i className="sweep" />
-          </span>
-          <small className={`radar-label ${wars.length > 0 || tension >= 60 ? 'hot' : ''}`}>
-            ◤ 세계 레이더 · {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
-          </small>
-        </button>
 
       </div>
 

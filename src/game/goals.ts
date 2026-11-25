@@ -30,7 +30,7 @@ export type Count =
   | 'vote' // 국제 회의 투표
   | 'capture' // 도시 차지
   | 'rank' // 등급 오르기
-  | 'island' // 분쟁 섬 차지
+  | 'island' // 분쟁 지역 차지
   | 'event' // 돌발 사건 고르기
   | 'spy'; // 첩보 작전 성공
 
@@ -97,7 +97,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   ACH('vote5', '회의장 단골', '🏛️', '국제 회의 투표 5번', 30, (_, g) => [t(g, 'vote'), 5]),
   ACH('city1', '첫 점령', '🏴', '다른 나라 도시 처음 차지하기', 50, (_, g) => [t(g, 'capture'), 1]),
   ACH('city5', '정복자', '🗺️', '다른 나라 도시 5개 차지하기', 120, (_, g) => [t(g, 'capture'), 5]),
-  ACH('island1', '섬의 친구', '🏝️', '분쟁 섬 하나 차지하기', 40, (s) => [myIslands(s).length, 1]),
+  ACH('island1', '섬의 친구', '🏝️', '분쟁 지역 하나 차지하기', 40, (s) => [myIslands(s).length, 1]),
   ACH('rank5', '존경받는 길', '⭐', `${TITLES[8].name} 호칭 얻기`, 50, (s) => [s.player.title ?? 0, 8]),
   ACH('rankMax', '전설', '👑', `${TITLES[TITLES.length - 1].name} 호칭 얻기`, 200, (s) => [s.player.title ?? 0, TITLES.length - 1]),
   ACH('event5', '위기 해결사', '⚡', '돌발 사건 5번 직접 해결', 40, (_, g) => [t(g, 'event'), 5]),

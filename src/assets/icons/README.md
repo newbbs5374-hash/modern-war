@@ -1,10 +1,10 @@
-# 부대·훈련·자원·분쟁 섬 아이콘 그림 · GPT 명령문 (복사용)
+# 부대·훈련·자원·분쟁 지역 아이콘 그림 · GPT 명령문 (복사용)
 
 게임 안 **이모지 아이콘을 반실사 그림으로** 바꾸는 데 쓰는 그림이에요. 각 그림의 **회색 상자 안 영어 문장 전체**를 복사해서 ChatGPT(이미지 만들기)에 붙여 넣으면 돼요. **저장할 파일 이름**이 문장 끝에 들어 있어요.
 
 ## 몇 장인가요
 
-- **꼭 필요한 그림 45장**: 부대 6 · 훈련 12 · 자원 15 · 분쟁 섬 12
+- **꼭 필요한 그림 45장**: 부대 6 · 훈련 12 · 자원 15 · 분쟁 지역 12
 - **고르기(9장)**: 보병·전차 같은 부대 9개는 이미 **지도 전투 말 그림**을 아이콘으로 빌려 쓰고 있어요. 아이콘을 따로 갖고 싶을 때만 만드세요.
 - 나라 특화 유닛 26개·독점 병과 3개도 이미 넣은 말 그림을 아이콘으로 써요(새로 만들 필요 없음).
 
@@ -15,7 +15,7 @@
 | **창 1 · 부대** | 1번~6번 (+고르기 7~15번) | 6장 (+9) | `ref-forces.png`(지금 부대 화면), `ref-unit-style.png`(지금 말 그림 화풍) |
 | **창 2 · 훈련** | 16번~27번 | 12장 | `ref-training.png`(지금 훈련 화면), `ref-unit-style.png` |
 | **창 3 · 자원** | 28번~42번 | 15장 | `ref-resources.png`(지금 자원 화면), `ref-unit-style.png` |
-| **창 4 · 분쟁 섬** | 43번~54번 | 12장 | `ref-islands.png`(지금 분쟁 섬 화면), `ref-land-style.png`(도시 항구 그림 화풍) |
+| **창 4 · 분쟁 지역** | 43번~54번 | 12장 | `ref-islands.png`(지금 분쟁 지역 화면), `ref-land-style.png`(도시 항구 그림 화풍) |
 
 - 참고 그림은 이 파일과 같은 곳의 `icon-art-ref` 폴더에 있어요(이 메시지에도 첨부).
 - 각 창의 **첫 그림을 만들 때만** 참고 그림 2장을 같이 올리면 돼요(사진 버튼으로 첨부 → 명령문 붙여 넣기). 다음 그림부터는 같은 창에서 이어서 만들면 화풍이 맞춰져요.
@@ -420,11 +420,11 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A branch of bright red precious coral with smooth polished tips, a few small white shells at the base. Resource item icon for a near-future military strategy game. Semi-realistic art (realistic materials like a high-quality modern mobile strategy game item render, not anime, not cartoon, not flat vector), three-quarter view from slightly above. Realistic soft shading with subtle painterly finish, believable surface texture, slightly boosted contrast and a thin subtle dark edge so it reads at small size. One compact object or small pile only, centered, filling about 75 percent of the image with even empty margin. Bold simple silhouette that stays readable when shrunk to 32 pixels, each resource should have its own clear main color. Lighting from the top-left. No text, no letters, no numbers, no labels, no logos, no frame, no circle badge, no table, no cast shadow, no background. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as icon-res-coral.png
 ```
 
-## 창 4 · 분쟁 섬 (12장)
+## 창 4 · 분쟁 지역 (12장)
 
-섬 그림은 분쟁 섬 칸과 섬 창 머리에 들어가요. 구석에 1등 나라 깃발(없으면 자원 아이콘)이 작게 붙어요.
+섬 그림은 분쟁 지역 칸과 섬 창 머리에 들어가요. 구석에 1등 나라 깃발(없으면 자원 아이콘)이 작게 붙어요.
 
-### 43. 푸른암초 · 파일 이름 `island-cheongseok.png` · 창 4 · 분쟁 섬
+### 43. 푸른암초 · 파일 이름 `island-cheongseok.png` · 창 4 · 분쟁 지역
 
 - 무엇: 푸른암초(나는 자원: 갈륨)
 - 참고 그림: `ref-islands.png` + `ref-land-style.png` 2장을 같이 첨부하세요.
@@ -433,7 +433,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 The first attached image shows the current disputed islands screen of the game (temporary icons), the second shows our finished harbor art style. Make one square island picture in that semi-realistic style. A low rocky reef island with a ring of shallow glowing turquoise water, pale blue crystal outcrops sparkling among dark rocks, a small mining dock and one crane. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-cheongseok.png
 ```
 
-### 44. 고래섬 · 파일 이름 `island-whale.png` · 창 4 · 분쟁 섬
+### 44. 고래섬 · 파일 이름 `island-whale.png` · 창 4 · 분쟁 지역
 
 - 무엇: 고래섬(나는 자원: 석유)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -442,7 +442,7 @@ The first attached image shows the current disputed islands screen of the game (
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. An island shaped like a whale seen from above (rounded head, long body, split tail), green hills, two small oil derricks and a white storage tank on its back, a tiny pier. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-whale.png
 ```
 
-### 45. 폭풍섬 · 파일 이름 `island-storm.png` · 창 4 · 분쟁 섬
+### 45. 폭풍섬 · 파일 이름 `island-storm.png` · 창 4 · 분쟁 지역
 
 - 무엇: 폭풍섬(나는 자원: 티타늄)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -451,7 +451,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A rugged dark cliff island under a swirl of storm clouds at the edges, big waves crashing, a quarry cut into grey mountain rock with a small metal works. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-storm.png
 ```
 
-### 46. 쌍둥이섬 · 파일 이름 `island-twin.png` · 창 4 · 분쟁 섬
+### 46. 쌍둥이섬 · 파일 이름 `island-twin.png` · 창 4 · 분쟁 지역
 
 - 무엇: 쌍둥이섬(나는 자원: 알루미늄)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -460,7 +460,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. Two similar round green islands side by side joined by a thin sandy bar, red-brown bauxite pits on one, a small smelter with a chimney on the other. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-twin.png
 ```
 
-### 47. 불꽃섬 · 파일 이름 `island-flame.png` · 창 4 · 분쟁 섬
+### 47. 불꽃섬 · 파일 이름 `island-flame.png` · 창 4 · 분쟁 지역
 
 - 무엇: 불꽃섬(나는 자원: 석유)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -469,7 +469,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A volcanic island with a smoking dark cone in the center and black lava slopes, an orange gas flare burning from an oil platform just offshore. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-flame.png
 ```
 
-### 48. 안개섬 · 파일 이름 `island-fog.png` · 창 4 · 분쟁 섬
+### 48. 안개섬 · 파일 이름 `island-fog.png` · 창 4 · 분쟁 지역
 
 - 무엇: 안개섬(나는 자원: 갈륨)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -478,7 +478,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A misty island half hidden in soft white fog banks, pine forest, pale blue crystal glints on a hillside, a lighthouse on one point. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-fog.png
 ```
 
-### 49. 남풍섬 · 파일 이름 `island-southwind.png` · 창 4 · 분쟁 섬
+### 49. 남풍섬 · 파일 이름 `island-southwind.png` · 창 4 · 분쟁 지역
 
 - 무엇: 남풍섬(나는 자원: 석유)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -487,7 +487,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A long sunny tropical island bent like a crescent, palm trees and white beaches, a row of wind-bent palms, an offshore oil rig to one side. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-southwind.png
 ```
 
-### 50. 산호환초 · 파일 이름 `island-coral.png` · 창 4 · 분쟁 섬
+### 50. 산호환초 · 파일 이름 `island-coral.png` · 창 4 · 분쟁 지역
 
 - 무엇: 산호환초(나는 자원: 산호)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -496,7 +496,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A ring-shaped coral atoll with a bright turquoise lagoon in the middle, thin white sand rim with palms, pink and red coral visible in clear shallow water. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-coral.png
 ```
 
-### 51. 거북섬 · 파일 이름 `island-turtle.png` · 창 4 · 분쟁 섬
+### 51. 거북섬 · 파일 이름 `island-turtle.png` · 창 4 · 분쟁 지역
 
 - 무엇: 거북섬(나는 자원: 알루미늄)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -505,7 +505,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. An island shaped like a sea turtle seen from above (round shell-like green hill in the middle, four small headland flippers and a head), a small mine and road on the shell. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-turtle.png
 ```
 
-### 52. 남십자섬 · 파일 이름 `island-southcross.png` · 창 4 · 분쟁 섬
+### 52. 남십자섬 · 파일 이름 `island-southcross.png` · 창 4 · 분쟁 지역
 
 - 무엇: 남십자섬(나는 자원: 희토류)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -514,7 +514,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A rocky island shaped roughly like a cross with four headlands, reddish-brown soil, open-pit mine terraces in the middle, a few small buildings. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-southcross.png
 ```
 
-### 53. 검은바위섬 · 파일 이름 `island-blackrock.png` · 창 4 · 분쟁 섬
+### 53. 검은바위섬 · 파일 이름 `island-blackrock.png` · 창 4 · 분쟁 지역
 
 - 무엇: 검은바위섬(나는 자원: 강철)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -523,7 +523,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 Use exactly the same art style, camera angle and lighting as the previous images in this chat. A jagged island of black basalt rock with steep cliffs, cold dark water, a small steel mill with a red glow and a jetty with an ore ship. Island portrait tile for a near-future naval strategy game map. Semi-realistic aerial art (realistic terrain, water and lighting like a high-quality modern mobile strategy game render, not anime, not cartoon, not flat vector), seen from high above at about 60 degrees, the whole island visible in the middle with deep blue-green ocean filling the rest of the square edge to edge. The island covers about 55 percent of the image and has a bold, clearly recognizable outline that stays readable when shrunk to 48 pixels. Soft surf foam along the coast, shallow turquoise water near the shore. Lighting from the top-left, calm daylight. No text, no letters, no numbers, no flags, no logos, no frame, no map grid, no hexagons, no people visible. Not transparent: the ocean fills the whole background. Square 1:1 image, 1024x1024. File name: save this image as island-blackrock.png
 ```
 
-### 54. 새벽섬 · 파일 이름 `island-dawn.png` · 창 4 · 분쟁 섬
+### 54. 새벽섬 · 파일 이름 `island-dawn.png` · 창 4 · 분쟁 지역
 
 - 무엇: 새벽섬(나는 자원: 항구)
 - 참고 그림: 없음(같은 창의 앞 그림과 같은 화풍)
@@ -535,7 +535,7 @@ Use exactly the same art style, camera angle and lighting as the previous images
 ## 그림을 넣는 곳(개발용)
 
 - 폴더 `src/assets/icons/` 에 위 파일 이름 그대로 넣으면 바로 바뀌어요(png·webp 모두 됨). 코드: `src/ui/iconArt.tsx`.
-- 설정 화면 맨 아래 **🎖️ 부대·훈련·자원·분쟁 섬 아이콘 칸**에서 몇 장 들어왔는지 볼 수 있어요.
+- 설정 화면 맨 아래 **🎖️ 부대·훈련·자원·분쟁 지역 아이콘 칸**에서 몇 장 들어왔는지 볼 수 있어요.
 
 ## 부처 건물 9장 (11/23)
 - `icon-min-{mnd|nis|mofa|mof|moti|mois|mohw|msit|kocis}.png`

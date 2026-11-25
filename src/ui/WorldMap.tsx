@@ -121,7 +121,7 @@ const COUNTRY_LABEL = Object.fromEntries(
     ];
   }),
 );
-/** 분쟁 섬·성지 모양(작은 가상 섬) */
+/** 분쟁 지역·성지 모양(작은 가상 섬) */
 const islandPath = (x: number, y: number, r: number, seed: number) => {
   const pts = Array.from({ length: 9 }, (_, i) => {
     const a = (i / 9) * Math.PI * 2;
@@ -863,7 +863,7 @@ export function WorldMap({
               </g>
             );
           })}
-      {/* 분쟁 섬(실제 분쟁 섬)·고대 성지 */}
+      {/* 분쟁 지역(실제 분쟁 지역)·고대 성지 */}
       {PIONEER_ISLANDS.map((p) => (
         <path
           key={p.id}
@@ -873,7 +873,7 @@ export function WorldMap({
           strokeWidth="0.5"
         >
           <title>
-            {p.name} · 분쟁 섬({REAL_ISLANDS[p.id]?.sides.map((x) => countryById(x).name).join('·')} 등) · {p.res}
+            {p.name} · 분쟁 지역({REAL_ISLANDS[p.id]?.sides.map((x) => countryById(x).name).join('·')} 등) · {p.res}
           </title>
         </path>
       ))}

@@ -123,7 +123,7 @@ describe('외교', () => {
     expect(C.civOf(s).grievance[partner]).toBeLessThan(g);
     expect(C.civOf(s).grievance[partner]).toBeGreaterThan(g * 0.8);
   });
-  it('분쟁 섬: 사절·부탁으로 영향력, 1등이면 섬 자원', () => {
+  it('분쟁 지역: 사절·부탁으로 영향력, 1등이면 섬 자원', () => {
     let s = rich(newGame('t', 'kr', 0, { seed: 6 }));
     const isl = PIONEER_ISLANDS.find((p) => p.res !== '항구')!;
     for (let i = 0; i < 4; i++) {
@@ -286,7 +286,7 @@ describe('자원 24종 · 연구 70개 · 체제 8가지(11-23)', () => {
   });
 });
 
-describe('실제 분쟁 섬(11-24)', () => {
+describe('실제 분쟁 지역(11-24)', () => {
   it('섬 12곳 모두 실제 정보가 있고, 다투는 나라는 영향력 덤', () => {
     for (const p of PIONEER_ISLANDS) expect(REAL_ISLANDS[p.id]?.sides.length).toBeGreaterThan(0);
     const s = newGame('t', 'jp', 0, { seed: 1 });

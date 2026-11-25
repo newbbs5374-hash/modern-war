@@ -24,7 +24,7 @@ export const FAC_EFF: Partial<Record<BuildingId, { eff: Eff; text: string }>> = 
   기초과학연구원: { eff: { research: 0.12 }, text: '연구 +12%' },
   원자력연구원: { eff: { res: 0.06, budget: 0.05 }, text: '자원 생산 +6% · 국방예산 +5%' },
   인공지능센터: { eff: { power: { dom: 'all', v: 0.05 }, mission: 0.03 }, text: '모든 전투력 +5% · 임무 +3%p' },
-  해양과학기지: { eff: { influence: 0.25 }, text: '분쟁 섬 영향력 +25%' },
+  해양과학기지: { eff: { influence: 0.25 }, text: '분쟁 지역 영향력 +25%' },
 };
 
 /** 먼저 지어야 하는 시설: 이 시설이 이 단계가 되어야 지을 수 있음 */
@@ -54,10 +54,10 @@ export const FAC_MILESTONE: Record<BuildingId, { 3: Milestone; 5: Milestone }> =
   첨단공단: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '자원 생산 +5%', eff: { res: 0.05 } } },
   반도체팹: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '모든 전투력 +2%', eff: { power: { dom: 'all', v: 0.02 } } } },
   석유화학단지: { 3: { text: '자원 생산 +3%', eff: { res: 0.03 } }, 5: { text: '정기 계약 +1칸', eff: { contracts: 1 } } },
-  조선소: { 3: { text: '해군 모집 +5%', eff: { build: { dom: '해', v: 0.05 } } }, 5: { text: '섬 영향력 +10%', eff: { influence: 0.1 } } },
+  조선소: { 3: { text: '해군 모집 +5%', eff: { build: { dom: '해', v: 0.05 } } }, 5: { text: '분쟁 지역 영향력 +10%', eff: { influence: 0.1 } } },
   항공우주단지: { 3: { text: '공군 모집 +5%', eff: { build: { dom: '공', v: 0.05 } } }, 5: { text: '연구 +4%', eff: { research: 0.04 } } },
   철도망: { 3: { text: '구역 짓기 −5%', eff: { district: 0.05 } }, 5: { text: '육군 전투력 +3%', eff: { power: { dom: '육', v: 0.03 } } } },
-  군항: { 3: { text: '섬 영향력 +10%', eff: { influence: 0.1 } }, 5: { text: '해군 전투력 +3%', eff: { power: { dom: '해', v: 0.03 } } } },
+  군항: { 3: { text: '분쟁 지역 영향력 +10%', eff: { influence: 0.1 } }, 5: { text: '해군 전투력 +3%', eff: { power: { dom: '해', v: 0.03 } } } },
   공군기지: { 3: { text: '공군 모집 +5%', eff: { build: { dom: '공', v: 0.05 } } }, 5: { text: '공군 전투력 +3%', eff: { power: { dom: '공', v: 0.03 } } } },
   발전소: { 3: { text: '자원 생산 +3%', eff: { res: 0.03 } }, 5: { text: '도시 성장 +10%', eff: { growth: 0.1 } } },
   고속도로망: { 3: { text: '민심 +1', eff: { loyalty: 1 } }, 5: { text: '육군 모집 +5%', eff: { build: { dom: '육', v: 0.05 } } } },
@@ -72,7 +72,7 @@ export const FAC_MILESTONE: Record<BuildingId, { 3: Milestone; 5: Milestone }> =
   보훈복지관: { 3: { text: '민심 +1', eff: { loyalty: 1 } }, 5: { text: '육군 전투력 +3%', eff: { power: { dom: '육', v: 0.03 } } } },
   국방과학연구소: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '모든 전투력 +2%', eff: { power: { dom: 'all', v: 0.02 } } } },
   정보본부: { 3: { text: '모든 나라 호감 +2', eff: { favor: 2 } }, 5: { text: '국제 회의 표 +1', eff: { votes: 1 } } },
-  우주기지: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '섬 영향력 +15%', eff: { influence: 0.15 } } },
+  우주기지: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '분쟁 지역 영향력 +15%', eff: { influence: 0.15 } } },
   기초과학연구원: { 3: { text: '도시 성장 +5%', eff: { growth: 0.05 } }, 5: { text: '연구 +5%', eff: { research: 0.05 } } },
   원자력연구원: { 3: { text: '모든 부대 모집 +3%', eff: { build: { dom: 'all', v: 0.03 } } }, 5: { text: '모든 전투력 +3%', eff: { power: { dom: 'all', v: 0.03 } } } },
   인공지능센터: { 3: { text: '연구 +4%', eff: { research: 0.04 } }, 5: { text: '임무 +4%p', eff: { mission: 0.04 } } },
@@ -118,7 +118,7 @@ export function describeEff(e: Eff): string {
   if (e.growth) p.push(`도시 성장 +${r1(e.growth * 100)}%`);
   if (e.trade) p.push(`무역 이득 ${r1(e.trade * 100)}%`);
   if (e.mission) p.push(`임무 +${r1(e.mission * 100)}%p`);
-  if (e.influence) p.push(`섬 영향력 +${r1(e.influence * 100)}%`);
+  if (e.influence) p.push(`분쟁 지역 영향력 +${r1(e.influence * 100)}%`);
   if (e.loyalty) p.push(`민심 +${r1(e.loyalty)}`);
   if (e.favor) p.push(`호감 +${r1(e.favor)}`);
   if (e.contracts) p.push(`계약 +${e.contracts}칸`);

@@ -1,4 +1,4 @@
-// 부대·훈련·분쟁 섬 아이콘 그림 칸. 대장이 만든 그림을 src/assets/icons/ 에 정해진 이름으로 넣으면 바로 바뀜.
+// 부대·훈련·분쟁 지역 아이콘 그림 칸. 대장이 만든 그림을 src/assets/icons/ 에 정해진 이름으로 넣으면 바로 바뀜.
 // 순서: 아이콘 그림(icons/) → 지도 전투 말 그림(field/, 있으면) → 지금 이모지.
 // 목록과 GPT 명령문은 src/assets/icons/README.md (= /mnt/project-files/guides/icon-art-prompts.md)
 import { MINISTRIES } from '../data/cabinet';
@@ -86,10 +86,10 @@ export function TrainIcon({ name, lock }: { name: string; lock?: boolean }): Rea
   );
 }
 
-/** 분쟁 섬 그림 주소(island-<id 앞 p- 뺀 이름>, 예: island-whale) */
+/** 분쟁 지역 그림 주소(island-<id 앞 p- 뺀 이름>, 예: island-whale) */
 export const islandArtUrl = (id: string): string | null => iconArt(`island-${id.replace(/^p-/, '')}`);
 
-/** 분쟁 섬 아이콘: 섬 그림 + 구석에 작은 표(1등 나라 깃발 또는 자원). 그림이 없으면 표만 */
+/** 분쟁 지역 아이콘: 섬 그림 + 구석에 작은 표(1등 나라 깃발 또는 자원). 그림이 없으면 표만 */
 export function IslandIcon({ id, badge }: { id: string; badge?: ReactNode }): ReactNode {
   const url = islandArtUrl(id);
   if (!url) return <>{badge ?? '🏝️'}</>;
@@ -121,7 +121,7 @@ export function iconSlots(): Array<{ key: string; who: string; url: string | nul
     ...Object.entries(UNIT_KEY).map(([n, k]) => row(`icon-unit-${k.key}`, `부대 · ${k.who}`, unitArtUrl(n))),
     ...Object.entries(TRAIN_KEY).map(([n, k]) => row(`icon-train-${k}`, `훈련 · ${n}`, iconArt(`icon-train-${k}`))),
     ...RESOURCES.map((r) => row(`icon-res-${RES_KEY[r]}`, `자원 · ${r}`, resArtUrl(r))),
-    ...PIONEER_ISLANDS.map((p) => row(`island-${p.id.replace(/^p-/, '')}`, `분쟁 섬 · ${p.name}`, islandArtUrl(p.id))),
+    ...PIONEER_ISLANDS.map((p) => row(`island-${p.id.replace(/^p-/, '')}`, `분쟁 지역 · ${p.name}`, islandArtUrl(p.id))),
     ...moreSlots().map((x) => row(x.key, x.who, iconArt(x.key))),
   ];
 }

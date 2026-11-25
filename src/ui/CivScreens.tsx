@@ -1,4 +1,4 @@
-// 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 섬 · 국제 회의).
+// 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 지역 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
 import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
 import { GOV_FACILITIES } from '../data/govFacilities';
@@ -1322,7 +1322,7 @@ function AgreeModal({ state, actions, id, onClose }: ScreenProps & { id: string;
   );
 }
 
-/* ═════════════ 분쟁 섬 영향력 ═════════════ */
+/* ═════════════ 분쟁 지역 영향력 ═════════════ */
 
 export function IslandPanel(props: ScreenProps) {
   const { state } = props;
@@ -1338,11 +1338,11 @@ export function IslandPanel(props: ScreenProps) {
             🏝️ 1등인 섬 <b>{C.myIslands(state).length}</b>/12
           </span>
           <small className={ready ? 'good' : 'muted'}>🕊️ 사절 {ready ? '준비됨' : timeLeft(c.envoyReadyMs - state.worldMs)}</small>
-          <Help title="분쟁 섬 영향력">
+          <Help title="분쟁 지역 영향력">
             <p>여러 나라가 실제로 다투는 섬 12곳마다 주민 대표가 있어요. 그 섬을 실제로 다투는 나라는 영향력이 20% 더 쌓이고, 남이 1등을 하면 그 나라와 긴장이 조금씩 올라요.</p>
             <p> 사절을 보내거나(예산 {fmt(ENVOY_COST)}) 섬 부탁(자원 보내기)을 들어주면 영향력이 쌓여요.</p>
             <p>
-              영향력 1등이면서 {ISLAND_LEAD_MIN} 이상이면 그 섬 자원을 시간당 {ISLAND_RES_PER_HOUR}개 받고, 국제 회의 표가 1장 늘어요. 다른 나라도 가까운 섬에 영향력을 쌓아요.
+              영향력 1등이면서 {ISLAND_LEAD_MIN} 이상이면 그 지역 자원을 시간당 {ISLAND_RES_PER_HOUR}개 받고, 국제 회의 표가 1장 늘어요. 다른 나라도 가까운 섬에 영향력을 쌓아요.
             </p>
             <p>국민 의회 체제·사절단 연구·상주 사절 카드로 영향력이 더 많이 쌓여요.</p>
           </Help>
@@ -1398,7 +1398,7 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
               {real.others.length > 0 && <span className="muted"> · {real.others.join(' · ')}</span>}
             </div>
             <div className="muted">📜 {real.story}</div>
-            {claimsIsland(id, me) && <div className="good">★ 우리가 다투는 섬: 영향력 +{Math.round(CLAIM_INFLUENCE * 100)}%</div>}
+            {claimsIsland(id, me) && <div className="good">★ 우리가 다투는 분쟁 지역: 영향력 +{Math.round(CLAIM_INFLUENCE * 100)}%</div>}
           </div>
         )}
         <p className="small">
@@ -1477,7 +1477,7 @@ export function CouncilPanel(props: ScreenProps) {
                 </li>
               ))}
             </ul>
-            <p>표 = 1 + 1등인 분쟁 섬 수 + 체제·연구·카드. 나를 좋아하는 나라는 내 표를 따라오기도 해요. 6시간 안에 투표하지 않으면 부관이 체제 성향대로 골라요.</p>
+            <p>표 = 1 + 1등인 분쟁 지역 수 + 체제·연구·카드. 나를 좋아하는 나라는 내 표를 따라오기도 해요. 6시간 안에 투표하지 않으면 부관이 체제 성향대로 골라요.</p>
             <p>설정에서 회의를 끌 수 있어요.</p>
           </Help>
         </div>

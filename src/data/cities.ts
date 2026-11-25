@@ -40,7 +40,7 @@ export const COASTAL_CITIES: ReadonlySet<string> = new Set([
   '부산', '강릉', '제주', '여수', '순천',
   '이스탄불', '이즈미르', '텔아비브', '하이파', '반다르아바스', '오데사', '남포',
 ]);
-/** 도시가 바다에 닿았는지(분쟁 섬처럼 도시가 아닌 곳은 늘 바닷가) */
+/** 도시가 바다에 닿았는지(분쟁 지역처럼 도시가 아닌 곳은 늘 바닷가) */
 export function isCoastalCity(id: string): boolean {
   const c = CITIES.find((x) => x.id === id);
   return c ? COASTAL_CITIES.has(c.name) : true;

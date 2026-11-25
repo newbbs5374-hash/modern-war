@@ -12,7 +12,6 @@ import { fmt } from './common';
 import { UnitIcon } from './iconArt';
 import { Chip, Help, Meter, useTab } from './kit';
 import { UnitModal } from './economyScreens';
-import { BoostBar } from './BoostBar';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 
@@ -131,26 +130,36 @@ export function ForcesScreen(props: ScreenProps) {
             <p>모은 부대는 병력·전투력이 되고, 전투력이 높으면 대전투가 쉬워지고 점령지를 잘 지켜요. 병과를 누르면 비용과 자세한 정보를 봐요.</p>
           </Help>
         </div>
-        {e.queue.length > 0 && (
-          <div className="queue-strip">
-            {e.queue.map((q, i) => {
-              const name = queueName(state, q);
-              const run = state.worldMs >= q.startMs;
-              return (
-                <div key={q.id} className="queue-item">
+        {/* 11-25 대장 요청: 모집 줄은 늘 {QUEUE_MAX}칸 자리를 차지해 화면이 위아래로 흔들리지 않게 고정 */}
+        <div className="queue-slots">
+          {Array.from({ length: QUEUE_MAX }, (_, i) => {
+            const q = e.queue[i];
+            if (!q) return <div key={`empty-${i}`} className="qslot empty"><small>빈 칸</small></div>;
+            const name = queueName(state, q);
+            const run = state.worldMs >= q.startMs;
+            const need = boostsToFinish(state, { kind: 'queue', id: q.id });
+            return (
+              <div key={q.id} className={`qslot ${run ? 'run' : ''}`} title={name}>
+                <span className="qslot-top">
                   <span className="queue-ico">
                     <UnitIcon unit={q.unit} sp={q.sp} fallback={q.special || q.sp ? '🌟' : undefined} />
                   </span>
-                  <small>{name}</small>
-                  <Meter value={run ? state.worldMs - q.startMs : 0} max={q.endMs - q.startMs} tone="blue" />
-                  <small className="muted">{run ? timeLeft(q.endMs - state.worldMs) : `대기 ${i}`}</small>
-                  <BoostBar state={state} apply={actions.apply} target={{ kind: 'queue', id: q.id }} compact />
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {msg && <p className="small result">{msg}</p>}
+                  <small>{run ? timeLeft(q.endMs - state.worldMs) : `대기 ${i}`}</small>
+                </span>
+                <Meter value={run ? state.worldMs - q.startMs : 0} max={q.endMs - q.startMs} tone="blue" />
+                <button
+                  className="gold qslot-boost"
+                  disabled={need < 1 || boostsAffordable(state) < 1}
+                  title={`${name} · 가속권 ${need}장(모자라면 루비)으로 바로 끝내기`}
+                  onClick={() => actions.apply((s) => useBoost(s, { kind: 'queue', id: q.id }, need))}
+                >
+                  ⚡<small>{priceText(boostPrice(state, need))}</small>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <p className="small forces-msg">{msg || <span className="muted">모집을 누르면 위 줄에 차례로 서요</span>}</p>
       </section>
       <div className="seg branch-tabs">
         {FORCE_BRANCHES.map((b) => (

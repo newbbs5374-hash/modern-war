@@ -1,4 +1,4 @@
-// 현실 세계지도: 실제 경도·위도 → 지도 그림 좌표. 세계지도 화면(WorldMap)·도시 점·분쟁 섬 자리에 씀.
+// 현실 세계지도: 실제 경도·위도 → 지도 그림 좌표. 세계지도 화면(WorldMap)·도시 점·분쟁 지역 자리에 씀.
 // 육각 칸(hexmap.ts)은 도시 화면·전투 화면 안에서만 쓰고, 세계지도에는 그리지 않는다.
 import { GEO, GEO_POLYS } from "./realGeo";
 
@@ -76,7 +76,7 @@ export const CITY_LONLAT: Record<string, [number, number]> = {
   남포: [124.9, 38.4],
 };
 
-/** 분쟁 섬(실제 분쟁 섬, 11-24)·고대 성지 자리 [경도, 위도]. 섬 자체가 땅으로 그려진 곳(브랑겔·스발바르)은 바로 옆 바다 */
+/** 분쟁 지역(실제 분쟁 지역, 11-24)·고대 성지 자리 [경도, 위도]. 섬 자체가 땅으로 그려진 곳(브랑겔·스발바르)은 바로 옆 바다 */
 export const ISLAND_LONLAT: Record<string, [number, number]> = {
   "p-cheongseok": [114.3, 10.0],
   "p-whale": [147.0, 44.0],
