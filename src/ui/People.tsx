@@ -38,6 +38,7 @@ import { timeLeft } from './officerScreens';
 import { Face, aideKeys } from './Portrait';
 import type { GameActions } from './screens';
 import { AideCareer, BondLoyalty } from './AideCareer';
+import { TalkPanel } from './TalkUI';
 import { GENERAL_TITLE, bondStage, generalEffectText, loyaltyMood, loyaltyOf, type GeneralField } from '../game/loyal';
 import { BLOCK_AT, PLOT_MIN, ROLE_INFO, influenceOf, roleOf, watching, wooChance } from '../game/rivals';
 
@@ -220,12 +221,13 @@ function PortraitPopup({ state, who, onClose, onMore }: { state: GameState; who:
 }
 
 /* ───────── ② 인물 창 ───────── */
-type Tab = 'info' | 'stats' | 'rel' | 'act';
+type Tab = 'info' | 'stats' | 'rel' | 'act' | 'talk';
 const TABS: Array<{ id: Tab; label: string; icon: string }> = [
   { id: 'info', label: '정보', icon: '📋' },
   { id: 'stats', label: '스탯', icon: '📊' },
   { id: 'rel', label: '관계', icon: '🕸️' },
   { id: 'act', label: '교류', icon: '🤝' },
+  { id: 'talk', label: '대화·건의', icon: '💬' },
 ];
 
 interface WinProps {
@@ -243,6 +245,8 @@ function PersonWindow(props: WinProps) {
   const [tab, setTab] = useState<Tab>('info');
   const c = personCard(state, who);
   const hasActs = actsOf(who).length > 0 || who.kind === 'aide';
+  // 장군·부관과 대화·건의(11-25)
+  const talkKey = who.kind === 'aide' ? `a:${who.id}` : who.kind === 'general' ? `g:${who.id}` : null;
   return (
     <div className="modal-back person-back" onClick={onClose}>
       <div className="modal person-win" role="dialog" aria-label={`${c.name} 인물 창`} onClick={(e) => e.stopPropagation()}>
@@ -267,7 +271,7 @@ function PersonWindow(props: WinProps) {
           </button>
         </div>
         <div className="tabs pw-tabs" role="tablist">
-          {TABS.filter((t) => t.id !== 'act' || hasActs).map((t) => (
+          {TABS.filter((t) => (t.id !== 'act' || hasActs) && (t.id !== 'talk' || talkKey)).map((t) => (
             <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
               <span className="tab-ico">{t.icon}</span>
               <small>{t.label}</small>
@@ -279,6 +283,7 @@ function PersonWindow(props: WinProps) {
           {tab === 'stats' && <StatsTab {...props} />}
           {tab === 'rel' && <RelTab {...props} />}
           {tab === 'act' && <ActTab {...props} />}
+          {tab === 'talk' && talkKey && <TalkPanel state={state} actions={props.actions} who={talkKey} />}
         </div>
       </div>
     </div>

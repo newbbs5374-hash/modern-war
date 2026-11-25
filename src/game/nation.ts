@@ -36,6 +36,8 @@ const FAC_NAME: Record<string, string> = {
   foodcluster: '식품 산업 단지', energyhub: '에너지 단지', civilacademy: '공무원 연수원', lawcenter: '법령 정보센터', vaccine: '백신 심사센터',
   rescue: '특수 구조대', riot: '경찰 기동대', garden: '국립공원 관리소', farmlab: '농업 시험장', cdc: '감염병 대응 센터', patent: '특허 심사원',
   supercom: '기상 슈퍼컴퓨터 센터', taxdata: '국세 전산센터', draft: '징병 검사소', family: '가족 돌봄 센터',
+  // 11-25 부처 직속 시설 30곳 중 한국 말이 섞인 것
+  talkhall: '평화 회담 본부', settle: '이주민 정착 지원 센터', sigint: '신호 정보 기지', finance: '국제 금융 센터', polytech: '직업 훈련 대학',
 };
 let applied = '';
 

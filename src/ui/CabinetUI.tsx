@@ -2,6 +2,8 @@
 // 웬만하면 한 화면: 목록은 한 줄 카드, 자세한 건 팝업.
 import { officeName } from '../game/nation';
 import { Fragment, useState } from 'react';
+import { ProposalBox, TalkPanel } from './TalkUI';
+import { propsOfWho } from '../game/proposals';
 import { GENERAL_NEEDS, NEEDS } from '../data/needs';
 import { ORIGIN_SHAPE2 } from '../data/stats2';
 import { FitTag, NeedBox, PeopleGrid, Stats18, originLine } from './PersonCards';
@@ -129,7 +131,9 @@ export function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Pe
 export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 'state' | 'actions'> & { pid: number; onClose: () => void }) {
   const p = personById(state, pid);
   const [pick, setPick] = useState<'min' | 'vice' | 'gen' | 'post' | null>(null);
+  const [tab, setTab] = useState<'info' | 'talk'>('info');
   if (!p) return null;
+  const canTalk = p.group === '내각' && (p.seat?.kind === 'min' || !!p.post);
   const c = cabinetOf(state);
   const apply = actions.apply;
   const o = PERSON_ORIGINS[p.origin];
@@ -145,6 +149,22 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
         {p.grade}
         {p.title ? ` · ${p.title}` : ''}
       </p>
+      {canTalk && (
+        <div className="tabs pw-tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'info'} className={tab === 'info' ? 'on' : ''} onClick={() => setTab('info')}>
+            <span className="tab-ico">📋</span>
+            <small>정보</small>
+          </button>
+          <button role="tab" aria-selected={tab === 'talk'} className={tab === 'talk' ? 'on' : ''} onClick={() => setTab('talk')}>
+            <span className="tab-ico">💬</span>
+            <small>대화·건의{propsOfWho(state, `p:${p.id}`).length ? ` ${propsOfWho(state, `p:${p.id}`).length}` : ''}</small>
+          </button>
+        </div>
+      )}
+      {canTalk && tab === 'talk' ? (
+        <TalkPanel state={state} actions={actions} who={`p:${p.id}`} />
+      ) : (
+        <>
       <Stats18 p={p} />
       <p className="small muted" style={{ margin: '2px 0 4px' }}>
         {o.icon} {o.name} 출신: {originLine(p.origin, ORIGIN_SHAPE2[p.origin])}
@@ -253,6 +273,8 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
       ) : null}
       {pick === 'gen' && <GeneralPick state={state} actions={actions} p={p} onDone={onClose} />}
       {pick === 'post' && <PostPick state={state} actions={actions} p={p} onDone={() => setPick(null)} />}
+        </>
+      )}
     </Modal>
   );
 }
@@ -400,6 +422,7 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
     <>
       <Card title={title} icon="🏛️" right={<small className="muted">장관 {ministerCount(c)}/{ministerSlots(state.player.rankIndex)}석</small>}>
         <RecommendButton state={state} actions={actions} />
+        <ProposalBox state={state} actions={actions} mins={ids} />
         <div className="cab-mins min-grid">
           {ids.map((id) => {
             const m = ministryById(id);
@@ -513,6 +536,7 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
           {tWhy && <p className="small muted">{tWhy}</p>}
         </div>
       )}
+      <ProposalBox state={state} actions={actions} mins={[id]} />
       <MinGrowth state={state} actions={actions} id={id} />
       <AgencySection state={state} actions={actions} id={id} />
       {who !== null && <PersonModal state={state} actions={actions} pid={who} onClose={() => setWho(null)} />}
