@@ -1,5 +1,6 @@
 // 게임 상태와 시간 흐름. 화면과 떨어진 순수 계산이라 시험(테스트)하기 쉽다.
 
+import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
@@ -154,6 +155,7 @@ export interface NewGameOptions {
 
 export function newGame(name: string, countryId: string, now: number, opt: NewGameOptions = {}): GameState {
   countryById(countryId); // 없는 나라면 오류
+  applyNation(countryId); // 11-25 부처·참모·시설 이름을 그 나라 것으로
   const nations: Record<string, NationState> = {};
   for (const c of COUNTRIES) {
     nations[c.id] = {

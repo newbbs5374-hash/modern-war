@@ -66,7 +66,9 @@ function build(): Prov[] {
     const home = CITIES.filter((c) => c.home === p.c);
     const inside = home.find((c) => inProv(p, c.x, c.y));
     const near = (c: City) => Math.hypot(c.x - p.x, c.y - p.y);
-    p.seat = (inside ?? home.slice().sort((a, b) => near(a) - near(b))[0])?.id ?? '';
+    // 도시가 없는 도는 가장 가까운 점령 도시(거점)가 다스림(11-25)
+    const fronts = home.filter((c) => c.front);
+    p.seat = (inside ?? (fronts.length ? fronts : home).slice().sort((a, b) => near(a) - near(b))[0])?.id ?? '';
   }
   // 도시가 들어 있는 도는 반드시 그 도시가 다스림(위에서 가까운 도시로 잡혔어도)
   for (const c of CITIES) {

@@ -581,6 +581,7 @@ button.gold { background: linear-gradient(180deg, #ffb020, #d97706); color: #8b5
 .map-island { fill: #f5e6b8; font-size: calc(4.6px * var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #435260; stroke-width: calc(1.2px * var(--z, 1)); pointer-events: none; }
 .map-island.holy { fill: #ffd27a; }
 .map-cityname { fill: #f8fafc; font-size: calc(3.7px * var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #435260; stroke-width: calc(1.1px * var(--z, 1)); pointer-events: none; }
+.map-cityname.sub { font-size: calc(2.8px * var(--z, 1)); font-weight: 500; opacity: 0.85; }
 .map-label { paint-order: stroke; stroke: #435260; stroke-width: calc(1.7px * var(--z, 1)); font-weight: 700; }
 .map-cityres { font-size: calc(3.2px * var(--z, 1)); pointer-events: none; }
 .map-prov { fill: #e2e8f0; fill-opacity: 0.75; font-size: calc(3.5px * var(--z, 1)); paint-order: stroke; stroke: #1e293b; stroke-opacity: 0.6; stroke-width: calc(0.9px * var(--z, 1)); pointer-events: none; }
@@ -1113,6 +1114,18 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .safe-err.small { padding: 8px; }
 .safe-err p { margin: 0; }
 
+/* 11-25 나라 특징 상자(NationUI) */
+.nation-traits { margin: 4px 0; }
+.nation-traits .nt-style { margin: 0 0 4px; }
+.nation-traits .nt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.nation-traits .nt-chip { display: flex; gap: 4px; align-items: center; padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); min-width: 0; }
+.nation-traits .nt-chip.weak { border-color: var(--red); }
+.nation-traits .nt-ico { flex: none; width: 26px; height: 26px; display: grid; place-items: center; font-size: 18px; }
+.nation-traits .nt-ico img { width: 26px; height: 26px; object-fit: contain; }
+.nation-traits .nt-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.nation-traits .nt-txt b { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nation-traits .nt-txt small { font-size: 10px; color: var(--muted); }
+.nation-traits .nt-chip.weak .nt-txt b { color: var(--red); }
 /* 영토 편입(11-25) */
 .annex-box { margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: rgba(63, 184, 201, 0.1); border: 1px solid rgba(63, 184, 201, 0.55); }
 .annex-box.done { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.6); }

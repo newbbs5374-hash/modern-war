@@ -1,6 +1,7 @@
 import { Safe } from './Safe';
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
 // 지금 있던 기능은 하나도 빼지 않고, 맡은 분야 탭 안의 작은 탭으로 옮겼어요.
+import { officeName } from '../game/nation';
 import { AgendaPanel, AlbumPanel, BudgetSeasonCard, CodesPanel, GroupsPanel, ProjectsPanel } from './DomesticUI';
 import { domOf } from '../game/domestic';
 import { canFinish, AGENDA, pledgeSlots } from '../game/agenda';
@@ -64,7 +65,7 @@ export function PersonalScreen(props: ScreenProps) {
   const tabs: TabDef<PersonalTab>[] = [
     { id: 'profile', label: '프로필', icon: '🪪' },
     { id: 'win', label: '승리', icon: '🏆', badge: winBadge(state) },
-    { id: 'aides', label: '대통령실', icon: '🏢', badge: errandsDone || null },
+    { id: 'aides', label: officeName(state.player.countryId), icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },

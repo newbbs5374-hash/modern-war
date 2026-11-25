@@ -1,5 +1,6 @@
 // 인물·부처 화면(11-23): 인재 명단·내 사람·인물 도감 / 부처 카드·부처 정보창 / 인물 창 / 사람을 장군으로.
 // 웬만하면 한 화면: 목록은 한 줄 카드, 자세한 건 팝업.
+import { officeName } from '../game/nation';
 import { Fragment, useState } from 'react';
 import { ProposalBox, TalkPanel } from './TalkUI';
 import { propsOfWho } from '../game/proposals';
@@ -202,7 +203,7 @@ export function PersonModal({ state, actions, pid, onClose }: Pick<ScreenProps, 
         <div className="cab-acts">
           {!p.seat && !p.post && (
             <>
-              <button onClick={() => setPick(pick === 'post' ? null : 'post')}>🏢 대통령실·기관장</button>
+              <button onClick={() => setPick(pick === 'post' ? null : 'post')}>🏢 {officeName(state.player.countryId)}·기관장</button>
               <button onClick={() => setPick(pick === 'min' ? null : 'min')}>🏛️ 장관으로</button>
               <button onClick={() => setPick(pick === 'vice' ? null : 'vice')}>📌 차관으로</button>
               <button onClick={() => setPick(pick === 'gen' ? null : 'gen')}>⭐ 장군으로</button>

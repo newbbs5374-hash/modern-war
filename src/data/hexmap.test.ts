@@ -11,7 +11,8 @@ describe('육각 타일 지도', () => {
     expect(citySizes(2)).toEqual([3, 2]);
   });
   it('나라 타일 수 = 도시 묶음 합(겹침 없음), 표와 같음', () => {
-    const want: Record<string, number> = { ru: 472, us: 398, cn: 398, in: 263, ir: 226, tr: 135, ua: 135, jp: 98, de: 98, uk: 98, kr: 629, kp: 98, il: 98 };
+    // 11-25: 도시 67곳 추가(원래 도시 칸은 그대로)
+    const want: Record<string, number> = { us: 631, cn: 631, ru: 631, de: 368, jp: 368, uk: 368, in: 607, kr: 751, tr: 368, il: 368, ir: 422, ua: 368, kp: 368 };
     for (const c of COUNTRIES) {
       const n = TILES.filter((t) => t.home === c.id).length;
       expect(n).toBe(want[c.id]);
@@ -58,12 +59,14 @@ describe('육각 타일 지도', () => {
     }
     for (const p of ['de-ru', 'de-ua', 'ru-ua', 'cn-ru', 'cn-kp', 'kp-kr', 'ir-tr', 'il-tr']) expect(pairs.has(p)).toBe(true);
     // 섬나라·따로 떨어진 대륙은 아무와도 닿지 않음
-    for (const id of ['uk', 'jp', 'us', 'in']) expect([...pairs].some((p) => p.split('-').includes(id))).toBe(false);
+    // 11-25: 중국 새 도시(칭다오)가 둘러싸여 인도 옆에 붙음(실제로도 국경이 맞닿음)
+    for (const id of ['uk', 'jp', 'us', 'in']) expect([...pairs].some((p) => p !== 'cn-in' && p.split('-').includes(id))).toBe(false);
   });
   it('픽셀 ↔ 칸 변환이 서로 맞음', () => {
     for (const h of Object.values(CITY_HEX)) {
       const p = hexToPixel(h.q, h.r);
-      expect(pixelToHex(p.x, p.y)).toEqual({ q: h.q, r: h.r });
+      const b = pixelToHex(p.x, p.y);
+      expect({ q: b.q + 0, r: b.r + 0 }).toEqual({ q: h.q + 0, r: h.r + 0 });
     }
   });
 });

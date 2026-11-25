@@ -2,7 +2,7 @@
 // 할 일·업적 진행은 바뀌기 전·후 상태를 비교해서 센다(실시간·꺼 둔 동안·버튼 모두 같은 함수).
 import { RESOURCES } from '../data/economy';
 import { TITLES } from '../data/ranks';
-import { CITIES } from '../data/cities';
+import { CITIES, FRONT } from '../data/cities';
 import { DRILL_MAX, DRILL_REFILL_MS, drillsNow } from './officer';
 import { civOf, myIslands } from './civ';
 import { assemblyOf } from './assembly';
@@ -193,7 +193,7 @@ export function countDiff(b: GameState, a: GameState): Partial<Record<Count, num
   if (ca.council.open && ca.council.open.vote !== null && cb.council.open?.id === ca.council.open.id && cb.council.open.vote === null) add('vote', 1);
   const me = a.player.countryId;
   if (b.player.countryId === me)
-    add('capture', CITIES.filter((c) => c.home !== me && a.world.owner[c.id] === me && b.world.owner[c.id] !== me).length);
+    add('capture', FRONT.filter((c) => c.home !== me && a.world.owner[c.id] === me && b.world.owner[c.id] !== me).length);
   add('rank', (a.player.title ?? 0) - (b.player.title ?? 0));
   add('event', (a.crisis?.solved ?? 0) - (b.crisis?.solved ?? 0));
   add('spy', (a.spy?.ok ?? 0) - (b.spy?.ok ?? 0));

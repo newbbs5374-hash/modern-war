@@ -163,7 +163,7 @@ describe('승리', () => {
     const { CITIES } = await import('../data/cities');
     let s = newGame('t', 'kr', 0, { seed: 9 });
     const owner = { ...s.world.owner };
-    for (const c of CITIES.slice(0, 30)) owner[c.id] = 'kr';
+    for (const c of CITIES.filter((x) => x.front).slice(0, 36)) owner[c.id] = 'kr';
     s = { ...s, world: { ...s.world, owner } };
     expect(victoryProgress(s).mine).toBeGreaterThanOrEqual(20);
     expect(checkVictory(s).ending).toBeNull(); // 아직 지도자 아님

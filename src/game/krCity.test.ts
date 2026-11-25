@@ -18,7 +18,7 @@ const rich = (s: GameState): GameState => ({
 describe('대한민국 11개 도시', () => {
   it('서울·부산·대구·광주·대전·전주·강릉·제주·여수·순천·익산, 모두 실제 정보와 시설이 있음', () => {
     const kr = CITIES.filter((c) => c.home === 'kr').map((c) => c.name);
-    expect(kr).toEqual(['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천', '익산']);
+    expect(kr).toEqual(['서울', '부산', '대구', '광주', '대전', '전주', '강릉', '제주', '여수', '순천', '익산', '인천', '울산']);
     for (const n of kr) expect(KR_CITY_INFO[n].landmarks.length).toBeGreaterThan(4);
   });
   it('도시 칸은 예전의 약 4.5배이고, 실제 바다에 닿은 도시만 바닷가가 있음', () => {
