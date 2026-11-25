@@ -1,6 +1,6 @@
 // 승리 조건 진행 카드 · 엔딩 · 명예의 전당
 import { RANKS } from '../data/ranks';
-import { ALLIED_SHARE, ALONE_SHARE, HOLD_DAYS, holdLeft, loadHall, recordHall, victoryProgress, VICTORY_RANK, type HallEntry } from '../game/victory';
+import { ALLIED_SHARE, ALONE_SHARE, continueAfterWin, hasWon, HOLD_DAYS, holdLeft, loadHall, recordHall, victoryProgress, VICTORY_RANK, type Ending, type HallEntry } from '../game/victory';
 import { timeLeft } from './officerScreens';
 import { Card } from './common';
 import { FLAG } from './flag';
@@ -102,18 +102,56 @@ export function EndingCard({ state, actions }: ScreenProps) {
         도시 {e.cities}개{e.captured.length ? ` · 점령: ${e.captured.join(', ')}` : ''}
         {e.generals.length ? ` · 장군: ${e.generals.join(', ')}` : ''}
       </p>
-      <p className="small muted">명예의 전당에 기록하고 다른 나라로 새 판을 시작할 수 있어요. 계속 둘러봐도 돼요.</p>
+      <p className="small muted">승리를 선언하면 명예의 전당에 오르고 다른 나라로 새 판을 시작해요. 계속 플레이하면 승리 기록만 남기고 지금 판을 그대로 이어 가요.</p>
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+        <button
+          className="primary"
+          onClick={() => {
+            if (!window.confirm('승리를 선언하고 새 판을 시작할까요? 지금 판은 끝나요.')) return;
+            recordHall(e, Date.now());
+            actions.reset();
+          }}
+        >
+          🏆 승리 선언 (새 나라로 새 판)
+        </button>
+        <button
+          onClick={() => {
+            recordHall({ ...e, kept: true }, Date.now());
+            actions.apply(continueAfterWin);
+          }}
+        >
+          ▶️ 계속 플레이
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** 계속 플레이 중 이미 이룬 승리 + 언제든 승리 선언 */
+function WinsDone({ state, actions }: ScreenProps) {
+  const wins = state.wins ?? [];
+  if (!wins.length) return null;
+  return (
+    <Card title="✅ 이룬 승리" right={<small className="muted">계속 플레이 중</small>}>
+      {wins.map((w, i) => (
+        <div key={i} className="list-row small">
+          <span>
+            {w.kind === '평화 승리' ? '🕊️' : w.kind === '문화 승리' ? '🎨' : '🏆'} <b>{w.kind}</b>
+          </span>
+          <span className="muted">{w.day}일째 · 도시 {w.cities}</span>
+        </div>
+      ))}
+      <p className="small muted">명예의 전당에도 기록했어요. 다른 승리도 이루면 또 기록돼요.</p>
       <button
-        className="primary"
+        className="wide"
         onClick={() => {
-          if (!window.confirm('명예의 전당에 기록하고 새 판을 시작할까요? 지금 판은 끝나요.')) return;
-          recordHall(e, Date.now());
+          if (!window.confirm('지금 판을 끝내고 다른 나라로 새로 시작할까요?')) return;
           actions.reset();
         }}
       >
-        명예의 전당에 올리고 새 나라로 시작
+        🏁 판 끝내고 새 나라로 시작
       </button>
-    </div>
+    </Card>
   );
 }
 
@@ -127,6 +165,7 @@ export function HallList({ list = loadHall() }: { list?: HallEntry[] }) {
         <div key={i} className="list-row small">
           <span>
             🏆 <b>{h.country}</b> {h.name} · {h.kind}
+            {h.kept ? <span className="muted"> (계속 플레이)</span> : null}
           </span>
           <span className="muted">{h.day}일째 · 도시 {h.cities}</span>
         </div>
@@ -150,7 +189,8 @@ export function winLines(s: ScreenProps['state']) {
   const pl = peaceLeft(s);
   const cl = cultureWinLeft(s);
   const r = (a: number, b: number) => Math.max(0, Math.min(1, a / Math.max(1, b)));
-  return [
+  const names: Record<WinId, Ending['kind']> = { conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리' };
+  return ([
     { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)`, now: `${p.mine} / ${p.needAlone}`, pct: r(p.mine, p.needAlone), left: conquerOn ? hold : null },
     { id: 'allied' as WinId, icon: '🤝', name: '연합 승리', goal: `우리+연합국 도시 ${p.needAllied}개`, now: `${p.allied} / ${p.needAllied}`, pct: r(p.allied, p.needAllied), left: alliedOn ? hold : null },
     { id: 'peace' as WinId, icon: '🕊️', name: '평화 승리', goal: `평화 헌장 서명 ${pr.need}나라`, now: `${pr.have} / ${pr.need}`, pct: pl !== null ? 1 : r(pr.have, pr.need), left: pl },
@@ -163,7 +203,7 @@ export function winLines(s: ScreenProps['state']) {
       pct: (r(cp.have, cp.need) + r(cp.top, cp.needTop) + (cp.rankOk ? 1 : 0)) / 3,
       left: cl,
     },
-  ];
+  ] as const).map((l) => (hasWon(s, names[l.id]) ? { ...l, done: true, pct: 1, left: null } : { ...l, done: false }));
 }
 
 /** 지키는 중인 승리가 있으면 '!' */
@@ -172,7 +212,8 @@ export const winBadge = (s: ScreenProps['state']) => (winLines(s).some((l) => l.
 export function VictoryPanel(props: ScreenProps) {
   const { state, actions } = props;
   const lines = winLines(state);
-  const best = [...lines].sort((a, b) => (b.left !== null ? 2 : b.pct) - (a.left !== null ? 2 : a.pct))[0];
+  const score = (l: (typeof lines)[number]) => (l.done ? -1 : l.left !== null ? 2 : l.pct);
+  const best = [...lines].sort((a, b) => score(b) - score(a))[0];
   const [pick, setPick] = useState<WinId>(best.id);
   const ready = state.player.rankIndex >= VICTORY_RANK;
   const p = victoryProgress(state);
@@ -194,8 +235,8 @@ export function VictoryPanel(props: ScreenProps) {
               key={l.id}
               icon={l.icon}
               label={l.name}
-              sub={l.left !== null ? `지키는 중 · ${timeLeft(l.left)} 남음` : l.now}
-              badge={l.left !== null ? '!' : l.id === best.id ? '가까움' : null}
+              sub={l.done ? '✅ 이뤘어요' : l.left !== null ? `지키는 중 · ${timeLeft(l.left)} 남음` : l.now}
+              badge={l.done ? '✅' : l.left !== null ? '!' : l.id === best.id ? '가까움' : null}
               tone={pick === l.id ? 'gold' : undefined}
               onClick={() => setPick(l.id)}
             >
@@ -237,6 +278,7 @@ export function VictoryPanel(props: ScreenProps) {
         </Card>
       )}
       {pick === 'culture' && <CultureWinPanel state={state} />}
+      <WinsDone {...props} />
       <HallList />
     </>
   );

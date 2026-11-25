@@ -90,6 +90,8 @@ export interface GameState {
   economy: EconomyState;
   /** 승리하면 채워짐(판 끝) */
   ending: Ending | null;
+  /** 승리한 뒤 '계속 플레이'를 고른 기록(11-25). 같은 승리는 다시 끝내지 않음. 옛 저장은 없음 */
+  wins?: Ending[];
   /** 부관 보고(아직 안 본 것) */
   reports?: Report[];
   /** 문명식 운영(연구·체제·호감·협정·분쟁 섬·국제 회의·도시 구역/민심/인구). 옛 저장은 불러올 때 채움 */

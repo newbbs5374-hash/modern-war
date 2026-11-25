@@ -1,4 +1,5 @@
-// 승리 조건과 명예의 전당. 지도자가 된 뒤 아래 둘 중 하나를 이루면 판이 끝남(기획서 제안).
+// 승리 조건과 명예의 전당. 지도자가 된 뒤 아래 중 하나를 이루면 승리 팝업이 뜸.
+//  팝업에서 '승리 선언(새 나라로)' 또는 '계속 플레이'(기록만 남기고 판을 이어 감, 11-25)를 고름.
 //  ① 연합 승리: 내 나라 + 연합국이 세계 도시 76% 이상
 //  ② 정복 승리: 내 나라 혼자 세계 도시 48% 이상
 //  ③ 평화 승리: 세계 평화 헌장(서명 2/3)을 7일 지킴 — peace.ts
@@ -47,6 +48,18 @@ export function victoryProgress(s: GameState) {
   };
 }
 
+/** 이미 이루고 '계속 플레이'를 고른 승리인지 */
+export const hasWon = (s: GameState, kind: Ending['kind']) => !!s.wins?.some((w) => w.kind === kind);
+
+/** 승리 팝업에서 '계속 플레이': 승리는 기록만 남기고 판은 그대로 이어 감(11-25 대장 요청) */
+export function continueAfterWin(s: GameState): GameState {
+  if (!s.ending) return s;
+  const e = s.ending;
+  const ev = { t: s.worldMs, kind: '점령' as const, text: `▶️ ${e.kind}를 기록하고 계속 플레이해요. 다른 승리에도 도전할 수 있어요.`, mine: true };
+  const officer = e.kind === '정복 승리' || e.kind === '연합 승리' ? { ...s.officer, winSinceMs: null } : s.officer;
+  return { ...s, ending: null, officer, wins: [...(s.wins ?? []), e], world: { ...s.world, events: [ev, ...s.world.events] } };
+}
+
 /** 이겼으면 ending을 채운 새 상태, 아니면 그대로 */
 export function checkVictory(s: GameState): GameState {
   if (s.ending) return s;
@@ -56,13 +69,13 @@ export function checkVictory(s: GameState): GameState {
   s = ct.s;
   if (s.player.rankIndex < VICTORY_RANK) return s;
   const p = victoryProgress(s);
-  if (pt.won) return finish(s, '평화 승리', p);
-  if (ct.won) return finish(s, '문화 승리', p);
-  const kind = p.mine >= p.needAlone ? '정복 승리' : p.allied >= p.needAllied ? '연합 승리' : null;
+  if (pt.won && !hasWon(s, '평화 승리')) return finish(s, '평화 승리', p);
+  if (ct.won && !hasWon(s, '문화 승리')) return finish(s, '문화 승리', p);
+  const kind = p.mine >= p.needAlone && !hasWon(s, '정복 승리') ? '정복 승리' : p.allied >= p.needAllied && !hasWon(s, '연합 승리') ? '연합 승리' : null;
   const since = s.officer.winSinceMs ?? null;
   if (!kind) return since === null ? s : { ...s, officer: { ...s.officer, winSinceMs: null } };
   if (since === null) {
-    const ev = { t: s.worldMs, kind: '점령' as const, text: `🏁 승리 조건 달성! ${HOLD_DAYS}일 동안 지키면 전쟁이 끝나요.`, mine: true };
+    const ev = { t: s.worldMs, kind: '점령' as const, text: `🏁 승리 조건 달성! ${HOLD_DAYS}일 동안 지키면 이겨요.`, mine: true };
     return { ...s, officer: { ...s.officer, winSinceMs: s.worldMs }, world: { ...s.world, events: [ev, ...s.world.events] } };
   }
   if (s.worldMs - since < HOLD_MS) return s;
@@ -87,6 +100,8 @@ function finish(s: GameState, kind: Ending['kind'], p: ReturnType<typeof victory
 const HALL_KEY = 'modern-war-hall';
 export interface HallEntry extends Ending {
   at: number;
+  /** 승리 후 계속 플레이를 고름 */
+  kept?: boolean;
 }
 export function loadHall(): HallEntry[] {
   try {
@@ -96,7 +111,7 @@ export function loadHall(): HallEntry[] {
     return [];
   }
 }
-export function recordHall(e: Ending, at: number) {
+export function recordHall(e: Ending & { kept?: boolean }, at: number) {
   try {
     const list = [{ ...e, at }, ...loadHall()].slice(0, 50);
     localStorage.setItem(HALL_KEY, JSON.stringify(list));
