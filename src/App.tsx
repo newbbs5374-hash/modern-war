@@ -15,6 +15,7 @@ import { summarizeAway, type AwaySummary } from './game/orders';
 import { AwayModal, OrdersModal } from './ui/OrdersModal';
 import { useCloudSync } from './ui/useCloud';
 import { CloudAskModal } from './ui/CloudUI';
+import { Safe, logError } from './ui/Safe';
 
 /** 이만큼 넘게 비웠다 오면 '자리 비운 동안' 보고 창 */
 const AWAY_REPORT_MS = 20 * 60e3;
@@ -45,7 +46,14 @@ function writeSeen(t: number) {
 function resume(saved: G.GameState, now: number): { state: G.GameState; notice: string; away?: AwaySummary } {
   const away = now - saved.lastRealTime;
   const before = saved.player.pendingSalary;
-  const state = addReports(saved, G.catchUp(saved, now));
+  let state: G.GameState;
+  try {
+    state = addReports(saved, G.catchUp(saved, now));
+  } catch (e) {
+    // 흐른 시간 계산에서 오류가 나도 게임은 열리게(저장 그대로)
+    logError('이어하기 계산', e);
+    return { state: { ...saved, lastRealTime: now }, notice: '' };
+  }
   if (away < 60 * 1000) return { state, notice: '' };
   const sum = away >= AWAY_REPORT_MS ? summarizeAway(saved, state, away) : undefined;
   const hours = away / (60 * 60 * 1000);
@@ -132,7 +140,16 @@ export function App() {
   // 실시간 시계
   useEffect(() => {
     const t = setInterval(() => {
-      setState((s) => (s ? addReports(s, G.catchUp(s, Date.now(), speedRef.current)) : s));
+      setState((s) => {
+        if (!s) return s;
+        try {
+          return addReports(s, G.catchUp(s, Date.now(), speedRef.current));
+        } catch (e) {
+          // 시계 한 번이 실패해도 화면은 그대로(다음 번에 다시 계산)
+          logError('시계', e);
+          return s;
+        }
+      });
     }, TICK_MS);
     return () => clearInterval(t);
   }, []);
@@ -207,7 +224,15 @@ export function App() {
   // 버튼으로 바꾼 것은 바로 저장(창을 금방 닫아도 남도록)
   const update = (f: (s: G.GameState) => G.GameState) => {
     if (!stateRef.current) return;
-    const next = addReports(stateRef.current, checkVictory(f(G.catchUp(stateRef.current, Date.now(), speedRef.current))));
+    let next: G.GameState;
+    try {
+      next = addReports(stateRef.current, checkVictory(f(G.catchUp(stateRef.current, Date.now(), speedRef.current))));
+    } catch (e) {
+      // 버튼 하나가 실패해도 게임은 그대로(바뀐 것 없이 취소)
+      logError('버튼', e);
+      setNotice('⚠️ 방금 누른 것을 처리하다 문제가 생겨 취소했어요. 게임은 그대로예요.');
+      return;
+    }
     stateRef.current = next;
     setState(next);
     saveGame(next);
@@ -275,17 +300,17 @@ export function App() {
       back={back}
       overlay={
         screen !== 'battle' && (
-          <>
+          <Safe where="알림 창" small>
             <AideReport state={state} onNext={() => update(dismissReport)} />
             {away && <AwayModal sum={away} onClose={() => setAway(null)} onOrders={() => (setAway(null), setOrdersOpen(true))} />}
             {cloud.ask && <CloudAskModal ask={cloud.ask} local={state} onPick={(p) => void cloud.choose(p)} onClose={cloud.dismiss} />}
             {ordersOpen && <OrdersModal state={state} apply={update} onClose={() => setOrdersOpen(false)} />}
-          </>
+          </Safe>
         )
       }
     >
+      <Safe key={`${screen}-${visit}`} where={`화면 ${screen}`} onExit={screen === 'home' ? undefined : () => go('home')}>
       <View
-        key={`${screen}-${visit}`}
         state={state}
         speed={speed}
         notices={notices}
@@ -293,6 +318,7 @@ export function App() {
         actions={actions}
         go={go}
       />
+      </Safe>
     </Shell>
     </PeopleProvider>
   );

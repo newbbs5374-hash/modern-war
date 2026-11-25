@@ -1107,3 +1107,8 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 
 .cul-how { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 .modal-foot:has(.wide + .wide) { flex-direction: column; }
+
+/* 오류 방지 칸(11/25): 한 부분만 막고 게임은 계속 */
+.safe-err { border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 6px; }
+.safe-err.small { padding: 8px; }
+.safe-err p { margin: 0; }

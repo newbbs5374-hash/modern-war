@@ -1,3 +1,4 @@
+import { Safe } from './Safe';
 // 외교 화면: 무역(한 번 사고팔기 · 정기 수입/수출 계약) · 국가정보(나라 카드) · 외교관계(관계도 + 목록)
 import { ResIcon } from './iconArt';
 import { useState } from 'react';
@@ -59,6 +60,7 @@ export function DiplomacyScreen(props: ScreenProps) {
           { id: 'council', label: '국제 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
         ]}
       />
+      <Safe key={tab} where={`diplo/${tab}`}>
       {tab === 'mofa' && (
         <>
           <MinistryCards state={props.state} actions={props.actions} ids={['mofa', 'mou']} title="외교부·통일부" />
@@ -73,6 +75,7 @@ export function DiplomacyScreen(props: ScreenProps) {
       {tab === 'nations' && <NationsPanel {...props} onPick={setSel} />}
       {tab === 'rel' && <RelationsPanel {...props} onPick={setSel} />}
       {sel && <CountryDetail {...props} id={sel} onClose={() => setSel(null)} />}
+      </Safe>
     </>
   );
 }

@@ -21,6 +21,7 @@ import { LEADER_LOOKS, lookName, playerKeys } from '../data/looks';
 import { FieldArtList, IconArtList } from './FieldArtList';
 import type { ScreenProps } from './screens';
 import { CloudCard } from './CloudUI';
+import { ErrorLog } from './Safe';
 
 type Pop = null | 'code' | 'time' | 'ops' | 'art' | 'reset' | 'look';
 type ArtTab = 'face' | 'field' | 'icon';
@@ -121,6 +122,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           <Tile icon="🛠️" label="운영 시험" sub="연구·호칭·사건" onClick={() => setPop('ops')} />
           <Tile icon="🖼️" label="그림 칸" sub="사진·아이콘" onClick={() => setPop('art')} />
         </div>
+        <ErrorLog />
       </Card>
 
       {msg && (

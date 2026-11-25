@@ -1,3 +1,4 @@
+import { Safe } from './Safe';
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
 // 지금 있던 기능은 하나도 빼지 않고, 맡은 분야 탭 안의 작은 탭으로 옮겼어요.
 import { AgendaPanel, AlbumPanel, BudgetSeasonCard, CodesPanel, GroupsPanel, ProjectsPanel } from './DomesticUI';
@@ -74,6 +75,7 @@ export function PersonalScreen(props: ScreenProps) {
     <>
       <FieldBar state={state} field="personal" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      <Safe key={tab} where={`personal/${tab}`}>
       {tab === 'profile' && (
         <LeaderCard {...props} />
       )}
@@ -83,6 +85,7 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'plan' && <SchedulePanel {...props} />}
       {tab === 'agenda' && <AgendaPanel {...props} />}
       {tab === 'album' && <AlbumPanel {...props} />}
+      </Safe>
     </>
   );
 }
@@ -131,6 +134,7 @@ export function DefenseScreen(props: ScreenProps) {
       <FieldBar state={state} field="defense" />
       <AdviceBar state={state} apply={props.actions.apply} field="defense" go={(t) => setTab(t as DefenseTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      <Safe key={tab} where={`defense/${tab}`}>
       {tab === 'ops' && <OpsScreen {...props} />}
       {tab === 'train' && <TrainingScreen {...props} />}
       {tab === 'forces' && <ForcesScreen {...props} />}
@@ -144,6 +148,7 @@ export function DefenseScreen(props: ScreenProps) {
       {tab === 'spy' && <SpyPanel {...props} />}
       {tab === 'tech' && <ResearchPanel {...props} fixed="mil" />}
       {tab === 'fac' && <FacilityPanel {...props} only={DEFENSE_BUILDINGS} />}
+      </Safe>
     </>
   );
 }
@@ -169,6 +174,7 @@ export function SocietyScreen(props: ScreenProps) {
       <FieldBar state={state} field="society" />
       <AdviceBar state={state} apply={props.actions.apply} field="society" go={(t) => setTab(t as SocietyTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      <Safe key={tab} where={`society/${tab}`}>
       {tab === 'mins' && (
         <>
           <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis', 'moj', 'moe', 'mogef', 'mcst']} title="사회 부처" />
@@ -193,6 +199,7 @@ export function SocietyScreen(props: ScreenProps) {
         </>
       )}
       {tab === 'opinion' && <GroupsPanel {...props} />}
+      </Safe>
     </>
   );
 }
@@ -215,6 +222,7 @@ export function EconomyScreen(props: ScreenProps) {
       <FieldBar state={props.state} field="economy" />
       <AdviceBar state={props.state} apply={props.actions.apply} field="economy" go={(t) => setTab(t as EconomyTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      <Safe key={tab} where={`economy/${tab}`}>
       {tab === 'vault' && <TreasuryPanel {...props} />}
       {tab === 'tax' && (
         <>
@@ -233,6 +241,7 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'trade' && <TradePanel {...props} />}
       {tab === 'facall' && <FacilityPanel {...props} />}
       {tab === 'proj' && <ProjectsPanel {...props} />}
+      </Safe>
     </>
   );
 }
