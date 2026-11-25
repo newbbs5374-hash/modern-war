@@ -52,9 +52,15 @@ describe('젊은 부관 얼굴·수행비서(11-24)', () => {
 });
 
 describe('셋째 얼굴 묶음(나라별 80장 더)', () => {
-  it('그림이 안 온 나라는 그대로 62장, 켜면 142장이고 번호는 이어 붙음', () => {
-    expect(EXTRA2_READY.length).toBe(0);
-    expect(deckSize('kr', 'm') + deckSize('kr', 'f')).toBe(62);
+  it('켜진 나라(그림 옴)는 142장 그림이 모두 있음, 안 켜진 나라는 그대로 62장', () => {
+    for (const c of EXTRA2_READY) {
+      expect(deckSize(c, 'm') + deckSize(c, 'f')).toBe(142);
+      for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(c, sex); i++) expect(have.has(faceFile(c, sex, i))).toBe(true);
+    }
+    expect(EXTRA2_READY.includes('ir')).toBe(false);
+    expect(deckSize('ir', 'm') + deckSize('ir', 'f')).toBe(62);
+  });
+  it('켜면 142장이고 번호는 이어 붙음', () => {
     expect(deckSize('kr', 'm', true, true) + deckSize('kr', 'f', true, true)).toBe(142);
     const us = ['us-we', 'us-bl', 'us-hi', 'us-as'];
     expect(us.reduce((a, t) => a + deckSize(t, 'm', true, true) + deckSize(t, 'f', true, true), 0)).toBe(142);
