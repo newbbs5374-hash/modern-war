@@ -13,7 +13,7 @@ import { BLOCS, COUNTRIES, HOLY_CITY, countryById, type Relation } from "../data
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
 import { KR_INNER, KR_OUTLINE } from "../data/krProvinces";
 import { GEO_PROV_INNER } from "../data/provinces";
-import { landOwners, provinces } from "../game/territory";
+import { annexedProv, landOwners, provinces } from "../game/territory";
 import { HOME_MARKS } from "./homeTerrain";
 import { useHomeGeos } from "./homeGeo";
 import { CITY_DEFENSE_MAX } from "../game/balance";
@@ -25,7 +25,7 @@ import {
   seaNearXY,
   project,
 } from "../data/realmap";
-import { isAlive, relationOf, type WorldState } from "../game/world";
+import { homeOf, isAlive, relationOf, type WorldState } from "../game/world";
 import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./units";
 import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
 import { unitArtUrl } from "./iconArt";
@@ -857,7 +857,7 @@ export function WorldMap({
       </g>
       {/* 점령당한 땅: 빗금(점령한 나라 색 위에) */}
       <g pointerEvents="none">
-        {PROVS.filter((p) => (land[p.id] ?? p.c) !== p.c).map((p) => (
+        {PROVS.filter((p) => (land[p.id] ?? p.c) !== p.c && !annexedProv(world, p, land[p.id])).map((p) => (
           <path
             key={p.id}
             d={p.d}
@@ -1026,7 +1026,7 @@ export function WorldMap({
       ))}
       {CITIES.map((city) => {
         const o = owner[city.id];
-        const occupied = o !== city.home;
+        const occupied = o !== homeOf(world, city.id);
         const lv = cityLv?.[city.id];
         const grow = lv === undefined || mini ? 1 : 0.8 + lv * 0.07;
         const hit = !mini && (world.defense[city.id] ?? CITY_DEFENSE_MAX) < CITY_DEFENSE_MAX - 2;

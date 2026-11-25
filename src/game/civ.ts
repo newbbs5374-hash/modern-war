@@ -75,7 +75,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { facBonus, facilityEffects } from './facility';
 import { Rng } from './rng';
 import type { GameState } from './state';
-import { isAlive, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
+import { homeOf, isAlive, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
 const H = 3600e3;
 const DAY = 24 * H;
@@ -795,7 +795,7 @@ export function cityCiv(s: GameState, cityId: string): CityCiv {
   return civOf(s).cities[cityId] ?? defaultCity(s, cityById(cityId));
 }
 function defaultCity(s: GameState, c: City): CityCiv {
-  const home = c.home === s.player.countryId;
+  const home = homeOf(s.world, c.id) === s.player.countryId;
   return { loyalty: home ? 70 : 50, pop: c.size - 1, grow: 0, districts: [] };
 }
 export function districtSlots(s: GameState, cityId: string): number {
@@ -908,7 +908,7 @@ export function minePerHour(s: GameState): Partial<Record<Res, number>> {
   for (const city of CITIES) {
     if (s.world.owner[city.id] !== me) continue;
     const cc = civOf(s).cities[city.id];
-    for (const m of cc?.mines ?? []) if (m.doneMs <= s.worldMs) out[m.res] = (out[m.res] ?? 0) + MINE_PER_HOUR * (city.home === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc!.loyalty);
+    for (const m of cc?.mines ?? []) if (m.doneMs <= s.worldMs) out[m.res] = (out[m.res] ?? 0) + MINE_PER_HOUR * (homeOf(s.world, city.id) === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc!.loyalty);
   }
   return out;
 }
@@ -999,7 +999,8 @@ export function loyaltyReasons(s: GameState, cityId: string): Array<[string, num
   const c = cityById(cityId);
   const me = s.player.countryId;
   const cc = cityCiv(s, cityId);
-  const rows: Array<[string, number]> = [[c.home === me ? '우리 땅' : '점령지', c.home === me ? 65 : 40]];
+  const ours = homeOf(s.world, cityId) === me;
+  const rows: Array<[string, number]> = [[ours ? (c.home === me ? '우리 땅' : '🗺️ 편입한 우리 땅') : '점령지', ours ? 65 : 40]];
   let house = 0;
   for (const d of cc.districts) if (d.id === 'housing' && d.doneMs <= s.worldMs) house += 10 + 2 * adjCount(cityId, d.tile, 'housing', cc);
   if (house) rows.push(['🏘️ 주거 구역', house]);
@@ -1193,7 +1194,7 @@ export function cityParts(s: GameState, cityId: string): { trait: CityEff; marks
 /** 도시 하나가 실제로 주는 몫: 민심이 낮으면 줄고 점령지는 절반 */
 export function cityShare(s: GameState, cityId: string): number {
   const c = cityById(cityId);
-  return loyaltyMult(cityCiv(s, cityId).loyalty) * (c.home === s.player.countryId ? 1 : 0.5);
+  return loyaltyMult(cityCiv(s, cityId).loyalty) * (homeOf(s.world, c.id) === s.player.countryId ? 1 : 0.5);
 }
 /** 계산 기억(같은 문명 상태·시각·땅 주인이면 다시 안 셈) */
 const effMemo = new WeakMap<object, { ms: number; owner: object; me: string; v: EffSet }>();
@@ -1423,7 +1424,7 @@ export function civAccrue(s: GameState, ms: number): GameState {
     const cc = c.cities[city.id];
     for (const m of cc?.mines ?? []) {
       if (m.doneMs > s.worldMs) continue;
-      stock[m.res] = (stock[m.res] ?? 0) + MINE_PER_HOUR * (city.home === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
+      stock[m.res] = (stock[m.res] ?? 0) + MINE_PER_HOUR * (homeOf(s.world, city.id) === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
       stockChanged = true;
     }
   }

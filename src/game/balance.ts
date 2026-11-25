@@ -94,6 +94,10 @@ export const REVIVE_TROOPS = 30000;
 export const US_OVERSEAS = 0.9;
 /** 점령한 남의 도시는 민심이 낮아 수입이 절반 */
 export const OCCUPIED_INCOME = 0.5;
+/** 편입 '민정' 단계 도시 수입(11-25) */
+export const CIVIL_INCOME = 0.75;
+/** 편입 '민정' 단계 도시 반란 배율 */
+export const CIVIL_REBEL = 0.5;
 
 /** 전령에 남기는 소식 수 */
 export const EVENT_LOG_MAX = 150;
