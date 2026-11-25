@@ -1006,3 +1006,39 @@ select.wide, button.wide { width: 100%; }
 .queue-slots, .qslot { height: 56px; }
 .qslot-top { height: 20px; }
 .qslot-boost { height: 18px; }
+
+/* 11-25 대장 요청(2): 부처 카드 3열 · 그림 크게 · 글씨와 안 겹치게 · 장관 사진 */
+.cab-mins.min-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.cab-mins.min-grid:has(> :only-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cab-min.min-card { padding: 4px 3px 5px; gap: 3px; justify-content: flex-start; }
+.min-card-top { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 2px; }
+.cab-min.min-card .min-card-top .cab-min-lv { position: static; font-size: 10px; }
+.cab-min.min-card .min-card-top .cab-pow { position: static; font-size: 11px; padding: 1px 5px; }
+.cab-min.min-card .cab-min-ico { width: 100% !important; height: auto; aspect-ratio: 1 / 1; max-height: 112px; display: flex; align-items: center; justify-content: center; }
+.cab-min.min-card .cab-min-art { width: 100% !important; height: 100% !important; max-width: 112px; max-height: 112px; }
+.cab-min.min-card .cab-min-ico > span.min-lv { font-size: 60px; line-height: 1; }
+.min-card-name { width: 100%; font-size: 12.5px; line-height: 1.2; white-space: normal; word-break: keep-all; text-align: center; }
+.min-card-who { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; padding: 2px 3px; border-radius: 6px; background: rgba(20,30,38,.45); }
+.min-card-who .cab-face { flex: none; border-radius: 6px; overflow: hidden; }
+.min-card-who small { flex: 1; min-width: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.min-card-who.empty small { color: var(--muted); }
+.min-card-noface { flex: none; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--hud-dim, #6b7c8c); border-radius: 6px; font-size: 16px; color: var(--muted); }
+.min-card-sub { width: 100%; font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+
+/* 11-25 대장 요청(1): 금고 칸 그림 크게 */
+.vault .vbox { min-height: 92px; }
+.vbox-art { width: 72px; height: 72px; right: 4px; top: 50%; transform: translateY(-50%); }
+.vbox:has(.vbox-art) > b, .vbox:has(.vbox-art) > small, .vbox:has(.vbox-art) > .tip, .vbox:has(.vbox-art) > button { padding-right: 0; margin-right: 74px; }
+
+/* 11-25 대장 요청(2·3): 문화 시설 3열, 걸작 5열 */
+.cul-tiles.tiles.c2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cul-tiles .itile-ico .art-ico.cul-art { width: 96px; height: 96px; }
+.cul-tiles .itile b { font-size: 12.5px; line-height: 1.2; word-break: keep-all; }
+.cul-tiles .cul-emoji { font-size: 56px; }
+.cul-work-tiles.tiles.c4 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.cul-work-tiles .itile-ico .art-ico.cul-art { width: 58px; height: 58px; }
+.cul-work-tiles .itile { min-height: 100px; padding: 5px 1px 4px; }
+.cul-work-tiles .itile b { font-size: 10.5px; padding: 0 1px; }
+.cul-work-tiles .itile small { font-size: 9px; }
+.cul-work-tiles .cul-emoji { font-size: 32px; }
+.vbox:has(.vbox-art) > small:first-of-type { margin-right: 0; white-space: nowrap; }
