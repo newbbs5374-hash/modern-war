@@ -567,7 +567,7 @@ export function appointPersonGeneral(s: GameState, pid: number, field: GeneralFi
       name: p.name,
       field,
       style: rng.pick([...GENERAL_STYLES]),
-      skill: personGeneralSkill(p),
+      skill: personGeneralSkill(p, field),
       loyalty: clamp(p.loyalty + 5),
       from: '인재 임명',
       seenMs: ns.worldMs,

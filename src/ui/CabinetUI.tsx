@@ -341,10 +341,12 @@ export function TalentPanel(props: ScreenProps) {
                 <small>💵{fmt(recruitCost(state, p))}</small>
               </>
             )}
+            top={
+              <button className="wide pgrid-refresh" disabled={ruby < REFRESH_RUBY} onClick={() => actions.apply(refreshPool)}>
+                🔄 명단 새로 받기 <small>💎{REFRESH_RUBY}</small>
+              </button>
+            }
           />
-          <button className="wide" disabled={ruby < REFRESH_RUBY} onClick={() => actions.apply(refreshPool)}>
-            🔄 명단 새로 받기 <small>💎{REFRESH_RUBY}</small>
-          </button>
         </div>
       )}
       {view === 'mine' && (
@@ -604,9 +606,10 @@ export function GeneralCandidates({ state, actions }: Pick<ScreenProps, 'state' 
     .filter((p) => p.group === '내각' && !p.seat && !p.post)
     .sort((a, b) => personGeneralSkill(b) - personGeneralSkill(a))
     .slice(0, 4);
-  if (!list.length) return null;
   return (
     <Card title="장군감(내 사람)" icon="⭐">
+      <RecommendButton state={state} actions={actions} part="gen" />
+      {!list.length && <p className="small muted">자리 없는 내 사람이 없어요. 추천 보고에서 인재 명단 사람도 볼 수 있어요.</p>}
       <div className="cab-list">
         {list.map((p) => (
           <PersonRow key={p.id} state={state} p={p} onOpen={() => setOpen(p.id)} right={<b>능력 {personGeneralSkill(p)}</b>} />
