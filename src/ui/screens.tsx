@@ -265,7 +265,7 @@ export function HomeScreen(props: ScreenProps) {
       )}
       {fallen && <div className="home-alert">{me.name}의 도시를 모두 잃었어요. 망명 정부로 버티는 중이에요.</div>}
       {state.ending && endingOpen && (
-        <Modal title="전쟁 끝" icon="🏆" onClose={() => setEndingOpen(false)}>
+        <Modal title="승리!" icon="🏆" onClose={() => setEndingOpen(false)}>
           <EndingCard {...props} />
         </Modal>
       )}

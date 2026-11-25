@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newGame, setRank, type GameState } from './state';
 import { addFavorNote, civOf } from './civ';
 import { canProposePeace, peaceLeft, peaceOf, peaceProgress, proposePeace, PEACE_HOLD_DAYS } from './peace';
-import { checkVictory, VICTORY_RANK } from './victory';
+import { checkVictory, continueAfterWin, VICTORY_RANK } from './victory';
 import { COUNTRIES } from '../data/world';
 import { pairKey } from './world';
 
@@ -53,6 +53,12 @@ describe('평화 승리', () => {
     expect(s.ending).toBeNull();
     s = checkVictory({ ...s, worldMs: s.worldMs + 4 * DAY + 1 });
     expect(s.ending?.kind).toBe('평화 승리');
+    // 계속 플레이: 판은 이어지고 같은 승리로 다시 끝나지 않음
+    s = continueAfterWin(s);
+    expect(s.ending).toBeNull();
+    expect(s.wins?.map((w) => w.kind)).toEqual(['평화 승리']);
+    s = checkVictory({ ...s, worldMs: s.worldMs + 2 * DAY });
+    expect(s.ending).toBeNull();
   });
 
   it('헌장 중 전쟁에 휘말리면 깨짐', () => {
