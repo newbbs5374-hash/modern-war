@@ -201,7 +201,9 @@ export function syncFollowers(w: WorldState): string[] {
 }
 
 export function isAlive(w: WorldState, countryId: string): boolean {
-  return CITIES.some((c) => w.owner[c.id] === countryId);
+  // 자주 불림: 수도를 가졌으면 바로 참. 내정 도시는 점령 도시 주인을 따라가므로 점령 도시만 봐도 됨
+  if (w.owner[`${countryId}-0`] === countryId) return true;
+  return FRONT.some((c) => w.owner[c.id] === countryId);
 }
 
 /** 도시 소유에 따른 수입 배율(처음 그대로면 1, 남의 도시는 절반만) */
