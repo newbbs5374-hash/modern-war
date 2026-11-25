@@ -156,7 +156,7 @@ function PipeUI({ p, set }: { p: PipePuzzle; set: (p: Puzzle) => void }) {
       </p>
       <div className="pipe-wrap">
         <div className="pipe-side">{Array.from({ length: p.h }, (_, y) => <span key={y}>{y === p.start ? '🏭' : ''}</span>)}</div>
-        <div className="pipe-board" style={{ gridTemplateColumns: `repeat(${p.w}, 1fr)` }}>
+        <div className="pipe-board" style={{ gridTemplateColumns: `repeat(${p.w}, minmax(0, 1fr))` }}>
           {p.cells.map((m, i) => (
             <button key={i} className={`pipe ${flow.has(i) ? 'flow' : ''}`} onClick={() => set(tapPipe(p, i))} disabled={!!p.result}>
               <svg viewBox="0 0 40 40">
@@ -186,7 +186,7 @@ function HackUI({ p, set }: { p: HackPuzzle; set: (p: Puzzle) => void }) {
           <span className="bar-fill danger" style={{ width: `${Math.min(100, p.trace)}%` }} />
         </span>
       </div>
-      <div className="grid-board hack" style={{ gridTemplateColumns: `repeat(${p.w}, 1fr)` }}>
+      <div className="grid-board hack" style={{ gridTemplateColumns: `repeat(${p.w}, minmax(0, 1fr))` }}>
         {p.grid.map((g, i) => {
           const can = hackCanMove(p, i);
           return (

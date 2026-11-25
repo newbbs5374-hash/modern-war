@@ -660,7 +660,7 @@ export function CityPanel(props: ScreenProps) {
           const stg = cityStage(state, city.id);
           return (
             <button key={city.id} className={`civ-city ${cc.loyalty < LOYALTY_OK ? 'low' : ''}`} onClick={() => setPick(city.id)}>
-              <CityLogo name={city.name} country={city.home} capital={city.capital} />
+              <CityLogo name={city.name} country={city.home} capital={city.capital} size={58} />
               <span className="civ-city-body">
                 <span className="civ-city-top">
                   <b>

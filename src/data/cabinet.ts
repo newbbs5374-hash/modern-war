@@ -273,8 +273,9 @@ export const MINISTRIES: Ministry[] = [
   },
 ];
 export const ministryById = (id: MinistryId) => MINISTRIES.find((m) => m.id === id)!;
-/** 장관 자리 수: 등급이 오를수록(처음 3석 → 전설의 지도자 15석). 11-24 부처 15곳 */
-export const ministerSlots = (rank: number) => Math.min(24, 3 + Math.floor(rank * 1.2));
+/** 장관 자리 수: 11-25 모든 부처에 장관을 앉힐 수 있게 부처 수와 같음(등급과 무관) */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const ministerSlots = (_rank?: number) => MINISTRIES.length;
 
 /* ───────── 인물 ───────── */
 

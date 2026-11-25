@@ -630,7 +630,7 @@ export function GeneralsPanel({ state, actions }: ScreenProps) {
   if (slots === 0) return <p className="empty">⭐ 존경받는 지도자가 되면 장군을 둘 수 있어요(장군 교육을 마친 부관을 임명하거나 영입).</p>;
   return (
     <Card title={`장군 ${o.generals.length} / ${slots}`} icon="⭐" right={<Chip icon="🛡️" value={`+${Math.round((generalDefense(o) - 1) * 100)}%`} label="방어" />} help={<p>장군은 맡은 병과의 효율을 올려요(육군·해군·공군 = 그 병과 전투력·모집 속도, 정보 = 임무 성공, 군수 = 전략 자원). 내 나라 도시 방어도 조금 올려요. 충성 80 넘으면 효과 ×1.2, 30 밑이면 절반. 장군 교육을 마친 부관을 임명하거나 봉급으로 영입해요.</p>}>
-      <div className="ichips">
+      <div className="ichips gen-chips">
         {branchSummary(state).map((b) => (
           <Chip key={b.field} icon={FIELD_ICON[b.field]} value={b.on ? b.text : '-'} label={b.field} />
         ))}

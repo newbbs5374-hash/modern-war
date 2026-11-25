@@ -98,7 +98,7 @@ export function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Pe
   const hearing = cabinetOf(state).hearing?.pid === p.id;
   return (
     <div className="cab-row" onClick={onOpen} role="button">
-      <PersonFace p={p} />
+      <PersonFace p={p} size={52} />
       <span className="cab-main">
         <b>
           {GRADES[p.grade].icon} {p.name} <small className="muted">{p.age}세{p.country !== state.player.countryId ? <> {flag(p.country)}</> : null}</small>
@@ -407,10 +407,10 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
             const done = t && state.worldMs >= t.endMs;
             const hearing = c.hearing?.min === id;
             return (
-              <button key={id} className="cab-min" onClick={() => setOpen(id)}>
+              <button key={id} className="cab-min min-card" onClick={() => setOpen(id)}>
                 <span className="cab-min-ico">
-                  <MinIcon id={id} size={54} lv={minLevel(c, id)} />
-                  {mn && <span className="cab-min-face"><PersonFace p={mn} size={18} /></span>}
+                  <MinIcon id={id} size={84} lv={minLevel(c, id)} />
+                  {mn && <span className="cab-min-face"><PersonFace p={mn} size={28} /></span>}
                   <span className={`cab-min-lv min-lv-${minLevel(c, id)}`}>{c.minUp?.[id] ? '🏗️' : ''}{minLevel(c, id)}단계</span>
                 </span>
                 <span className="cab-main">
