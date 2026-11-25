@@ -901,3 +901,30 @@ select.wide, button.wide { width: 100%; }
 .rec-none { opacity: 0.85; }
 .rec-empty { text-align: center; padding: 12px 0; }
 .rec-urg { font-weight: 700; } .rec-urg.u1 { color: #8fbf9a; } .rec-urg.u2 { color: #e0a03c; } .rec-urg.u3, .rec-urg.u4 { color: #ef6a5a; }
+
+/* 부처 청사 단계(11-25): 단계마다 테두리 빛. 그 단계 그림이 아직 없으면(min-lv-stand) 빛을 더 세게 */
+.min-lv { border-radius: 8px; }
+.cab-min-art.min-lv-2 { box-shadow: 0 0 0 1px #6fb7c9; }
+.cab-min-art.min-lv-3 { box-shadow: 0 0 0 2px #3fc1c9; }
+.cab-min-art.min-lv-4 { box-shadow: 0 0 0 2px #f0a04b, 0 0 6px rgba(240,160,75,.5); }
+.cab-min-art.min-lv-5 { box-shadow: 0 0 0 2px #ffd166, 0 0 10px rgba(255,209,102,.7); }
+.min-lv-stand.min-lv-3 { filter: saturate(1.15) brightness(1.05); }
+.min-lv-stand.min-lv-4 { filter: saturate(1.25) brightness(1.08); }
+.min-lv-stand.min-lv-5 { filter: saturate(1.35) brightness(1.12) drop-shadow(0 0 4px rgba(255,209,102,.6)); }
+.cab-min-ico { position: relative; }
+.cab-min-lv { position: absolute; left: -4px; top: -4px; font-size: 9px; line-height: 1; padding: 2px 4px; border-radius: 6px; background: rgba(20,30,38,.85); color: #dfe9ee; white-space: nowrap; }
+.cab-min-lv.min-lv-3 { color: #7fe3ea; }
+.cab-min-lv.min-lv-4 { color: #f0a04b; }
+.cab-min-lv.min-lv-5 { color: #ffd166; }
+.cab-min-stage { position: relative; border-radius: 10px; margin-bottom: 4px; overflow: hidden; }
+.cab-min-stage.min-lv-4 { box-shadow: inset 0 0 0 2px rgba(240,160,75,.6); }
+.cab-min-stage.min-lv-5 { box-shadow: inset 0 0 0 2px rgba(255,209,102,.8), 0 0 12px rgba(255,209,102,.35); }
+.cab-min-stage .cab-min-banner { margin-bottom: 0; }
+.cab-min-stage-emoji { display: block; text-align: center; font-size: 56px; padding: 12px 0; }
+.cab-min-stage-tag { position: absolute; right: 6px; bottom: 6px; font-size: 11px; padding: 2px 6px; border-radius: 8px; background: rgba(20,30,38,.8); color: #dfe9ee; }
+.cab-min-stage-tag b { color: #ffd166; letter-spacing: -1px; }
+.min-steps { display: flex; gap: 6px; justify-content: space-between; margin: 4px 0; }
+.min-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: .45; font-size: 20px; }
+.min-step.on { opacity: 1; }
+.min-step.next { opacity: .8; outline: 1px dashed #3fc1c9; outline-offset: 2px; border-radius: 8px; }
+.min-step small { font-size: 10px; }

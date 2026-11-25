@@ -29,6 +29,7 @@ import {
 import { EFF_CAP, GUARD_COUNTER_AT, HEAD_BOOST, OFFICES, POSTS, postById, type PostEff, type PostId } from '../data/staff';
 import { Rng } from './rng';
 import { govFacEff } from './govFac';
+import { MIN_LV_MAX, minLvPower } from '../data/ministryGrowth';
 import type { GameState } from './state';
 
 const H = 3600e3;
@@ -99,6 +100,12 @@ export interface CabinetState {
   advice?: Partial<Record<string, number>>;
   /** 부처·청 소속 시설 단계(11-24) */
   fac?: Record<string, number>;
+  /** 부처 청사 단계(11-25, 없으면 1단계) */
+  minLv?: Partial<Record<MinistryId, number>>;
+  /** 청사 공사 끝나는 시각 */
+  minUp?: Partial<Record<MinistryId, number>>;
+  /** 부처 업무를 끝낸 횟수(청사 키우기 조건) */
+  minWork?: Partial<Record<MinistryId, number>>;
 }
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -343,13 +350,15 @@ export function personPower(p: Person, min: MinistryId, c?: CabinetState): numbe
 export const seated = (c: CabinetState) => c.people.filter((p) => p.seat || p.post);
 export const ministerOf = (c: CabinetState, id: MinistryId) => c.people.find((p) => p.seat?.kind === 'min' && p.seat.id === id) ?? null;
 export const viceOf = (c: CabinetState, id: MinistryId) => c.people.find((p) => p.seat?.kind === 'vice' && p.seat.id === id) ?? null;
-/** 부처 힘 = 장관 + 차관 × 0.4 */
+/** 부처 청사 단계(1~5, 11-25) */
+export const minLevel = (c: CabinetState | undefined, id: MinistryId): number => Math.max(1, Math.min(MIN_LV_MAX, c?.minLv?.[id] ?? 1));
+/** 부처 힘 = (장관 + 차관 × 0.4) × 청사 단계 배율 */
 export function ministryPower(s: GameState, id: MinistryId): number {
   const c = s.cabinet;
   if (!c) return 0;
   const m = ministerOf(c, id);
   const v = viceOf(c, id);
-  return ((m ? personPower(m, id, c) : 0) + (v ? personPower(v, id, c) * VICE_POWER : 0)) * (1 + postEff(s, 'minPower'));
+  return ((m ? personPower(m, id, c) : 0) + (v ? personPower(v, id, c) * VICE_POWER : 0)) * (1 + postEff(s, 'minPower')) * minLvPower(minLevel(c, id));
 }
 
 /* ───────── 대통령실 참모 · 국무총리 · 기관장(11-24) ───────── */
