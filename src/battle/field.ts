@@ -12,6 +12,7 @@ import { CITIES, cityById } from '../data/cities';
 import { exclusiveByName, specialById, specialsByKind, type FieldMod } from '../data/specials';
 import { UNITS } from '../data/catalog';
 import { Rng } from '../game/rng';
+import FIELD_REAL from '../data/fieldReal.json';
 
 export type FTerrain = '평지' | '숲' | '산' | '시가지' | '도심' | '바다' | '해협' | '해안';
 export type Layer = 'land' | 'sea' | 'air';
@@ -260,6 +261,17 @@ export function defaultCity(seed: number): string {
   return list[Math.abs(seed) % list.length].id;
 }
 
+/** 실제 땅 모양 자료(fieldReal.json) 칸 순서: dr -R..R, dq 작은 것부터 */
+const REAL_INDEX = new Map<string, number>();
+for (let dr = -FIELD_R, k = 0; dr <= FIELD_R; dr++)
+  for (let dq = Math.max(-FIELD_R, -dr - FIELD_R); dq <= Math.min(FIELD_R, -dr + FIELD_R); dq++) REAL_INDEX.set(`${dq},${dr}`, k++);
+const REAL_CODE: Record<string, FTerrain> = { p: '평지', f: '숲', m: '산', c: '시가지', d: '도심', s: '바다', t: '해협' };
+/** 실제 위성 자료가 있는 도시인지 */
+export const hasRealField = (city: string) => !!(FIELD_REAL.cities as Record<string, string>)[city];
+/** 위성 바탕 범위(가운데 칸 기준 ±화면 단위)·칸 사이 거리(km) */
+export const FIELD_REAL_HALF: number = FIELD_REAL.half;
+export const FIELD_HEX_KM: number = FIELD_REAL.hexKm;
+
 export function buildField(city: string): Field {
   const hit = fieldCache.get(city);
   if (hit) return hit;
@@ -267,12 +279,17 @@ export function buildField(city: string): Field {
   const center: Hex = { q: c0.q, r: c0.r };
   const hexes = disk(center, FIELD_R);
   const SQ3 = Math.sqrt(3);
+  // 11-25: 실제 위성 자료로 만든 땅 모양이 있으면 그것을 씀(scripts/gen_fieldsat.py)
+  const real = (FIELD_REAL.cities as Record<string, string>)[city];
   const cells: FCell[] = hexes.map((h) => {
     const dq = h.q - center.q;
     const dr = h.r - center.r;
     const tile = TILE_AT.get(hexKey(h.q, h.r));
     let terrain: FTerrain;
-    if (tile) {
+    const realCode = real?.[REAL_INDEX.get(`${dq},${dr}`) ?? -1];
+    if (realCode) {
+      terrain = REAL_CODE[realCode] ?? '평지';
+    } else if (tile) {
       if (tile.place === city) terrain = tile.center ? '도심' : '시가지';
       else {
         const v = smooth(h.q, h.r);
@@ -286,6 +303,13 @@ export function buildField(city: string): Field {
   });
   const idx = new Map(cells.map((c, i) => [hexKey(c.q, c.r), i]));
   const nbr = cells.map((c) => HEX_DIRS.map((d) => idx.get(hexKey(c.q + d.q, c.r + d.r))).filter((v): v is number => v !== undefined));
+  if (real) {
+    // 땅 사이 좁은 바다 = 해협(얕아서 배가 느림)
+    const landNear = cells.map((_, i) => nbr[i].filter((j) => isLand(cells[j].terrain)).length);
+    cells.forEach((c, i) => {
+      if (c.terrain === '바다' && landNear[i] >= 4) c.terrain = '해협';
+    });
+  }
   const n = cells.length;
   const dist = new Uint8Array(n * n);
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) dist[i * n + j] = hexDist(cells[i], cells[j]);

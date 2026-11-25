@@ -53,7 +53,8 @@ import {
   type Mission,
 } from '../game/officer';
 import { AIDE_EFFECT } from '../battle/grid';
-import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan, trainingScale } from '../battle/spec';
+import { minisFor } from '../battle/minigames';
+import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
 import { PersonFace } from './People';
@@ -223,7 +224,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
   const help = (
     <>
       <p>🏙️ 전쟁 중인 나라의 도시 하나를 골라 점령하러 가요. 두 가지 방법이 있어요.</p>
-      <p>🗺️ <b>지도 위 전투(추천)</b>: 도시 주변 육각 지도에서 육·해·공 부대를 실시간으로 움직여요. 적 사령부·적 기함과 붙는 큰 싸움은 "직접 지휘"로 직접 할 수 있어요.</p>
+      <p>🛰️ <b>위성 지도 전투(추천)</b>: 실제 위성 사진으로 본 도시 둘레 약 40km에서 육·해·공 부대를 실시간으로 움직여요. 땅 모양(바다·강·산·시가지)도 실제와 같아요. 적 사령부·적 기함과 붙는 큰 싸움은 "직접 지휘"로 직접 할 수 있어요.</p>
       <p>🎬 <b>다섯 판</b>: {GRAND_STAGES.map((g) => `${FRAME_ICON[g.frame]} ${g.label}`).join(' → ')}. 시가지 돌입(⚑)은 꼭 이기고, 세 판 이상 이기면 차지해요.</p>
       <p>어느 쪽이든 부관에게 맡길 수 있어요(별 최대 2).</p>
       <p>방어도가 낮은 도시일수록 쉽고, 국방 → 부대에서 부대를 만들면 더 쉬워져요. {GRAND_COOLDOWN_HOURS}시간마다 한 번.</p>
@@ -272,7 +273,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
                   setPick(null);
                 }}
               >
-                🗺️ 지도 위 전투로 출격
+                🛰️ 위성 지도 전투로 출격
               </button>
             </>
           }
@@ -286,7 +287,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
               <Tile key={i} icon={FRAME_ICON[g.frame]} label={`${i + 1}`} sub={g.label} tone={i === 3 ? 'gold' : undefined} />
             ))}
           </div>
-          <p className="small muted">🗺️ 지도 위 전투(추천): 도시 주변 지도에서 부대를 움직여 사령부를 무너뜨리고 도심을 차지해요. 🎬 다섯 판: 위 다섯 전투를 이어서 해요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
+          <p className="small muted">🛰️ 위성 지도 전투(추천): 실제 위성 사진 위에서 부대를 움직여 사령부를 무너뜨리고 도심을 차지해요. 🎬 다섯 판: 위 다섯 전투를 이어서 해요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
         </Modal>
       )}
     </Card>
@@ -720,7 +721,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
   const [msg, setMsg] = useState('');
   const featured = featuredTraining(state.worldMs, rank);
   const today = o.trainCounts;
-  const start = (name: string) => {
+  const start = (name: string, mini?: string) => {
     const why = canTrain(state, name);
     if (why) return setMsg(why);
     const tr = actions.applyWith((s) => {
@@ -728,7 +729,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
       return { state: ns, out: ns.officer.training };
     });
     if (!tr) return;
-    setPendingPlan(trainingPlan(name, rank, tr.seed));
+    setPendingPlan(trainingPlan(name, rank, tr.seed, mini));
     go('battle');
   };
   const t = pick ? TRAININGS.find((x) => x.name === pick)! : null;
@@ -799,9 +800,9 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
           state={state}
           featured={featured === t.name}
           onClose={() => setPick(null)}
-          onStart={() => {
+          onStart={(mini) => {
             setPick(null);
-            start(t.name);
+            start(t.name, mini);
           }}
         />
       )}
@@ -829,7 +830,9 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
   );
 }
 
-function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: () => void }) {
+function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
+  const minis = minisFor(name);
+  const [mini, setMini] = useState(minis[0]?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;
   const t = TRAININGS.find((x) => x.name === name)!;
@@ -838,7 +841,6 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
   const lv = masteryLevel(runs);
   const next = MASTERY_AT[lv];
   const why = lock ? `${RANKS[t.rank].name}부터 할 수 있어요` : canTrain(state, name);
-  const scale = trainingScale(name, rank);
   return (
     <Modal
       title={`${name} 훈련`}
@@ -847,17 +849,24 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       footer={
         <>
           <button onClick={onClose}>닫기</button>
-          <button className={featured ? 'gold' : 'primary'} disabled={!!why} onClick={onStart}>
+          <button className={featured ? 'gold' : 'primary'} disabled={!!why} onClick={() => onStart(mini)}>
             {why ?? '▶ 시작 (일정 1개)'}
           </button>
         </>
       }
     >
       <p>
-        {FRAME_ICON[trainingPlan(name, rank, 0).stages[0].frame]} {t.frame}
-        {scale ? ` · ${scale}` : ''}
+        🎮 미니게임 {minis.length}개 중 고르기 · 계급이 오를수록 빨라지고 어려워져요
         {featured ? ' · 🔥 오늘 2배' : ''}
       </p>
+      <div className="mg-pick">
+        {minis.map((m) => (
+          <button key={m.id} className={mini === m.id ? 'on' : ''} onClick={() => setMini(m.id)}>
+            <b>{m.name}</b>
+            <small>{m.how}</small>
+          </button>
+        ))}
+      </div>
       <div className="kv2">
         <span>오르는 스탯</span>
         <b>{TRAINING_STATS[name].map((x) => `${STAT_ICON[x]}${x} ${Math.floor(o.stats[x])}`).join(' · ')}</b>
