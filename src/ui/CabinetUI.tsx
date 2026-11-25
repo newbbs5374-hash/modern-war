@@ -399,7 +399,7 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
     <>
       <Card title={title} icon="🏛️" right={<small className="muted">장관 {ministerCount(c)}/{ministerSlots(state.player.rankIndex)}석</small>}>
         <RecommendButton state={state} actions={actions} />
-        <div className="cab-mins">
+        <div className="cab-mins min-grid">
           {ids.map((id) => {
             const m = ministryById(id);
             const mn = ministerOf(c, id);
@@ -408,19 +408,20 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
             const hearing = c.hearing?.min === id;
             return (
               <button key={id} className="cab-min min-card" onClick={() => setOpen(id)}>
-                <span className="cab-min-ico">
-                  <MinIcon id={id} size={84} lv={minLevel(c, id)} />
-                  {mn && <span className="cab-min-face"><PersonFace p={mn} size={28} /></span>}
+                {/* 11-25 대장 요청: 3열 · 그림 크게 · 단계/힘%는 그림 위 한 줄(글씨와 안 겹치게) · 장관 사진 줄 */}
+                <span className="min-card-top">
                   <span className={`cab-min-lv min-lv-${minLevel(c, id)}`}>{c.minUp?.[id] ? '🏗️' : ''}{minLevel(c, id)}단계</span>
+                  <b className="cab-pow">{pct(ministryPower(state, id))}</b>
                 </span>
-                <span className="cab-main">
-                  <b>
-                    {m.icon} {m.name}
-                  </b>
-                  <small>{mn ? `${mn.name} 장관` : hearing ? '🏛️ 청문회 중' : '장관 없음'}</small>
-                  <small className="muted">{t ? (done ? '✅ 업무 끝' : `📋 ${timeLeft(t.endMs - state.worldMs)}`) : m.role}</small>
+                <span className="cab-min-ico">
+                  <MinIcon id={id} size={104} lv={minLevel(c, id)} />
                 </span>
-                <b className="cab-pow">{pct(ministryPower(state, id))}</b>
+                <b className="min-card-name">{m.name}</b>
+                <span className={`min-card-who${mn ? '' : ' empty'}`}>
+                  {mn ? <PersonFace p={mn} size={34} /> : <span className="min-card-noface">{hearing ? '🏛️' : '?'}</span>}
+                  <small>{mn ? mn.name : hearing ? '청문회 중' : '장관 없음'}</small>
+                </span>
+                <small className="muted min-card-sub">{t ? (done ? '✅ 업무 끝' : `📋 ${timeLeft(t.endMs - state.worldMs)}`) : m.role}</small>
               </button>
             );
           })}
