@@ -1159,3 +1159,11 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .talk-trust { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; padding: 4px; }
 .talk-trust input { margin-top: 2px; }
 .talk-topics .pw-act:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* 11-25 📨 보고 탭 */
+.rep-btn { position: relative; }
+.rep-badge { position: absolute; top: -3px; right: -3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: #e0483e; color: #fff; font-size: 10px; font-style: normal; line-height: 15px; text-align: center; }
+.rep-item { margin-bottom: 6px; }
+.rep-item .prop-card { margin-bottom: 2px; }
+.rep-go { width: 100%; min-height: 28px; padding: 3px 6px; font-size: 12px; text-align: left; }
+.rep-todo { width: 100%; display: flex; align-items: center; gap: 6px; text-align: left; padding: 6px 8px; margin: 3px 0; min-height: 0; }
+.rep-todo .li-main { flex: 1; min-width: 0; font-size: 12px; }

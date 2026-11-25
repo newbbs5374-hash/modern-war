@@ -24,8 +24,12 @@ import type { GameState } from './state';
 import { citiesOf, eul } from './world';
 
 const H = 3600_000;
-/** 한 사람이 다음 건의를 올리기까지 실제 3~6시간 */
-export const PROP_GAP: [number, number] = [3 * H, 6 * H];
+/** 11-25 대장 요청: 주기가 아니라 '할 수 있게 되면 바로' 건의. 한 사람이 건의를 올린 뒤(또는 받거나 미룬 뒤) 다시 건의하기까지 30분 */
+export const PROP_COOL = H / 2;
+/** 할 일이 없던 사람을 다시 살피는 간격 */
+export const PROP_RECHECK = (3 * H) / 4;
+/** 한 번(15분)에 살피는 사람 수(사람이 많아도 가볍게, 차례로 돎) */
+export const PROP_SCAN = 8;
 /** 건의는 실제 하루 동안 기다림 */
 export const PROP_TTL = 24 * H;
 /** 한꺼번에 쌓이는 건의 수 */
@@ -84,6 +88,8 @@ export interface PropState {
   yes: number;
   no: number;
   log: string[];
+  /** 차례로 살필 다음 사람 번호 */
+  rr?: number;
 }
 
 export const propOf = (s: GameState): PropState =>
@@ -337,7 +343,7 @@ interface Cand {
 const MIL_D = new Set<DistrictId>(['airfield', 'arms', 'adl', 'missile', 'harbor', 'shipyard', 'cyber', 'drone', 'aero']);
 const SCI_D = new Set<DistrictId>(['lab', 'drone', 'aero', 'cyber', 'adl']);
 
-function candidates(s: GameState, sp: Speaker, rng: Rng): Cand[] {
+function candidates(s: GameState, sp: Speaker, rng: Rng, nowOnly = false): Cand[] {
   const me = s.player.countryId;
   const mine = citiesOf(s.world, me);
   if (!mine.length) return [];
@@ -351,6 +357,8 @@ function candidates(s: GameState, sp: Speaker, rng: Rng): Cand[] {
   for (const id of sp.plan.d ?? []) {
     const d = DISTRICTS.find((x) => x.id === id);
     if (!d) continue;
+    // 지금 할 수 있는 것만 볼 때: 돈·자원이 모자라면 도시를 둘러보지도 않음(가볍게)
+    if (nowOnly && (s.nations[me].treasury < d.cost || Object.entries(d.res).some(([r, v]) => (s.economy.stock[r as keyof typeof s.economy.stock] ?? 0) < v!))) continue;
     for (const city of look(id)) {
       if ((id === 'harbor' || id === 'shipyard') && !isCoastalCity(city)) continue;
       const tile = bestTile(s, city, id);
@@ -554,8 +562,9 @@ export function runAct(s: GameState, act: PropAct): GameState {
 }
 
 /** 한 사람의 건의 하나 만들기(없으면 null). 눈이 밝을수록 가장 급한 것을 고름 */
-export function makeProposal(s: GameState, sp: Speaker, rng: Rng, id: number): Proposal | null {
-  const cands = candidates(s, sp, rng);
+export function makeProposal(s: GameState, sp: Speaker, rng: Rng, id: number, nowOnly = false): Proposal | null {
+  // nowOnly: 지금 바로 할 수 있는 것(돈·자원·조건이 다 맞는 것)만
+  const cands = candidates(s, sp, rng, nowOnly).filter((c) => !nowOnly || !actWhy(s, c.act).why);
   if (!cands.length) return null;
   const like = TRAIT_LIKE[sp.trait];
   const score = (c: Cand) => c.w * (c.tag === like ? 1.5 : 1);
@@ -621,6 +630,7 @@ export function acceptProposal(s: GameState, id: number): { state: GameState; te
     list: p0.list.filter((x) => x.id !== id),
     yes: p0.yes + 1,
   };
+  p.next[pr.who] = s.worldMs + PROP_COOL;
   const w = actWhy(ns, pr.act);
   let text: string;
   if (!w.why) {
@@ -652,7 +662,7 @@ export function rejectProposal(s: GameState, id: number): GameState {
   const ns = cut ? bumpLoyal(s, pr.who, cut) : s;
   return {
     ...ns,
-    props: { ...p0, list: p0.list.filter((x) => x.id !== id), no: p0.no + 1 },
+    props: { ...p0, list: p0.list.filter((x) => x.id !== id), no: p0.no + 1, next: { ...p0.next, [pr.who]: s.worldMs + PROP_COOL } },
   };
 }
 /** 계획 빼기 */
@@ -706,7 +716,7 @@ export function askProposal(s: GameState, key: string): { state: GameState; prop
   if (pr) {
     p.seq++;
     p.list.push(pr);
-    p.next[key] = s.worldMs + rng.range(...PROP_GAP);
+    p.next[key] = s.worldMs + PROP_COOL;
   }
   return { state: { ...s, props: p }, prop: pr };
 }
@@ -723,18 +733,20 @@ export function propTick(s: GameState): GameState {
   p.list = p.list.filter((x) => x.untilMs > s.worldMs && alive.has(x.who));
   const notes: string[] = [];
   let ns: GameState = s;
-  for (const sp of sps) {
+  // 차례로 몇 사람씩: 지금 바로 할 수 있는 발전 방안이 생겼으면 바로 건의
+  const n = sps.length;
+  const start = (p.rr ?? 0) % Math.max(1, n);
+  for (let i = 0; i < Math.min(n, PROP_SCAN); i++) {
     if (p.list.length >= PROP_MAX) break;
-    const at = p.next[sp.key];
-    if (at === undefined) {
-      // 처음 자리에 앉으면 1~3시간 뒤 첫 건의
-      p.next[sp.key] = s.worldMs + rng.range(1 * H, 3 * H);
+    const sp = sps[(start + i) % n];
+    p.rr = (start + i + 1) % n;
+    if (s.worldMs < (p.next[sp.key] ?? 0) || p.list.some((x) => x.who === sp.key)) continue;
+    const pr = makeProposal(ns, sp, rng, p.seq, true);
+    if (!pr) {
+      p.next[sp.key] = s.worldMs + PROP_RECHECK;
       continue;
     }
-    if (s.worldMs < at || p.list.some((x) => x.who === sp.key)) continue;
-    p.next[sp.key] = s.worldMs + rng.range(...PROP_GAP);
-    const pr = makeProposal(ns, sp, rng, p.seq);
-    if (!pr) continue;
+    p.next[sp.key] = s.worldMs + PROP_COOL;
     p.seq++;
     p.list.push(pr);
     if (p.trusted.includes(sp.key)) {

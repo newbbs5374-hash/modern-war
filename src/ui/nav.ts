@@ -17,6 +17,7 @@ export type Screen =
   | 'shop'
   | 'settings'
   | 'herald'
+  | 'report'
   | 'codex'
   | 'battle';
 
@@ -36,6 +37,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   shop: '상점',
   settings: '설정',
   herald: '전령',
+  report: '보고',
   codex: '도감',
   battle: '전투',
 };
