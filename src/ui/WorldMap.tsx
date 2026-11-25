@@ -28,6 +28,8 @@ import {
 import { isAlive, relationOf, type WorldState } from "../game/world";
 import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./units";
 import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
+import { unitArtUrl } from "./iconArt";
+import { polyD, seaLoop, seaRoute } from "../data/seaPath";
 
 export type MapMode = "나라" | "관계" | "묶음";
 /** 나라마다 한눈에 구분되는 색(국경선 대신 색으로 영토를 보여 줌). 이웃끼리 겹치지 않게 고름 */
@@ -131,7 +133,6 @@ const islandPath = (x: number, y: number, r: number, seed: number) => {
   return `M${pts.join("L")}Z`;
 };
 
-const onLand = (x: number, y: number) => isLand(x, y);
 const SEA = Object.fromEntries(
   COUNTRIES.map((c) => {
     const cap = CITIES.find((x) => x.home === c.id && x.capital)!;
@@ -139,8 +140,15 @@ const SEA = Object.fromEntries(
   }),
 );
 
-/** 병과 이름 → 지도 그림 */
-function UnitIcon({ name, s, color }: { name: string; s: number; color: string }) {
+/** 지도에 그릴 병과 그림 크기(지도 단위, 그림 256px 안에 물체가 약 70%) */
+const UNIT_SIZE: Record<string, number> = {
+  항공모함: 21, 강습상륙함: 18, 구축함: 16, "레이저 방공함": 16, 잠수함: 15, "원자력 잠수함": 16,
+  폭격기: 16, 전투기: 14, 무인드론: 12, 공격헬기: 13,
+  전차: 12, 기갑병: 12, 포병: 12, 미사일: 13, 방공부대: 12, 보병: 11, 특수부대: 11,
+};
+
+/** 옛 코드 그림(실제 그림 파일이 없을 때만) */
+function CodeUnit({ name, s, color }: { name: string; s: number; color: string }) {
   switch (name) {
     case "항공모함":
       return <Carrier s={0.7 * s} color={color} />;
@@ -172,31 +180,112 @@ function UnitIcon({ name, s, color }: { name: string; s: number; color: string }
   }
 }
 
-/** path를 따라 계속 움직이는 그림 하나 */
+/** 병과 이름 → 지도 그림: 부대 탭과 같은 실제 부대 그림(오른쪽을 봄) + 아래에 나라 색 고리 */
+function UnitIcon({ name, s, color }: { name: string; s: number; color: string }) {
+  const url = unitArtUrl(name);
+  if (!url) return <CodeUnit name={name} s={s} color={color} />;
+  const w = (UNIT_SIZE[name] ?? 13) * s;
+  const dom = MAP_DOMAIN[name] ?? "land";
+  return (
+    <g>
+      <ellipse
+        cx={0}
+        cy={w * (dom === "air" ? 0.3 : 0.16)}
+        rx={w * (dom === "air" ? 0.28 : 0.36)}
+        ry={w * (dom === "air" ? 0.08 : 0.13)}
+        fill={color}
+        fillOpacity={dom === "air" ? 0.3 : 0.6}
+        stroke={dom === "air" ? "none" : color}
+        strokeWidth={0.5 * s}
+      />
+      <image href={url} x={-w / 2} y={-w / 2} width={w} height={w} preserveAspectRatio="xMidYMid meet" />
+    </g>
+  );
+}
+
+/** 움직이는 그림들: 한 번의 그리기 반복(초당 약 30번)으로 모두 옮김.
+ * 그림이 오른쪽을 보고 있어서, 왼쪽으로 갈 땐 좌우를 뒤집어 거꾸로 서지 않게 함 */
+interface MoveEntry {
+  g: SVGGElement;
+  p: SVGPathElement;
+  L: number;
+  dur: number;
+  begin: number;
+  tilt: number;
+}
+const MOVERS = new Set<MoveEntry>();
+let moveRaf = 0;
+let moveLast = 0;
+function moveTick(now: number) {
+  moveRaf = MOVERS.size ? requestAnimationFrame(moveTick) : 0;
+  if (now - moveLast < 33) return;
+  moveLast = now;
+  const t = now / 1000;
+  for (const e of MOVERS) {
+    if (!e.L) {
+      e.L = e.p.getTotalLength();
+      if (!e.L) continue;
+    }
+    const f = ((((t - e.begin) / e.dur) % 1) + 1) % 1;
+    const at = f * e.L;
+    const a = e.p.getPointAtLength(at);
+    const b = e.p.getPointAtLength(at + 0.8 <= e.L ? at + 0.8 : Math.max(0, at - 0.8));
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    if (at + 0.8 > e.L) {
+      dx = -dx;
+      dy = -dy;
+    }
+    const left = dx < -0.01;
+    let rot = (Math.atan2(dy, dx) * 180) / Math.PI;
+    if (left) rot -= 180;
+    if (rot > 180) rot -= 360;
+    if (rot < -180) rot += 360;
+    rot = Math.max(-e.tilt, Math.min(e.tilt, rot));
+    e.g.setAttribute(
+      "transform",
+      `translate(${a.x.toFixed(2)},${a.y.toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${left ? -1 : 1},1)`,
+    );
+  }
+}
+
+/** path를 따라 계속 움직이는 그림 하나. tilt = 기울기 최대(도): 배·땅 부대는 조금만 기울어짐 */
 function Mover({
   path,
   dur,
   begin,
+  tilt = 30,
   children,
 }: {
   path: string;
   dur: number;
   begin: number;
+  tilt?: number;
   children: React.ReactNode;
 }) {
+  const gRef = useRef<SVGGElement>(null);
+  const pRef = useRef<SVGPathElement>(null);
+  useEffect(() => {
+    if (!gRef.current || !pRef.current) return;
+    const e: MoveEntry = { g: gRef.current, p: pRef.current, L: 0, dur, begin, tilt };
+    MOVERS.add(e);
+    if (!moveRaf) moveRaf = requestAnimationFrame(moveTick);
+    return () => {
+      MOVERS.delete(e);
+    };
+  }, [path, dur, begin, tilt]);
   return (
-    <g>
-      {children}
-      <animateMotion
-        dur={`${dur}s`}
-        begin={`${begin}s`}
-        repeatCount="indefinite"
-        rotate="auto"
-        path={path}
-      />
-    </g>
+    <>
+      <path ref={pRef} d={path} fill="none" stroke="none" />
+      <g ref={gRef} transform="translate(-9999,-9999)">
+        {children}
+      </g>
+    </>
   );
 }
+
+/** 병과 → 움직일 때 기울기 최대 */
+const tiltOf = (name: string) => ((MAP_DOMAIN[baseUnit(name)] ?? "land") === "air" ? 40 : 18);
 
 const loopAt = (x: number, y: number, rx: number, ry: number) =>
   `M${(x - rx).toFixed(1)},${y.toFixed(1)} a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 ${-rx * 2},0`;
@@ -273,19 +362,27 @@ function Fleets({
             isAlive(world, e.id) &&
             relationOf(world, c.id, e.id) === "전쟁",
         );
-        // 바다: 전쟁이면 적 앞바다 쪽으로 30% 나아간 곳(땅이면 제자리)
+        // 바다: 전쟁이면 적 앞바다 쪽으로 바닷길을 따라 30% 나아간 곳(바닷길이 없으면 제자리)
         let fx = p.x;
         let fy = p.y;
         if (enemy) {
-          const q = SEA[enemy.id];
-          const nx = p.x + (q.x - p.x) * 0.3;
-          const ny = p.y + (q.y - p.y) * 0.3;
-          if (!onLand(nx, ny)) {
-            fx = nx;
-            fy = ny;
+          const route = seaRoute(p, SEA[enemy.id]);
+          if (route && route.length > 1) {
+            const seg = route.slice(1).map((q, i) => Math.hypot(q.x - route[i].x, q.y - route[i].y));
+            let left = seg.reduce((a, b) => a + b, 0) * 0.3;
+            for (let i = 0; i < seg.length; i++) {
+              if (left <= seg[i]) {
+                const r = left / seg[i];
+                fx = route[i].x + (route[i + 1].x - route[i].x) * r;
+                fy = route[i].y + (route[i + 1].y - route[i].y) * r;
+                break;
+              }
+              left -= seg[i];
+            }
           }
         }
-        const loop = loopAt(fx, fy, 10, 4);
+        // 순찰 고리: 둘레가 모두 바다가 되게(땅에 닿으면 줄이거나 옮김)
+        const loop = seaLoop(fx, fy, 10, 4).d;
         const dur = 34 + (h % 14);
         // 하늘: 평시 = 수도 둘레 순찰, 전쟁 = 적 도시까지 갔다가 돌아옴
         const home = capOf(c.id);
@@ -350,18 +447,18 @@ function Fleets({
             )}
             {f.sea.length > 0 &&
               [0, 1, 2].map((j) => (
-                <Mover key={`s${j}`} path={loop} dur={dur} begin={-j * 2.2 - (h % 9)}>
+                <Mover key={`s${j}`} path={loop} dur={dur} begin={-j * 2.2 - (h % 9)} tilt={tiltOf(f.sea[j % f.sea.length])}>
                   <UnitIcon name={f.sea[j % f.sea.length]} s={(j ? 0.75 : 1) * zr} color={color} />
                 </Mover>
               ))}
             {f.air.slice(0, 2).map((n, j) => (
-              <Mover key={`a${j}`} path={jetPath} dur={jdur} begin={-j * 0.6 - (h % 7)}>
+              <Mover key={`a${j}`} path={jetPath} dur={jdur} begin={-j * 0.6 - (h % 7)} tilt={tiltOf(n)}>
                 <UnitIcon name={n} s={zr} color={color} />
               </Mover>
             ))}
             {road &&
               f.land.slice(0, 2).map((n, j) => (
-                <Mover key={`l${j}`} path={road} dur={rdur} begin={-j * 1.4 - (h % 5)}>
+                <Mover key={`l${j}`} path={road} dur={rdur} begin={-j * 1.4 - (h % 5)} tilt={tiltOf(n)}>
                   <UnitIcon name={n} s={0.8 * zr} color={color} />
                 </Mover>
               ))}
@@ -397,30 +494,46 @@ function Fleets({
         if (d.phase !== "stay") {
           const [s0, s1] = d.phase === "go" ? [a, b] : [b, a];
           const line = `M${s0.x},${s0.y} L${s1.x},${s1.y}`;
+          // 배는 바닷길로(땅을 가로지르지 않게), 하늘·땅 부대는 곧장
+          const [q0, q1] = d.phase === "go" ? [SEA[d.from], SEA[d.to]] : [SEA[d.to], SEA[d.from]];
+          const route = seaRoute(q0, q1);
+          const seaLine = route ? polyD(route) : null;
+          const units = d.units.slice(0, 2);
+          const anySea = units.some((n) => MAP_DOMAIN[baseUnit(n)] === "sea");
           return (
             <g key={`d${i}`}>
-              <path d={line} fill="none" stroke={color} strokeOpacity="0.5" strokeWidth={0.8 * zr} strokeDasharray="4 3" />
-              {d.units.slice(0, 2).map((n, j) => (
-                <Mover key={j} path={line} dur={8} begin={-j * 1.5}>
-                  <UnitIcon name={n} s={zr} color={color} />
-                </Mover>
-              ))}
+              {(!anySea || !seaLine) && (
+                <path d={line} fill="none" stroke={color} strokeOpacity="0.5" strokeWidth={0.8 * zr} strokeDasharray="4 3" />
+              )}
+              {anySea && seaLine && (
+                <path d={seaLine} fill="none" stroke={color} strokeOpacity="0.5" strokeWidth={0.8 * zr} strokeDasharray="4 3" />
+              )}
+              {units.map((n, j) => {
+                const isSea = MAP_DOMAIN[baseUnit(n)] === "sea";
+                if (isSea && !seaLine) return null;
+                return (
+                  <Mover key={j} path={isSea ? seaLine! : line} dur={isSea ? 20 : 8} begin={-j * 1.5} tilt={tiltOf(n)}>
+                    <UnitIcon name={baseUnit(n)} s={zr} color={color} />
+                  </Mover>
+                );
+              })}
             </g>
           );
         }
         const sea = SEA[d.to];
+        const seaRing = seaLoop(sea.x + 5, sea.y + 4, 8, 3).d;
         return (
           <g key={`d${i}`}>
             {d.units.slice(0, 3).map((n, j) => {
               const dom = MAP_DOMAIN[baseUnit(n)] ?? "land";
               const path =
                 dom === "sea"
-                  ? loopAt(sea.x + 5, sea.y + 4, 8, 3)
+                  ? seaRing
                   : dom === "air"
                     ? loopAt(b.x, b.y, 12, 8)
                     : loopAt(b.x + 2, b.y + 2, 4, 3);
               return (
-                <Mover key={j} path={path} dur={dom === "air" ? 10 : 24} begin={-j * 3 - i}>
+                <Mover key={j} path={path} dur={dom === "air" ? 10 : 24} begin={-j * 3 - i} tilt={tiltOf(n)}>
                   <UnitIcon name={baseUnit(n)} s={zr} color={color} />
                 </Mover>
               );
@@ -831,7 +944,7 @@ export function WorldMap({
           (p) =>
             !CITY_NAMES.has(p.name) &&
             p.name &&
-            Math.sqrt(p.a) > 5 * z * p.name.length * 0.9 &&
+            Math.sqrt(p.a) > 3.5 * z * p.name.length * 0.9 &&
             p.x > cv.x - 20 &&
             p.x < cv.x + vw(cv.k) + 20 &&
             p.y > cv.y - 20 &&
@@ -890,7 +1003,7 @@ export function WorldMap({
           <text
             key={p.id}
             x={p.x}
-            y={p.y + 11 * z}
+            y={p.y + 8 * z}
             textAnchor="middle"
             className="map-island"
           >
@@ -904,7 +1017,7 @@ export function WorldMap({
           y={COUNTRY_LABEL[c.id].y}
           textAnchor="middle"
           className="map-label"
-          fontSize={mini ? 22 : (c.cities.length >= 4 ? 11 : 6.5) * z}
+          fontSize={mini ? 22 : (c.cities.length >= 4 ? 7.5 : 5) * z}
           opacity={isAlive(world, c.id) ? 1 : 0.4}
         >
           {c.id === playerCountryId ? "★ " : ""}
@@ -927,7 +1040,7 @@ export function WorldMap({
             <circle
               cx={city.x}
               cy={city.y}
-              r={(city.capital ? 3.8 : 2.8) * zr * grow}
+              r={(city.capital ? 3.2 : 2.3) * zr * grow}
               fill={colorOf(o)}
               stroke={occupied ? "#fff" : "#0c1a2b"}
               strokeWidth={(occupied ? 1.6 : 1) * zr}
@@ -935,7 +1048,7 @@ export function WorldMap({
             {!mini && (
               <text
                 x={city.x}
-                y={city.y - 5 * zr}
+                y={city.y - 4.2 * zr}
                 textAnchor="middle"
                 className="map-cityname"
               >
@@ -948,7 +1061,7 @@ export function WorldMap({
             {!mini && cv.k >= 3 && (
               <text
                 x={city.x}
-                y={city.y + 8 * zr}
+                y={city.y + 6.5 * zr}
                 textAnchor="middle"
                 className="map-cityres"
               >
@@ -977,7 +1090,7 @@ export function WorldMap({
       {!mini && (
         <text
           x={HOLY_HEX.x}
-          y={HOLY_HEX.y + 10 * z}
+          y={HOLY_HEX.y + 8 * z}
           textAnchor="middle"
           className="map-island holy"
         >
