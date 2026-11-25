@@ -4,8 +4,8 @@
 // 한 장 = 실제 30분. 가속권이 모자라면 모자란 장수만큼 루비로 냄(1장 = 💎5, 상점 값과 같음, 11-24).
 import type { GameState } from './state';
 import { hearingNow } from './cabinetOps';
-import { addResearch, civOf, researchRate, techLeft } from './civ';
-import { techById } from '../data/civ';
+import { addResearch, canResearch, civOf, hasTech, researchRate, startResearch, techLeft } from './civ';
+import { CARD_SWAP_FREE_MS, techById } from '../data/civ';
 import { rubyOf } from './goals';
 
 export const BOOST_MS = 30 * 60e3;
@@ -32,7 +32,11 @@ export type BoostTarget =
   | { kind: 'task'; min: string }
   | { kind: 'vote' }
   | { kind: 'deploy'; id: number }
-  | { kind: 'chaos' };
+  | { kind: 'chaos' }
+  /** 연구 트리의 아무 카드(11-25): 지금 하는 연구가 아니어도 그 카드만 바로 진행 */
+  | { kind: 'tech'; id: string }
+  /** 정책 카드 무료 바꾸기까지 남은 시간(11-25) */
+  | { kind: 'swap' };
 
 export const boostsOf = (s: GameState) => s.officer.boosts ?? 0;
 
@@ -76,6 +80,16 @@ function endOf(s: GameState, t: BoostTarget): number | undefined {
     case 'chaos': {
       const u = s.civ?.chaosUntil ?? 0;
       return u > s.worldMs ? u : undefined;
+    }
+    case 'tech': {
+      const tech = techById(t.id);
+      if (!tech || !s.civ || canResearch(s, t.id)) return undefined;
+      return s.worldMs + (techLeft(s, tech) / Math.max(0.01, researchRate(s))) * H;
+    }
+    case 'swap': {
+      if (!s.civ || !s.civ.cards.some(Boolean)) return undefined;
+      const end = s.civ.lastSwapMs + CARD_SWAP_FREE_MS;
+      return end > s.worldMs ? end : undefined;
     }
     case 'deploy': {
       const d = s.deploy?.list.find((x) => x.id === t.id);
@@ -139,6 +153,18 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
     const pts = left - cut <= 0 ? techLeft(s, tech) : Math.min(techLeft(s, tech), (researchRate(s) * cut) / H);
     ns = addResearch(ns, t.line, pts);
   }
+  // 연구 트리 카드(11-25): 그 카드에만 점수를 넣고, 하던 연구는 그대로 둠
+  if (t.kind === 'tech') {
+    const tech = techById(t.id)!;
+    const pts = left - cut <= 0 ? techLeft(s, tech) : Math.min(techLeft(s, tech), (researchRate(s) * cut) / H);
+    const prev = civOf(s).cur[tech.line];
+    let r = addResearch(startResearch(ns, t.id), tech.line, pts);
+    if (prev !== t.id) {
+      const back = prev && !hasTech(r, prev) ? prev : null;
+      r = { ...r, civ: { ...civOf(r), cur: { ...civOf(r).cur, [tech.line]: back } } };
+    }
+    ns = r;
+  }
   if ((t.kind === 'district' || t.kind === 'mine') && s.civ) {
     const cc = s.civ.cities[t.city];
     const city =
@@ -155,8 +181,22 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
   }
   // 체제 혼란(11-24): 줄인 만큼 일찍 끝남
   if (t.kind === 'chaos' && s.civ) ns = { ...ns, civ: { ...s.civ, chaosUntil: minus(s.civ.chaosUntil) } };
+  if (t.kind === 'swap' && s.civ) ns = { ...ns, civ: { ...s.civ, lastSwapMs: minus(s.civ.lastSwapMs) } };
   if (t.kind === 'vote' && s.assembly?.vote) ns = { ...ns, assembly: { ...s.assembly, vote: { ...s.assembly.vote, endMs: minus(s.assembly.vote.endMs) } } };
   if (t.kind === 'deploy' && s.deploy)
     ns = { ...ns, deploy: { ...s.deploy, list: s.deploy.list.map((x) => (x.id !== t.id ? x : x.returnMs ? { ...x, returnMs: minus(x.returnMs) } : { ...x, arriveMs: minus(x.arriveMs) })) } };
   return ns;
+}
+
+/**
+ * 시작하고 바로 끝내기(11-25): 시설·문화 시설 짓기, 체제 바꾸기 같은 일을 시작하면서
+ * 필요한 가속권을 한 번에 씀. 다 낼 수 없으면 시작도 하지 않음.
+ */
+export function startAndFinish(s: GameState, start: (s: GameState) => GameState, t: BoostTarget): GameState {
+  const ns = start(s);
+  if (ns === s) return s;
+  const need = boostsToFinish(ns, t);
+  if (need <= 0) return ns;
+  if (boostsAffordable(ns) < need) return s;
+  return useBoost(ns, t, need);
 }

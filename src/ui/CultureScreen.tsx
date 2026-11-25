@@ -1,5 +1,6 @@
 // 🎭 문화 탭(11-23): 시설 · 걸작 · 행사 · 세계 (승리 조건은 11-24 개인 → 승리로 옮김)
-import { BoostBar } from './BoostBar';
+import { BoostBar, BoostMini, BoostStart } from './BoostBar';
+import { BOOST_MS, startAndFinish } from '../game/boost';
 import { useState } from 'react';
 import { Card, fmt } from './common';
 import { FLAG } from './flag';
@@ -112,9 +113,12 @@ function VenuePanel({ state, actions }: ScreenProps) {
           {VENUES.map((d) => {
             const n = c.venues[d.id];
             const building = c.builds.some((b) => b.venue === d.id);
+            const why = canUpgrade(state, d.id);
+            // 카드 안 가속(11-25): 공사 중 → ⏩/⚡ · 올릴 수 있으면 ⚡바로 짓기
+            const canNow = !building && !why && n < VENUE_MAX;
             return (
+              <div key={d.id} className={`bcard-cell ${building || canNow ? 'boost-cell' : ''}`}>
               <Tile
-                key={d.id}
                 icon={<VenueArt id={d.id} level={n} />}
                 label={d.name}
                 sub={<span className="cul-stars">{lv(n)}</span>}
@@ -124,6 +128,17 @@ function VenuePanel({ state, actions }: ScreenProps) {
               >
                 <small className="muted cul-lvname">{n ? d.levels[n - 1] : '아직 없음'}</small>
               </Tile>
+              {building && <BoostMini state={state} apply={actions.apply} target={{ kind: 'venue', venue: d.id }} />}
+              {canNow && (
+                <BoostStart
+                  state={state}
+                  apply={actions.apply}
+                  need={Math.ceil((upgradeCost(d.id, n + 1).hours * 3600e3) / BOOST_MS)}
+                  label={n ? '올리기' : '짓기'}
+                  run={(s) => startAndFinish(s, (x) => upgradeVenue(x, d.id), { kind: 'venue', venue: d.id })}
+                />
+              )}
+              </div>
             );
           })}
         </div>

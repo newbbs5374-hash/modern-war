@@ -47,3 +47,22 @@ export function BoostMini({ state, apply, target, cls }: { state: GameState; app
     </span>
   );
 }
+
+/**
+ * 아직 시작 안 한 카드 안의 가속 버튼(11-25): ⚡ 누르면 시작하고 바로 끝냄.
+ * need = 바로 끝내는 데 드는 가속권 수. why가 있으면(돈·경험치 모자람 등) 누를 수 없음.
+ */
+export function BoostStart({ state, apply, need, why, run, label = '바로', cls }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; need: number; why?: string | null; run: (s: GameState) => GameState; label?: string; cls?: string }) {
+  if (need <= 0) return null;
+  const can = boostsAffordable(state);
+  const all = boostPrice(state, need);
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
+  const block = why ?? (can < need ? '가속권·루비가 모자라요' : null);
+  return (
+    <span className={`boost-mini boost-start ${cls ?? ''}`} onClick={stop} onPointerDown={stop}>
+      <button className="gold" disabled={!!block} onClick={() => apply(run)} title={block ?? `시작하고 바로 끝내기 · ${priceText(all)}`} aria-label={`${label} 끝내기`}>
+        ⚡{label}<small>{priceText(all)}</small>
+      </button>
+    </span>
+  );
+}

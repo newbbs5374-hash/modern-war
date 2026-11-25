@@ -92,3 +92,49 @@ describe('카드 안 가속(11-24)', () => {
     expect(boostsOf(all)).toBe(TEST_BOOSTS - 48);
   });
 });
+
+describe('모든 카드 안 가속(11-25)', () => {
+  test('연구 트리: 연구 중이 아닌 카드도 바로 끝내고, 하던 연구는 그대로', async () => {
+    const { startResearch, civOf, hasTech } = await import('./civ');
+    const { TECHS } = await import('../data/civ');
+    let s = newGame('t', 'kr', 0, { seed: 1 });
+    const [a, b] = TECHS.filter((x) => x.line === 'mil' && !x.needs.length);
+    s = startResearch(s, a.id);
+    const tg = { kind: 'tech', id: b.id } as const;
+    expect(boostLeft(s, tg)).toBeGreaterThan(0);
+    const one = useBoost(s, tg, 1);
+    expect(civOf(one).cur.mil).toBe(a.id);
+    expect(boostLeft(one, tg)).toBeLessThan(boostLeft(s, tg));
+    const all = useBoost(s, tg, 999);
+    expect(hasTech(all, b.id)).toBe(true);
+    expect(civOf(all).cur.mil).toBe(a.id);
+    expect(hasTech(all, a.id)).toBe(false);
+  });
+  test('시설: 시작하고 바로 끝내기 · 모자라면 시작도 안 함', async () => {
+    const { startAndFinish } = await import('./boost');
+    const { upgradeFacility, canUpgrade, economyTick } = await import('./economy');
+    const { BUILDING_IDS } = await import('../data/economy');
+    let s = { ...newGame('t', 'kr', 0, { seed: 1 }), worldMs: 3600e3 };
+    s = { ...s, economy: { ...s.economy, facilities: Object.fromEntries(Object.entries(s.economy.facilities).map(([k, v]) => [k, { ...v, exp: 1e6 }])) as typeof s.economy.facilities } };
+    const id = BUILDING_IDS.find((x) => !canUpgrade(s, x))!;
+    expect(id).toBeTruthy();
+    const lv = s.economy.buildings[id].level;
+    const tg = { kind: 'build', fac: id } as const;
+    const done = startAndFinish(s, (x) => upgradeFacility(x, id), tg);
+    expect(boostLeft(done, tg)).toBe(0);
+    expect(economyTick(done).economy.buildings[id].level).toBe(lv + 1);
+    const poor = { ...s, officer: { ...s.officer, boosts: 0 }, goals: { ...s.goals!, ruby: 0 } };
+    expect(startAndFinish(poor, (x) => upgradeFacility(x, id), tg)).toBe(poor);
+  });
+  test('정책 카드: 다음 무료 바꾸기까지 줄이기', async () => {
+    const { civOf, swapCost } = await import('./civ');
+    let s = newGame('t', 'kr', 0, { seed: 1 });
+    const c = civOf(s);
+    s = { ...s, civ: { ...c, cards: ['x', null], lastSwapMs: s.worldMs - 3600e3 } } as typeof s;
+    const tg = { kind: 'swap' } as const;
+    expect(boostsToFinish(s, tg)).toBe(46);
+    const all = useBoost(s, tg, 999);
+    expect(boostLeft(all, tg)).toBe(0);
+    expect(swapCost(all)).toBe(0);
+  });
+});
