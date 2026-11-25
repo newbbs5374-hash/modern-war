@@ -56,18 +56,18 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
 ];
 
 export const TRAININGS: Array<{ name: string; frame: string; raises: string; rank: number }> = [
-  { name: '잠입', frame: '격자 턴제', raises: '은밀', rank: 0 },
-  { name: '체력', frame: '옆보기 실시간', raises: '체력', rank: 0 },
-  { name: '전술', frame: '격자 턴제', raises: '전술', rank: 0 },
-  { name: '사격', frame: '옆보기 실시간', raises: '사격 · 보병 숙련', rank: 0 },
-  { name: '포격', frame: '포물선 대결', raises: '포격', rank: 1 },
-  { name: '정보', frame: '퍼즐·카드', raises: '정보', rank: 1 },
-  { name: '통솔', frame: '옆보기 실시간', raises: '통솔', rank: 2 },
-  { name: '보급', frame: '퍼즐·카드', raises: '군수', rank: 2 },
-  { name: '해킹', frame: '퍼즐·카드', raises: '정보 · 해킹부대 숙련', rank: 2 },
-  { name: '모병', frame: '퍼즐·카드', raises: '정치 · 병력', rank: 3 },
-  { name: '항공', frame: '위에서 본 슈팅', raises: '항공 병과 숙련', rank: 4 },
-  { name: '해상', frame: '격자 턴제', raises: '해군 병과 숙련', rank: 5 },
+  { name: '잠입', frame: '미니게임', raises: '은밀', rank: 0 },
+  { name: '체력', frame: '미니게임', raises: '체력', rank: 0 },
+  { name: '전술', frame: '미니게임', raises: '전술', rank: 0 },
+  { name: '사격', frame: '미니게임', raises: '사격 · 보병 숙련', rank: 0 },
+  { name: '포격', frame: '미니게임', raises: '포격', rank: 1 },
+  { name: '정보', frame: '미니게임', raises: '정보', rank: 1 },
+  { name: '통솔', frame: '미니게임', raises: '통솔', rank: 2 },
+  { name: '보급', frame: '미니게임', raises: '군수', rank: 2 },
+  { name: '해킹', frame: '미니게임', raises: '정보 · 해킹부대 숙련', rank: 2 },
+  { name: '모병', frame: '미니게임', raises: '정치 · 병력', rank: 3 },
+  { name: '항공', frame: '미니게임', raises: '항공 병과 숙련', rank: 4 },
+  { name: '해상', frame: '미니게임', raises: '해군 병과 숙련', rank: 5 },
 ];
 
 /** 재화(기획서 "재화" 표). 지금 실제로 쌓이는 것은 봉급뿐 */

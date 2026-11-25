@@ -53,6 +53,7 @@ import {
   type Mission,
 } from '../game/officer';
 import { AIDE_EFFECT } from '../battle/grid';
+import { minisFor } from '../battle/minigames';
 import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan, trainingScale } from '../battle/spec';
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
@@ -720,7 +721,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
   const [msg, setMsg] = useState('');
   const featured = featuredTraining(state.worldMs, rank);
   const today = o.trainCounts;
-  const start = (name: string) => {
+  const start = (name: string, mini?: string) => {
     const why = canTrain(state, name);
     if (why) return setMsg(why);
     const tr = actions.applyWith((s) => {
@@ -728,7 +729,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
       return { state: ns, out: ns.officer.training };
     });
     if (!tr) return;
-    setPendingPlan(trainingPlan(name, rank, tr.seed));
+    setPendingPlan(trainingPlan(name, rank, tr.seed, mini));
     go('battle');
   };
   const t = pick ? TRAININGS.find((x) => x.name === pick)! : null;
@@ -799,9 +800,9 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
           state={state}
           featured={featured === t.name}
           onClose={() => setPick(null)}
-          onStart={() => {
+          onStart={(mini) => {
             setPick(null);
-            start(t.name);
+            start(t.name, mini);
           }}
         />
       )}
@@ -829,7 +830,9 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
   );
 }
 
-function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: () => void }) {
+function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
+  const minis = minisFor(name);
+  const [mini, setMini] = useState(minis[0]?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;
   const t = TRAININGS.find((x) => x.name === name)!;
@@ -847,17 +850,25 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       footer={
         <>
           <button onClick={onClose}>닫기</button>
-          <button className={featured ? 'gold' : 'primary'} disabled={!!why} onClick={onStart}>
+          <button className={featured ? 'gold' : 'primary'} disabled={!!why} onClick={() => onStart(mini)}>
             {why ?? '▶ 시작 (일정 1개)'}
           </button>
         </>
       }
     >
       <p>
-        {FRAME_ICON[trainingPlan(name, rank, 0).stages[0].frame]} {t.frame}
+        🎮 미니게임 {minis.length}개 중 고르기
         {scale ? ` · ${scale}` : ''}
         {featured ? ' · 🔥 오늘 2배' : ''}
       </p>
+      <div className="mg-pick">
+        {minis.map((m) => (
+          <button key={m.id} className={mini === m.id ? 'on' : ''} onClick={() => setMini(m.id)}>
+            <b>{m.name}</b>
+            <small>{m.how}</small>
+          </button>
+        ))}
+      </div>
       <div className="kv2">
         <span>오르는 스탯</span>
         <b>{TRAINING_STATS[name].map((x) => `${STAT_ICON[x]}${x} ${Math.floor(o.stats[x])}`).join(' · ')}</b>

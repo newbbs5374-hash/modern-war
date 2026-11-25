@@ -8,6 +8,7 @@ import { createShooter, finishShooter } from './shooter';
 import { createSideBattle, finishSide, type SideGoal } from './side';
 import type { BattleSpec } from './spec';
 import { createField, finishField } from './field';
+import { autoMini } from './minigames';
 
 export interface AutoInput {
   spec: BattleSpec;
@@ -42,6 +43,8 @@ export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: bool
       return finishCourse(createCourse({ rank, stats, seed })).result!;
     case 'range':
       return finishRange(createRange({ rank, stats, seed }), rangeAim(stats, rank)).result!;
+    case 'mini':
+      return autoMini(spec.variant, stats, rank, seed);
     case 'field':
       return finishField(createField({ city: spec.city, difficulty: d, rank, stats, seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) })).result!;
   }

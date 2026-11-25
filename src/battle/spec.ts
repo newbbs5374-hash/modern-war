@@ -3,8 +3,9 @@ import type { ActiveMission } from '../game/officer';
 import type { MissionKind } from '../data/officers';
 import { Rng } from '../game/rng';
 import type { Weather } from './grid';
+import { pickMini } from './minigames';
 
-export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field';
+export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini';
 export type Source = 'mission' | 'practice' | 'training';
 
 export interface BattleSpec {
@@ -47,7 +48,8 @@ export const FRAME_NAMES: Record<Frame, string> = {
   arty: '③ 포물선 대결',
   shooter: '④ 위에서 본 슈팅',
   puzzle: '⑤ 퍼즐·카드',
-  field: '⑥ 지도 위 전투',
+  field: '⑥ 위성 지도 전투',
+  mini: '🎮 훈련 미니게임',
 };
 
 type Pick = { frame: Frame; variant: string; label?: string };
@@ -77,15 +79,16 @@ export function trainingScale(name: string, rank: number): string {
   return '';
 }
 
-export function trainingPlan(name: string, rank: number, seed: number): BattlePlan {
-  const p = TRAINING_BATTLE[name];
+/** 훈련 = 미니게임 1판(11-25). mini = 고른 미니게임 id(없으면 씨앗으로) */
+export function trainingPlan(name: string, rank: number, seed: number, mini?: string): BattlePlan {
   const scale = trainingScale(name, rank);
+  const m = pickMini(name, seed, mini);
   return {
-    title: `${name} 훈련${scale ? ` · ${scale}` : ''}`,
+    title: `${name} 훈련 · ${m.name}${scale ? ` · ${scale}` : ''}`,
     source: 'training',
     training: name,
     mainIdx: 0,
-    stages: [{ ...p, title: `${name} 훈련`, difficulty: 1, seed, squadSize: name === '잠입' ? (rank < 2 ? 1 : 3) : undefined }],
+    stages: [{ frame: 'mini', variant: m.id, title: `${name} 훈련`, difficulty: 1, seed }],
   };
 }
 
