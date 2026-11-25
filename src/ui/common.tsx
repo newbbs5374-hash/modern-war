@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { NationTraits } from './NationUI';
 import { Help } from './kit';
 import { PersonFace } from './People';
 import { Flag } from './flag';
@@ -133,6 +134,7 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
       <p className="small">
         특수 능력: {c.ability.name} — {c.ability.effect}
       </p>
+      <NationTraits id={c.id} />
       <p className="small">
         국방예산 {fmt(n.treasury)} (시간당 +{fmt(budgetPerDay(state, id))}) · 병력 {fmt(n.troops)}명 (시간당 +
         {fmt(troopsPerDay(state, id))})

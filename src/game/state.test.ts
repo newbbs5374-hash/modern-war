@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { cabBudget } from './cabinet';
 import { civBudgetMult } from './civ';
 import { firstTestGrant } from './testgrant';
 import { CITIES } from '../data/cities';
@@ -48,7 +49,7 @@ describe('시간당 누적', () => {
     const s0 = newGame('테스트', 'kr', 0);
     const s1 = advance(s0, HOUR / 6);
     expect(s1.player.pendingSalary).toBeCloseTo(salaryPerDay(s0) / 6);
-    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0), 1); // 금융 센터·도시 특성·실제 시설(11/24)
+    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0) * cabBudget(s0), 1); // 금융 센터·도시 특성·실제 시설(11/24) · 나라 특징 방산 수출(11/25)
     const t0 = s0.nations.kr.troops;
     expect(s1.nations.kr.troops).toBeCloseTo(t0 * Math.exp(-0.008 / 6) + (45 * 40) / 6);
   });

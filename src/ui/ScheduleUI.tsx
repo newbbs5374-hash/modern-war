@@ -1,4 +1,5 @@
 // 개인 → 일정: 오늘 3칸(오전·오후·저녁) + 활동 8가지. 한 화면.
+import { headTitle } from '../game/nation';
 import { useState } from 'react';
 import { ACTS, SLOTS, actById, actMult, canAct, doAct, nextDayIn, scheduleOf } from '../game/schedule';
 import { Card } from './common';
@@ -13,10 +14,10 @@ export function SchedulePanel({ state, actions }: ScreenProps) {
   return (
     <>
       <Card
-        title="오늘 대통령 일정"
+        title={`오늘 ${headTitle(state.player.countryId)} 일정`}
         icon="📅"
         right={
-          <Help title="대통령 일정">
+          <Help title={`${headTitle(state.player.countryId)} 일정`}>
             <p>하루(실제 24시간)에 3칸까지 활동을 넣을 수 있어요. 넣는 순간 바로 효과가 나요.</p>
             <p>분야 점수 덤은 12시간 동안 이어져요. 같은 활동은 하루에 한 번만 할 수 있어요.</p>
             <p>지도자 스탯이 높을수록 효과가 커요(활동마다 보는 스탯이 달라요).</p>
