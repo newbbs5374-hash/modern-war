@@ -2,7 +2,7 @@
 // 개인 → 대통령실 탭. 실마다 자리 카드 → 누르면 자리 창(효과·지금 사람·추천 후보 바로 임명).
 import { useState } from 'react';
 import { EFF_INFO, HEAD_BOOST, GUARD_COUNTER_AT, OFFICES, POSTS, agenciesOf, effLine, postById, postsOf, type OfficeId, type PostEff, type PostId } from '../data/staff';
-import { ministryById, type MinistryId } from '../data/cabinet';
+import { GRADES, ministryById, type MinistryId } from '../data/cabinet';
 import { GOV_FAC_MAX, govFacCost, type GovFacility } from '../data/govFacilities';
 import { buildGovFac, canBuildGovFac, govFacCity, govFacLevel, govFacOn, govFacsOf } from '../game/govFac';
 import { cityById } from '../data/cities';
@@ -261,29 +261,35 @@ function StaffTree({ state, onOpen }: { state: GameState; onOpen: (id: PostId) =
   const card = (id: PostId, head = false) => {
     const post = postById(id);
     const h = postHolder(c, id);
+    const pname = post.name.replace('안보실 ', '').replace('한국은행 ', '한은 ');
     return (
       <button key={id} className={`tcard ${h ? 'on' : 'empty'}${head ? ' head' : ''}`} onClick={() => onOpen(id)}>
         <span className="tcard-clip" />
-        {h ? (
-          <>
-            <PersonFace p={h} size={head ? 40 : 32} />
-            <b>{h.name}</b>
-            <small>
-              {post.icon}
-              {post.name.replace('안보실 ', '').replace('한국은행 ', '한은 ')}
-            </small>
-            <small className="tcard-pw">{pct(postPower(state, id))}</small>
-          </>
-        ) : (
-          <>
-            <span className="tcard-plus">＋</span>
-            <b>임명</b>
-            <small>
-              {post.icon}
-              {post.name.replace('안보실 ', '').replace('한국은행 ', '한은 ')}
-            </small>
-          </>
-        )}
+        <span className="tcard-photo">{h ? <PersonFace p={h} size={head ? 84 : 66} /> : <span className="tcard-plus">＋</span>}</span>
+        <span className="tcard-info">
+          {h ? (
+            <>
+              <b>{h.name}</b>
+              <small className="tcard-post">
+                {post.icon} {pname}
+              </small>
+              <small>
+                {GRADES[h.grade].icon} {h.age}세 · {h.spec}
+              </small>
+              <small>
+                힘 <span className="tcard-pw">{pct(postPower(state, id))}</span> · 충성 {Math.round(h.loyalty)}
+              </small>
+            </>
+          ) : (
+            <>
+              <b>비어 있음</b>
+              <small className="tcard-post">
+                {post.icon} {pname}
+              </small>
+              <small className="tcard-pw">눌러서 임명</small>
+            </>
+          )}
+        </span>
       </button>
     );
   };

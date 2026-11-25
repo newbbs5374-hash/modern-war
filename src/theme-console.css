@@ -773,19 +773,29 @@ select.wide, button.wide { width: 100%; }
 .stree-branch.side { border-top-style: dashed; }
 .stree-label { display: block; font-size: 10.5px; margin-bottom: 2px; }
 .stree-head { display: flex; justify-content: center; }
-.stree-head .tcard { width: 48%; }
-.stree-rail { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 4px; padding-top: 10px; margin-top: 4px; border-top: 2px solid var(--hud-dim); }
+.stree-head .tcard { width: 74%; }
+.stree-rail { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 4px; padding-top: 10px; margin-top: 4px; border-top: 2px solid var(--hud-dim); }
 .stree-branch.side .stree-rail { border-top: none; margin-top: 0; }
-.tcard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px 3px; border: 1px solid var(--hud, #3fb5a8); background: rgba(63,181,168,.06); min-width: 0; font-size: 11px; }
+/* 인사 카드: 왼쪽 큰 사진 + 오른쪽 약식 정보(11-25 대장 요청) */
+.tcard { position: relative; display: flex; flex-direction: row; align-items: stretch; gap: 6px; padding: 7px 5px 5px; border: 1px solid var(--hud, #3fb5a8); background: rgba(63,181,168,.06); min-width: 0; font-size: 11px; text-align: left; }
 .tcard::before { content: ''; position: absolute; top: -11px; left: 50%; width: 1px; height: 10px; background: var(--hud-dim); }
 .stree-head .tcard::before { display: none; }
 .tcard-clip { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 12px; height: 7px; border: 2px solid #b8c4cc; border-bottom: none; border-radius: 3px 3px 0 0; }
+.tcard-photo { flex: none; width: 66px; height: 80px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--hud-dim); background: #3e4b59; overflow: hidden; }
+.tcard.head .tcard-photo { width: 84px; height: 102px; }
+.tcard-photo .cab-face { width: 100% !important; height: 100% !important; border: none; font-size: 34px !important; }
+.tcard-photo .face-img { border-radius: 0; object-position: 50% 18%; }
+.tcard-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
 .tcard.empty { border: 1px dashed var(--hud-dim); background: transparent; color: var(--muted); }
 .tcard.empty .tcard-clip { border-color: var(--hud-dim); }
-.tcard b { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.tcard small { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.tcard-plus { font-size: 18px; line-height: 1; }
-.tcard-pw { color: var(--hud, #3fb5a8) !important; }
+.tcard.empty .tcard-photo { border-style: dashed; background: transparent; }
+.tcard b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tcard.head b { font-size: 14.5px; }
+.tcard small { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tcard.head small { font-size: 11px; }
+.tcard small.tcard-post { color: var(--text, #f1f5f9); }
+.tcard-plus { font-size: 26px; line-height: 1; }
+.tcard-pw { color: var(--hud, #3fb5a8) !important; font-weight: 700; }
 .advice-bar { border: 1px solid var(--hud-dim); border-left: 3px solid var(--hud, #3fb5a8); margin: 3px 0; background: rgba(63,181,168,.05); }
 .advice-bar.empty { padding: 3px 6px; margin: 3px 0; }
 .advice-head { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; padding: 3px 6px; background: none; border: none; }
