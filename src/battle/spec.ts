@@ -207,6 +207,7 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 export const PRACTICE: Array<{ label: string } & Pick> = [
   { label: '위성 지도 전투', frame: 'field', variant: 'capture' },
   { label: '비스듬히 본 전장(시험)', frame: 'field', variant: 'oblique' },
+  { label: '3D 전장(시험)', frame: 'field', variant: '3d' },
   { label: '방어(깃발)', frame: 'grid', variant: 'survive' },
   { label: '구출(인질)', frame: 'grid', variant: 'rescue' },
   { label: '정찰(목표)', frame: 'grid', variant: 'reach' },
