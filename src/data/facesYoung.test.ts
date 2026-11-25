@@ -52,13 +52,14 @@ describe('젊은 부관 얼굴·수행비서(11-24)', () => {
 });
 
 describe('셋째 얼굴 묶음(나라별 80장 더)', () => {
-  it('켜진 나라(그림 옴)는 142장 그림이 모두 있음, 안 켜진 나라는 그대로 62장', () => {
+  it('켜진 나라(그림 옴)는 142장 그림이 모두 있음(11-25 13개국 모두 켜짐)', () => {
     for (const c of EXTRA2_READY) {
-      expect(deckSize(c, 'm') + deckSize(c, 'f')).toBe(142);
-      for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(c, sex); i++) expect(have.has(faceFile(c, sex, i))).toBe(true);
+      const tags = c === 'us' ? ['us-we', 'us-bl', 'us-hi', 'us-as'] : [c];
+      expect(tags.reduce((a, t) => a + deckSize(t, 'm') + deckSize(t, 'f'), 0)).toBe(142);
+      for (const t of tags) for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(t, sex); i++) expect(have.has(faceFile(t, sex, i))).toBe(true);
     }
-    expect(EXTRA2_READY.includes('ir')).toBe(false);
-    expect(deckSize('ir', 'm') + deckSize('ir', 'f')).toBe(62);
+    expect(EXTRA2_READY.length).toBe(13);
+    expect(deckSize('ir', 'm') + deckSize('ir', 'f')).toBe(142);
   });
   it('켜면 142장이고 번호는 이어 붙음', () => {
     expect(deckSize('kr', 'm', true, true) + deckSize('kr', 'f', true, true)).toBe(142);
