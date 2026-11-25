@@ -27,6 +27,7 @@ import {
   skipBoss,
   stepField,
   visibleSet,
+  type FKind,
   type FTerrain,
   type FUnit,
   type FieldBattle,
@@ -40,6 +41,7 @@ import { fieldArmy } from '../../battle/auto';
 import { SideView } from './SideView';
 import { GridView } from './GridView';
 import { FieldFx, fxMood } from './FieldFx';
+import { FieldPick } from './FieldPick';
 
 const SIDE_COLOR = { me: '#2563eb', foe: '#dc2626' };
 /** 11-25 1번안 시험: 3D 전장(three.js라 무거워서 이 모드에서만 불러옴) */
@@ -50,7 +52,14 @@ const RATE = 1;
 /** 확대 한도 */
 const ZMAX = 3.5;
 
+/** 2.5D 전장(비스듬히 본 전장)은 싸우기 전에 출전 편성(병과 8개 고르기)부터 */
 export function FieldView(props: FrameProps) {
+  const [picks, setPicks] = useState<FKind[] | null>(props.spec.picks ?? null);
+  if (props.spec.variant === 'oblique' && !picks) return <FieldPick spec={props.spec} onDone={setPicks} />;
+  return <FieldBattleView {...props} spec={picks ? { ...props.spec, picks } : props.spec} />;
+}
+
+function FieldBattleView(props: FrameProps) {
   const { spec, stats, rank, onEnd } = props;
   const bRef = useRef<FieldBattle | null>(null);
   if (!bRef.current) bRef.current = createField({ city: spec.city, difficulty: spec.difficulty, rank, stats, seed: spec.seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) });

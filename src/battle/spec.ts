@@ -4,6 +4,7 @@ import type { MissionKind } from '../data/officers';
 import { Rng } from '../game/rng';
 import type { Weather } from './grid';
 import { pickMini } from './minigames';
+import type { FKind } from './field';
 
 export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini';
 export type Source = 'mission' | 'practice' | 'training';
@@ -26,6 +27,8 @@ export interface BattleSpec {
   defense?: number;
   /** 지도 위 전투: 우리 특화 유닛·독점 병과 · 적 나라 · 연료·탄약 */
   army?: { roster: Record<string, number>; enemyId?: string; fuel?: number; ammo?: number };
+  /** 11-25 2.5D 전장: 출전 편성에서 고른 병과 */
+  picks?: FKind[];
 }
 
 /** 한 번에 치르는 전투 묶음(훈련·임무는 1판, 작전 2~3판, 대전투 5판) */
@@ -206,7 +209,7 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 /** 연습장 목록(보상 없음) */
 export const PRACTICE: Array<{ label: string } & Pick> = [
   { label: '위성 지도 전투', frame: 'field', variant: 'capture' },
-  { label: '비스듬히 본 전장(시험)', frame: 'field', variant: 'oblique' },
+  { label: '2.5D 전장(병과 8개 골라서)', frame: 'field', variant: 'oblique' },
   { label: '3D 전장(시험)', frame: 'field', variant: '3d' },
   { label: '방어(깃발)', frame: 'grid', variant: 'survive' },
   { label: '구출(인질)', frame: 'grid', variant: 'rescue' },

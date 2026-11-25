@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CITIES } from '../data/cities';
-import { buildField, createField, finishField, fMult, orderMove, stepField, FUNIT } from './field';
+import { buildField, createField, fieldHasSea, finishField, fMult, orderMove, stepField, FUNIT, type FKind } from './field';
 
 const stats = { 통솔: 30, 전술: 30, 포격: 30, 정보: 30, 군수: 30, 사격: 30 };
 
@@ -54,5 +54,32 @@ describe('지도 위 전투', () => {
     b.auto = false;
     stepField(b, 5);
     expect(b.t).toBeGreaterThan(0);
+  });
+});
+
+describe('2.5D 전장 출전 편성(11-25)', () => {
+  const base = { difficulty: 1, rank: 3, stats: {}, seed: 7 };
+  it('고른 병과만 나가고 전체 부대 수는 그대로', () => {
+    const all = createField(base);
+    const n = all.units.filter((u) => u.side === 'me').length;
+    const picks: FKind[] = ['infantry', 'tank', 'artillery', 'aa', 'drone', 'fighter', 'carrier', 'submarine'];
+    const b = createField({ ...base, picks });
+    const mine = b.units.filter((u) => u.side === 'me');
+    expect(mine.every((u) => picks.includes(u.kind))).toBe(true);
+    expect(mine.some((u) => u.kind === 'destroyer')).toBe(false);
+    expect(Math.abs(mine.length - n)).toBeLessThanOrEqual(1);
+  });
+  it('보병·전차를 안 골라도 보병은 나감(도심 점령)', () => {
+    const b = createField({ ...base, picks: ['artillery', 'aa', 'drone'] });
+    expect(b.units.some((u) => u.side === 'me' && u.kind === 'infantry')).toBe(true);
+  });
+  it('편성해도 끝까지 싸울 수 있음', () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      const b = createField({ ...base, seed, picks: ['infantry', 'tank', 'artillery', 'aa', 'drone', 'fighter', 'carrier', 'destroyer'] });
+      expect(finishField(b).result).not.toBeNull();
+    }
+  });
+  it('바다 있는지 알려 줌', () => {
+    expect(typeof fieldHasSea(undefined, 7)).toBe('boolean');
   });
 });

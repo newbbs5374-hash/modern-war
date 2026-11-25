@@ -22,7 +22,7 @@ export const rangeAim = (stats: Record<string, number>, rank: number) => 0.5 + 0
 /** 전투 묶음의 부대 정보 → 지도 위 전투 입력 */
 export function fieldArmy(spec: BattleSpec) {
   const a = spec.army;
-  return a ? { roster: a.roster, enemyId: a.enemyId, fuel: a.fuel, ammo: a.ammo } : {};
+  return { ...(a ? { roster: a.roster, enemyId: a.enemyId, fuel: a.fuel, ammo: a.ammo } : {}), ...(spec.picks ? { picks: spec.picks } : {}) };
 }
 
 export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: boolean; stars: number; text: string } {

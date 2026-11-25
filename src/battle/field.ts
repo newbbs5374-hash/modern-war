@@ -211,6 +211,17 @@ export interface FieldInput {
   /** 출발 때 연료·탄약(0~1, 나라 창고의 석유·구리만큼) */
   fuel?: number;
   ammo?: number;
+  /** 11-25 2.5D 전장: 출전 편성에서 고른 병과(없으면 예전처럼 모두) */
+  picks?: FKind[];
+}
+
+/** 출전 편성에서 고를 수 있는 우리 병과와 고르는 수 */
+export const PICKABLE: FKind[] = ['infantry', 'tank', 'artillery', 'aa', 'drone', 'fighter', 'carrier', 'destroyer', 'submarine'];
+export const PICK_MAX = 8;
+export const PICK_DEFAULT: FKind[] = ['infantry', 'tank', 'artillery', 'aa', 'drone', 'fighter', 'carrier', 'destroyer'];
+/** 전장에 바다(함대가 다닐 곳)가 있는지: 편성 화면에서 함선을 막을 때 씀 */
+export function fieldHasSea(city: string | undefined, seed: number): boolean {
+  return buildField(city && CITY_HEX[city] ? city : defaultCity(seed)).hasSea;
 }
 
 export interface FieldBattle {
@@ -524,6 +535,35 @@ export function createField(inp: FieldInput): FieldBattle {
     for (let k = 0; k < 2; k++) {
       const at = pick('fighter', (i) => D(i, L) <= 1, (i) => D(i, L));
       if (at !== null) add('fighter', 'me', at, { base: -1 });
+    }
+  }
+  // 출전 편성: 고르지 않은 병과는 빼고, 그 자리만큼 고른 병과로 채움(전체 부대 수는 그대로)
+  if (inp.picks && inp.picks.length) {
+    const want = new Set(inp.picks.filter((k) => PICKABLE.includes(k) && (f.hasSea || FUNIT[k].layer !== 'sea')));
+    if (!want.has('infantry') && !want.has('tank')) want.add('infantry');
+    const out = b.units.filter((u) => u.side === 'me' && !want.has(u.kind));
+    for (const u of out) used.delete(layerKey(u.at, u.kind));
+    b.units = b.units.filter((u) => !out.includes(u));
+    const cvLeft = b.units.find((u) => u.side === 'me' && u.kind === 'carrier');
+    for (const u of b.units) if (u.side === 'me' && u.base !== undefined && u.base > 0 && !b.units.some((c) => c.id === u.base)) u.base = cvLeft ? cvLeft.id : -1;
+    // 채울 순서: 도심을 차지할 육군 먼저, 그다음 고른 순서대로
+    const order = [...want].sort((a, c) => (CAPTURERS.includes(c) ? 1 : 0) - (CAPTURERS.includes(a) ? 1 : 0));
+    let n = 0;
+    for (let k = 0; k < out.length && order.length; k++) {
+      const kind = order[n++ % order.length];
+      const layer = FUNIT[kind].layer;
+      if (layer === 'land') {
+        const at = pick(kind, (i) => D(i, L) <= 5 && !b.units.some((u) => u.side === 'foe' && D(u.at, i) <= 2), (i) => D(i, L) + 0.3 * D(i, C));
+        if (at !== null) add(kind, 'me', at);
+      } else if (layer === 'sea') {
+        const near = cvLeft?.at ?? L;
+        const at = pick(kind, (i) => D(i, near) <= 4 && D(i, C) >= 3, (i) => D(i, near) + D(i, C) * 0.2);
+        if (at !== null) add(kind, 'me', at);
+      } else {
+        const home = cvLeft?.at ?? L;
+        const at = pick(kind, (i) => D(i, home) <= 1, (i) => D(i, home));
+        if (at !== null) add(kind, 'me', at, { base: kind === 'fighter' && cvLeft ? cvLeft.id : -1 });
+      }
     }
   }
   // 특화 유닛: 가진 만큼(종류마다 2개까지) 우리 부대를 바꿈 · 독점 병과는 새로 데려옴
