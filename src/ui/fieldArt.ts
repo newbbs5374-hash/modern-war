@@ -57,6 +57,22 @@ export const LAND_ART = {
   trees: ['land-tree-1', 'land-tree-2'],
   mountain: 'land-mountain',
 } as const;
+/** 11-25 대장 요청 K6: 도시마다 랜드마크 그림(있으면 본부 지도 도시 위에). 저장 이름 land-mark-<영문>.webp */
+export const CITY_LANDMARK: Record<string, string> = {
+  서울: 'land-mark-seoul',
+  부산: 'land-mark-busan',
+  대구: 'land-mark-daegu',
+  광주: 'land-mark-gwangju',
+  대전: 'land-mark-daejeon',
+  전주: 'land-mark-jeonju',
+  강릉: 'land-mark-gangneung',
+  제주: 'land-mark-jeju',
+  여수: 'land-mark-yeosu',
+  순천: 'land-mark-suncheon',
+  익산: 'land-mark-iksan',
+  인천: 'land-mark-incheon',
+  울산: 'land-mark-ulsan',
+};
 const LAND_WHO: Record<string, string> = {
   'land-landmark': '수도 랜드마크', 'land-tower-1': '고층 빌딩 1', 'land-tower-2': '고층 빌딩 2', 'land-office-1': '중간 빌딩 1',
   'land-office-2': '중간 빌딩 2', 'land-house-1': '주택 1', 'land-house-2': '주택 2', 'land-factory': '공장',

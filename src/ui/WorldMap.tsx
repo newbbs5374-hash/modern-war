@@ -29,6 +29,7 @@ import { homeOf, isAlive, relationOf, type WorldState } from "../game/world";
 import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./units";
 import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
 import { unitArtUrl } from "./iconArt";
+import { nightPath, useNowMinute, useWorldJson, worldSatUrl, type WorldSat } from "./worldSky";
 import { polyD, seaLoop, seaRoute } from "../data/seaPath";
 
 export type MapMode = "나라" | "관계" | "묶음";
@@ -80,6 +81,10 @@ const ART_FILES = import.meta.glob(
   { eager: true, query: "?url", import: "default" },
 ) as Record<string, string>;
 const ART: string | undefined = Object.values(ART_FILES)[0];
+// 11-25 밤 불빛·구름(scripts/gen_worldsat.py)
+const SKY_FILES = import.meta.glob("../assets/world/world-{night,clouds}.webp", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
+const NIGHT_ART = SKY_FILES["../assets/world/world-night.webp"];
+const CLOUD_ART = SKY_FILES["../assets/world/world-clouds.webp"];
 
 const X0 = 0;
 const Y0 = 0;
@@ -715,6 +720,21 @@ export function WorldMap({
       }
   const frontOwners = Array.from(new Set(fronts.flat()));
   const ownedBy = (o: string) => PROVS.filter((p) => (land[p.id] ?? p.c) === o);
+  // ── 11-25 실사 꾸밈 ──
+  // 확대 2.5배 넘으면 화면에 보이는 고해상 위성 조각, 2배 넘으면 정밀 국경선
+  const satMeta = useWorldJson<WorldSat>("meta.json", !mini && cv.k >= 2.5);
+  const borders = useWorldJson<{ d: string }>("borders.json", !mini && cv.k >= 2);
+  const tileU = satMeta ? (satMeta.tile / satMeta.w1) * MW : 0;
+  const satTiles =
+    satMeta && cv.k >= 2.5
+      ? satMeta.tiles.filter(([tx, ty]) => inView(tx * tileU + tileU / 2, ty * tileU + tileU / 2, tileU))
+      : [];
+  // 실제 시각 낮·밤: 해가 진 곳은 어둡게(노을 3단), 그곳에만 도시 불빛
+  const now = useNowMinute();
+  const nights = [-2, 1, 4, 7, 10, 13].map((a) => nightPath(now, a));
+  const nightClip = nightPath(now, 3);
+  // 나라 색: 확대할수록 옅게(위성 사진이 보이게)
+  const fillA = mode === "나라" ? (cv.k >= 3 ? 0.36 : cv.k >= 2 ? 0.46 : 0.52) : cv.k >= 3 ? 0.3 : 0.42;
 
   const svg = (
     <svg
@@ -731,6 +751,10 @@ export function WorldMap({
       style={{ ["--z" as string]: z } as React.CSSProperties}
     >
       <defs>
+        <linearGradient id="wm-haze" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#cfe8ff" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#cfe8ff" stopOpacity="0" />
+        </linearGradient>
         <radialGradient id="wm-sea" cx="50%" cy="50%" r="75%">
           <stop offset="0%" stopColor="#0b2a1c" />
           <stop offset="100%" stopColor="#030a06" />
@@ -777,14 +801,29 @@ export function WorldMap({
       </defs>
       <rect x={X0} y={Y0} width={MW} height={MH} fill="url(#wm-sea)" />
       {ART ? (
-        <image
-          href={ART}
-          x={X0}
-          y={Y0}
-          width={MW}
-          height={MH}
-          preserveAspectRatio="none"
-        />
+        <>
+          <image
+            href={ART}
+            x={X0}
+            y={Y0}
+            width={MW}
+            height={MH}
+            preserveAspectRatio="none"
+          />
+          {satMeta &&
+            satTiles.map(([tx, ty]) => (
+              <image
+                key={`${tx}-${ty}`}
+                href={worldSatUrl(`1-${tx}-${ty}.webp`)}
+                x={X0 + tx * tileU}
+                y={Y0 + ty * tileU}
+                width={(Math.min(satMeta.tile, satMeta.w1 - tx * satMeta.tile) / satMeta.w1) * MW + 0.05}
+                height={(Math.min(satMeta.tile, satMeta.h1 - ty * satMeta.tile) / satMeta.h1) * MH + 0.05}
+                preserveAspectRatio="none"
+                pointerEvents="none"
+              />
+            ))}
+        </>
       ) : (
         <>
           {!mini && (
@@ -814,7 +853,7 @@ export function WorldMap({
         pointerEvents="none"
       />
       {/* 13개 나라: 도(주·성)마다 지금 주인 색 */}
-      <g opacity={ART ? (mode === "나라" ? 0.58 : 0.48) : 1}>
+      <g opacity={ART ? fillA : 1}>
         {COUNTRIES.map((c) => (
           <g
             key={c.id}
@@ -873,7 +912,7 @@ export function WorldMap({
           d={COAST[c.id]}
           fill="none"
           stroke={c.id === selectedId ? "#e2f3ff" : "#7dd3fc"}
-          strokeOpacity={c.id === selectedId ? 0.9 : 0.45}
+          strokeOpacity={c.id === selectedId ? 0.9 : cv.k >= 2.5 ? 0 : 0.45}
           strokeWidth={(c.id === selectedId ? 1 : 0.6) * zr}
           pointerEvents="none"
         />
@@ -897,6 +936,36 @@ export function WorldMap({
           ))}
         </g>
       )}
+      {/* 11-25 정밀 국경선(확대 2배~) */}
+      {!mini && borders && cv.k >= 2 && (
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none">
+          <path d={borders.d} stroke="#0b1220" strokeOpacity={0.45} strokeWidth={1.1 * z} />
+          <path d={borders.d} stroke="#f8fafc" strokeOpacity={0.7} strokeWidth={0.45 * z} strokeDasharray={`${2.2 * z} ${1 * z}`} />
+        </g>
+      )}
+      {/* 11-25 실제 시각 낮·밤 경계 + 밤 쪽 도시 불빛 */}
+      <g pointerEvents="none">
+        {nights.map((d, i) => d && <path key={i} d={d} fill="#050d24" fillOpacity={0.09} />)}
+        {NIGHT_ART && nightClip && (
+          <>
+            <clipPath id="wm-night">
+              <path d={nightClip} />
+            </clipPath>
+            <image href={NIGHT_ART} x={X0} y={Y0} width={MW} height={MH} preserveAspectRatio="none" clipPath="url(#wm-night)" opacity={0.9} style={{ mixBlendMode: "screen" }} />
+          </>
+        )}
+      </g>
+      {/* 11-25 구름층(천천히 흐름, 확대할수록 옅게) + 극지방 대기 빛 */}
+      {CLOUD_ART && cv.k < 6 && (
+        <g pointerEvents="none" opacity={mini ? 0.45 : Math.max(0, 0.55 * (1 - (cv.k - 1) / 5)).toFixed(2)}>
+          <g>
+            <image href={CLOUD_ART} x={X0} y={Y0} width={MW} height={MH} preserveAspectRatio="none" />
+            <image href={CLOUD_ART} x={X0 - MW} y={Y0} width={MW} height={MH} preserveAspectRatio="none" />
+            <animateTransform attributeName="transform" type="translate" from="0 0" to={`${MW} 0`} dur="1800s" repeatCount="indefinite" />
+          </g>
+        </g>
+      )}
+      <rect x={X0} y={Y0} width={MW} height={MH * 0.2} fill="url(#wm-haze)" pointerEvents="none" />
       {/* 전선: 전쟁 중인 두 나라 땅이 맞닿은 곳에 붉은 띠 */}
       {fronts.length > 0 && (
         <g pointerEvents="none">
@@ -1018,7 +1087,7 @@ export function WorldMap({
           textAnchor="middle"
           className="map-label"
           fontSize={mini ? 22 : (c.cities.length >= 4 ? 7.5 : 5) * z}
-          opacity={isAlive(world, c.id) ? 1 : 0.4}
+          opacity={(isAlive(world, c.id) ? 1 : 0.4) * (!mini && cv.k >= 5 ? 0.35 : 1)}
         >
           {c.id === playerCountryId ? "★ " : ""}
           {c.name}
@@ -1045,7 +1114,8 @@ export function WorldMap({
               stroke={occupied ? "#fff" : "#0c1a2b"}
               strokeWidth={(occupied ? 1.6 : 1) * zr}
             />
-            {!mini && (city.front || cv.k >= 2) && (
+            {/* 11-25 확대 단계별: 멀리선 수도만, 1.5배~ 점령 도시, 2배~ 모든 도시 */}
+            {!mini && (city.capital || (city.front && cv.k >= 1.5) || cv.k >= 2) && (
               <text
                 x={city.x}
                 y={city.y - (city.front ? 4.2 : 3.2) * zr}

@@ -1,6 +1,6 @@
-# 세계지도 바탕 그림
+# 세계지도 바탕 그림(11/25 새로 만듦)
 
-`world-map.webp`: 실제 지구 위성 사진(NASA Blue Marble, 공개 자료. three.js 예제 텍스처 earth_day_4096.jpg에서 잘라 냄).
-- 잘라 낸 범위: 경도 -15°~300°(=서경 60°), 위도 5°~80°, 정거원통 투영, 1도 = 9px → 2835×675.
-- 게임 좌표(src/data/realGeo.ts)는 같은 범위, 1도 = 6px. 그림은 지도 크기에 맞춰 늘려 깔림.
-- 다른 그림으로 바꾸려면 같은 범위·같은 투영으로 만든 그림을 같은 이름으로 넣으면 돼요.
+`python3 scripts/gen_worldsat.py <s2tiles.json> <earth-night.jpg> <clouds.png>` 로 만듦. 직접 고치지 마세요.
+- `world-map.webp`: 바다 깊이 색(Mapzen Terrarium) + 위성 땅(ESA WorldCover 2021 Sentinel-2, CC BY 4.0) + 산 그림자. 경도 -15~300, 위도 5~80, 정거원통, 1도 = 12px(3780×900)
+- `world-night.webp`: 밤 불빛(NASA Black Marble), `world-clouds.webp`: 구름(NASA)
+- 확대용 고해상 조각은 `public/world-sat/`(1도 = 60px), 정밀 국경선 `public/world-sat/borders.json`(scripts/gen_worldborders.py, Natural Earth 10m)

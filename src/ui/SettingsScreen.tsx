@@ -135,6 +135,9 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
         🔄 처음부터 새로 시작
       </button>
       <p className="set-foot small muted">현대전 사령관 · 시험판</p>
+      <p className="set-foot small muted">
+        지도 자료: 위성 사진 ESA WorldCover 2021 (Sentinel-2, CC BY 4.0) · NASA Blue/Black Marble · 높이·수심 Mapzen Terrarium · 국경·도로 Natural Earth
+      </p>
 
       {pop === 'look' && (
         <Modal title="내 얼굴 바꾸기" icon="🙂" onClose={close}>
