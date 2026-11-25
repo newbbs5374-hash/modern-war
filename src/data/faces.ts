@@ -63,7 +63,7 @@ export const FACE_EXTRA2: Record<string, FacePlan> = {
   'us-hi': N(5, 5, 3, 3),
   'us-as': N(3, 2, 2, 1),
 };
-export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp'];
+export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn'];
 const tagCountry = (tag: string) => (tag.startsWith('us-') ? 'us' : tag);
 const extra2On = (tag: string) => EXTRA2_READY.includes(tagCountry(tag));
 
@@ -138,6 +138,10 @@ export const YOUNG_READY: Record<string, YoungPlan> = {
   de: { m: 20, f: 12 },
   ru: { m: 20, f: 12 },
   ua: { m: 20, f: 12 },
+  in: { m: 20, f: 12 },
+  ir: { m: 20, f: 12 },
+  il: { m: 20, f: 12 },
+  tr: { m: 20, f: 12 },
 };
 /** 한국 이름 부관 그림 → 젊은 얼굴 번호(옛 저장의 이름 부관이 같은 얼굴을 계속 쓰게) */
 export const KR_NAMED_YOUNG: Record<string, string> = {
