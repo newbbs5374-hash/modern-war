@@ -9,7 +9,19 @@ PICK = [(m[0], m[1], m[2]) for m in re.findall(r"(\S+): \{ key: '([a-z]+)', file
 PICK = [p for p in PICK if not os.path.exists(f"{sys.argv[1]}/logo-{p[1]}.webp")]
 OK = ("Public domain", "CC0", "CC BY-SA", "CC BY")
 UA = {"User-Agent": "modern-war-asset-script/1.0"}
-get = lambda u: urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read()
+def get(u):
+    # 너무 빨리 받으면 429 → 기다렸다 다시(11-25)
+    import time, urllib.error
+    for i in range(6):
+        try:
+            r = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read()
+            time.sleep(1.0)
+            return r
+        except urllib.error.HTTPError as e:
+            if e.code != 429:
+                raise
+            time.sleep(10 * (i + 1))
+    raise RuntimeError("429 계속")
 out = sys.argv[1]
 credits = []
 fail = []

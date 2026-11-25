@@ -1,7 +1,7 @@
 """상징 파일 이름이 없는 도시(cityLogos.ts에서 key만 있는 줄)를 위키미디어 공용에서 찾아 채움.
 공공 저작물(PD)·CC0만 고름. 이름에 도시 영어 이름이 들어 있고 Seal/Coat of arms/Emblem/Symbol/Flag/Logo 인 그림.
 사용: python scripts/find_city_logos.py  (그다음 fetch_city_logos.py로 그림 받기)"""
-import json, re, time, urllib.parse, urllib.request
+import json, re, time, urllib.error, urllib.parse, urllib.request
 
 EN = {"로스앤젤레스": "Los Angeles", "시카고": "Chicago", "시애틀": "Seattle", "보스턴": "Boston", "애틀랜타": "Atlanta",
       "충칭": "Chongqing", "청두": "Chengdu", "시안": "Xi'an", "하얼빈": "Harbin", "칭다오": "Qingdao",
@@ -24,7 +24,18 @@ KIND = [("Coat of arms", "문장"), ("Seal", "인장"), ("Emblem", "휘장"), ("
 BAD = re.compile(r"(district|oblast|raion|province|prefecture|state|county|governorate|region|kreis|university|police|fire|club|fc|airport|port of|bus|metro|railway|army|navy|school|church|diocese|archdiocese|consulate|company|bank|hospital|before|old|former|\(19|\(18|\(17|\(16|variant|bw|monochrome|grey|gray)", re.I)
 OK = ("Public domain", "PD", "CC0")
 UA = {"User-Agent": "modern-war-asset-script/1.0"}
-get = lambda u: json.loads(urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read())
+def get(u):
+    # 위키미디어는 너무 빨리 물으면 429 → 기다렸다 다시
+    for i in range(6):
+        try:
+            r = json.loads(urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read())
+            time.sleep(1.0)
+            return r
+        except urllib.error.HTTPError as e:
+            if e.code != 429:
+                raise
+            time.sleep(10 * (i + 1))
+    raise RuntimeError("429 계속")
 api = "https://commons.wikimedia.org/w/api.php?format=json&action=query&"
 
 src_path = "src/data/cityLogos.ts"
@@ -38,15 +49,13 @@ for city, key in todo:
         continue
     seen = {}
     for n in names:
-        for pre in ("Coat of arms of", "Seal of", "Emblem of", "Symbol of", "Logo of", "Flag of", "Wappen"):
-            q = f'intitle:"{pre}" intitle:"{n}"'
-            try:
-                j = get(api + "list=search&srnamespace=6&srlimit=20&srsearch=" + urllib.parse.quote(q))
-            except Exception as e:
-                print("search fail", city, e); continue
-            for x in j["query"]["search"]:
-                seen[x["title"][5:]] = 1
-            time.sleep(0.2)
+        q = f'intitle:"{n}" (intitle:"coat of arms" OR intitle:seal OR intitle:emblem OR intitle:symbol OR intitle:logo OR intitle:flag OR intitle:wappen)'
+        try:
+            j = get(api + "list=search&srnamespace=6&srlimit=50&srsearch=" + urllib.parse.quote(q))
+        except Exception as e:
+            print("search fail", city, e); continue
+        for x in j["query"]["search"]:
+            seen[x["title"][5:]] = 1
     cands = [t for t in seen if any(n.lower() in t.lower() for n in names) and not BAD.search(t) and "'" not in t and re.search(r"\.(svg|png)$", t, re.I)]
     best = None
     for i in range(0, len(cands), 40):
