@@ -422,7 +422,7 @@ function FieldBattleView(props: FrameProps) {
           const y = p.y * K + (air ? -6 : 0);
           if (pic) {
             // 그림이 있으면 동그란 바탕 없이 그림만 크게. 편은 테두리 색과 체력 막대 옆 작은 깃발로
-            const size = (air ? 20 : big ? 30 : 25) * (K !== 1 ? 1.3 : 1);
+            const size = (air ? 20 : big ? 30 : 25) * (K !== 1 ? 1.15 : 1);
             const half = size * 0.42;
             const filter = hit < 0.2 ? 'url(#fo-hit)' : u.id === sel ? 'url(#fo-sel)' : `url(#fo-${u.side})`;
             const hpw = big ? 16 : 13;

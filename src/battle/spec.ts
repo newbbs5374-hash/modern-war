@@ -51,7 +51,7 @@ export const FRAME_NAMES: Record<Frame, string> = {
   arty: '③ 포물선 대결',
   shooter: '④ 위에서 본 슈팅',
   puzzle: '⑤ 퍼즐·카드',
-  field: '⑥ 위성 지도 전투',
+  field: '⑥ 2.5D 전장',
   mini: '🎮 훈련 미니게임',
 };
 
@@ -140,7 +140,7 @@ export const GRAND_STAGES: Pick[] = [
 ];
 export const GRAND_MAIN = 3;
 /** 지도 위 전투로 하는 대전투(한 판, 안에서 큰 싸움은 직접 지휘로 기존 틀) */
-export const FIELD_PICK: Pick = { frame: 'field', variant: 'capture', label: '위성 지도 전투' };
+export const FIELD_PICK: Pick = { frame: 'field', variant: 'oblique', label: '2.5D 전장' };
 
 /** 승급 심사 작전(계급 순서대로) */
 const EXAM_BATTLE: Pick[] = [
@@ -208,8 +208,8 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 
 /** 연습장 목록(보상 없음) */
 export const PRACTICE: Array<{ label: string } & Pick> = [
-  { label: '위성 지도 전투', frame: 'field', variant: 'capture' },
   { label: '2.5D 전장(병과 8개 골라서)', frame: 'field', variant: 'oblique' },
+  { label: '위성 지도 전투(위에서 본 예전 방식)', frame: 'field', variant: 'capture' },
   { label: '3D 전장(시험)', frame: 'field', variant: '3d' },
   { label: '방어(깃발)', frame: 'grid', variant: 'survive' },
   { label: '구출(인질)', frame: 'grid', variant: 'rescue' },

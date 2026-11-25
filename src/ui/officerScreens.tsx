@@ -225,7 +225,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
   const help = (
     <>
       <p>🏙️ 전쟁 중인 나라의 도시 하나를 골라 점령하러 가요. 두 가지 방법이 있어요.</p>
-      <p>🛰️ <b>위성 지도 전투(추천)</b>: 실제 위성 사진으로 본 도시 둘레 약 40km에서 육·해·공 부대를 실시간으로 움직여요. 땅 모양(바다·강·산·시가지)도 실제와 같아요. 적 사령부·적 기함과 붙는 큰 싸움은 "직접 지휘"로 직접 할 수 있어요.</p>
+      <p>🛰️ <b>2.5D 전장(추천)</b>: 싸우기 전에 병과 8개를 골라 출전하고, 실제 위성 사진으로 비스듬히 내려다본 도시 둘레 약 40km에서 육·해·공 부대를 실시간으로 움직여요. 땅 모양(바다·강·산·시가지)도 실제와 같아요. 적 사령부·적 기함과 붙는 큰 싸움은 "직접 지휘"로 직접 할 수 있어요.</p>
       <p>🎬 <b>다섯 판</b>: {GRAND_STAGES.map((g) => `${FRAME_ICON[g.frame]} ${g.label}`).join(' → ')}. 시가지 돌입(⚑)은 꼭 이기고, 세 판 이상 이기면 차지해요.</p>
       <p>어느 쪽이든 부관에게 맡길 수 있어요(별 최대 2).</p>
       <p>방어도가 낮은 도시일수록 쉽고, 국방 → 부대에서 부대를 만들면 더 쉬워져요. {GRAND_COOLDOWN_HOURS}시간마다 한 번.</p>
@@ -274,7 +274,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
                   setPick(null);
                 }}
               >
-                🛰️ 위성 지도 전투로 출격
+                🛰️ 2.5D 전장으로 출격
               </button>
             </>
           }
@@ -288,7 +288,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
               <Tile key={i} icon={FRAME_ICON[g.frame]} label={`${i + 1}`} sub={g.label} tone={i === 3 ? 'gold' : undefined} />
             ))}
           </div>
-          <p className="small muted">🛰️ 위성 지도 전투(추천): 실제 위성 사진 위에서 부대를 움직여 사령부를 무너뜨리고 도심을 차지해요. 🎬 다섯 판: 위 다섯 전투를 이어서 해요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
+          <p className="small muted">🛰️ 2.5D 전장(추천): 병과 8개를 골라 실제 위성 사진 위에서 부대를 움직여 사령부를 무너뜨리고 도심을 차지해요. 🎬 다섯 판: 위 다섯 전투를 이어서 해요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
         </Modal>
       )}
     </Card>
