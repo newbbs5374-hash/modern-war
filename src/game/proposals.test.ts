@@ -31,6 +31,17 @@ describe('장관 건의(11-25 대장 요청 1번)', () => {
     expect(mine[0].text).toMatch(/합니다/);
   });
 
+  it('주기를 기다리지 않고, 할 수 있는 일이 생기면 다음 판단(15분)에 바로 건의 · 돈이 없으면 건의 안 함', () => {
+    const poor = withMinister(rich(newGame('t', 'kr', 0, { seed: 41 }), 0), 'mnd');
+    const p0 = propTick(poor.s);
+    // 돈이 없으면 돈 드는 건의는 안 함(공짜인 부처 업무만 가능)
+    expect(propOf(p0).list.filter((x) => x.who === `p:${poor.pid}` && x.act.kind !== 'task').length).toBe(0);
+    const cleared = { ...p0, props: { ...propOf(p0), list: [], next: {} } };
+    const p1 = propTick(rich({ ...cleared, worldMs: p0.worldMs + H }));
+    const mine = propOf(p1).list.filter((x) => x.who === `p:${poor.pid}`);
+    expect(mine.length).toBe(1);
+  });
+
   it('국방부 장관은 군 공항(비행장)을, 복지부는 민심 낮은 도시에 주거 구역을 건의할 수 있음', () => {
     const base = rich(newGame('t', 'kr', 0, { seed: 32 }));
     const a = withMinister(base, 'mnd');

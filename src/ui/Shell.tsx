@@ -14,6 +14,7 @@ import { UiIcon, fmtK } from './uiIcon';
 import { citiesOf } from '../game/world';
 import { moodLabel, presOf } from '../game/approval';
 import { PresModal } from './PresUI';
+import { reportCount } from './ReportScreen';
 
 interface Props {
   state: GameState;
@@ -69,10 +70,20 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
     { icon: '🪖', name: '병력', where: '우리나라 전체 병력', v: fmt(n.troops) },
     { icon: '🏙️', name: '도시', where: '우리나라가 가진 도시', v: String(citiesOf(state.world, me.id).length) },
   ];
+  const nRep = reportCount(state);
   const gear = (
-    <button className="icon-btn" onClick={() => go('settings')} aria-label="설정">
-      ⚙️
-    </button>
+    <>
+      {/* 11-25 📨 보고: 건의·할 일을 한곳에서 */}
+      <button className="icon-btn rep-btn" onClick={() => go('report')} aria-label={`보고 ${nRep}건`}>
+        📨{nRep > 0 && <i className="rep-badge">{nRep}</i>}
+      </button>
+      {/* 본부가 아닌 화면은 위 띠가 좁아서 설정 대신 보고(설정은 본부에서) */}
+      {screen === 'home' && (
+        <button className="icon-btn" onClick={() => go('settings')} aria-label="설정">
+          ⚙️
+        </button>
+      )}
+    </>
   );
 
   return (

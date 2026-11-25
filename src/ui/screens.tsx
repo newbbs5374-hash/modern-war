@@ -1,5 +1,6 @@
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
 import { CITY_INST, instById } from '../data/institutions';
+import { ReportScreen, reportCount } from './ReportScreen';
 import { CultureScreen } from './CultureScreen';
 import { BriefingModal } from './BriefingUI';
 import { todos } from '../game/briefing';
@@ -123,6 +124,7 @@ export function HomeScreen(props: ScreenProps) {
       { icon: '📋', label: '명령', x: 90, y: 52, on: () => setOrdersOpen(true), badge: ORDER_INFO.filter((x) => ordersOf(state)[x.key]).length || null },
       { icon: '🛒', label: '상점', x: 90, y: 68, on: () => go('shop'), badge: goalsReady(state) || null },
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },
+      { icon: '📨', label: '보고', x: 90, y: 4, on: () => go('report'), badge: reportCount(state) || null },
       { icon: '📯', label: '전령', x: 30, y: 87, on: () => go('herald'), badge: unread > 0 ? unread : null },
       { icon: '📖', label: '도감', x: 50, y: 87, on: () => go('codex') },
       { icon: '📰', label: '국정 보고', x: 70, y: 87, on: () => setBrfOpen(true), badge: todos(state).length || null },
@@ -547,6 +549,7 @@ export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   shop: ShopScreen,
   settings: SettingsScreen,
   herald: HeraldScreen,
+  report: ReportScreen,
   codex: CodexScreen,
   battle: BattleScreen,
 };
