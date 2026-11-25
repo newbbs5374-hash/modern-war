@@ -1,0 +1,21 @@
+name: fetch city logos (임시, 받은 뒤 지움)
+on:
+  push:
+    branches: [claude/project-thread-g3xm9u]
+    paths: [.github/workflows/fetch-logos.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pillow
+      - run: python scripts/find_city_logos.py
+      - run: mkdir -p src/assets/logos && python scripts/fetch_city_logos.py src/assets/logos
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898732+github-actions[bot]@users.noreply.github.com"
+          git add src/assets/logos src/data/cityLogos.ts scripts/find_city_logos.out.txt
+          git commit -m "새 도시 상징 그림 받기(위키미디어 공용, PD·CC0)" || echo nothing
+          git push
