@@ -30,6 +30,7 @@ export type BoostTarget =
   | { kind: 'spy'; id: number }
   | { kind: 'school'; id: number }
   | { kind: 'task'; min: string }
+  | { kind: 'minUp'; min: string }
   | { kind: 'vote' }
   | { kind: 'deploy'; id: number }
   | { kind: 'chaos' }
@@ -75,6 +76,8 @@ function endOf(s: GameState, t: BoostTarget): number | undefined {
       return s.officer.aides.find((a) => a.id === t.id)?.school?.endMs;
     case 'task':
       return (s.cabinet?.tasks as Record<string, { endMs: number } | undefined> | undefined)?.[t.min]?.endMs;
+    case 'minUp':
+      return (s.cabinet?.minUp as Record<string, number> | undefined)?.[t.min] || undefined;
     case 'vote':
       return s.assembly?.vote?.endMs;
     case 'chaos': {
@@ -178,6 +181,10 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
   if (t.kind === 'task' && s.cabinet) {
     const tasks = s.cabinet.tasks as Record<string, { task: string; endMs: number }>;
     ns = { ...ns, cabinet: { ...s.cabinet, tasks: { ...tasks, [t.min]: { ...tasks[t.min], endMs: minus(tasks[t.min].endMs) } } } };
+  }
+  if (t.kind === 'minUp' && s.cabinet?.minUp) {
+    const up = s.cabinet.minUp as Record<string, number>;
+    ns = { ...ns, cabinet: { ...s.cabinet, minUp: { ...up, [t.min]: minus(up[t.min]) } } };
   }
   // 체제 혼란(11-24): 줄인 만큼 일찍 끝남
   if (t.kind === 'chaos' && s.civ) ns = { ...ns, civ: { ...s.civ, chaosUntil: minus(s.civ.chaosUntil) } };

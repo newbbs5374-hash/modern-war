@@ -25,7 +25,9 @@ import {
   type Person,
   avgStats,
   needPower,
+  minLevel,
 } from './cabinet';
+import { MIN_LV3_TASK_CUT, MIN_LV5_TASK_MULT, MIN_LV_MAX, MIN_LV_NAME, MIN_UP_HOURS, MIN_UP_MONEY, MIN_UP_WORK, minLvPower } from '../data/ministryGrowth';
 import { addFavorNote, civOf, favorOf } from './civ';
 import { note, withOfficer } from './officer';
 import { canAppointGeneralSlot, fieldTaken, type GeneralField } from './loyal';
@@ -53,7 +55,7 @@ export function hearingChance(s: GameState, p: Person): number {
 export function taskHours(s: GameState, min: MinistryId, taskId: string): number {
   const t = ministryById(min).tasks.find((x) => x.id === taskId)!;
   const m = ministerOf(cabinetOf(s), min);
-  return t.hours * (m?.trait === '실용주의' ? 0.8 : 1) * (1 - postEff(s, 'taskTime'));
+  return t.hours * (m?.trait === '실용주의' ? 0.8 : 1) * (1 - postEff(s, 'taskTime')) * (minLevel(s.cabinet, min) >= 3 ? 1 - MIN_LV3_TASK_CUT : 1);
 }
 export function canTask(s: GameState, min: MinistryId): string | null {
   const c = cabinetOf(s);
@@ -73,7 +75,7 @@ export function startTask(s: GameState, min: MinistryId, taskId: string): GameSt
 /** 업무 결과 배율(부처 힘, 신중파 +10%) */
 function taskMult(s: GameState, min: MinistryId): number {
   const m = ministerOf(cabinetOf(s), min);
-  return Math.max(0.4, ministryPower(s, min)) * (m?.trait === '신중파' ? 1.1 : 1);
+  return Math.max(0.4, ministryPower(s, min)) * (m?.trait === '신중파' ? 1.1 : 1) * (minLevel(s.cabinet, min) >= 5 ? MIN_LV5_TASK_MULT : 1);
 }
 
 function addBuff(c: CabinetState, key: CabinetState['buffs'][number]['key'], v: number, untilMs: number, why: string) {
@@ -94,6 +96,7 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
   const me = s.player.countryId;
   let ns: GameState = { ...s, cabinet: structuredClone(cabinetOf(s)) };
   const c = ns.cabinet!;
+  c.minWork = { ...(c.minWork ?? {}), [min]: (c.minWork?.[min] ?? 0) + 1 };
   const now = s.worldMs;
   let text = '';
   switch (`${min}:${taskId}`) {
@@ -453,6 +456,15 @@ export function cabinetTick(s: GameState, tickMs: number): GameState {
       ns = { ...ns, cabinet: c };
     }
   }
+  // 부처 청사 공사(11-25)
+  for (const [min, end] of Object.entries(c.minUp ?? {})) {
+    if (end && s.worldMs >= end) {
+      const lv = Math.min(MIN_LV_MAX, minLevel(c, min as MinistryId) + 1);
+      c.minLv = { ...(c.minLv ?? {}), [min]: lv };
+      delete c.minUp![min as MinistryId];
+      notes.push(`🏗️ ${ministryById(min as MinistryId).name} 청사가 ${lv}단계 ${MIN_LV_NAME[lv]}(으)로 커졌어요. 부처 힘 ×${minLvPower(lv)}`);
+    }
+  }
   c.buffs = c.buffs.filter((b) => b.untilMs > s.worldMs);
   // 사람마다: 충성 · 성장 · 빼 가기 · 은퇴 · 스캔들
   const trust = ns.officer.trust;
@@ -562,4 +574,33 @@ export function appointPersonGeneral(s: GameState, pid: number, field: GeneralFi
     });
     note(ns, `⭐ ${p.name}을(를) ${field} 장군으로 임명했어요.`);
   });
+}
+
+/* ───────── 부처 청사 키우기(11-25) ───────── */
+
+export const minWorkDone = (s: GameState, min: MinistryId) => s.cabinet?.minWork?.[min] ?? 0;
+export function minUpCost(s: GameState, min: MinistryId) {
+  const lv = minLevel(s.cabinet, min);
+  return { money: MIN_UP_MONEY[lv] ?? Infinity, hours: MIN_UP_HOURS[lv] ?? 0, work: MIN_UP_WORK[lv] ?? Infinity };
+}
+export function canUpMinistry(s: GameState, min: MinistryId): string | null {
+  const c = cabinetOf(s);
+  const lv = minLevel(c, min);
+  if (lv >= MIN_LV_MAX) return '최고 단계예요';
+  if (c.minUp?.[min]) return '공사 중이에요';
+  if (!ministerOf(c, min)) return '장관이 있어야 키울 수 있어요';
+  const k = minUpCost(s, min);
+  if (minWorkDone(s, min) < k.work) return `부처 업무 ${minWorkDone(s, min)} / ${k.work}번`;
+  if ((s.nations[s.player.countryId]?.treasury ?? 0) < k.money) return `국방예산 ${k.money.toLocaleString('ko-KR')} 필요`;
+  return null;
+}
+export function upMinistry(s: GameState, min: MinistryId): GameState {
+  if (canUpMinistry(s, min)) return s;
+  const me = s.player.countryId;
+  const k = minUpCost(s, min);
+  const c = structuredClone(cabinetOf(s));
+  c.minUp = { ...(c.minUp ?? {}), [min]: s.worldMs + k.hours * H };
+  cabLog(c, `🏗️ ${ministryById(min).name} 청사 ${minLevel(c, min) + 1}단계 공사 시작(${k.hours}시간)`);
+  const n = s.nations[me];
+  return { ...s, cabinet: c, nations: { ...s.nations, [me]: { ...n, treasury: n.treasury - k.money } } };
 }

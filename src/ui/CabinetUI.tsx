@@ -1,6 +1,6 @@
 // 인물·부처 화면(11-23): 인재 명단·내 사람·인물 도감 / 부처 카드·부처 정보창 / 인물 창 / 사람을 장군으로.
 // 웬만하면 한 화면: 목록은 한 줄 카드, 자세한 건 팝업.
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { GENERAL_NEEDS, NEEDS } from '../data/needs';
 import { ORIGIN_SHAPE2 } from '../data/stats2';
 import { FitTag, NeedBox, PeopleGrid, Stats18, originLine } from './PersonCards';
@@ -49,19 +49,21 @@ import {
   viceOf,
   type Person,
   fitPct,
+  minLevel,
 } from '../game/cabinet';
-import { appointPersonGeneral, bestFor, canPersonGeneral, canTask, hearingChance, personGeneralSkill, startTask, statTotal, taskHours } from '../game/cabinetOps';
+import { appointPersonGeneral, bestFor, canPersonGeneral, canTask, canUpMinistry, minUpCost, minWorkDone, upMinistry, hearingChance, personGeneralSkill, startTask, statTotal, taskHours } from '../game/cabinetOps';
 import { FIELD_ICON, GENERAL_TITLE, freeFields, type GeneralField } from '../game/loyal';
 import { postById } from '../data/staff';
 import { AgencySection, PostPick } from './StaffUI';
 import { generalSlots } from '../data/officers';
 import type { GameState } from '../game/state';
 import { Card, fmt } from './common';
-import { Help, Meter, Modal } from './kit';
+import { Fold, Help, Meter, Modal } from './kit';
 import { countryFaceUrl } from './Portrait';
 import { BoostBar } from './BoostBar';
 import { Flag } from './flag';
-import { iconArt } from './iconArt';
+import { minArtAt } from './iconArt';
+import { MIN_LV_LOOK, MIN_LV_MAX, MIN_LV_NAME, minLvText } from '../data/ministryGrowth';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 import { RecommendButton } from './RecommendUI';
@@ -72,11 +74,15 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /* ───────── 작은 부품 ───────── */
 
-/** 부처 건물 그림(src/assets/icons/icon-min-<id>.webp, 11/23 9장 들어감), 없으면 이모지 */
-export function MinIcon({ id, size = 30 }: { id: MinistryId; size?: number }) {
-  const url = iconArt(`icon-min-${id}`);
-  return url ? <img className="cab-min-art" src={url} alt="" draggable={false} style={{ width: size, height: size }} /> : <>{ministryById(id).icon}</>;
+/** 부처 건물 그림(단계마다 icon-min-<id>-<단계>, 11-25). 그 단계 그림이 없으면 아래 단계 그림 + 단계 빛 테두리, 그림이 하나도 없으면 이모지 */
+export function MinIcon({ id, size = 30, lv }: { id: MinistryId; size?: number; lv?: number }) {
+  const l = lv ?? 1;
+  const art = minArtAt(id, l);
+  if (!art) return <span className={`min-lv min-lv-${l}`}>{ministryById(id).icon}</span>;
+  return <img className={`cab-min-art min-lv min-lv-${l}${art[1] < l ? ' min-lv-stand' : ''}`} src={art[0]} alt="" draggable={false} style={{ width: size, height: size }} />;
 }
+/** 청사 단계 별(★★★☆☆) */
+export const minStars = (lv: number) => '★'.repeat(lv) + '☆'.repeat(MIN_LV_MAX - lv);
 
 export function PersonFace({ p, size = 44 }: { p: Person; size?: number }) {
   const url = countryFaceUrl(p, lookOf(p));
@@ -401,8 +407,9 @@ export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<Sc
             return (
               <button key={id} className="cab-min" onClick={() => setOpen(id)}>
                 <span className="cab-min-ico">
-                  <MinIcon id={id} size={54} />
+                  <MinIcon id={id} size={54} lv={minLevel(c, id)} />
                   {mn && <span className="cab-min-face"><PersonFace p={mn} size={18} /></span>}
+                  <span className={`cab-min-lv min-lv-${minLevel(c, id)}`}>{c.minUp?.[id] ? '🏗️' : ''}{minLevel(c, id)}단계</span>
                 </span>
                 <span className="cab-main">
                   <b>
@@ -441,7 +448,7 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
   return (
     <Modal title={m.name} icon={m.icon} onClose={onClose}>
       {m.kind === '처' && <p className="small muted" style={{ margin: 0 }}>🏛️ 국무총리 소속 처(장관급 처장)</p>}
-      {iconArt(`icon-min-${id}`) && <img className="cab-min-banner" src={iconArt(`icon-min-${id}`)!} alt="" draggable={false} />}
+      <MinBanner state={state} id={id} />
       <p className="small">{m.text}</p>
       <div className="cab-kv small">
         <span>🎯 맡은 일</span>
@@ -502,9 +509,90 @@ export function MinistryModal({ state, actions, id, onClose }: Pick<ScreenProps,
           {tWhy && <p className="small muted">{tWhy}</p>}
         </div>
       )}
+      <MinGrowth state={state} actions={actions} id={id} />
       <AgencySection state={state} actions={actions} id={id} />
       {who !== null && <PersonModal state={state} actions={actions} pid={who} onClose={() => setWho(null)} />}
     </Modal>
+  );
+}
+
+/** 정보창 맨 위 청사 그림(단계 그림, 없으면 아래 단계 그림 + 단계 빛) */
+function MinBanner({ state, id }: { state: GameState; id: MinistryId }) {
+  const lv = minLevel(state.cabinet, id);
+  const art = minArtAt(id, lv);
+  return (
+    <div className={`cab-min-stage min-lv-${lv}`}>
+      {art ? <img className={`cab-min-banner${art[1] < lv ? ' min-lv-stand' : ''}`} src={art[0]} alt="" draggable={false} /> : <span className="cab-min-stage-emoji">{ministryById(id).icon}</span>}
+      <span className="cab-min-stage-tag">
+        <b>{minStars(lv)}</b> {lv}단계 {MIN_LV_NAME[lv]}
+      </span>
+    </div>
+  );
+}
+
+/** 청사 키우기(11-25): 1~5단계, 단계마다 부처 힘·덤·건물 모습이 바뀜 */
+function MinGrowth({ state, actions, id }: Pick<ScreenProps, 'state' | 'actions'> & { id: MinistryId }) {
+  const c = cabinetOf(state);
+  const lv = minLevel(c, id);
+  const up = c.minUp?.[id];
+  const why = canUpMinistry(state, id);
+  const k = minUpCost(state, id);
+  const apply = actions.apply;
+  return (
+    <>
+      <h4 className="cab-h">🏗️ 청사 키우기 <small className="muted">{lv}/{MIN_LV_MAX}단계</small></h4>
+      <div className="min-steps">
+        {[1, 2, 3, 4, 5].map((l) => (
+          <span key={l} className={`min-step min-lv-${l} ${l <= lv ? 'on' : ''} ${l === lv + 1 ? 'next' : ''}`} title={`${l}단계 ${MIN_LV_NAME[l]} · ${minLvText(l)}`}>
+            <MinIcon id={id} size={34} lv={l} />
+            <small>{l}</small>
+          </span>
+        ))}
+      </div>
+      <p className="small" style={{ margin: '2px 0' }}>
+        지금: <b>{minLvText(lv)}</b>
+      </p>
+      {lv < MIN_LV_MAX && (
+        <p className="small muted" style={{ margin: '2px 0' }}>
+          다음 {lv + 1}단계 {MIN_LV_NAME[lv + 1]}: {minLvText(lv + 1)} · 모습: {MIN_LV_LOOK[lv + 1]}
+        </p>
+      )}
+      {up ? (
+        <>
+          <p className="small">🏗️ {lv + 1}단계 공사 중 · {state.worldMs >= up ? '곧 끝나요' : `${timeLeft(up - state.worldMs)} 남음`}</p>
+          <BoostBar state={state} apply={apply} target={{ kind: 'minUp', min: id }} />
+        </>
+      ) : lv < MIN_LV_MAX ? (
+        <>
+          <button className="pw-act" disabled={!!why} onClick={() => apply((s) => upMinistry(s, id))}>
+            <span className="pw-act-ico">🏗️</span>
+            <span className="li-main">
+              <b>
+                {lv + 1}단계로 키우기 <small>{k.hours}시간</small>
+              </b>
+              <small>
+                💰 {k.money.toLocaleString('ko-KR')} · 📋 업무 {minWorkDone(state, id)}/{k.work}번
+              </small>
+            </span>
+          </button>
+          {why && <p className="small muted">{why}</p>}
+        </>
+      ) : (
+        <p className="small good">🏆 다 키웠어요(최고 단계)</p>
+      )}
+      <Fold title="단계마다 무엇이 좋아지나">
+        <div className="cab-kv small">
+          {[1, 2, 3, 4, 5].map((l) => (
+            <Fragment key={l}>
+              <span>
+                {l}단계 {MIN_LV_NAME[l]}
+              </span>
+              <b>{minLvText(l)}</b>
+            </Fragment>
+          ))}
+        </div>
+      </Fold>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 // 부대·훈련·분쟁 섬 아이콘 그림 칸. 대장이 만든 그림을 src/assets/icons/ 에 정해진 이름으로 넣으면 바로 바뀜.
 // 순서: 아이콘 그림(icons/) → 지도 전투 말 그림(field/, 있으면) → 지금 이모지.
 // 목록과 GPT 명령문은 src/assets/icons/README.md (= /mnt/project-files/guides/icon-art-prompts.md)
+import { MINISTRIES } from '../data/cabinet';
 import type { ReactNode } from 'react';
 import { EXCLUSIVES, specialById } from '../data/specials';
 import { PIONEER_ISLANDS } from '../data/hexmap';
@@ -125,6 +126,17 @@ export function iconSlots(): Array<{ key: string; who: string; url: string | nul
   ];
 }
 
+/** 부처 청사 그림 이름표(11-25): 1단계 icon-min-<id>, 2~5단계 icon-min-<id>-<단계> */
+export const minArtKey = (id: string, lv: number) => (lv <= 1 ? `icon-min-${id}` : `icon-min-${id}-${lv}`);
+/** 그 단계 그림, 없으면 아래 단계 중 가장 높은 그림. [주소, 그림 단계] */
+export function minArtAt(id: string, lv: number): [string, number] | null {
+  for (let l = lv; l >= 1; l--) {
+    const u = iconArt(minArtKey(id, l));
+    if (u) return [u, l];
+  }
+  return null;
+}
+
 /* ───────── 금고·연구·체제·시설 그림 칸 (11/23) ───────── */
 
 /** 그림이 있으면 그림, 없으면 이모지. 아무 이름표에나 씀 */
@@ -200,5 +212,6 @@ function moreSlots(): Array<{ key: string; who: string }> {
     ...GOVS.map((g) => ({ key: govArtKey(g.id), who: `체제 · ${g.name}` })),
     ...CARDS.map((c) => ({ key: cardArtKey(c.id), who: `정책 카드 · ${c.name}` })),
     ...BUILDINGS.flatMap((b) => [1, 2, 3, 4, 5].map((lv) => ({ key: `fac-${BUILDING_KEY[b.id]}-${lv}`, who: `시설 · ${b.id} ${lv}단계` }))),
+    ...MINISTRIES.flatMap((m) => [1, 2, 3, 4, 5].map((lv) => ({ key: minArtKey(m.id, lv), who: `부처 · ${m.name} ${lv}단계` }))),
   ];
 }
