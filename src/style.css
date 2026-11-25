@@ -1316,3 +1316,17 @@ button.big { min-height: 64px; font-size: 18px; }
 .field-3d canvas { position: absolute; inset: 0; display: block; }
 .field-3d .field-zoom { z-index: 2; }
 .field-3d-credit { position: absolute; left: 6px; bottom: 4px; margin: 0; font-size: 9px; color: #fff; opacity: 0.75; text-shadow: 0 1px 2px #000; pointer-events: none; z-index: 2; }
+
+/* 11-25 2.5D 전장: 출전 편성 */
+.fp { display: flex; flex-direction: column; gap: 10px; }
+.fp h3 { margin: 0; }
+.fp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fp-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 8px; min-height: 0; border-radius: 10px; border: 2px solid #ffffff22; background: #ffffff10; opacity: 0.6; }
+.fp-card.on { opacity: 1; border-color: #3cc2bf; background: #3cc2bf22; }
+.fp-card:disabled { opacity: 0.3; }
+.fp-art { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.fp-art img { width: 100%; height: 100%; object-fit: contain; }
+.fp-card b { font-size: 13px; }
+.fp-card small { font-size: 10px; opacity: 0.75; }
+.fp-check { position: absolute; top: 4px; right: 6px; font-style: normal; color: #3cc2bf; font-weight: 700; }
+.fp-count .bad { color: #f0954a; }
