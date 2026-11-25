@@ -11,8 +11,7 @@ import { CITY_RES, RES_ICON, type Res } from "../data/economy";
 import { CITY_INST, instById } from "../data/institutions";
 import { BLOCS, COUNTRIES, HOLY_CITY, countryById, type Relation } from "../data/world";
 import { PIONEER_ISLANDS, HOLY_HEX } from "../data/hexmap";
-import { KR_INNER, KR_OUTLINE } from "../data/krProvinces";
-import { GEO_PROV_INNER } from "../data/provinces";
+import { KR_OUTLINE } from "../data/krProvinces";
 import { annexedProv, landOwners, provinces } from "../game/territory";
 import { HOME_MARKS } from "./homeTerrain";
 import { useHomeGeos } from "./homeGeo";
@@ -29,6 +28,7 @@ import { homeOf, isAlive, relationOf, type WorldState } from "../game/world";
 import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./units";
 import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
 import { unitArtUrl } from "./iconArt";
+import { Mover } from "./mover";
 import { nightPath, useNowMinute, useWorldJson, worldSatUrl, type WorldSat } from "./worldSky";
 import { polyD, seaLoop, seaRoute } from "../data/seaPath";
 
@@ -205,87 +205,6 @@ function UnitIcon({ name, s, color }: { name: string; s: number; color: string }
       />
       <image href={url} x={-w / 2} y={-w / 2} width={w} height={w} preserveAspectRatio="xMidYMid meet" />
     </g>
-  );
-}
-
-/** 움직이는 그림들: 한 번의 그리기 반복(초당 약 30번)으로 모두 옮김.
- * 그림이 오른쪽을 보고 있어서, 왼쪽으로 갈 땐 좌우를 뒤집어 거꾸로 서지 않게 함 */
-interface MoveEntry {
-  g: SVGGElement;
-  p: SVGPathElement;
-  L: number;
-  dur: number;
-  begin: number;
-  tilt: number;
-}
-const MOVERS = new Set<MoveEntry>();
-let moveRaf = 0;
-let moveLast = 0;
-function moveTick(now: number) {
-  moveRaf = MOVERS.size ? requestAnimationFrame(moveTick) : 0;
-  if (now - moveLast < 33) return;
-  moveLast = now;
-  const t = now / 1000;
-  for (const e of MOVERS) {
-    if (!e.L) {
-      e.L = e.p.getTotalLength();
-      if (!e.L) continue;
-    }
-    const f = ((((t - e.begin) / e.dur) % 1) + 1) % 1;
-    const at = f * e.L;
-    const a = e.p.getPointAtLength(at);
-    const b = e.p.getPointAtLength(at + 0.8 <= e.L ? at + 0.8 : Math.max(0, at - 0.8));
-    let dx = b.x - a.x;
-    let dy = b.y - a.y;
-    if (at + 0.8 > e.L) {
-      dx = -dx;
-      dy = -dy;
-    }
-    const left = dx < -0.01;
-    let rot = (Math.atan2(dy, dx) * 180) / Math.PI;
-    if (left) rot -= 180;
-    if (rot > 180) rot -= 360;
-    if (rot < -180) rot += 360;
-    rot = Math.max(-e.tilt, Math.min(e.tilt, rot));
-    e.g.setAttribute(
-      "transform",
-      `translate(${a.x.toFixed(2)},${a.y.toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${left ? -1 : 1},1)`,
-    );
-  }
-}
-
-/** path를 따라 계속 움직이는 그림 하나. tilt = 기울기 최대(도): 배·땅 부대는 조금만 기울어짐 */
-function Mover({
-  path,
-  dur,
-  begin,
-  tilt = 30,
-  children,
-}: {
-  path: string;
-  dur: number;
-  begin: number;
-  tilt?: number;
-  children: React.ReactNode;
-}) {
-  const gRef = useRef<SVGGElement>(null);
-  const pRef = useRef<SVGPathElement>(null);
-  useEffect(() => {
-    if (!gRef.current || !pRef.current) return;
-    const e: MoveEntry = { g: gRef.current, p: pRef.current, L: 0, dur, begin, tilt };
-    MOVERS.add(e);
-    if (!moveRaf) moveRaf = requestAnimationFrame(moveTick);
-    return () => {
-      MOVERS.delete(e);
-    };
-  }, [path, dur, begin, tilt]);
-  return (
-    <>
-      <path ref={pRef} d={path} fill="none" stroke="none" />
-      <g ref={gRef} transform="translate(-9999,-9999)">
-        {children}
-      </g>
-    </>
   );
 }
 
@@ -723,7 +642,6 @@ export function WorldMap({
   // ── 11-25 실사 꾸밈 ──
   // 확대 2.5배 넘으면 화면에 보이는 고해상 위성 조각, 2배 넘으면 정밀 국경선
   const satMeta = useWorldJson<WorldSat>("meta.json", !mini && cv.k >= 2.5);
-  const borders = useWorldJson<{ d: string }>("borders.json", !mini && cv.k >= 2);
   const tileU = satMeta ? (satMeta.tile / satMeta.w1) * MW : 0;
   const satTiles =
     satMeta && cv.k >= 2.5
@@ -847,9 +765,6 @@ export function WorldMap({
         d={GEO_PATH.x}
         fill="#4b5563"
         fillOpacity={ART ? 0.55 : 0.6}
-        stroke="#0f172a"
-        strokeOpacity="0.4"
-        strokeWidth="0.4"
         pointerEvents="none"
       />
       {/* 13개 나라: 도(주·성)마다 지금 주인 색 */}
@@ -905,18 +820,7 @@ export function WorldMap({
           />
         ))}
       </g>
-      {/* 13개 나라 해안선 */}
-      {COUNTRIES.map((c) => (
-        <path
-          key={c.id}
-          d={COAST[c.id]}
-          fill="none"
-          stroke={c.id === selectedId ? "#e2f3ff" : "#7dd3fc"}
-          strokeOpacity={c.id === selectedId ? 0.9 : cv.k >= 2.5 ? 0 : 0.45}
-          strokeWidth={(c.id === selectedId ? 1 : 0.6) * zr}
-          pointerEvents="none"
-        />
-      ))}
+      {/* 11-25 대장 요청: 나라 윤곽선 없음(나라 구분은 색으로만, 전선은 전쟁 때만) */}
       {/* 실제 강·고속도로(×3~)·철도·지방 도로(×5~): Natural Earth 자료 */}
       {!mini && cv.k >= 3 && (
         <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none">
@@ -928,19 +832,12 @@ export function WorldMap({
               <path d={g.road} stroke="#f6cf7a" strokeOpacity={0.85} strokeWidth={0.55 * z} />
               {cv.k >= 5 && (
                 <>
-                  <path d={g.rail} stroke="#1f2937" strokeOpacity={0.8} strokeWidth={0.6 * z} />
-                  <path d={g.rail} stroke="#e5e7eb" strokeOpacity={0.9} strokeWidth={0.3 * z} strokeDasharray={`${1.2 * z} ${1.2 * z}`} />
+                  {/* 11-25: 철도 흰 점선은 경계선처럼 보여 은은한 실선만 */}
+                  <path d={g.rail} stroke="#1f2937" strokeOpacity={0.45} strokeWidth={0.5 * z} />
                 </>
               )}
             </g>
           ))}
-        </g>
-      )}
-      {/* 11-25 정밀 국경선(확대 2배~) */}
-      {!mini && borders && cv.k >= 2 && (
-        <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none">
-          <path d={borders.d} stroke="#0b1220" strokeOpacity={0.45} strokeWidth={1.1 * z} />
-          <path d={borders.d} stroke="#f8fafc" strokeOpacity={0.7} strokeWidth={0.45 * z} strokeDasharray={`${2.2 * z} ${1 * z}`} />
         </g>
       )}
       {/* 11-25 실제 시각 낮·밤 경계 + 밤 쪽 도시 불빛 */}
@@ -988,22 +885,6 @@ export function WorldMap({
               </g>
             )),
           )}
-        </g>
-      )}
-      {/* 도(주·성·현) 경계: 모든 나라(대한민국은 시·도 자료) */}
-      {!mini && cv.k >= 1.6 && (
-        <g
-          fill="none"
-          stroke="#f8fafc"
-          strokeOpacity={cv.k >= 2.9 ? 0.6 : 0.35}
-          strokeWidth={0.45 * z}
-          strokeDasharray={`${1.6 * z} ${1 * z}`}
-          strokeLinejoin="round"
-          pointerEvents="none"
-        >
-          {COUNTRIES.map((c) => (
-            <path key={c.id} d={c.id === "kr" ? KR_INNER : (GEO_PROV_INNER[c.id] ?? "")} />
-          ))}
         </g>
       )}
       {/* 도 이름: 화면에서 이름이 들어갈 만큼 클 때만 */}

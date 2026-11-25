@@ -4,6 +4,7 @@
 // - 전쟁 때만: 공격받는 도시에 연기·불꽃, 군 차량 행렬, 전투기 / 빼앗긴 도시에는 상대 깃발
 // 꾸밈 그림: src/assets/field/land-*.png 가 있으면 건물·나무·산을 그 그림으로 그림(명령문 src/assets/field/LAND.md). 도로·강·차량·날씨·전쟁 연출은 그대로 코드로 그림.
 import { Carrier, Escort } from './units';
+import { Mover } from './mover';
 import { iconArt } from './iconArt';
 import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES, type City } from '../data/cities';
@@ -103,6 +104,18 @@ function PlaneArt({ kind, size, flipY = false, trail = false }: { kind: 'fighter
   );
 }
 
+// 11-25 움직이는 것 실사 그림: 군용은 부대 그림, 민간 차·배는 대장 그림(move-*.webp, 없으면 코드 도형)
+const MOVE_ART = {
+  cars: landPick(['move-car-1', 'move-car-2', 'move-car-3']),
+  bus: fieldArt('move-bus'),
+  ferry: fieldArt('move-ferry'),
+  fishing: fieldArt('move-fishing'),
+  carrier: fieldArt('unit-carrier'),
+  escort: fieldArt('unit-destroyer'),
+  ifv: iconArt('icon-unit-ifv'),
+  tank: fieldArt('unit-tank'),
+};
+
 const CAR_COLORS = ['#f8fafc', '#ef4444', '#3b82f6', '#facc15', '#22c55e', '#a855f7', '#0ea5e9', '#f97316'];
 
 export function HomeLand(props: {
@@ -147,15 +160,8 @@ export function HomeLand(props: {
   const CAP: [number, number] = pos(0);
   /** 도시 크기(건물 무리 배율): 수도 0.5, 다른 도시 0.34 */
   const citySc = (i: number) => (homeCities[i].capital ? 0.5 : 0.34);
-  // 산·숲: 땅 위, 도시 시가지 밖에만
-  const freeLand = (x: number, y: number) =>
-    terrain.onLand(x, y) && homeCities.every((c, i) => terrain.far.includes(c.id) || ((x - pos(i)[0]) / (130 * citySc(i))) ** 2 + ((y - pos(i)[1]) / (90 * citySc(i))) ** 2 > 1);
-  const mountains = Array.from({ length: 30 }, () => [15 + r() * (W - 30), 40 + r() * (H - 60), 10 + r() * 8] as const)
-    .filter(([x, y]) => freeLand(x, y))
-    .slice(0, 9);
-  const forests = Array.from({ length: 50 }, () => [15 + r() * (W - 30), 40 + r() * (H - 60)] as const)
-    .filter(([x, y]) => freeLand(x, y))
-    .slice(0, 16);
+  // 11-25 산·숲 그림은 지웠지만, 뒤 도시 배치가 그대로이도록 같은 수만큼 난수를 씀
+  for (let k = 0; k < 190; k++) r();
   const riverY = 260 + r() * 120;
   // 도시마다 건물 무리(가운데가 높음)
   const blocks = homeCities.map((_c, i) => {
@@ -398,9 +404,9 @@ export function HomeLand(props: {
               )}
               <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#g-ripple1)" opacity="0.22" style={{ mixBlendMode: 'soft-light' }} pointerEvents="none" />
               <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#g-ripple2)" opacity="0.16" style={{ mixBlendMode: 'screen' }} pointerEvents="none" />
-              {/* 해안 얕은 물빛 + 모래 띠(얇게) */}
+              {/* 해안 얕은 물빛(선 없이 번짐) */}
               <path d={land} fill="none" stroke="#7fe3e0" strokeOpacity="0.22" strokeWidth="9" strokeLinejoin="round" filter="url(#g-soft2)" pointerEvents="none" />
-              <path d={land} fill="#7d8a5a" stroke="#d9c79a" strokeWidth="1.6" strokeOpacity="0.8" strokeLinejoin="round" pointerEvents="none" />
+              <path d={land} fill="#7d8a5a" pointerEvents="none" />
               {/* 실제 위성 사진(1배 한 장 + 확대 조각) */}
               <g transform={worldT} pointerEvents="none">
                 <image href={satUrl(`${countryId}-0.webp`)} x={satRect.x} y={satRect.y} width={satRect.w} height={satRect.h} preserveAspectRatio="none" />
@@ -421,8 +427,6 @@ export function HomeLand(props: {
                     ) : null,
                   )}
               </g>
-              {/* 해안 파도 거품 */}
-              <path className="foam" d={land} fill="none" stroke="#f0fdff" strokeWidth="0.9" strokeLinejoin="round" pointerEvents="none" />
             </>
           ) : (
             <>
@@ -479,32 +483,7 @@ export function HomeLand(props: {
               <path className="river-flow" d={`M120,${riverY} C190,${riverY - 40} 240,${riverY + 60} 400,${riverY + 10}`} fill="none" stroke="#e0f2fe" strokeWidth="1.4" strokeDasharray="3 9" strokeLinecap="round" />
             </g>
           )}
-          {forests.map(([x, y], i) => (
-            <g key={`f${i}`} className="tree" style={{ animationDelay: `${-i * 0.4}s`, transformOrigin: `${x}px ${y + 6}px` }}>
-              {art.trees.length ? (
-                <>
-                  <image href={art.trees[i % art.trees.length]} x={x - 9} y={y - 14} width="18" height="18" />
-                  <image href={art.trees[(i + 1) % art.trees.length]} x={x - 1} y={y - 9} width="16" height="16" />
-                </>
-              ) : (
-                <>
-                  <circle cx={x} cy={y} r="7" fill="#1f5a2e" />
-                  <circle cx={x + 7} cy={y + 3} r="6" fill="#2a6b38" />
-                </>
-              )}
-            </g>
-          ))}
-          {mountains.map(([x, y, s], i) =>
-            art.mountain ? (
-              <image key={`m${i}`} href={art.mountain} x={x - s * 1.6} y={y - s * 2} width={s * 3.2} height={s * 3.2} />
-            ) : (
-            <g key={`m${i}`}>
-              <polygon points={`${x - s},${y + s * 0.7} ${x},${y - s} ${x + s},${y + s * 0.7}`} fill="#8a7656" />
-              <polygon points={`${x},${y - s} ${x + s},${y + s * 0.7} ${x + s * 0.2},${y + s * 0.7}`} fill="#64543d" />
-              <polygon points={`${x - s * 0.3},${y - s * 0.4} ${x},${y - s} ${x + s * 0.3},${y - s * 0.4}`} fill="#f1f5f9" />
-            </g>
-            ),
-          )}
+          {/* 11-25 대장 요청: 나무·산 그림 지움(위성 사진이 실제 숲·산을 보여 줌) */}
           {/* 밤: 땅과 바다를 어둡게(불빛·차량은 그 위) */}
           <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#0b1638" opacity={night * (nightImg ? 0.72 : 0.55)} pointerEvents="none" />
           {/* 밤: 실제 야간 위성 불빛(NASA) + 고속도로 가로등 */}
@@ -538,8 +517,17 @@ export function HomeLand(props: {
             [0, 1, 2].map((j) => {
               const back = (ri + j) % 2 === 1;
               const bus = j === 2 && ri % 2 === 0;
-              const color = CAR_COLORS[(ri * 3 + j) % CAR_COLORS.length];
               const dur = 9 + ((ri * 5 + j * 3) % 7);
+              // 11-25 실사 차량 그림(있으면): 승용차 3종·버스
+              const art = bus ? MOVE_ART.bus : MOVE_ART.cars[(ri * 3 + j) % Math.max(1, MOVE_ART.cars.length)];
+              if (art)
+                return (
+                  <Mover key={`${rd.id}-car${j}`} path={rd.d} dur={dur} begin={-j * dur / 3} tilt={35} reverse={back}>
+                    <image href={art} x={bus ? -7 : -5} y={bus ? -7 : -5} width={bus ? 14 : 10} height={bus ? 14 : 10} />
+                    {nightOn && <circle cx={bus ? 6 : 4.5} cy="1" r="1.4" fill="#fef9c3" opacity={night} />}
+                  </Mover>
+                );
+              const color = CAR_COLORS[(ri * 3 + j) % CAR_COLORS.length];
               return (
                 <g key={`${rd.id}-car${j}`}>
                   {bus ? <rect x="-5" y="-2" width="10" height="4" rx="1" fill="#16a34a" stroke="#052e16" strokeWidth="0.4" /> : <rect x="-3" y="-1.6" width="6" height="3.2" rx="1" fill={color} stroke="#111" strokeWidth="0.3" />}
@@ -670,39 +658,62 @@ export function HomeLand(props: {
             </g>
           ))}
           {/* 바다: 배 · 여객선 */}
-          {terrain.seaLoop && [0, 1, 2].map((j) => (
-            <g key={`boat${j}`}>
-              <path d="M-5,0 L5,0 L3.5,2.4 L-3.5,2.4Z" fill={j === 1 ? '#f8fafc' : '#b45309'} />
-              <rect x="-2" y="-3" width={j === 1 ? 5 : 3} height="3" fill={j === 1 ? '#ef4444' : '#f8fafc'} />
-              <path d="M-5,1 l-8,-2 M-5,1.6 l-8,2" stroke="#e0f2fe" strokeWidth="0.6" opacity="0.7" />
-              <animateMotion dur={`${50 + j * 15}s`} begin={`${-j * 20}s`} repeatCount="indefinite" rotate="auto" keyPoints={j === 2 ? '1;0' : '0;1'} keyTimes="0;1" calcMode="linear">
-                <mpath href={`#coast-${countryId}`} />
-              </animateMotion>
-            </g>
-          ))}
-
-          {/* 우리 함대: 항모 전단이 앞바다를 천천히 순찰 */}
-          {terrain.seaLoop && [0, 1, 2].map((j) => (
-            <g key={`cv${j}`}>
-              {j === 0 ? <Carrier s={2.1} color={mine} /> : <Escort s={1.6} color={mine} />}
-              <animateMotion dur="150s" begin={`${-40 - j * 5}s`} repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
-                <mpath href={`#coast-${countryId}`} />
-              </animateMotion>
-            </g>
-          ))}
-
-          {/* 전쟁 때만: 군 차량 행렬 */}
-          {hot &&
-            roads.slice(0, 2).map((rd) =>
-              [0, 1, 2].map((j) => (
-                <g key={`${rd.id}-mil${j}`}>
-                  <rect x="-4" y="-2" width="8" height="4" rx="0.6" fill="#4d5b2c" stroke="#1a2010" strokeWidth="0.4" />
-                  <rect x="1" y="-1.4" width="2.4" height="2.8" fill="#3a4520" />
-                  <animateMotion dur="16s" begin={`${-j * 1.6}s`} repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1" calcMode="linear">
-                    <mpath href={`#${rd.id}`} />
+          {terrain.seaLoop &&
+            [0, 1, 2].map((j) => {
+              const art = j === 1 ? MOVE_ART.ferry : MOVE_ART.fishing;
+              if (art)
+                return (
+                  <Mover key={`boat${j}`} path={terrain.seaLoop!} dur={50 + j * 15} begin={-j * 20} tilt={15} reverse={j === 2}>
+                    <image href={art} x={-7} y={-7} width={14} height={14} />
+                  </Mover>
+                );
+              return (
+                <g key={`boat${j}`}>
+                  <path d="M-5,0 L5,0 L3.5,2.4 L-3.5,2.4Z" fill={j === 1 ? '#f8fafc' : '#b45309'} />
+                  <rect x="-2" y="-3" width={j === 1 ? 5 : 3} height="3" fill={j === 1 ? '#ef4444' : '#f8fafc'} />
+                  <path d="M-5,1 l-8,-2 M-5,1.6 l-8,2" stroke="#e0f2fe" strokeWidth="0.6" opacity="0.7" />
+                  <animateMotion dur={`${50 + j * 15}s`} begin={`${-j * 20}s`} repeatCount="indefinite" rotate="auto" keyPoints={j === 2 ? '1;0' : '0;1'} keyTimes="0;1" calcMode="linear">
+                    <mpath href={`#coast-${countryId}`} />
                   </animateMotion>
                 </g>
-              )),
+              );
+            })}
+
+          {/* 우리 함대: 항모 전단이 앞바다를 천천히 순찰(11-25 실사 부대 그림) */}
+          {terrain.seaLoop &&
+            [0, 1, 2].map((j) =>
+              MOVE_ART.carrier && MOVE_ART.escort ? (
+                <Mover key={`cv${j}`} path={terrain.seaLoop!} dur={150} begin={-40 - j * 5} tilt={12} reverse>
+                  <image href={j === 0 ? MOVE_ART.carrier : MOVE_ART.escort} x={j === 0 ? -14 : -9} y={j === 0 ? -14 : -9} width={j === 0 ? 28 : 18} height={j === 0 ? 28 : 18} />
+                </Mover>
+              ) : (
+                <g key={`cv${j}`}>
+                  {j === 0 ? <Carrier s={2.1} color={mine} /> : <Escort s={1.6} color={mine} />}
+                  <animateMotion dur="150s" begin={`${-40 - j * 5}s`} repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
+                    <mpath href={`#coast-${countryId}`} />
+                  </animateMotion>
+                </g>
+              ),
+            )}
+
+          {/* 전쟁 때만: 군 차량 행렬(11-25 실사 장갑차·전차 그림) */}
+          {hot &&
+            roads.slice(0, 2).map((rd) =>
+              [0, 1, 2].map((j) =>
+                MOVE_ART.ifv ? (
+                  <Mover key={`${rd.id}-mil${j}`} path={rd.d} dur={16} begin={-j * 1.6} tilt={30}>
+                    <image href={(j === 1 && MOVE_ART.tank) || MOVE_ART.ifv} x={-6} y={-6} width={12} height={12} />
+                  </Mover>
+                ) : (
+                  <g key={`${rd.id}-mil${j}`}>
+                    <rect x="-4" y="-2" width="8" height="4" rx="0.6" fill="#4d5b2c" stroke="#1a2010" strokeWidth="0.4" />
+                    <rect x="1" y="-1.4" width="2.4" height="2.8" fill="#3a4520" />
+                    <animateMotion dur="16s" begin={`${-j * 1.6}s`} repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1" calcMode="linear">
+                      <mpath href={`#${rd.id}`} />
+                    </animateMotion>
+                  </g>
+                ),
+              ),
             )}
         </g>
 
@@ -712,8 +723,8 @@ export function HomeLand(props: {
           {!hot &&
             [0, 1].map((j) => (
               <g key={`pj${j}`}>
-                <g transform={`translate(${-j * 14},${j * 12})`}>
-                  <PlaneArt kind="fighter" size={36} trail />
+                <g transform={`translate(${-j * 10},${j * 8})`}>
+                  <PlaneArt kind="fighter" size={22} trail />
                 </g>
                 <animateMotion dur="22s" begin="-6s" repeatCount="indefinite" rotate="auto">
                   <mpath href={`#cap-${countryId}`} />
@@ -728,7 +739,7 @@ export function HomeLand(props: {
             </g>
           ))}
           <g>
-            <PlaneArt kind="airliner" size={40} />
+            <PlaneArt kind="airliner" size={26} />
             {nightOn && <circle cx="-8" cy="0" r="1.2" fill="#ef4444" className="blink" />}
             <animateMotion dur="26s" repeatCount="indefinite" rotate="auto">
               <mpath href={`#air-${countryId}`} />
@@ -737,7 +748,7 @@ export function HomeLand(props: {
           {hot &&
             [0, 1].map((j) => (
               <g key={`jet${j}`}>
-                <PlaneArt kind="fighter" size={34} flipY trail />
+                <PlaneArt kind="fighter" size={20} flipY trail />
                 <animateMotion dur="7s" begin={`${-j * 0.6}s`} repeatCount="indefinite" rotate="auto">
                   <mpath href={`#jet-${countryId}`} />
                 </animateMotion>
