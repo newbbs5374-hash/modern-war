@@ -9,7 +9,7 @@ import type { Res } from '../data/economy';
 import {
   BUILD_TEAMS, CULTURE_BASE, CULTURE_EVENTS, CULTURE_SPECIAL, CULTURE_WIN_DAYS, CULTURE_WIN_SHARE, CULTURE_WIN_TOP, HERITAGE_COST_MULT,
   LEVEL_COST, LEVEL_HOURS, LEVEL_POWER, PACT_COST, PACT_MAX, PACT_MULT, SPECIAL_BONUS, VENUES, VENUE_IDS, VENUE_MAX, WORK_KINDS,
-  ARCHITECT_FAST, ATHLETE_EVENT, ATHLETE_MOOD, COURSE_SLOTS, CREATE_HOURS, GRADES, STAR_KINDS, STAR_MAX, TALENT_RATE, THEME_MIN, THEME_MULT, WORKS,
+  ARCHITECT_FAST, TALENT_MONEY, ATHLETE_EVENT, ATHLETE_MOOD, COURSE_SLOTS, CREATE_HOURS, GRADES, STAR_KINDS, STAR_MAX, TALENT_RATE, THEME_MIN, THEME_MULT, WORKS,
   courseById, cultureEventById, levelRes, starCost, starKindById, venueById, workByName, workCost, workKindById,
   type CourseId, type CultureEventId, type Grade, type StarKind, type VenueId, type WorkDef, type WorkKind,
 } from '../data/culture';
@@ -133,13 +133,14 @@ export function worksPower(c: CultureState) {
 }
 /** 열어 둔 관광 코스 효과 */
 export function courseBonus(c: CultureState) {
-  const b = { tour: 0, cul: 0, income: 0, mood: 0 };
+  const b = { tour: 0, cul: 0, income: 0, mood: 0, event: 0 };
   for (const id of coursesOf(c)) {
     const d = courseById(id);
     b.tour += (d.tour ?? 0) + (d.perHit ?? 0) * c.works.hit.length;
     b.cul += d.cul ?? 0;
     b.income += d.income ?? 0;
     b.mood += d.mood ?? 0;
+    b.event += d.eventPlus ?? 0;
   }
   return b;
 }
@@ -167,7 +168,7 @@ export function baseTourism(s: GameState, c = cultureOf(s)): number {
 /** 지금 시간당 관광(행사 덤 포함) */
 export function tourismPerHour(s: GameState, c = cultureOf(s)): number {
   const ev = c.event && s.worldMs < c.event.endMs ? cultureEventById(c.event.id) : null;
-  return baseTourism(s, c) * (1 + (ev?.boost ?? 0) * (1 + ATHLETE_EVENT * starCount(c, 'athlete')));
+  return baseTourism(s, c) * (1 + (ev?.boost ?? 0) * (1 + ATHLETE_EVENT * starCount(c, 'athlete') + courseBonus(c).event));
 }
 /** 그 나라에 퍼지는 배율(0 = 안 퍼짐) */
 export function spreadMult(s: GameState, id: string, c = cultureOf(s)): number {
@@ -359,12 +360,21 @@ export function talentPerHour(s: GameState, k: StarKind, c = cultureOf(s)): numb
   return starKindById(k).from.reduce((v, id) => v + LEVEL_POWER[c.venues[id]], 0) * TALENT_RATE;
 }
 export const nextStarCost = (s: GameState, k: StarKind) => starCost(starCount(cultureOf(s), k));
-export function canRecruit(s: GameState, k: StarKind): string | null {
+/** 그 분야 스타를 키우는 시설이 하나라도 있는지 */
+export const starVenueOk = (s: GameState, k: StarKind) => starKindById(k).from.some((v) => cultureOf(s).venues[v] > 0);
+/** 모자란 인재 점수 */
+export const talentShort = (s: GameState, k: StarKind) => Math.max(0, Math.ceil(nextStarCost(s, k) - (cultureOf(s).talent?.[k] ?? 0)));
+/** 모자란 인재를 국방예산으로 채우는 값 */
+export const recruitMoney = (s: GameState, k: StarKind) => talentShort(s, k) * TALENT_MONEY;
+/** pay=true면 모자란 인재 점수를 국방예산으로 채워서 데려옴 */
+export function canRecruit(s: GameState, k: StarKind, payMoney = false): string | null {
   const c = cultureOf(s);
   if (s.ending) return '판이 끝났어요';
   if (starCount(c, k) >= STAR_MAX) return `${starKindById(k).name}는 ${STAR_MAX}명까지`;
-  const need = nextStarCost(s, k);
-  if ((c.talent?.[k] ?? 0) < need) return `인재 점수 ${Math.floor(c.talent?.[k] ?? 0)}/${need}`;
+  if (!starVenueOk(s, k)) return `${starKindById(k).from.map((v) => venueById(v).name).join('이나 ')}을 먼저 지어요`;
+  const short = talentShort(s, k);
+  if (short > 0 && !payMoney) return `인재 점수 ${short}점 모자람`;
+  if (short > 0 && treasury(s) < short * TALENT_MONEY) return `국방예산 ${(short * TALENT_MONEY).toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function nextStarName(s: GameState, k: StarKind): string {
@@ -372,13 +382,14 @@ export function nextStarName(s: GameState, k: StarKind): string {
   const d = starKindById(k);
   return d.names.find((n) => !used.includes(n)) ?? `${d.name} ${starCount(cultureOf(s), k) + 1}호`;
 }
-export function recruitStar(s: GameState, k: StarKind): GameState {
-  if (canRecruit(s, k)) return s;
+export function recruitStar(s: GameState, k: StarKind, payMoney = false): GameState {
+  if (canRecruit(s, k, payMoney)) return s;
   const need = nextStarCost(s, k);
   const name = nextStarName(s, k);
   const d = starKindById(k);
-  const ns = withC(s, (c) => {
-    c.talent![k] = (c.talent![k] ?? 0) - need;
+  const money = recruitMoney(s, k);
+  const ns = withC(money > 0 ? pay(s, money) : s, (c) => {
+    c.talent![k] = Math.max(0, (c.talent![k] ?? 0) - need);
     c.stars!.push({ id: c.starNext!, kind: k, name, made: 0, job: null });
     c.starNext = c.starNext! + 1;
     c.log.unshift(`${d.icon} ${d.name} 「${name}」을(를) 데려왔어요`);
