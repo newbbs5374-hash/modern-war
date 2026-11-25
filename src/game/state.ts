@@ -26,6 +26,8 @@ import type { GuideState } from './guide';
 import { splitEco, splitTroop, taxBudget, TAX_INFO, taxOf, splitOf, type PolicyState } from './policy';
 import { cabBudget, cabTroop, newCabinet, addBuddy, type CabinetState } from './cabinet';
 import { cabinetTick } from './cabinetOps';
+import { propTick, type PropState } from './proposals';
+import type { ChatState } from './chat';
 import type { ScheduleState } from './schedule';
 import { lawEff, type AssemblyState } from './laws';
 import { assemblyTick } from './assembly';
@@ -117,6 +119,10 @@ export interface GameState {
   pres?: PresState;
   /** 인물·부처(11-23) */
   cabinet?: CabinetState;
+  /** 장관·장군·부관 건의와 도시 개발 계획(11-25) */
+  props?: PropState;
+  /** 인물 대화 기록(11-25) */
+  chat?: ChatState;
   /** 대통령 일정(11-23) */
   schedule?: ScheduleState;
   /** 국회·법·재신임(11-23) */
@@ -288,7 +294,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = annexTick(deployTick(civTick(cur, pairsBefore)));
-    cur = domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))));
+    cur = propTick(domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

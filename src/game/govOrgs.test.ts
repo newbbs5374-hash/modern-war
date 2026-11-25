@@ -71,7 +71,7 @@ describe('부처 42곳(11-24 대장 요청 5번)', () => {
   it('소속 시설: 주인 자리가 차야 짓고, 단계마다 효과', () => {
     let s = staffUp(rich(newGame('t', 'kr', 0, { seed: 24 })), 4);
     s = { ...s, player: { ...s.player, rankIndex: 15 } };
-    expect(GOV_FACILITIES.length).toBe(27);
+    expect(GOV_FACILITIES.length).toBe(57);
     expect(canBuildGovFac(s, 'kcgacademy')).toContain('청장');
     const p = C.cabinetOf(s).people.find((x) => x.group === '내각')!;
     s = C.appointPost(s, p.id, 'kcg');
@@ -82,9 +82,12 @@ describe('부처 42곳(11-24 대장 요청 5번)', () => {
     expect(govFacLevel(s, 'kcgacademy')).toBe(2);
     expect(C.postEff(s, 'sec')).toBeCloseTo(sec0 + 1, 5);
     s = buildGovFac(s, 'kcgacademy');
+    s = buildGovFac(s, 'kcgacademy');
+    s = buildGovFac(s, 'kcgacademy');
+    expect(govFacLevel(s, 'kcgacademy')).toBe(5);
     expect(canBuildGovFac(s, 'kcgacademy')).toBe('다 키웠어요');
   });
   it('고향(익산·여수·순천)에 시설 8곳', () => {
-    expect(GOV_FACILITIES.filter((f) => [8, 9, 10].includes(f.city)).length).toBe(8);
+    expect(GOV_FACILITIES.filter((f) => [8, 9, 10].includes(f.city)).length).toBe(10);
   });
 });

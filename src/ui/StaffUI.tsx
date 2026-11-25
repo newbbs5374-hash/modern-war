@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { EFF_INFO, HEAD_BOOST, GUARD_COUNTER_AT, OFFICES, POSTS, agenciesOf, effLine, postById, postsOf, type OfficeId, type PostEff, type PostId } from '../data/staff';
 import { GRADES, ministryById, type MinistryId } from '../data/cabinet';
-import { GOV_FAC_MAX, govFacCost, type GovFacility } from '../data/govFacilities';
+import { GOV_FAC_MAX, GOV_FAC_SCALE, govFacCost, type GovFacility } from '../data/govFacilities';
 import { buildGovFac, canBuildGovFac, govFacCity, govFacLevel, govFacOn, govFacsOf } from '../game/govFac';
 import { cityById } from '../data/cities';
 import {
@@ -353,7 +353,7 @@ function FacList({ state, actions, list }: Pick<ScreenProps, 'state' | 'actions'
               </b>
               <small>
                 {'★'.repeat(lv)}
-                {'☆'.repeat(GOV_FAC_MAX - lv)} · {lv ? effLine(f.eff, lv) : `1단계마다 ${effLine(f.eff)}`}
+                {'☆'.repeat(GOV_FAC_MAX - lv)} {GOV_FAC_SCALE[lv]} · {lv ? effLine(f.eff, lv) : `1단계마다 ${effLine(f.eff)}`}
                 {lv > 0 && !on ? ' · ⏸️ 멈춤(주인 자리가 비었거나 남의 도시)' : ''}
               </small>
               <small className="muted">{f.text}</small>
