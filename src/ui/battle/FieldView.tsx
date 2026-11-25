@@ -1,6 +1,6 @@
 // ⑥ 지도 위 전투 화면: 실제 육각 지도에서 부대 말을 움직여 도시를 점령.
 // 계산은 battle/field.ts, 여기서는 그리고 누르는 것만.
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CAPTURERS,
   FIELD_HEX,
@@ -42,6 +42,8 @@ import { GridView } from './GridView';
 import { FieldFx, fxMood } from './FieldFx';
 
 const SIDE_COLOR = { me: '#2563eb', foe: '#dc2626' };
+/** 11-25 1번안 시험: 3D 전장(three.js라 무거워서 이 모드에서만 불러옴) */
+const Field3D = lazy(() => import('./Field3D'));
 const STEP = 0.25;
 /** ×1 = 전투 1초를 실제 1초에 */
 const RATE = 1;
@@ -302,6 +304,14 @@ export function FieldView(props: FrameProps) {
           ?
         </button>
       </div>
+      {spec.variant === '3d' ? (
+        <div className="field-stage">
+          <Suspense fallback={<div className="field-3d">3D 전장 불러오는 중…</div>}>
+            <Field3D b={b} vt={vt} seen={seen} sel={sel} posOf={posOf} onTap={tapCell} dragged={dragged} />
+          </Suspense>
+          {mood.hurt > 0 && <div className="field-hurt" style={{ opacity: mood.hurt }} />}
+        </div>
+      ) : (
       <div className="field-stage">
       <TerrainLayer field={f} k={K} viewBox={`${vx + shakeX} ${(vy + shakeY) * K} ${vw} ${vh * K}`} />
       <svg
@@ -478,6 +488,7 @@ export function FieldView(props: FrameProps) {
         )}
       </div>
       </div>
+      )}
       {toast && <div className="field-toast">{toast}</div>}
       <BattleBar
         auto={auto}
