@@ -49,14 +49,16 @@ for city, key in todo:
         continue
     seen = {}
     for n in names:
-        q = f'intitle:"{n}" (intitle:"coat of arms" OR intitle:seal OR intitle:emblem OR intitle:symbol OR intitle:logo OR intitle:flag OR intitle:wappen)'
-        try:
-            j = get(api + "list=search&srnamespace=6&srlimit=50&srsearch=" + urllib.parse.quote(q))
-        except Exception as e:
-            print("search fail", city, e); continue
-        for x in j["query"]["search"]:
-            seen[x["title"][5:]] = 1
+        for word in ("coat of arms", "seal", "emblem", "symbol", "logo", "flag"):
+            q = f'intitle:"{n}" intitle:"{word}"'
+            try:
+                j = get(api + "list=search&srnamespace=6&srlimit=30&srsearch=" + urllib.parse.quote(q))
+            except Exception as e:
+                print("search fail", city, e); continue
+            for x in j["query"]["search"]:
+                seen[x["title"][5:]] = 1
     cands = [t for t in seen if any(n.lower() in t.lower() for n in names) and not BAD.search(t) and "'" not in t and re.search(r"\.(svg|png)$", t, re.I)]
+    print(city, "검색", len(seen), "후보", len(cands), cands[:6], flush=True)
     best = None
     for i in range(0, len(cands), 40):
         part = cands[i:i + 40]
@@ -66,6 +68,7 @@ for city, key in todo:
             t = norm.get(p["title"], p["title"])[5:]
             lic = ((p.get("imageinfo") or [{}])[0].get("extmetadata", {}).get("LicenseShortName", {}).get("value", ""))
             if not lic.startswith(OK):
+                print("  라이선스 안 됨", t, lic)
                 continue
             kind = next((k for w, k in KIND if w.lower() in t.lower()), None)
             if not kind:

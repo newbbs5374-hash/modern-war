@@ -20,3 +20,4 @@ jobs:
           git commit -m "새 도시 상징 그림 받기(위키미디어 공용, PD·CC0)" || echo nothing
           git push
 # 다시 실행(11-25): 429 기다리기
+# 다시 실행 2
