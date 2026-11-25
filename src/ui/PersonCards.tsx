@@ -58,7 +58,7 @@ type Filter = { seat: 'all' | 'yes' | 'no'; origin: PersonOrigin | ''; spec: Spe
 const NO_FILTER: Filter = { seat: 'all', origin: '', spec: '', trait: '', faction: '', grade: '', country: '' };
 
 /** 정렬·필터가 붙은 인물 카드 2열 */
-export function PeopleGrid({ state, list, onOpen, badge, empty }: { state: GameState; list: Person[]; onOpen: (id: number) => void; badge?: (p: Person) => React.ReactNode; empty?: string }) {
+export function PeopleGrid({ state, list, onOpen, badge, empty, top }: { state: GameState; list: Person[]; onOpen: (id: number) => void; badge?: (p: Person) => React.ReactNode; empty?: string; /** 필터 줄 바로 위에 놓을 것(예: 명단 새로 받기) */ top?: React.ReactNode }) {
   const [sort, setSort] = useState<SortKey>('power');
   const [f, setF] = useState<Filter>(NO_FILTER);
   const [open, setOpen] = useState(false);
@@ -94,6 +94,7 @@ export function PeopleGrid({ state, list, onOpen, badge, empty }: { state: GameS
   const countries = [...new Set(list.map((p) => p.country))];
   return (
     <div className="pgrid-wrap">
+      {top}
       <div className="pgrid-bar">
         <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="정렬">
           <option value="power">↕ 능력순(스탯 합)</option>

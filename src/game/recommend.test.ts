@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame, type GameState } from './state';
 import * as C from './cabinet';
-import { recommend, takeRec, takeRecs, canTakeRec, seatFit, SWAP_GAP, OWN_OK, urgencyOf } from './recommend';
+import { recommend, takeRec, takeRecs, canTakeRec, seatFit, SWAP_GAP, OWN_OK, urgencyOf, betterFor, filledSeats } from './recommend';
 
 const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e9 } } });
 function hire(s: GameState, n: number): GameState {
@@ -57,5 +57,45 @@ describe('비서 인사 추천(11-25)', () => {
       for (const p of free) expect(seatFit(p, r.seat)).toBeLessThan(Math.max(OWN_OK, r.fit + 1));
     }
     expect(rep.recs.some((r) => r.cost === 0)).toBe(true);
+  });
+});
+
+describe('재추천(11-25)', () => {
+  it('앉은 사람보다 나은 후보만, 내 사람 먼저 · 따르면 교체됨', () => {
+    let s = hire(rich(newGame('t', 'kr', 0, { seed: 26 })), 8);
+    const mine = C.cabinetOf(s).people.filter((p) => p.group === '내각' && !p.seat && !p.post);
+    // 가장 안 맞는 사람을 정무수석에 앉힘
+    const worst = [...mine].sort((a, b) => seatFit(a, { kind: 'post', id: 'polit' }) - seatFit(b, { kind: 'post', id: 'polit' }))[0];
+    s = C.appointPost(s, worst.id, 'polit');
+    const list = betterFor(s, { kind: 'post', id: 'polit' });
+    expect(list.length).toBeGreaterThan(0);
+    const hf = seatFit(worst, { kind: 'post', id: 'polit' });
+    for (const r of list) expect(r.fit).toBeGreaterThan(hf);
+    const firstPool = list.findIndex((r) => r.cost > 0);
+    if (firstPool >= 0) for (const r of list.slice(firstPool)) expect(r.cost).toBeGreaterThan(0);
+    expect(filledSeats(s).some((x) => x.seat.id === 'polit')).toBe(true);
+    s = takeRec(s, list[0]);
+    expect(C.postHolder(C.cabinetOf(s), 'polit')?.id).toBe(list[0].pid);
+  });
+});
+
+describe('장군 추천(11-25)', () => {
+  it('빈 장군 자리도 추천하고, 따르면 장군이 됨 · 더 나은 사람이 있으면 재추천', () => {
+    let s = hire(rich(newGame('t', 'kr', 0, { seed: 27 })), 10);
+    const gens = recommend(s).recs.filter((r) => r.seat.kind === 'gen');
+    expect(gens.length).toBeGreaterThan(0);
+    const r = gens[0];
+    const n0 = s.officer.generals.length;
+    s = takeRec(s, r);
+    expect(s.officer.generals.length).toBe(n0 + 1);
+    const g = s.officer.generals.find((x) => x.field === r.seat.id)!;
+    expect(g.skill * 10).toBe(r.fit);
+    expect(filledSeats(s).some((x) => x.seat.kind === 'gen' && x.seat.id === r.seat.id)).toBe(true);
+    // 능력 낮은 장군으로 바꿔 두면 재추천 후보가 나옴
+    s = { ...s, officer: { ...s.officer, generals: s.officer.generals.map((x) => (x.id === g.id ? { ...x, skill: 1 } : x)) } };
+    const better = betterFor(s, r.seat);
+    expect(better.length).toBeGreaterThan(0);
+    s = takeRec(s, better[0]);
+    expect(s.officer.generals.find((x) => x.field === r.seat.id)!.name).not.toBe(g.name);
   });
 });

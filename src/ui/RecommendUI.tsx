@@ -4,32 +4,34 @@ import { useMemo, useState } from 'react';
 import { MINISTRIES, type FieldTab, type MinistryId } from '../data/cabinet';
 import { OFFICES, postById } from '../data/staff';
 import { REFRESH_RUBY, cabinetOf, postHolder, refreshPool, type Person } from '../game/cabinet';
-import { URGENCY_NAME, canTakeRec, recommend, seatKey, takeRec, takeRecs, urgencyOf, type Rec, type RecReport, type SeatInfo } from '../game/recommend';
+import { URGENCY_NAME, betterFor, filledSeats, canTakeRec, recommend, seatKey, takeRec, takeRecs, urgencyOf, type Rec, type RecReport, type SeatInfo } from '../game/recommend';
 import type { GameState } from '../game/state';
 import { fmt } from './common';
 import { Modal } from './kit';
 import { PersonFace, PersonModal } from './CabinetUI';
 import type { ScreenProps } from './screens';
 
-type Part = 'urgent' | 'office' | 'gov' | 'min';
+export type Part = 'urgent' | 'office' | 'gov' | 'min' | 'gen';
 const FIELD_NAME: Record<FieldTab, string> = { defense: '🛡️ 국방', diplo: '🌐 외교', society: '🏘️ 사회', economy: '📈 경제' };
 
 /** 이 추천이 어느 묶음인지 */
 function partOf(r: { seat: Rec['seat'] }): Part {
   if (r.seat.kind === 'min') return 'min';
+  if (r.seat.kind === 'gen') return 'gen';
   const o = postById(r.seat.id).office;
   return o === 'agency' ? 'min' : o === 'gov' ? 'gov' : 'office';
 }
 /** 부처 묶음 열쇠(청장은 위의 부) */
 function minOf(r: { seat: Rec['seat'] }): MinistryId | null {
   if (r.seat.kind === 'min') return r.seat.id;
+  if (r.seat.kind === 'gen') return null;
   return postById(r.seat.id).parent ?? null;
 }
 /** 대통령실 묶음 열쇠(실) */
 const officeOf = (r: { seat: Rec['seat'] }) => (r.seat.kind === 'post' ? postById(r.seat.id).office : null);
 
 /** 보고 버튼(누르면 창). 비어서 추천할 자리 수를 붙임 */
-export function RecommendButton({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
+export function RecommendButton({ state, actions, part }: Pick<ScreenProps, 'state' | 'actions'> & { part?: Part }) {
   const [open, setOpen] = useState(false);
   const rep = useMemo(() => recommend(state), [state]);
   const n = rep.recs.length;
@@ -38,16 +40,16 @@ export function RecommendButton({ state, actions }: Pick<ScreenProps, 'state' | 
       <button className="wide rec-btn" onClick={() => setOpen(true)}>
         🧑‍💼 비서 인사 추천 보고 {n ? <b className="rec-n">{n}건</b> : <small className="muted">· 추천할 자리 없음</small>}
       </button>
-      {open && <RecommendModal state={state} actions={actions} onClose={() => setOpen(false)} />}
+      {open && <RecommendModal state={state} actions={actions} part={part} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-export function RecommendModal({ state, actions, onClose }: Pick<ScreenProps, 'state' | 'actions'> & { onClose: () => void }) {
+export function RecommendModal({ state, actions, onClose, part: start }: Pick<ScreenProps, 'state' | 'actions'> & { onClose: () => void; part?: Part }) {
   const rep = useMemo(() => recommend(state), [state]);
-  const counts: Record<Part, number> = { urgent: rep.recs.length, office: 0, gov: 0, min: 0 };
+  const counts: Record<Part, number> = { urgent: rep.recs.length, office: 0, gov: 0, min: 0, gen: 0 };
   for (const r of rep.recs) counts[partOf(r)]++;
-  const [part, setPart] = useState<Part>('urgent');
+  const [part, setPart] = useState<Part>(start ?? 'urgent');
   const [who, setWho] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const chief = postHolder(cabinetOf(state), 'chief');
@@ -101,6 +103,9 @@ export function RecommendModal({ state, actions, onClose }: Pick<ScreenProps, 's
         <button className={part === 'gov' ? 'on' : ''} onClick={() => setPart('gov')}>
           ⚖️ 총리·기관장 {counts.gov}
         </button>
+        <button className={part === 'gen' ? 'on' : ''} onClick={() => setPart('gen')}>
+          ⭐ 장군 {counts.gen}
+        </button>
       </div>
       {(part === 'min' || part === 'urgent') && rep.minBlocked > 0 && (
         <p className="small muted" style={{ margin: '2px 0' }}>
@@ -108,6 +113,7 @@ export function RecommendModal({ state, actions, onClose }: Pick<ScreenProps, 's
         </p>
       )}
       <RecGroups state={state} rep={rep} part={part} onTake={take} onFace={setWho} />
+      <FilledSection state={state} rep={rep} part={part} onTake={take} onFace={setWho} />
       {rep.noOne.length > 0 && (
         <button className="wide" disabled={(state.goals?.ruby ?? 0) < REFRESH_RUBY} onClick={() => (actions.apply(refreshPool), setMsg('🔄 인재 명단을 새로 받았어요'))}>
           🔄 인재 명단 새로 받기(빈 자리 {rep.noOne.length}곳에 맞는 분 찾기) <small>💎{REFRESH_RUBY}</small>
@@ -201,7 +207,7 @@ function RecRows({ state, recs, none, onTake, onFace }: { state: GameState; recs
         if (!p) return null;
         const why = canTakeRec(state, r);
         return (
-          <div key={seatKey(r.seat)} className="rec-row">
+          <div key={`${seatKey(r.seat)}-${r.pid}`} className="rec-row">
             <div className="rec-top">
               <span className="rec-seat">
                 {r.icon} <b>{r.name}</b>
@@ -241,5 +247,61 @@ function RecRows({ state, recs, none, onTake, onFace }: { state: GameState; recs
         </p>
       )}
     </>
+  );
+}
+
+/** 이미 앉은 자리: 🔁 재추천을 누르면 더 나은 후보 목록(11-25 대장 요청) */
+function FilledSection({ state, rep, part, onTake, onFace }: { state: GameState; rep: RecReport; part: Part; onTake: (r: Rec) => void; onFace: (id: number) => void }) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [show, setShow] = useState(true);
+  const inRecs = new Set(rep.recs.map((r) => seatKey(r.seat)));
+  const rows = filledSeats(state)
+    .filter((x) => !inRecs.has(seatKey(x.seat)))
+    .filter((x) => part === 'urgent' || partOf(x) === part)
+    .map((x) => ({ x, better: betterFor(state, x.seat) }));
+  if (!rows.length) return null;
+  const nb = rows.filter((r) => r.better.length).length;
+  return (
+    <div className="rec-group rec-filled">
+      <button className="rec-gname rec-fold" onClick={() => setShow(!show)}>
+        ✅ 이미 앉은 자리 {rows.length}곳 {nb ? <b className="rec-n">더 나은 분 있음 {nb}곳</b> : <small className="muted">· 모두 지금이 가장 잘 맞아요</small>} {show ? '▾' : '▸'}
+      </button>
+      {show &&
+        rows.map(({ x, better }) => {
+          const k = seatKey(x.seat);
+          const on = openKey === k;
+          return (
+            <div key={k} className="rec-row">
+              <div className="rec-mid">
+                {x.holder!.person ? (
+                  <button className="rec-face" onClick={() => onFace(x.holder!.id)} title="인물 보기">
+                    <PersonFace p={x.holder!.person} size={30} />
+                  </button>
+                ) : (
+                  <span className="cab-face" style={{ width: 30, height: 30, fontSize: 17 }}>
+                    {x.icon}
+                  </span>
+                )}
+                <span className="rec-who">
+                  <b>
+                    {x.icon} {x.name}
+                  </b>
+                  <small>
+                    {x.holder!.name}{x.seat.kind === 'gen' ? ' 장군 · 능력' : ' · 적합'} {x.holderFit}%
+                  </small>
+                </span>
+                <button className={better.length ? 'rec-re on' : 'rec-re'} disabled={!better.length} onClick={() => setOpenKey(on ? null : k)}>
+                  {better.length ? `🔁 재추천 ${better.length}명` : '👍 최적'}
+                </button>
+              </div>
+              {on && (
+                <div className="rec-sub">
+                  <RecRows state={state} recs={better} none={[]} onTake={(r) => (onTake(r), setOpenKey(null))} onFace={onFace} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+    </div>
   );
 }
