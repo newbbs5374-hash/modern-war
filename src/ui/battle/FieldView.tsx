@@ -63,6 +63,7 @@ export function FieldView(props: FrameProps) {
   const [duel, setDuel] = useState<null | 'hq' | 'cruiser'>(null);
   const [help, setHelp] = useState(false);
   const ended = useRef(false);
+  const lastDir = useRef(new Map<number, string>());
   const acc = useRef(0);
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -106,11 +107,18 @@ export function FieldView(props: FrameProps) {
   const minY = Math.min(...f.cells.map((c) => c.y)) - FIELD_HEX;
   const W = f.w + 2;
   const H = f.h + 2;
+  // 11-25 2번안 시험: 비스듬히 내려다본 전장(땅을 세로로 눌러 눕히고, 부대는 세워서 그림). 화면 비율은 그대로라 가로는 K만큼 좁게 보임
+  const K = spec.variant === 'oblique' ? OBLIQUE_K : 1;
   // 확대·축소·끌어서 옮기기(보이는 범위 = 가운데 cx,cy · 배율 zoom)
-  const [view, setView] = useState({ zoom: 1, cx: minX + W / 2, cy: minY + H / 2 });
+  const [view, setView] = useState(() => {
+    if (spec.variant !== 'oblique') return { zoom: 1, cx: minX + W / 2, cy: minY + H / 2 };
+    // 비스듬히 본 전장: 가로가 좁게 보이므로 우리 상륙 거점 쪽에서 시작
+    const hw = (W * OBLIQUE_K) / 2;
+    return { zoom: 1, cx: Math.max(minX + hw, Math.min(minX + W - hw, f.cells[f.landing].x)), cy: minY + H / 2 };
+  });
   const clampView = (v: { zoom: number; cx: number; cy: number }) => {
     const zoom = Math.max(1, Math.min(ZMAX, v.zoom));
-    const hw = W / zoom / 2;
+    const hw = (W * K) / zoom / 2;
     const hh = H / zoom / 2;
     return { zoom, cx: Math.max(minX + hw, Math.min(minX + W - hw, v.cx)), cy: Math.max(minY + hh, Math.min(minY + H - hh, v.cy)) };
   };
@@ -121,7 +129,7 @@ export function FieldView(props: FrameProps) {
       // 누른 자리가 화면에서 그대로 있게
       return clampView({ zoom, cx: p.x + (v.cx - p.x) * (v.zoom / zoom), cy: p.y + (v.cy - p.y) * (v.zoom / zoom) });
     });
-  const vw = W / view.zoom;
+  const vw = (W * K) / view.zoom;
   const vh = H / view.zoom;
   const vx = view.cx - vw / 2;
   const vy = view.cy - vh / 2;
@@ -163,7 +171,7 @@ export function FieldView(props: FrameProps) {
     const dy = cur.y - prev.y;
     gesture.current.moved += Math.abs(dx) + Math.abs(dy);
     if (gesture.current.moved > 8) dragged.current = true;
-    if (view.zoom > 1 && dragged.current) setView((v) => clampView({ ...v, cx: v.cx - (dx / r.width) * vw, cy: v.cy - (dy / r.height) * vh }));
+    if ((view.zoom > 1 || K !== 1) && dragged.current) setView((v) => clampView({ ...v, cx: v.cx - (dx / r.width) * vw, cy: v.cy - (dy / r.height) * vh }));
   };
   const onPointerUp = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
@@ -295,11 +303,11 @@ export function FieldView(props: FrameProps) {
         </button>
       </div>
       <div className="field-stage">
-      <TerrainLayer field={f} viewBox={`${vx + shakeX} ${vy + shakeY} ${vw} ${vh}`} />
+      <TerrainLayer field={f} k={K} viewBox={`${vx + shakeX} ${(vy + shakeY) * K} ${vw} ${vh * K}`} />
       <svg
         ref={svgRef}
-        className={`field-map ${view.zoom > 1 ? 'zoomed' : ''}`}
-        viewBox={`${vx + shakeX} ${vy + shakeY} ${vw} ${vh}`}
+        className={`field-map ${view.zoom > 1 || K !== 1 ? 'zoomed' : ''}`}
+        viewBox={`${vx + shakeX} ${(vy + shakeY) * K} ${vw} ${vh * K}`}
         role="img"
         aria-label={`${cityById(f.city).name} 주변 지도`}
         onPointerDown={onPointerDown}
@@ -341,6 +349,7 @@ export function FieldView(props: FrameProps) {
           </filter>
         </defs>
         {/* 누르는 칸(보이지 않음). 지형은 아래 TerrainLayer가 경계 없이 그림 */}
+        <g transform={K !== 1 ? `scale(1,${K})` : undefined}>
         {f.cells.map((_, i) => (
           <polygon key={i} points={polys[i]} fill="transparent" onClick={() => tapCell(i)} />
         ))}
@@ -356,12 +365,13 @@ export function FieldView(props: FrameProps) {
         {selU && FUNIT[selU.kind].layer === 'land' && (
           <polygon points={polys[f.center]} fill="none" stroke="#fde047" strokeWidth={1.2} strokeDasharray="3 2" pointerEvents="none" />
         )}
+        </g>
         {/* 상륙 거점 */}
-        <Sprite x={f.cells[f.landing].x} y={f.cells[f.landing].y - 2} art={FX_ART.landing} emoji="🚩" size={14} />
+        <Sprite x={f.cells[f.landing].x} y={f.cells[f.landing].y * K - 2} art={FX_ART.landing} emoji="🚩" size={14} />
         {/* 고른 부대 길 */}
         {selU && selU.path.length > 0 && (
           <polyline
-            points={[posOf(selU), ...selU.path.map((p) => f.cells[p])].map((p) => `${p.x},${p.y}`).join(' ')}
+            points={[posOf(selU), ...selU.path.map((p) => f.cells[p])].map((p) => `${p.x},${p.y * K}`).join(' ')}
             fill="none"
             stroke="#fde047"
             strokeWidth={1.4}
@@ -370,21 +380,30 @@ export function FieldView(props: FrameProps) {
           />
         )}
         {/* 부대 말: 땅·바다 먼저, 하늘은 위에 */}
-        {[...seen].sort((a, c) => (FUNIT[a.kind].layer === 'air' ? 1 : 0) - (FUNIT[c.kind].layer === 'air' ? 1 : 0)).map((u) => {
+        {[...seen].sort((a, c) => (FUNIT[a.kind].layer === 'air' ? 1 : 0) - (FUNIT[c.kind].layer === 'air' ? 1 : 0) || (K !== 1 ? posOf(a).y - posOf(c).y : 0)).map((u) => {
           const p = posOf(u);
           const air = FUNIT[u.kind].layer === 'air';
           const big = u.kind === 'carrier' || u.kind === 'cruiser' || u.kind === 'hq';
           const r = air ? 5.5 : big ? 8.5 : 7.5;
-          const artKey = u.sp && fieldArt(spArt(u.sp)) ? spArt(u.sp) : UNIT_ART[u.kind];
+          let artKey = u.sp && fieldArt(spArt(u.sp)) ? spArt(u.sp) : UNIT_ART[u.kind];
+          if (K !== 1) {
+            // 가는 방향 그림(오른쪽 3방향, 왼쪽은 뒤집음): obl-<병과>-se|e|ne
+            if (u.path.length) {
+              const dy = f.cells[u.path[0]].y - f.cells[u.at].y;
+              lastDir.current.set(u.id, dy < -1 ? 'ne' : dy > 1 ? 'se' : 'e');
+            }
+            const ob = `obl-${u.kind}-${lastDir.current.get(u.id) ?? (u.side === 'me' ? 'ne' : 'se')}`;
+            if (fieldArt(ob)) artKey = ob;
+          }
           const pic = !!fieldArt(artKey);
           const hit = u.hitAt !== undefined ? vt - u.hitAt : 9;
           // 맞으면 잠깐 흔들리고 하얗게 번쩍
           const jig = hit < 0.3 ? Math.sin(hit * 80) * 1.2 * (1 - hit / 0.3) : 0;
           const x = p.x + (air ? 6 : 0) + jig;
-          const y = p.y + (air ? -6 : 0);
+          const y = p.y * K + (air ? -6 : 0);
           if (pic) {
             // 그림이 있으면 동그란 바탕 없이 그림만 크게. 편은 테두리 색과 체력 막대 옆 작은 깃발로
-            const size = air ? 20 : big ? 30 : 25;
+            const size = (air ? 20 : big ? 30 : 25) * (K !== 1 ? 1.3 : 1);
             const half = size * 0.42;
             const filter = hit < 0.2 ? 'url(#fo-hit)' : u.id === sel ? 'url(#fo-sel)' : `url(#fo-${u.side})`;
             const hpw = big ? 16 : 13;
@@ -431,7 +450,7 @@ export function FieldView(props: FrameProps) {
           );
         })}
         {/* 효과: 포탄·미사일·어뢰가 날아가고, 맞은 자리에 폭발·물보라 */}
-        <FieldFx b={b} vt={vt} pos={(i, air) => ({ x: f.cells[i].x + (air ? 6 : 0), y: f.cells[i].y + (air ? -6 : 0) })} />
+        <FieldFx b={b} vt={vt} pos={(i, air) => ({ x: f.cells[i].x + (air ? 6 : 0), y: f.cells[i].y * K + (air ? -6 : 0) })} />
       </svg>
       {mood.hurt > 0 && <div className="field-hurt" style={{ opacity: mood.hurt }} />}
       <div className="field-zoom">
@@ -600,13 +619,16 @@ const BLEND_ORDER: FTerrain[] = ['바다', '해협', '해안', '평지', '숲', 
 /** 바다 쪽 지형(이 위에 땅이 얹힘) */
 const SEA_T: FTerrain[] = ['바다', '해협'];
 const SAT_BASE = `${import.meta.env.BASE_URL}field-sat/`;
-const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox }: { field: FieldBattle['field']; viewBox: string }) {
+/** 비스듬히 본 전장: 땅 세로 눌림 비율 */
+const OBLIQUE_K = 0.6;
+const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox, k = 1 }: { field: FieldBattle['field']; viewBox: string; k?: number }) {
   // 11-25 메인 전투 ③: 실제 위성 사진 바탕(도시 둘레 약 41km). 못 불러오면 예전 그림 땅
   const [satFail, setSatFail] = useState(false);
   if (hasRealField(f.city) && !satFail) {
     const H = FIELD_REAL_HALF;
     return (
       <svg className="field-ground" viewBox={viewBox} aria-hidden="true">
+        <g transform={k !== 1 ? `scale(1,${k})` : undefined}>
         <rect x={-H * 4} y={-H * 4} width={H * 8} height={H * 8} fill="#0b2f4f" />
         <image href={`${SAT_BASE}${f.city}.webp`} x={-H} y={-H} width={H * 2} height={H * 2} preserveAspectRatio="none" onError={() => setSatFail(true)} />
         {/* 전장 밖은 조금 어둡게 */}
@@ -617,13 +639,32 @@ const TerrainLayer = memo(function TerrainLayer({ field: f, viewBox }: { field: 
           </radialGradient>
         </defs>
         <rect x={-H} y={-H} width={H * 2} height={H * 2} fill="url(#sat-vig)" />
+        </g>
+        {/* 먼 쪽(위)은 옅은 안개 */}
+        {k !== 1 && (
+          <>
+            <defs>
+              <linearGradient id="obl-haze" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#cbd5e1" stopOpacity="0.45" />
+                <stop offset="0.35" stopColor="#cbd5e1" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <rect x={-H * 2} y={-H * k} width={H * 4} height={H * 2 * k} fill="url(#obl-haze)" />
+          </>
+        )}
       </svg>
     );
   }
-  return <PaintedTerrain field={f} viewBox={viewBox} />;
+  return (
+    <svg className="field-ground" viewBox={viewBox} aria-hidden="true">
+      <g transform={k !== 1 ? `scale(1,${k})` : undefined}>
+        <PaintedTerrainInner field={f} />
+      </g>
+    </svg>
+  );
 });
 
-const PaintedTerrain = memo(function PaintedTerrain({ field: f, viewBox }: { field: FieldBattle['field']; viewBox: string }) {
+const PaintedTerrainInner = memo(function PaintedTerrainInner({ field: f }: { field: FieldBattle['field'] }) {
   const minX = Math.min(...f.cells.map((c) => c.x)) - FIELD_HEX * 2;
   const minY = Math.min(...f.cells.map((c) => c.y)) - FIELD_HEX * 2;
   const W = f.w + FIELD_HEX * 4;
@@ -650,7 +691,7 @@ const PaintedTerrain = memo(function PaintedTerrain({ field: f, viewBox }: { fie
     </mask>
   );
   return (
-    <svg className="field-ground" viewBox={viewBox} aria-hidden="true">
+    <>
       <defs>
         {pats.map((t) => {
           const url = fieldArt(TILE_ART[t]);
@@ -692,7 +733,7 @@ const PaintedTerrain = memo(function PaintedTerrain({ field: f, viewBox }: { fie
         </g>
       )}
       {f.cells.map((c, i) => ((c.terrain === '숲' || c.terrain === '산') && !fieldArt(TILE_ART[c.terrain]) ? <TerrainMark key={`m${i}`} x={c.x} y={c.y} t={c.terrain} /> : null))}
-    </svg>
+    </>
   );
 });
 
