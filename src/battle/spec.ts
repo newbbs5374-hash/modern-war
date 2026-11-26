@@ -1,5 +1,5 @@
 // 어떤 전투를 열지 정하는 곳: 훈련 12개 · 임무 · 작전(여러 판) · 대전투(도시 점령) · 승급 심사 · 연습장.
-import { drillName as threeName } from '../battle3d/train3d';
+import { drillName as threeName, threeFor } from '../battle3d/train3d';
 import type { ActiveMission } from '../game/officer';
 import type { MissionKind } from '../data/officers';
 import { Rng } from '../game/rng';
@@ -92,22 +92,17 @@ export function trainingScale(name: string, rank: number): string {
   return '';
 }
 
-/** 훈련 = 미니게임 1판(11-25). mini = 고른 미니게임 id(없으면 씨앗으로) */
+/** 훈련 = 3D 훈련 1판(11-26: 2D 미니게임은 훈련에서 뺌). mini = 고른 훈련 id(없으면 그 훈련의 3D 실전) */
 export function trainingPlan(name: string, rank: number, seed: number, mini?: string): BattlePlan {
   void rank;
-  // 11-26: 3D 훈련(실전 d3-* · 사격장 c3-* · 배치 퍼즐 p3 · 주간 합동 w3)
-  if (mini && /^(d3-|c3-|p3|w3)/.test(mini)) {
-    const t3 = threeName(mini);
-    return { title: `${name} 훈련 · ${t3}`, source: 'training', training: name, mainIdx: 0, stages: [{ frame: 'd3', variant: mini, title: `${name} 훈련`, difficulty: 1, seed }] };
+  const m = mini && !/^(d3-|c3-|p3|w3)/.test(mini) ? pickMini(name, seed, mini) : undefined;
+  if (m && m.id === mini) {
+    return { title: `${name} 훈련 · ${m.name}`, source: 'training', training: name, mainIdx: 0, stages: [{ frame: 'mini', variant: m.id, title: `${name} 훈련`, difficulty: 1, seed }] };
   }
-  const m = pickMini(name, seed, mini);
-  return {
-    title: `${name} 훈련 · ${m.name}`,
-    source: 'training',
-    training: name,
-    mainIdx: 0,
-    stages: [{ frame: 'mini', variant: m.id, title: `${name} 훈련`, difficulty: 1, seed }],
-  };
+  // 3D 훈련(실전 d3-* · 사격장 c3-* · 배치 퍼즐 p3 · 주간 합동 w3). 고르지 않았으면 그 훈련의 3D 실전
+  const id = mini && /^(d3-|c3-|p3|w3)/.test(mini) ? mini : (threeFor(name).find((x) => x.tag === '3D 실전') ?? threeFor(name)[0])?.id ?? 'd3-tac';
+  const t3 = threeName(id);
+  return { title: `${name} 훈련 · ${t3}`, source: 'training', training: name, mainIdx: 0, stages: [{ frame: 'd3', variant: id, title: `${name} 훈련`, difficulty: 1, seed }] };
 }
 
 const KIND_BATTLE: Partial<Record<MissionKind, Pick>> = {
