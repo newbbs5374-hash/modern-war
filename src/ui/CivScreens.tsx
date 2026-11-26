@@ -6,7 +6,12 @@ import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, boostLeft, startAndFinish } from '../game/boost';
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+
+/** 3D 도시(11/26 서울 시험): 누를 때만 three.js를 불러옴 */
+const City3D = lazy(() => import('./City3D'));
+/** 3D 자료가 있는 도시 → public/city3d/ 파일 이름 */
+const CITY3D_FILE: Record<string, string> = { 'kr-0': 'seoul' };
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
@@ -764,6 +769,9 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
   // 그때와 지금: 취임 첫날 모습으로 잠깐 되돌려 보기
   const [then, setThen] = useState(false);
   const [dayMode, setDayMode] = useState<DayMode>('자동');
+  const [is3d, setIs3d] = useState(false);
+  /** 3D 시험용: 단계 미리보기(null = 지금 인구) */
+  const [preview, setPreview] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useDragScroll(scrollRef, zoom > 1);
   // 확대하면 도심이 가운데 오게
@@ -1031,6 +1039,11 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
         <button className={`city-dn ${night > 0.5 ? 'on' : ''}`} title={`낮·밤: ${dayMode}`} onClick={() => setDayMode(dayMode === '자동' ? (night > 0.5 ? '낮' : '밤') : dayMode === '낮' ? '밤' : '낮')}>
           {night > 0.5 ? '🌙' : '☀️'}
         </button>
+        {CITY3D_FILE[id] && (
+          <button className={`city-3d-btn ${is3d ? 'on' : ''}`} onClick={() => (setIs3d(!is3d), setPreview(null))}>
+            {is3d ? '🗺️ 2D' : '🏙️ 3D'}
+          </button>
+        )}
         <button className={`city-then ${then ? 'on' : ''}`} onClick={() => setThen(!then)}>
           {then ? '📅 취임 첫날' : '📅 그때와 지금'}
         </button>
@@ -1038,6 +1051,21 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
       <small className="muted city-zoom-hint">
         {then ? `취임 첫날 모습(인구 약 ${people(cityPeopleAtStart(state, id))}). 다시 누르면 지금 모습.` : zoom > 1 ? '마우스로 잡고 끌거나 손가락으로 밀어서 둘러보기 · 시설 이름 보임' : '2배·3배로 확대하면 잡고 끌어서 둘러볼 수 있어요'}
       </small>
+      {is3d && CITY3D_FILE[id] ? (
+        <>
+          <Suspense fallback={<div className="city3d city3d-msg">🏗️ 3D 도시 불러오는 중…</div>}>
+            <City3D file={CITY3D_FILE[id]} level={preview ?? stg.stage.lv + stg.frac} night={night} />
+          </Suspense>
+          <label className="city3d-preview small">
+            <span>
+              🧪 단계 미리보기(시험): <b>{CITY_STAGES[Math.floor(preview ?? stg.stage.lv)].icon} {CITY_STAGES[Math.floor(preview ?? stg.stage.lv)].name}</b>
+              {preview == null ? ' · 지금 인구' : ''}
+            </span>
+            <input type="range" min={0} max={6} step={0.1} value={preview ?? stg.stage.lv + stg.frac} onChange={(e) => setPreview(+e.target.value)} />
+          </label>
+          <small className="muted">한 손가락으로 밀기 · 두 손가락으로 확대·돌리기(PC는 오른쪽 끌기로 돌리기) · 노란 크레인 = 다음에 지어질 자리</small>
+        </>
+      ) : (
       <div ref={scrollRef} className={`city-scroll ${zoom > 1 ? 'zoomed' : ''}`}>
         <CityView
           cells={cells}
@@ -1057,6 +1085,7 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
           traffic
         />
       </div>
+      )}
       <div className="legend small muted">
         <span>
           <i style={{ background: TERRAIN_COLOR.평지 }} /> 평지
