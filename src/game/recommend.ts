@@ -3,7 +3,7 @@
 // 인재 명단에 더 나은 사람이 있을 때만 영입 추천. 한 사람은 한 자리에만.
 // 이미 앉은 사람보다 20점 넘게 잘 맞는 사람이 남아 있으면 교체도 건의해요.
 import { GENERAL_NEEDS, NEEDS, type Need } from '../data/needs';
-import { MINISTRIES, PERSON_ORIGINS, TRAITS, ministerSlots, ministryById, type MinistryId } from '../data/cabinet';
+import { MINISTRIES, PERSON_ORIGINS, TRAITS, ministerSlots, ministryById, type MinistryId, type SpecId } from '../data/cabinet';
 import { POSTS, postById, type PostId } from '../data/staff';
 import type { AnyStat } from '../data/stats2';
 import {
@@ -334,4 +334,16 @@ export function betterFor(s: GameState, seat: RecSeat, n = 4): Rec[] {
       urgency: urgencyOf(s, seat),
     };
   });
+}
+
+/** 빈 자리(맞는 사람 없는 곳)에 가장 많이 필요한 분야(명단 새로 받기 추천값, 11-26) */
+export function neededSpec(rep: RecReport): SpecId | null {
+  const n = new Map<SpecId, number>();
+  for (const x of rep.noOne) {
+    const sp = needOfSeat(x.seat).spec as readonly SpecId[];
+    for (const id of sp) n.set(id, (n.get(id) ?? 0) + 1 / sp.length);
+  }
+  let top: SpecId | null = null;
+  for (const [id, v] of n) if (!top || v > (n.get(top) ?? 0)) top = id;
+  return top;
 }

@@ -666,18 +666,49 @@ export function vet(s: GameState, pid: number): GameState {
     if (p) p.known = true;
   });
 }
-/** 루비로 인재 명단 새로 받기 */
-export function refreshPool(s: GameState): GameState {
+/** 명단 새로 받기 조건(11-26 대장 요청: 성향·필요 분야 골라 받기). 비우면 아무나 */
+export interface PoolWant {
+  faction?: Faction | null;
+  spec?: SpecId | null;
+}
+/** 조건에 맞는 출신 목록(둘 다 맞는 출신 → 분야만 → 성향만 → 아무나) */
+export function originsFor(want: PoolWant): PersonOrigin[] {
+  const all = Object.keys(PERSON_ORIGINS) as PersonOrigin[];
+  const bySpec = want.spec ? all.filter((o) => PERSON_ORIGINS[o].spec.includes(want.spec!)) : all;
+  const both = want.faction ? bySpec.filter((o) => PERSON_ORIGINS[o].faction === want.faction) : bySpec;
+  if (both.length) return both;
+  if (want.spec && bySpec.length) return bySpec;
+  const byFac = want.faction ? all.filter((o) => PERSON_ORIGINS[o].faction === want.faction) : all;
+  return byFac.length ? byFac : all;
+}
+export const POOL_SIZE = 16;
+/** 루비로 인재 명단 새로 받기. want를 주면 16명 모두 그 성향·분야로 */
+export function refreshPool(s: GameState, want: PoolWant = {}): GameState {
   const ruby = s.goals?.ruby ?? 0;
   if (ruby < REFRESH_RUBY || !s.goals) return s;
   const s2: GameState = { ...s, goals: { ...s.goals, ruby: ruby - REFRESH_RUBY } };
+  const picky = !!(want.faction || want.spec);
+  const origins = originsFor(want);
   return withCab(s2, (c, ns) => {
     c.people = c.people.filter((p) => p.group !== '인재');
     const rng = new Rng(c.seed);
     const taken = takenNames(c);
-    for (let i = 0; i < 16; i++) c.people.push(poolPerson(c, rng, ns.player.countryId, ns.worldMs, taken));
+    const me = ns.player.countryId;
+    for (let i = 0; i < POOL_SIZE; i++) {
+      if (!picky) {
+        c.people.push(poolPerson(c, rng, me, ns.worldMs, taken));
+        continue;
+      }
+      const country = rng.chance(0.1) ? rng.pick(COUNTRIES.filter((x) => x.id !== me)).id : me;
+      const grade = rng.chance(0.05) ? '전설' : undefined;
+      const p = genPerson(c, rng, { country, group: '인재', age: [38, 66], grade, origin: rng.pick(origins) }, ns.worldMs, taken);
+      if (want.spec) p.spec = want.spec;
+      if (want.faction) p.faction = want.faction;
+      c.people.push(p);
+    }
     c.seed = rng.seed;
-    cabLog(c, '📋 인재 명단을 새로 받았어요.');
+    const tag = [want.faction, want.spec].filter(Boolean).join(' · ');
+    cabLog(c, picky ? `📋 인재 명단을 새로 받았어요(${tag}).` : '📋 인재 명단을 새로 받았어요.');
   });
 }
 
