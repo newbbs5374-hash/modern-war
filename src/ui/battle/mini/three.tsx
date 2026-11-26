@@ -7,7 +7,7 @@ import { Hud, clamp01, useLoop, useRng, type MiniProps } from './kit';
 type K3 = typeof import('../../../battle3d/mini3d/kit3d');
 
 /** 3D 무대: 모형을 받고 장면을 만든 뒤 build로 게임 세계를 꾸밈 */
-function use3D<W>(opt: { cam: [number, number, number]; look: [number, number, number]; fov?: number; sky?: number }, models: string[], build: (k: K3, S: ReturnType<K3['makeScene']>) => W) {
+export function use3D<W>(opt: { cam: [number, number, number]; look: [number, number, number]; fov?: number; sky?: number }, models: string[], build: (k: K3, S: ReturnType<K3['makeScene']>) => W) {
   const ref = useRef<HTMLDivElement>(null);
   const S = useRef<ReturnType<K3['makeScene']> | null>(null);
   const W = useRef<W | null>(null);
@@ -36,7 +36,7 @@ function use3D<W>(opt: { cam: [number, number, number]; look: [number, number, n
   return { ref, S, W, K, ready, fail };
 }
 
-function Box3D(props: { r: React.RefObject<HTMLDivElement>; ready: boolean; fail: boolean; ratio?: number; children?: React.ReactNode; onPointerDown?: (e: React.PointerEvent) => void; onPointerMove?: (e: React.PointerEvent) => void; onPointerUp?: (e: React.PointerEvent) => void }) {
+export function Box3D(props: { r: React.RefObject<HTMLDivElement>; ready: boolean; fail: boolean; ratio?: number; children?: React.ReactNode; onPointerDown?: (e: React.PointerEvent) => void; onPointerMove?: (e: React.PointerEvent) => void; onPointerUp?: (e: React.PointerEvent) => void }) {
   return (
     <div
       ref={props.r}

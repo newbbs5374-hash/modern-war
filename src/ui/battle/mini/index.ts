@@ -13,6 +13,7 @@ import { HackCode, HackFirewall, HackFlow } from './hack';
 import { RecInterview, RecPoster, RecSpeech } from './recruit';
 import { AirFlare, AirIntercept, AirLanding } from './air';
 import { SeaFormation, SeaSonar, SeaTorpedo } from './sea';
+import { FAirCockpit, FArtyObserve, FFitRun, FSeaBridge, FShootScope, FSneakFP } from './freshA';
 import { M3AirFlare, M3AirIntercept, M3ArtyLead, M3SeaSonar, M3SeaTorpedo, M3ShootMoving, M3ShootPopup, M3SneakLight } from './three';
 
 export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
@@ -60,4 +61,10 @@ export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'm3-air-intercept': M3AirIntercept,
   'm3-air-flare': M3AirFlare,
   'm3-sneak-light': M3SneakLight,
+  'n-shoot-scope': FShootScope,
+  'n-air-cockpit': FAirCockpit,
+  'n-sneak-fp': FSneakFP,
+  'n-arty-observe': FArtyObserve,
+  'n-sea-bridge': FSeaBridge,
+  'n-fit-run3d': FFitRun,
 };

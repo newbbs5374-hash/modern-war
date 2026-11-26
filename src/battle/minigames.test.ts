@@ -14,20 +14,20 @@ test('훈련 12개마다 미니게임 3개, 모두 화면이 있음', () => {
     for (const m of minisFor(t.name)) expect(m.three).toBe(true);
   }
   // 11-26: 3D 화면 8개 더함
-  expect(MINIGAMES.length).toBe(44);
-  expect(MINIGAMES.filter((m) => m.three).length).toBe(8);
+  expect(MINIGAMES.length).toBe(50);
+  expect(MINIGAMES.filter((m) => m.three && !m.fresh).length).toBe(8);
   for (const m of MINIGAMES) expect(MINI_VIEWS[m.id]).toBeTruthy();
-  expect(new Set(MINIGAMES.map((m) => m.id)).size).toBe(44);
+  expect(new Set(MINIGAMES.map((m) => m.id)).size).toBe(MINIGAMES.length);
 });
 
 test('끈 미니게임·2D 미니게임은 훈련에 안 나옴', () => {
   expect(minisFor('잠입').map((x) => x.id)).not.toContain('sneak-lock');
-  const m = MINIGAMES.find((x) => x.id === 'm3-sneak-light')!;
-  m.on = false;
+  const ms = MINIGAMES.filter((x) => x.training === '잠입' && x.three);
+  ms.forEach((m) => (m.on = false));
   expect(minisFor('잠입').length).toBe(0);
   expect(pickMini('잠입', 3)).toBeUndefined();
   expect(trainingPlan('잠입', 3, 1).stages[0].frame).toBe('d3');
-  m.on = true;
+  ms.forEach((m) => (m.on = true));
 });
 
 test('훈련 계획 = 3D 미니게임 1판, 자동 결과는 성공', () => {

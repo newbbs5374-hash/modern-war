@@ -1372,3 +1372,30 @@ button.big { min-height: 64px; font-size: 18px; }
 .d3-units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; font-size: 11px; }
 .d3-units span { padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; display: flex; justify-content: space-between; gap: 4px; }
 .d3-units span b { color: #67e8f9; }
+
+/* 11-26 새 훈련 틀 A(1인칭) */
+.fp-cross { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px; pointer-events: none; z-index: 2; }
+.fp-cross::before, .fp-cross::after { content: ''; position: absolute; background: #ff4a3a; }
+.fp-cross::before { left: 12px; top: 0; width: 2px; height: 26px; }
+.fp-cross::after { top: 12px; left: 0; height: 2px; width: 26px; }
+.fp-scope { position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(circle at 50% 50%, transparent 0 41%, #000 42%); }
+.fp-scope::before { content: ''; position: absolute; left: 50%; top: 9%; bottom: 9%; width: 1px; background: #000c; }
+.fp-scope::after { content: ''; position: absolute; top: 50%; left: 9%; right: 9%; height: 1px; background: #000c; }
+.fp-bino { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.fp-flash { position: absolute; inset: 0; background: #ffd27a; pointer-events: none; z-index: 3; }
+.fp-warn { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); background: #b3261ecc; color: #fff; padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; pointer-events: none; z-index: 4; white-space: nowrap; }
+.fp-cockpit { position: absolute; left: 0; right: 0; bottom: 0; height: 16%; background: linear-gradient(#1b2328, #0d1215); border-top: 2px solid #3a4a52; border-radius: 40% 40% 0 0 / 30% 30% 0 0; pointer-events: none; z-index: 2; }
+.fp-hud-horizon { position: absolute; left: 50%; top: 50%; width: 46%; height: 2px; background: #6dffb0aa; box-shadow: 0 0 4px #6dffb0; pointer-events: none; z-index: 2; }
+.fp-arrow { position: absolute; transform: translate(-50%, -50%); font-size: 18px; pointer-events: none; z-index: 3; filter: drop-shadow(0 0 3px #f39a3d); }
+.fp-sus { position: absolute; left: 8px; right: 8px; top: 6px; height: 6px; background: #0008; border-radius: 3px; pointer-events: none; z-index: 3; }
+.fp-sus i { display: block; height: 100%; background: linear-gradient(90deg, #ffd34d, #ff4a3a); border-radius: 3px; }
+.fp-radar { position: absolute; right: 6px; top: 18px; width: 74px; height: 74px; border-radius: 50%; background: #0a1a12cc; border: 1px solid #3fc1b099; pointer-events: none; z-index: 3; overflow: hidden; }
+.fp-radar span { position: absolute; width: 7px; height: 7px; margin: -3.5px; border-radius: 50%; }
+.fp-radar .r-foe { background: #ff5a3a; }
+.fp-radar .r-goal { background: #3fc1b0; box-shadow: 0 0 5px #3fc1b0; }
+.fp-radar .r-me { left: 50%; top: 50%; background: #fff; }
+.fp-wheel { position: absolute; left: 50%; bottom: 4%; font-size: 40px; color: #c9a36a; text-shadow: 0 2px 3px #000; pointer-events: none; z-index: 2; transition: transform 0.2s; }
+.fp-sta { position: absolute; left: 8px; top: 6px; width: 46%; display: flex; gap: 4px; align-items: center; color: #fff; pointer-events: none; z-index: 3; }
+.fp-sta i { flex: 1; display: block; height: 7px; background: #3fc1b0; border-radius: 4px; }
+.fp-sta i.low { background: #ff5a3a; }
+.mg-3d-pad b { color: var(--text, #fff); }
