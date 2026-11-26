@@ -11,8 +11,8 @@ import { rubyOf } from './goals';
 export const BOOST_MS = 30 * 60e3;
 /** 가속권 1장 대신 내는 루비(상점 가속권 1장 값) */
 export const RUBY_PER_BOOST = 5;
-/** 시험판: 새 판·옛 저장에 주는 가속권 */
-export const TEST_BOOSTS = 300;
+/** 새 판·옛 저장에 주는 가속권(11-26 난이도: 300 → 10장) */
+export const TEST_BOOSTS = 10;
 const H = 3600e3;
 
 export type BoostTarget =

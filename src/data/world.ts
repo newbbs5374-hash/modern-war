@@ -84,7 +84,7 @@ const C = (o: Omit<Country, 'label'> & { label?: { x: number; y: number } }): Co
 export const COUNTRIES: Country[] = [
   C({
     id: 'us', name: '미국', continent: 'amern', intro: '세계 최강의 해군과 항공모함을 가진 부유한 나라',
-    cities: ['워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '덴버', '피닉스', '피츠버그', '휴스턴', '로스앤젤레스', '시카고', '시애틀', '보스턴', '애틀랜타'],
+    cities: ['워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '덴버', '피닉스', '피츠버그', '휴스턴', '로스앤젤레스', '시카고', '시애틀', '보스턴', '애틀랜타', '마이애미', '댈러스', '샌디에이고', '필라델피아', '디트로이트', '노퍽', '샌안토니오'],
     economy: 100, budget: 100, military: 100, difficulty: '쉬움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '중',
     specialUnit: { name: '항모 타격단', base: '항공모함', effect: '함재기 출격 2배 · 호위함 보호막' },
@@ -93,7 +93,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'cn', name: '중국', continent: 'asien', intro: '사람이 많고 공장이 쉬지 않는 넓은 나라',
-    cities: ['베이징', '톈진', '광저우', '선전', '바오터우', '우한', '란저우', '상하이', '충칭', '청두', '시안', '하얼빈', '칭다오'],
+    cities: ['베이징', '톈진', '광저우', '선전', '바오터우', '우한', '란저우', '상하이', '충칭', '청두', '시안', '하얼빈', '칭다오', '난징', '항저우', '다롄'],
     economy: 80, budget: 59, military: 80, difficulty: '쉬움',
     bloc: 'continental', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '대규모 동원 사단', base: '보병', effect: '병력 1.5배 · 쓰러져도 빨리 채워짐' },
@@ -102,7 +102,7 @@ export const COUNTRIES: Country[] = [
   }),
   C({
     id: 'ru', name: '러시아', continent: 'norga', intro: '세계에서 가장 넓은 땅. 춥지만 미사일 기술이 앞선 나라',
-    cities: ['모스크바', '상트페테르부르크', '튜멘', '무르만스크', '예카테린부르크', '아르한겔스크', '노릴스크', '야쿠츠크', '블라디보스토크', '노보시비르스크', '카잔', '칼리닌그라드', '이르쿠츠크'],
+    cities: ['모스크바', '상트페테르부르크', '튜멘', '무르만스크', '예카테린부르크', '아르한겔스크', '노릴스크', '야쿠츠크', '블라디보스토크', '노보시비르스크', '카잔', '칼리닌그라드', '이르쿠츠크', '볼고그라드', '하바롭스크'],
     economy: 29, budget: 45, military: 94, difficulty: '쉬움',
     bloc: 'continental', faith: 'polaris', faithStrength: '중',
     specialUnit: { name: '전략 미사일 여단', base: '미사일', effect: '사거리 +50% · 방공 뚫기 +20%' },

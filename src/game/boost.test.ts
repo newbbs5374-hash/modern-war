@@ -1,25 +1,32 @@
 import { describe, expect, test } from 'vitest';
-import { newGame } from './state';
+import { newGame, type GameState } from './state';
 import { BOOST_MS, RUBY_PER_BOOST, TEST_BOOSTS, boostLeft, boostsOf, boostsToFinish, useBoost } from './boost';
 import { boardNow, debugAddAide, sendAide, startMission } from './officer';
 
+/** 11-26 난이도로 새 판이 적게 시작해서, 시험은 가속권·국방예산을 넉넉히 넣고 함 */
+const RICH = 300;
+const ng = (): GameState => {
+  const s = newGame('t', 'kr', 0, { seed: 1 });
+  return { ...s, officer: { ...s.officer, boosts: RICH as number }, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } };
+};
+
 describe('가속권', () => {
   test('새 판은 시험용 가속권을 넉넉히 받음', () => {
-    expect(boostsOf(newGame('t', 'kr', 0, { seed: 1 }))).toBe(TEST_BOOSTS);
+    expect(boostsOf(newGame('t', 'kr', 0, { seed: 1 }))).toBe(TEST_BOOSTS); // 11-26: 10장만
   });
   test('임무: 한 장에 30분, 바로 끝내기는 필요한 만큼만 씀', () => {
-    let s = newGame('t', 'kr', 0, { seed: 1 });
+    let s = ng();
     const b = boardNow(s);
     s = startMission(b.state, b.state.officer.board[0].id);
     const left = boostLeft(s, { kind: 'mission' });
     expect(left).toBeGreaterThan(0);
     const one = useBoost(s, { kind: 'mission' }, 1);
     expect(boostLeft(one, { kind: 'mission' })).toBe(left - BOOST_MS);
-    expect(boostsOf(one)).toBe(TEST_BOOSTS - 1);
+    expect(boostsOf(one)).toBe(RICH - 1);
     const need = boostsToFinish(s, { kind: 'mission' });
     const all = useBoost(s, { kind: 'mission' }, 999);
     expect(boostLeft(all, { kind: 'mission' })).toBe(0);
-    expect(boostsOf(all)).toBe(TEST_BOOSTS - need);
+    expect(boostsOf(all)).toBe(RICH - need);
     expect(useBoost(all, { kind: 'mission' }, 1)).toBe(all); // 끝난 건 안 씀
   });
   test('부관 심부름도 줄어듦', () => {
@@ -35,7 +42,7 @@ describe('가속 버튼 넓히기(11-24)', () => {
   test('연구: 30분치 점수가 들어가고, 바로 끝내기는 3단계 모두 끝냄', async () => {
     const { startResearch, civOf, hasTech } = await import('./civ');
     const { TECHS } = await import('../data/civ');
-    let s = newGame('t', 'kr', 0, { seed: 1 });
+    let s = ng();
     const t = TECHS.find((x) => x.line === 'mil' && !x.needs.length)!;
     s = startResearch(s, t.id);
     const tg = { kind: 'research', line: 'mil' } as const;
@@ -46,10 +53,10 @@ describe('가속 버튼 넓히기(11-24)', () => {
     const all = useBoost(s, tg, 999);
     expect(hasTech(all, t.id)).toBe(true);
     expect(civOf(all).cur.mil).toBe(null);
-    expect(boostsOf(all)).toBe(TEST_BOOSTS - boostsToFinish(s, tg));
+    expect(boostsOf(all)).toBe(RICH - boostsToFinish(s, tg));
   });
   test('가속권이 없으면 루비로(1장 = 💎5), 둘 다 없으면 안 됨', () => {
-    let s = newGame('t', 'kr', 0, { seed: 1 });
+    let s = ng();
     const b = boardNow(s);
     s = startMission(b.state, b.state.officer.board[0].id);
     s = { ...s, officer: { ...s.officer, boosts: 0 }, goals: { ...s.goals!, ruby: 12 } };
@@ -82,14 +89,14 @@ describe('가속 버튼 넓히기(11-24)', () => {
 describe('카드 안 가속(11-24)', () => {
   test('체제 혼란도 가속권으로 줄이고 바로 끝냄', async () => {
     const { civOf, chaos } = await import('./civ');
-    let s = newGame('t', 'kr', 0, { seed: 1 });
+    let s = ng();
     s = { ...s, civ: { ...civOf(s), chaosUntil: s.worldMs + 24 * 3600e3 } };
     const tg = { kind: 'chaos' } as const;
     expect(boostLeft(s, tg)).toBe(24 * 3600e3);
     expect(boostLeft(useBoost(s, tg, 1), tg)).toBe(24 * 3600e3 - BOOST_MS);
     const all = useBoost(s, tg, 999);
     expect(chaos(all)).toBe(false);
-    expect(boostsOf(all)).toBe(TEST_BOOSTS - 48);
+    expect(boostsOf(all)).toBe(RICH - 48);
   });
 });
 
@@ -97,7 +104,7 @@ describe('모든 카드 안 가속(11-25)', () => {
   test('연구 트리: 연구 중이 아닌 카드도 바로 끝내고, 하던 연구는 그대로', async () => {
     const { startResearch, civOf, hasTech } = await import('./civ');
     const { TECHS } = await import('../data/civ');
-    let s = newGame('t', 'kr', 0, { seed: 1 });
+    let s = ng();
     const [a, b] = TECHS.filter((x) => x.line === 'mil' && !x.needs.length);
     s = startResearch(s, a.id);
     const tg = { kind: 'tech', id: b.id } as const;
@@ -114,7 +121,7 @@ describe('모든 카드 안 가속(11-25)', () => {
     const { startAndFinish } = await import('./boost');
     const { upgradeFacility, canUpgrade, economyTick } = await import('./economy');
     const { BUILDING_IDS } = await import('../data/economy');
-    let s = { ...newGame('t', 'kr', 0, { seed: 1 }), worldMs: 3600e3 };
+    let s = { ...ng(), worldMs: 3600e3 };
     s = { ...s, economy: { ...s.economy, facilities: Object.fromEntries(Object.entries(s.economy.facilities).map(([k, v]) => [k, { ...v, exp: 1e6 }])) as typeof s.economy.facilities } };
     const id = BUILDING_IDS.find((x) => !canUpgrade(s, x))!;
     expect(id).toBeTruthy();
@@ -128,7 +135,7 @@ describe('모든 카드 안 가속(11-25)', () => {
   });
   test('정책 카드: 다음 무료 바꾸기까지 줄이기', async () => {
     const { civOf, swapCost } = await import('./civ');
-    let s = newGame('t', 'kr', 0, { seed: 1 });
+    let s = ng();
     const c = civOf(s);
     s = { ...s, civ: { ...c, cards: ['x', null], lastSwapMs: s.worldMs - 3600e3 } } as typeof s;
     const tg = { kind: 'swap' } as const;

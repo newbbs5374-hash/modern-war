@@ -5,6 +5,7 @@ import { addContract, buildMs, canProduce, canTrade, canUpgrade, cancelContract,
 import { claimMission, finishTraining, grandTargets, startGrand, startTraining } from './officer';
 import { parseSave } from './save';
 import { civResMult, debugAllResearch } from './civ';
+import { TRAIN_EXP_LOSE } from '../data/officers';
 
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } });
@@ -140,7 +141,7 @@ describe('5단계 훈련·대전투', () => {
     const r = finishTraining(s, { win: true, stars: 3, auto: true });
     expect(r.result.ok && r.result.stars).toBe(2);
     const l = finishTraining(startTraining(r.state, '체력'), { win: false, stars: 0, auto: false });
-    expect(l.result.ok && l.result.exp.체력).toBe(10);
+    expect(l.result.ok && l.result.exp.체력).toBe(TRAIN_EXP_LOSE); // 11-26: 10 → 12
     expect(l.result.ok && l.result.gains.체력).toBe(0);
   });
   it('대전투: 준장부터, 전쟁 중인 나라 도시, 이기면 점령', () => {
