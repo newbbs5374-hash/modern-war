@@ -77,6 +77,7 @@ describe('내정 확장', () => {
   });
   test('특구 지정과 바닷가 제한', () => {
     let s = fresh();
+    s = { ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e9 } } }; // 11-26: 새 판은 금고가 적음
     const cities = myCityIds(s);
     expect(cities.length).toBeGreaterThan(0);
     s = setZone(s, cities[0], 'rnd');

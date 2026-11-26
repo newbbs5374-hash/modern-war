@@ -33,7 +33,7 @@ import { TRAININGS } from '../data/catalog';
 import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { CAPTURED_DEFENSE, REAL_MS_PER_GAME_DAY, TEST_MODE } from './balance';
+import { CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, SPOILS_PER_VALUE, SPOILS_TREASURY_SHARE, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
 import { Rng } from './rng';
 import { talkTick, type Promise_, type Talk } from './talk';
 import type { GameState } from './state';
@@ -468,6 +468,8 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
         note(ns, `특기 "${perk}"을 얻었어요(${name} 별 3개 ${PERK_AT}번).`);
       }
     }
+    // 11-26: 별 하나마다 훈련 수당(봉급)
+    if (stars > 0) ns.player = { ...ns.player, salary: ns.player.salary + Math.round(TRAIN_PAY_PER_STAR * stars * tired * (featured ? 2 : 1)) };
     // 모병 훈련은 나라 병력도 조금 보탬
     if (name === '모병' && stars > 0) {
       const me = ns.player.countryId;
@@ -598,9 +600,10 @@ export function errandReward(s: GameState, a: Aide): { intel: number; salary: nu
   const fit = ERRAND_FIT[a.errand.kind].includes(a.specialty) ? 2 : 1;
   const r = s.player.rankIndex;
   const lv = (1 + 0.15 * (a.level - 1)) * loyaltyRewardMult(a);
-  if (a.errand.kind === '정보 수집') return { intel: Math.round(8 * fit * lv), salary: 0, merit: 0 };
-  if (a.errand.kind === '보급 조달') return { intel: 0, salary: Math.round((150 + r * 60) * fit * lv), merit: 0 };
-  return { intel: 0, salary: 0, merit: Math.round((20 + r * 12) * fit * lv) };
+  // 11-26 보상 늘리기: 모두 1.5배
+  if (a.errand.kind === '정보 수집') return { intel: Math.round(12 * fit * lv), salary: 0, merit: 0 };
+  if (a.errand.kind === '보급 조달') return { intel: 0, salary: Math.round((150 + r * 60) * 1.5 * fit * lv), merit: 0 };
+  return { intel: 0, salary: 0, merit: Math.round((20 + r * 12) * 1.5 * fit * lv) };
 }
 export function claimErrand(s: GameState, id: number): { state: GameState; text: string } {
   const a0 = s.officer.aides.find((x) => x.id === id);
@@ -870,7 +873,13 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
         작전: extra,
         대전투: extra,
       };
-      text = `${a.title} 성공!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''} 공훈 +${Math.round(merit)} · ${effect[a.kind]}`;
+      // 11-26: 이기면 작전 수당(봉급)과 국방예산도 받음
+      const payK = kindMult * a.difficulty * (outcome ? starMult : 1);
+      const payT = Math.round(MISSION_PAY_TREASURY * payK * (1 + 0.1 * r));
+      const payS = Math.round(MISSION_PAY_SALARY * payK * (1 + 0.1 * r));
+      ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + payT } };
+      ns.player = { ...ns.player, salary: ns.player.salary + payS };
+      text = `${a.title} 성공!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''} 공훈 +${Math.round(merit)} · ${effect[a.kind]} · 💰 수당 봉급 +${payS.toLocaleString('ko-KR')} · 국방예산 +${payT.toLocaleString('ko-KR')}`;
     } else {
       o.trust = Math.max(0, o.trust - (a.kind === '대전투' ? 5 : 2));
       if (a.kind === '대전투') {
@@ -896,7 +905,10 @@ function captureCity(ns: GameState, city: string) {
   w.owner[city] = me;
   w.defense[city] = CAPTURED_DEFENSE;
   syncFollowers(w);
-  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전)`, mine: true };
+  // 11-26: 전리품(도시 값어치 + 빼앗긴 나라 금고 일부)
+  const loot = Math.round(cityById(city).value * SPOILS_PER_VALUE + (ns.nations[prev]?.treasury ?? 0) * SPOILS_TREASURY_SHARE);
+  ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + loot }, ...(ns.nations[prev] ? { [prev]: { ...ns.nations[prev], treasury: Math.max(0, ns.nations[prev].treasury - (ns.nations[prev].treasury * SPOILS_TREASURY_SHARE)) } } : {}) };
+  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 국방예산 +${loot.toLocaleString('ko-KR')}`, mine: true };
   w.events.unshift(ev);
 }
 

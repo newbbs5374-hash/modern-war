@@ -14,7 +14,7 @@ import { relationOf } from './world';
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({
   ...s,
-  nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e7 } },
+  nations: { ...s.nations, [s.player.countryId]: { ...s.nations[s.player.countryId], treasury: 1e7 } },
   economy: { ...s.economy, stock: Object.fromEntries(Object.keys(s.economy.stock).map((k) => [k, 500])) as GameState['economy']['stock'] },
 });
 
@@ -202,7 +202,13 @@ describe('도시', () => {
     const pop0 = C.cityCiv(s, 'jp-0').pop;
     s = advance(s, 30 * H);
     expect(C.cityCiv(s, 'jp-0').pop).toBeGreaterThan(pop0);
-    expect(C.civBudgetMult(s)).toBeGreaterThan(1);
+    // 11-26 난이도로 전쟁이 잦아져서, 평화일 때 민심 효과는 전쟁을 모두 멈추고 봄
+    {
+      const calm = { ...s.world.pairs };
+      for (const k of Object.keys(calm)) if (k.includes('jp')) calm[k] = { ...calm[k], rel: '중립', weariness: 0 };
+      const peace = C.civAccrue({ ...s, world: { ...s.world, pairs: calm } }, 30 * H);
+      expect(C.civBudgetMult(peace)).toBeGreaterThan(1);
+    }
     // 모든 나라와 전쟁 + 큰 피로
     const pairs = { ...s.world.pairs };
     for (const k of Object.keys(pairs)) if (k.includes('jp')) pairs[k] = { ...pairs[k], rel: '전쟁', weariness: 300 };

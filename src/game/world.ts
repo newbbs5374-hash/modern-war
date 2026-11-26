@@ -45,6 +45,11 @@ import {
   TRUCE_BASE,
   TRUCE_START_TENSION,
   WEARINESS_SCALE,
+  AI_QUALITY_SHARE,
+  DEFEND_BOUNTY,
+  SPOILS_PER_VALUE,
+  SPOILS_TREASURY_SHARE,
+  aiStrength,
 } from './balance';
 import { Rng } from './rng';
 import { noteCapture } from './territory';
@@ -304,6 +309,18 @@ function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
   }
 }
 
+/**
+ * AI 판단 밖에서 바로 선전포고(11-26: 분쟁 지역·자원 전쟁, 연합 배신). 연합국이 끌려 들어오는 규칙도 같음.
+ * w의 관계·소식·씨앗을 바꿈.
+ */
+export function declareWar(w: WorldState, t: number, player: string, attacker: string, defender: string, why: string): void {
+  const p = w.pairs[pairKey(attacker, defender)];
+  if (!p || p.rel === '전쟁' || !isAlive(w, attacker) || !isAlive(w, defender)) return;
+  const ctx: Ctx = { w, nations: {}, rng: new Rng(w.seed), t, player, playerDefense: 1, playerHold: { rebel: 1, defense: 1 }, deployHelp: {} };
+  startWar(ctx, attacker, defender, why);
+  w.seed = ctx.rng.seed;
+}
+
 function diplomacy(ctx: Ctx) {
   const { w, rng } = ctx;
   for (const [key, p] of Object.entries(w.pairs)) {
@@ -363,7 +380,9 @@ function diplomacy(ctx: Ctx) {
 
 function power(ctx: Ctx, country: string, troops: number, defending: boolean, overseas: boolean): number {
   const c = countryById(country);
-  let pw = troops * (0.5 + c.military / 100) * ctx.rng.range(0.75, 1.25);
+  // 11-26 난이도: 한국을 뺀 AI 나라는 병사 한 명의 힘도 조금 셈(미국 > 중국 > 러시아)
+  const quality = 1 + (aiStrength(country, ctx.player) - 1) * AI_QUALITY_SHARE;
+  let pw = troops * (0.5 + c.military / 100) * quality * ctx.rng.range(0.75, 1.25);
   if (defending) {
     if (country === 'ru') pw *= 1.25; // 혹한 요새
     if (country === 'ua') pw *= 1.2; // 국토 방위 의지
@@ -439,7 +458,20 @@ function invasions(ctx: Ctx) {
       const prevOwner = w.owner[target];
       const won = ap > dp * CAPTURE_MARGIN;
       if (won) w.defense[target] -= SIEGE_DAMAGE * Math.min(2, ratio);
+      // 11-26: 내 나라가 막아 내면 버리고 간 장비를 노획(국방예산)
+      if (!won && def === ctx.player) {
+        const bounty = Math.round(commit * DEFEND_BOUNTY);
+        nd.treasury += bounty;
+        log(ctx, '전투', `${ga(nm(att))} ${eul(city.name)} 쳤지만 막아 냈어요! 🛡️ 노획 국방예산 +${bounty.toLocaleString('ko-KR')}`, att, def);
+      }
       if (won && w.defense[target] <= 0) {
+        if (att === ctx.player) {
+          // 11-26: 내 나라 군이 차지하면 전리품
+          const loot = Math.round(city.value * SPOILS_PER_VALUE + nd.treasury * SPOILS_TREASURY_SHARE);
+          nd.treasury = Math.max(0, nd.treasury - nd.treasury * SPOILS_TREASURY_SHARE);
+          na.treasury += loot;
+          log(ctx, '점령', `💰 ${city.name} 전리품 국방예산 +${loot.toLocaleString('ko-KR')}`, att, def);
+        }
         noteCapture(w, target, att);
         w.owner[target] = att;
         w.defense[target] = CAPTURED_DEFENSE;
@@ -447,7 +479,7 @@ function invasions(ctx: Ctx) {
         const verb = city.home === att ? '되찾았어요' : '점령했어요';
         log(ctx, '점령', `${ga(nm(att))} ${nm(prevOwner)}의 ${eul(city.name)} ${verb}.`, att, def);
         if (!isAlive(w, def)) log(ctx, '멸망', `${nm(def)}의 마지막 도시가 무너졌어요.`, def, att);
-      } else if (att === ctx.player || def === ctx.player) {
+      } else if (att === ctx.player || (def === ctx.player && won)) {
         const left = Math.max(0, Math.round(w.defense[target]));
         log(
           ctx,

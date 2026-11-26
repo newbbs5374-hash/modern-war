@@ -16,6 +16,7 @@ import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { deployOf } from '../game/deploy';
+import { MY_TARIFF_HOURS, MY_TARIFF_RATE, canDeal, canTariff, dealCost, doDeal, doTariff, tariffBetween } from '../game/pressure';
 import { scoutView } from '../game/spy';
 import { landOwners, provincesOf } from '../game/territory';
 import type { GameState } from '../game/state';
@@ -216,7 +217,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
               <p className="small muted">📌 {f.note}</p>
               {top && id !== me && (
                 <div className="buttons">
-                  {(['선전포고', '휴전 제안', '연합 제안'] as DiploAct[]).map((act) => {
+                  {(['선전포고', '휴전 제안', relationOf(w, me, id) === '연합' ? '연합 깨기' : '연합 제안'] as DiploAct[]).map((act) => {
                     const why = canDiplo(state, id, act);
                     return (
                       <button
@@ -226,6 +227,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                         disabled={!!why}
                         title={why ?? ''}
                         onClick={() => {
+                          if (act === '연합 깨기' && !window.confirm(`${c.name}와(과) 맺은 연합을 깰까요?\n(신뢰 −5 · 명성 −5)`)) return;
                           if (act === '선전포고' && !window.confirm(`${c.name}에 선전포고할까요?${relationOf(w, me, id) === '연합' ? '\n(연합을 깨요: 신뢰 −10 · 명성 −10)' : relationOf(w, me, id) === '휴전' ? '\n(휴전을 깨요: 신뢰 −5)' : ''}`)) return;
                           setMsg(
                             actions.applyWith((s) => {
@@ -235,11 +237,39 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                           );
                         }}
                       >
-                        {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : '🤝'} {act}
-                        <small>{why ?? (act === '선전포고' ? '' : `성공 ${Math.round(diploChance(state, id, act) * 100)}%`)}</small>
+                        {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : act === '연합 깨기' ? '💔' : '🤝'} {act}
+                        <small>{why ?? (act === '선전포고' ? '' : act === '연합 깨기' ? '언제든' : `성공 ${Math.round(diploChance(state, id, act) * 100)}%`)}</small>
                       </button>
                     );
                   })}
+                </div>
+              )}
+              {id !== me && (
+                <div className="cede-row">
+                  <small className="muted" style={{ flexBasis: '100%' }}>
+                    📦 관세 · {tariffBetween(state, id, me) ? `${c.name}가 우리에게 ${Math.round(tariffBetween(state, id, me)!.rate * 100)}% 매김(국방예산 줄어듦)` : '우리에게 매긴 관세 없음'}
+                    {tariffBetween(state, me, id) ? ` · 우리가 ${Math.round(tariffBetween(state, me, id)!.rate * 100)}% 매김` : ''}
+                  </small>
+                  <button
+                    className="danger"
+                    disabled={!!canTariff(state, id)}
+                    title={canTariff(state, id) ?? ''}
+                    onClick={() => setMsg(actions.applyWith((s) => { const r = doTariff(s, id); return { state: r.state, out: r.text }; }) ?? '')}
+                  >
+                    📦 {tariffBetween(state, id, me) ? '맞관세' : '관세 매기기'} {Math.round(MY_TARIFF_RATE * 100)}%
+                    <small>{canTariff(state, id) ?? `${MY_TARIFF_HOURS}시간 · 국방예산 + · 긴장 +`}</small>
+                  </button>
+                  {tariffBetween(state, id, me) && (
+                    <button
+                      className="primary"
+                      disabled={!!canDeal(state, id)}
+                      title={canDeal(state, id) ?? ''}
+                      onClick={() => setMsg(actions.applyWith((s) => { const r = doDeal(s, id); return { state: r.state, out: r.text }; }) ?? '')}
+                    >
+                      🤝 관세 협상
+                      <small>{canDeal(state, id) ?? `국방예산 ${dealCost(state, id).toLocaleString('ko-KR')}`}</small>
+                    </button>
+                  )}
                 </div>
               )}
               {top && id !== me && cedeCities(state, id).length > 0 && (

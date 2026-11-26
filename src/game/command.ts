@@ -6,7 +6,7 @@ import { RANKS } from '../data/ranks';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { onPlayerWar } from './civ';
-import { ga, isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
+import { ga, gwa, isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
 export const COMMAND_TOP = RANKS.length - 1;
 /** 지도자가 직접 외교(선전포고·휴전·연합)를 하는 등급: 존경받는 지도자부터 */
@@ -14,7 +14,7 @@ export const DIPLO_RANK = 6;
 export const DIPLO_COOLDOWN_HOURS = 12;
 const H = 3600e3;
 
-export type DiploAct = '선전포고' | '휴전 제안' | '연합 제안';
+export type DiploAct = '선전포고' | '휴전 제안' | '연합 제안' | '연합 깨기';
 
 export function diploReady(s: GameState): number {
   return s.officer.diploReadyMs ?? 0;
@@ -26,7 +26,7 @@ export function diploChance(s: GameState, id: string, act: DiploAct): number {
   const w = s.world;
   const p = w.pairs[pairKey(me, id)];
   const per = PERSONALITIES[w.personalities[id]];
-  if (act === '선전포고') return 1;
+  if (act === '선전포고' || act === '연합 깨기') return 1;
   if (act === '휴전 제안') {
     const tookFromThem = CITIES.filter((c) => c.home === id && w.owner[c.id] === me).length;
     return Math.min(0.95, 0.15 + p.weariness / 250 + tookFromThem * 0.12 + (isLosing(w, id) ? 0.3 : 0) + (per.peace - 1) * 0.3);
@@ -50,6 +50,8 @@ export function canDiplo(s: GameState, id: string, act: DiploAct): string | null
   const rel = relationOf(s.world, me, id);
   // 11-26 대장 요청(다 정복하고 싶음): 선전포고는 외교 대기 시간과 상관없이 바로, 연합국도 연합을 깨고 칠 수 있음
   if (act === '선전포고') return rel === '전쟁' ? '이미 전쟁 중이에요' : null;
+  // 11-26 대장 요청: 연합은 언제든(외교 대기 없이) 깰 수 있음
+  if (act === '연합 깨기') return rel === '연합' ? null : '연합이 아니에요';
   if (s.worldMs < diploReady(s)) return `외교 준비 중 · ${waitText(diploReady(s) - s.worldMs)} 남음`;
   if (act === '휴전 제안' && rel !== '전쟁') return '전쟁 중일 때만';
   if (act === '연합 제안' && (rel === '전쟁' || rel === '연합')) return rel === '연합' ? '이미 연합' : '먼저 휴전해야 해요';
@@ -79,6 +81,13 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
     p.tension = 0;
     p.weariness = 0;
     text = `${mine}, ${nm}에 선전포고했어요.${brokeTruce ? ' (휴전을 깨서 신뢰도 −5)' : ''}${promised ? ' (불가침 약속을 깨서 신뢰 −10 · 명성 −10)' : ''}${brokeAlly ? ' (연합을 깨서 신뢰 −10 · 명성 −10)' : ''}`;
+  } else if (act === '연합 깨기') {
+    p.rel = '중립';
+    p.tension = 40;
+    p.weariness = 0;
+    trust = -5;
+    fame = -5;
+    text = `${mine}, ${gwa(nm)} 맺은 연합을 깼어요. (신뢰 −5 · 명성 −5)`;
   } else if (act === '휴전 제안') {
     if (ok) {
       p.rel = '휴전';
@@ -99,7 +108,7 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
   const next: GameState = {
       ...s,
       world: { ...s.world, pairs, events: [ev, ...s.world.events] },
-      officer: { ...s.officer, fame: Math.max(0, s.officer.fame + fame), promises: act === '선전포고' ? (s.officer.promises ?? []).filter((x) => x.who !== id) : s.officer.promises, diploReadyMs: act === '선전포고' ? s.officer.diploReadyMs : s.worldMs + DIPLO_COOLDOWN_HOURS * H, trust: Math.max(0, Math.min(100, s.officer.trust + trust)) },
+      officer: { ...s.officer, fame: Math.max(0, s.officer.fame + fame), promises: act === '선전포고' ? (s.officer.promises ?? []).filter((x) => x.who !== id) : s.officer.promises, diploReadyMs: act === '선전포고' || act === '연합 깨기' ? s.officer.diploReadyMs : s.worldMs + DIPLO_COOLDOWN_HOURS * H, trust: Math.max(0, Math.min(100, s.officer.trust + trust)) },
   };
-  return { ok: ok || act === '선전포고', text, state: act === '선전포고' ? onPlayerWar(s, next, id) : next };
+  return { ok: ok || act === '선전포고' || act === '연합 깨기', text, state: act === '선전포고' ? onPlayerWar(s, next, id) : next };
 }

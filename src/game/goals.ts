@@ -55,8 +55,8 @@ export interface GoalsState {
   got: string[];
 }
 
-export const DAILY_RUBY = 10;
-export const DAILY_BONUS_RUBY = 20;
+export const DAILY_RUBY = 15; // 11-26 보상 늘리기: 10 → 15
+export const DAILY_BONUS_RUBY = 30;
 export const DAILY_BONUS_BOOSTS = 2;
 
 export const DAILY_POOL: Array<{ id: Count; name: string; icon: string; need: number }> = [

@@ -4,7 +4,7 @@ import { civBudgetMult } from './civ';
 import { firstTestGrant } from './testgrant';
 import { CITIES } from '../data/cities';
 import { COUNTRIES, startingRelation } from '../data/world';
-import { advance, catchUp, claimSalary, gameClock, newGame, pendingCap, salaryPerDay, setRank, skip } from './state';
+import { advance, budgetPerDay, catchUp, claimSalary, gameClock, newGame, pendingCap, salaryPerDay, setRank, skip, troopsPerDay } from './state';
 import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } from './save';
 
 const HOUR = 60 * 60 * 1000;
@@ -109,8 +109,26 @@ describe('저장/불러오기', () => {
     const s = firstTestGrant(advance(newGame('대장', 'ua', 0), HOUR));
     expect(importCode(exportCode(s))).toEqual(s);
   });
-  it('시험판: 옛 저장은 불러올 때 한 번만 자원을 받음', () => {
+  it('11-26 난이도: 한국을 뺀 나라는 더 강함(미국 > 중국 > 러시아)', () => {
+    const g = newGame('대장', 'kr', 0);
+    const t = (id: string) => g.nations[id].troops;
+    expect(t('us')).toBeGreaterThan(t('cn'));
+    expect(t('cn')).toBeGreaterThan(t('ru'));
+    expect(budgetPerDay(g, 'us')).toBeGreaterThan(budgetPerDay(g, 'cn'));
+    expect(budgetPerDay(g, 'cn')).toBeGreaterThan(budgetPerDay(g, 'ru'));
+    expect(troopsPerDay(g, 'cn')).toBeGreaterThan(troopsPerDay(g, 'ru'));
+  });
+  it('11-26 난이도: 새 판은 시험판 자원을 받지 않고 적게 시작', () => {
     const s = advance(newGame('대장', 'kr', 0), HOUR);
+    const back = importCode(exportCode(s))!;
+    expect(back.player.salary).toBe(s.player.salary);
+    expect(back.officer.testGrant).toBe(4);
+    expect(newGame('대장', 'kr', 0).nations.kr.treasury).toBeLessThan(2000);
+    expect(newGame('대장', 'kr', 0).officer.boosts).toBe(10);
+  });
+  it('시험판: 옛 저장(11-26 전)은 불러올 때 한 번만 자원을 받음', () => {
+    const s0 = advance(newGame('대장', 'kr', 0), HOUR);
+    const s = { ...s0, officer: { ...s0.officer, testGrant: undefined } };
     const once = importCode(exportCode(s))!;
     expect(once.player.salary).toBeGreaterThan(s.player.salary + 100_000);
     expect(once.officer.testGrant).toBe(4);
