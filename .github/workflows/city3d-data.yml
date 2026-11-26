@@ -1,9 +1,10 @@
 # 도시 3D 자료(OpenStreetMap) 만들기: scripts/city3d_cities.json 목록. 목록이 바뀌면 실행, Actions 탭에서 손으로도 실행.
+# 지역마다 따로 돌리고(동시에 4개), 끝나면 된 것만 모아 한 번에 커밋.
 name: city3d-data
 on:
   push:
     branches: ['claude/**']
-    paths: ['scripts/city3d_cities.json', 'scripts/city3d_build.py']
+    paths: ['scripts/city3d_cities.json', 'scripts/city3d_build.py', '.github/workflows/city3d-data.yml']
   workflow_dispatch:
     inputs:
       only:
@@ -12,18 +13,53 @@ on:
         default: ''
 permissions:
   contents: write
+concurrency:
+  group: city3d-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  gen:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    outputs:
+      regions: ${{ steps.r.outputs.regions }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+      - id: r
+        run: echo "regions=$(python3 scripts/city3d_build.py --regions '${{ github.event.inputs.only }}')" >> "$GITHUB_OUTPUT"
+  gen:
+    needs: plan
+    if: needs.plan.outputs.regions != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        region: ${{ fromJson(needs.plan.outputs.regions) }}
+    steps:
+      - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-      - run: python scripts/city3d_build.py "${{ github.event.inputs.only }}"
-      - run: ls -la public/city3d && du -sh public/city3d
+      - run: python3 scripts/city3d_build.py "${{ github.event.inputs.only }}" "${{ matrix.region }}"
+      - id: name
+        run: echo "n=$(echo '${{ matrix.region }}' | tr '/' '_')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: city3d-${{ steps.name.outputs.n }}
+          path: public/city3d/*.json
+          if-no-files-found: ignore
+  commit:
+    needs: gen
+    if: always() && needs.gen.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+          pattern: city3d-*
       - run: |
+          mkdir -p public/city3d
+          find art -name '*.json' -exec cp {} public/city3d/ \;
+          ls -la public/city3d && du -sh public/city3d
           git config user.name "github-actions[bot]"
           git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
           git add public/city3d/*.json
