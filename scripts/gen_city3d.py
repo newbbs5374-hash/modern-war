@@ -7,9 +7,12 @@ Overpass에서 건물·큰길·물·공원을 받아 작은 JSON(public/city3d/s
 import json, math, os, sys, time, urllib.parse, urllib.request
 
 C_LON, C_LAT = 126.978, 37.5665
-BBOX = (37.49, 126.90, 37.60, 127.08)  # 남, 서, 북, 동
-NX, NY = 5, 4
 MAX_B = 16000
+OUT = 'seoul'
+NAME = '서울'
+# 다른 도시: python scripts/gen_city3d.py <geojsonseq> <파일이름> <경도> <위도> <최대 건물 수> <이름>
+if len(sys.argv) > 2:
+    OUT, C_LON, C_LAT, MAX_B, NAME = sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), int(sys.argv[5]), sys.argv[6]
 SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter']
 MX = 111320 * math.cos(math.radians(C_LAT))
 MY = 110540
@@ -163,7 +166,7 @@ def main():
     items = items[:MAX_B]
     rd = lambda p: [v for pt in p for v in (round(pt[0]), round(pt[1]))]
     out = {
-        'name': '서울',
+        'name': NAME,
         'center': [C_LON, C_LAT],
         'credit': '© OpenStreetMap contributors (ODbL)',
         'b': [[round(h), k] + rd(r) for (r, h, k, a) in items],
@@ -172,9 +175,9 @@ def main():
         'p': [rd(r) for r in parks],
     }
     os.makedirs('public/city3d', exist_ok=True)
-    with open('public/city3d/seoul.json', 'w') as f:
+    with open(f'public/city3d/{OUT}.json', 'w') as f:
         json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
-    print('buildings', len(blds), '->', len(out['b']), 'roads', len(out['r']), 'water', len(out['w']), 'parks', len(out['p']), file=sys.stderr)
+    print(OUT, 'buildings', len(blds), '->', len(out['b']), 'roads', len(out['r']), 'water', len(out['w']), 'parks', len(out['p']), file=sys.stderr)
 
 
 main()
