@@ -7,7 +7,7 @@ import { pickMini } from './minigames';
 import type { FKind } from './field';
 
 export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini' | 'b3d';
-export type Source = 'mission' | 'practice' | 'training';
+export type Source = 'mission' | 'practice' | 'training' | 'occupy';
 
 export interface BattleSpec {
   frame: Frame;
@@ -41,6 +41,13 @@ export interface BattlePlan {
   training?: string;
   /** 단계 사이 이야기(대전투) */
   intro?: string;
+  /** 점령지 관리 임무(11-26): 도시 · 임무 */
+  occupy?: { city: string; task: string };
+}
+
+/** 점령지 관리 임무 = 미니게임 한 판 */
+export function occupyPlan(city: string, cityName: string, task: string, taskName: string, mini: string, seed: number): BattlePlan {
+  return { title: `${cityName} · ${taskName}`, source: 'occupy', mainIdx: 0, occupy: { city, task }, stages: [{ frame: 'mini', variant: mini, title: `${cityName} · ${taskName}`, difficulty: 1, seed }] };
 }
 
 export const FRAME_NAMES: Record<Frame, string> = {

@@ -2,6 +2,7 @@
 import { fieldRoster } from '../../game/economy';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
+import { applyOccTask, type OccTask } from '../../game/annex';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
 import { Card } from '../common';
@@ -137,7 +138,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
 
   const leave = () => {
     setPendingPlan(null);
-    go(plan.source === 'mission' ? 'ops' : 'training');
+    go(plan.source === 'mission' ? 'ops' : plan.source === 'occupy' ? 'home' : 'training');
   };
   const nextStage = () => {
     if (!current) return;
@@ -152,7 +153,14 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   };
   const claim = () => {
     if (!final) return;
-    if (plan.source === 'training') {
+    if (plan.source === 'occupy' && plan.occupy) {
+      const { city, task } = plan.occupy;
+      const text = actions.applyWith((s) => {
+        const r = applyOccTask(s, city, task as OccTask, final.win ? final.stars : 0);
+        return { state: r.state, out: r.text };
+      });
+      setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
+    } else if (plan.source === 'training') {
       const res = actions.applyWith((s) => {
         const r = finishTraining(s, { win: final.win, stars: final.stars, auto: allAuto });
         return { state: r.state, out: r.result };
@@ -261,8 +269,8 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
                   결과 받기
                 </button>
               ) : (
-                <button className="primary" onClick={() => go(plan.source === 'training' ? 'training' : 'ops')}>
-                  {plan.source === 'training' ? '훈련 화면으로' : '작전 화면으로'}
+                <button className="primary" onClick={() => go(plan.source === 'training' ? 'training' : plan.source === 'occupy' ? 'home' : 'ops')}>
+                  {plan.source === 'training' ? '훈련 화면으로' : plan.source === 'occupy' ? '본부로' : '작전 화면으로'}
                 </button>
               )}
             </div>

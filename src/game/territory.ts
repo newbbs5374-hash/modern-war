@@ -103,6 +103,9 @@ export function startCity(w: WorldState, att: string, target: string): string | 
 
 /** 도시를 차지할 때 부름: 출발 도시를 적어 둠(되찾으면 지움) */
 export function noteCapture(w: WorldState, target: string, att: string): void {
+  // 바로 앞 주인(해방 판단용)
+  const prev = w.owner[target];
+  if (prev && prev !== att) w.from = { ...(w.from ?? {}), [target]: prev };
   const via = { ...(w.via ?? {}) };
   const home = CITIES.find((c) => c.id === target)?.home;
   if (att === home) delete via[target];
