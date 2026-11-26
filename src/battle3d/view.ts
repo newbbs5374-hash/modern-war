@@ -14,7 +14,7 @@ import HTML from './battle3d.html?raw';
 
 const GLB_BASE = `${import.meta.env.BASE_URL}battle3d/glb/`;
 
-export interface Battle3DResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; carry?: unknown; /** 11-26 훈련 점수 계산용 */ sim?: unknown }
+export interface Battle3DResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; /** 11-26 쓰러진 우리 부대(병과 이름별, 미사일·자폭 포함) */ dead?: Record<string, number>; carry?: unknown; /** 11-26 훈련 점수 계산용 */ sim?: unknown }
 export interface Battle3DOptions {
   onEnd?(r: Battle3DResult): void; onQuit?(): void; endLabel?: string;
   /** 공성전: 이 막의 전장 · 넘어온 부대 · 예산 · 시작 지휘력 · 적 체력 배수 · 위에 보일 막 이름 */
@@ -846,7 +846,8 @@ const S=createSim({
       const mine=S.units.filter(u=>u.side==="us"&&!u.d.missile&&u.kind!=="cvjet"&&!u.d.ally), lost=mine.filter(u=>!u.alive).length;
       if(opts.endText)$("#endp").textContent=opts.endText(S,win,timeout);else $("#endp").textContent=winText(win,timeout)+` 걸린 시간 ${fmt(S.simT)} · 아군 손실 ${lost}/${mine.length}`;
       $("#end").hidden=false;
-      lastResult={win,timeout,t:S.simT,lost,total:mine.length,carried:mine.filter(u=>u.carried).length,carry:carryFrom(S,opts.naval||0),sim:S};
+      const dead={};for(const u of S.units)if(u.side==="us"&&!u.alive&&u.kind!=="cvjet"&&u.kind!=="hq"&&!u.d.ally)dead[u.d.name]=(dead[u.d.name]||0)+1;
+      lastResult={win,timeout,t:S.simT,lost,total:mine.length,dead,carried:mine.filter(u=>u.carried).length,carry:carryFrom(S,opts.naval||0),sim:S};
     },win?1600:900);
   },
 });

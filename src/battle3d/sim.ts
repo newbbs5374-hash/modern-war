@@ -669,12 +669,12 @@ export function runHeadless(mine = defaultDeploy(), maxSteps = 4000): Sim {
 }
 
 /** 전투 결과 → 별·글(임무 결과로 씀). 손실 1/4 이하 + 시간 60% 안 = ★3, 손실 절반 이하 = ★2 */
-export function outcome(r: { win: boolean; timeout: boolean; t: number; lost: number; total: number }): { win: boolean; stars: number; text: string } {
+export function outcome(r: { win: boolean; timeout: boolean; t: number; lost: number; total: number; dead?: Record<string, number> }): { win: boolean; stars: number; text: string; dead?: Record<string, number> } {
   const loss = r.total ? r.lost / r.total : 1;
   const stars = r.win ? (loss <= 0.25 && r.t <= ST.timeLimit * 0.6 ? 3 : loss <= 0.5 ? 2 : 1) : 0;
   const m = Math.floor(r.t / 60), s = Math.floor(r.t % 60);
   const head = winText(r.win, r.timeout);
-  return { win: r.win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${r.lost}/${r.total}` };
+  return { win: r.win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${r.lost}/${r.total}`, dead: r.dead };
 }
 /** 이기고 진 까닭(이기는 조건마다) */
 export function winText(win: boolean, timeout: boolean): string {

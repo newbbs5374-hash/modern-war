@@ -3,6 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
 import { settleClash } from '../../game/deploy';
+import { loseUnits } from '../../game/losses';
 import { routeTo } from '../nav';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
@@ -23,6 +24,8 @@ export interface Outcome {
   text: string;
   /** 11-26 3D 훈련: 쓴 병과 · 퍼즐 별 · 주간 합동 */
   drill?: DrillInfo;
+  /** 11-26 3D 전투에서 쓰러진 우리 부대(병과 이름별) → 가진 부대에서 실제로 빠짐 */
+  dead?: Record<string, number>;
 }
 
 export interface FrameProps {
@@ -150,17 +153,26 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   };
   const claim = () => {
     if (!final) return;
+    // 11-26 3D 전투에서 쓰러진 우리 부대(모든 판 합). 훈련·연습은 모의전이라 안 빠짐
+    const dead: Record<string, number> = {};
+    for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) dead[k] = (dead[k] ?? 0) + v;
+    const hasDead = results.some((r) => r.dead);
+    const lose = (t: string | null | undefined) => {
+      if (plan.source === 'training' || plan.source === 'practice' || plan.source === 'deploy') return t ?? '';
+      const lt = actions.applyWith((s) => { const r = loseUnits(s, dead); return { state: r.state, out: r.text }; });
+      return [t, lt].filter(Boolean).join(' · ');
+    };
     if (plan.source === 'occupy' && plan.occupy) {
       const { city, task } = plan.occupy;
       const text = actions.applyWith((s) => {
         const r = applyOccTask(s, city, task as OccTask, final.win ? final.stars : 0);
         return { state: r.state, out: r.text };
       });
-      setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
+      setClaimed(`${lose(text)}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
     } else if (plan.source === 'deploy' && plan.deploy) {
       const dep = plan.deploy.dep;
       const text = actions.applyWith((s) => {
-        const r = settleClash(s, dep, final.win, allAuto ? Math.min(2, final.stars) : final.stars, '직접');
+        const r = settleClash(s, dep, final.win, allAuto ? Math.min(2, final.stars) : final.stars, '직접', hasDead ? dead : undefined);
         return { state: r.state, out: r.text };
       });
       setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
@@ -180,7 +192,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
         const r = claimMission(s, final);
         return { state: r.state, out: r.text ?? '' };
       });
-      setClaimed(text ?? '');
+      setClaimed(lose(text));
     }
     setPendingPlan(null);
   };
