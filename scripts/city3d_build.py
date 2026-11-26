@@ -32,24 +32,32 @@ for region, cs in by.items():
     url = f'https://download.geofabrik.de/{region}-latest.osm.pbf'
     print('받기', url, flush=True)
     # 느리거나 멈추면 끊고(1분 동안 초당 50KB 아래) 프랑스 거울 서버로 한 번 더
-    cur = ['curl', '-sSfL', '--retry', '3', '--connect-timeout', '30', '--max-time', '2400', '-y', '60', '-Y', '50000', '-o', pbf]
+    cur = ['curl', '-sSfL', '--retry', '5', '--retry-all-errors', '--retry-delay', '20', '--connect-timeout', '30', '--max-time', '2400', '-y', '60', '-Y', '50000', '-o', pbf]
     if subprocess.call(cur + [url]) != 0 and subprocess.call(cur + [f"https://download.openstreetmap.fr/extracts/{region.replace('-', '_')}-latest.osm.pbf"]) != 0:
         print('받기 실패', region, flush=True)
         fail += [c['file'] for c in cs]
         continue
-    ext = {'directory': 'work', 'extracts': []}
-    for c in cs:
-        dlat = c['half'] / 110.54
-        dlon = c['half'] / (111.32 * math.cos(math.radians(c['lat'])))
-        ext['extracts'].append({'output': f"{c['file']}.osm.pbf", 'bbox': [c['lon'] - dlon, c['lat'] - dlat, c['lon'] + dlon, c['lat'] + dlat]})
-    with open('work/ext.json', 'w') as f:
-        json.dump(ext, f)
-    if subprocess.call(['osmium', 'extract', '-c', 'work/ext.json', '--strategy', 'smart', '--overwrite', pbf]) != 0:
-        fail += [c['file'] for c in cs]
-        os.remove(pbf)
-        continue
+    # 한꺼번에 너무 많이 자르면 메모리가 모자라 꺼짐(한국 12곳) → 3곳씩
+    bad = False
+    for i in range(0, len(cs), 3):
+        ext = {'directory': 'work', 'extracts': []}
+        for c in cs[i:i + 3]:
+            dlat = c['half'] / 110.54
+            dlon = c['half'] / (111.32 * math.cos(math.radians(c['lat'])))
+            ext['extracts'].append({'output': f"{c['file']}.osm.pbf", 'bbox': [c['lon'] - dlon, c['lat'] - dlat, c['lon'] + dlon, c['lat'] + dlat]})
+        with open('work/ext.json', 'w') as f:
+            json.dump(ext, f)
+        print('자르기', [c['file'] for c in cs[i:i + 3]], flush=True)
+        if subprocess.call(['osmium', 'extract', '-c', 'work/ext.json', '--strategy', 'smart', '--overwrite', pbf]) != 0:
+            bad = True
+    if bad:
+        print('자르기 실패', region, flush=True)
     for c in cs:
         f = c['file']
+        if not os.path.exists(f'work/{f}.osm.pbf'):
+            fail.append(f)
+            continue
+        print('만들기', f, flush=True)
         ok = subprocess.call(['osmium', 'tags-filter', f'work/{f}.osm.pbf', 'nwr/building', 'w/highway=motorway,trunk,primary,secondary', 'nwr/natural=water,wood', 'w/waterway=riverbank', 'nwr/leisure=park', 'nwr/landuse=grass,forest', '-o', f'work/{f}.f.pbf', '--overwrite']) == 0
         ok = ok and subprocess.call(['osmium', 'export', '-f', 'geojsonseq', f'work/{f}.f.pbf', '-o', f'work/{f}.geojsonseq', '--overwrite']) == 0
         ok = ok and subprocess.call([sys.executable, 'scripts/gen_city3d.py', f'work/{f}.geojsonseq', f, str(c['lon']), str(c['lat']), str(c['max']), c['name']]) == 0
