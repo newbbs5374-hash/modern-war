@@ -6,7 +6,7 @@ import type { Weather } from './grid';
 import { pickMini } from './minigames';
 import type { FKind } from './field';
 
-export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini';
+export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini' | 'b3d';
 export type Source = 'mission' | 'practice' | 'training';
 
 export interface BattleSpec {
@@ -53,6 +53,7 @@ export const FRAME_NAMES: Record<Frame, string> = {
   puzzle: '⑤ 퍼즐·카드',
   field: '⑥ 2.5D 전장',
   mini: '🎮 훈련 미니게임',
+  b3d: '⑦ 3D 전투',
 };
 
 type Pick = { frame: Frame; variant: string; label?: string };
@@ -208,6 +209,7 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 
 /** 연습장 목록(보상 없음) */
 export const PRACTICE: Array<{ label: string } & Pick> = [
+  { label: '3D 전투(철벽 작전 · 육해공)', frame: 'b3d', variant: 'coast' },
   { label: '2.5D 전장(병과 8개 골라서)', frame: 'field', variant: 'oblique' },
   { label: '위성 지도 전투(위에서 본 예전 방식)', frame: 'field', variant: 'capture' },
   { label: '3D 전장(시험)', frame: 'field', variant: '3d' },
