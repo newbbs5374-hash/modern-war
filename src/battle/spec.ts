@@ -141,7 +141,7 @@ export const GRAND_STAGES: Pick[] = [
 ];
 export const GRAND_MAIN = 3;
 /** 지도 위 전투로 하는 대전투(한 판, 안에서 큰 싸움은 직접 지휘로 기존 틀) */
-export const FIELD_PICK: Pick = { frame: 'field', variant: 'oblique', label: '2.5D 전장' };
+export const FIELD_PICK: Pick = { frame: 'b3d', variant: 'siege', label: '3막 공성전' };
 
 /** 승급 심사 작전(계급 순서대로) */
 const EXAM_BATTLE: Pick[] = [
@@ -188,7 +188,7 @@ export function planForMission(a: ActiveMission, rank: number, officerSeed: numb
     title: a.title,
     source: 'mission',
     mainIdx,
-    intro: a.kind === '대전투' && a.field ? '도시 주변 육각 지도에서 부대를 움직여요. 적 사령부를 무너뜨리고 보병·전차로 도심을 차지하면 점령이에요. 부관에게 맡길 수도 있어요(별 최대 2개).' : a.kind === '대전투' ? '단계마다 이기면 다음 단계가 쉬워져요. 시가지 돌입은 꼭 이겨야 하고, 다섯 판 중 세 판 이상 이기면 도시를 차지해요. 어떤 단계든 부관에게 맡길 수 있어요(별 최대 2개).' : undefined,
+    intro: a.kind === '대전투' && a.field ? '3막 공성전이에요. 1막 외곽(육해공)에서 지휘소를 부수고, 2막 시가전에서 거점 4곳을 차지하고, 3막 도심에서 지휘소와 최후 저항을 꺾으면 점령이에요. 살아남은 부대는 다친 그대로 다음 막에 이어져요. 부관에게 맡길 수도 있어요(별 최대 2개).' : a.kind === '대전투' ? '단계마다 이기면 다음 단계가 쉬워져요. 시가지 돌입은 꼭 이겨야 하고, 다섯 판 중 세 판 이상 이기면 도시를 차지해요. 어떤 단계든 부관에게 맡길 수 있어요(별 최대 2개).' : undefined,
     stages: picks.map((p, i) => ({ ...p, title: p.label ? `${i + 1}. ${p.label}` : a.title, difficulty: a.difficulty, seed: seed + i * 131, weather, enemy, city: a.city, defense })),
   };
 }
@@ -209,6 +209,7 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
 
 /** 연습장 목록(보상 없음) */
 export const PRACTICE: Array<{ label: string } & Pick> = [
+  { label: '3막 공성전(외곽 → 시가전 → 도심)', frame: 'b3d', variant: 'siege' },
   { label: '3D 전투(철벽 작전 · 육해공)', frame: 'b3d', variant: 'coast' },
   { label: '2.5D 전장(병과 8개 골라서)', frame: 'field', variant: 'oblique' },
   { label: '위성 지도 전투(위에서 본 예전 방식)', frame: 'field', variant: 'capture' },
