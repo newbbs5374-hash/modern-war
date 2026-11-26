@@ -5,6 +5,7 @@ import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
 import { pressureTick, tariffMult, type PressureState } from './pressure';
+import { surrenderTick, vassalMult, type VassalState } from './surrender';
 import { applyOrigin, type OriginId } from './origin';
 import type { LeaderLook } from '../data/looks';
 import { START_SANCTIONS } from '../data/conflicts';
@@ -144,6 +145,8 @@ export interface GameState {
   dom?: DomState;
   /** 관세(11-26 난이도). 없으면 관세 없음 */
   pressure?: PressureState;
+  /** 속국 항복(11-26). 없으면 속국 없음 */
+  vassal?: VassalState;
 }
 
 export interface NewGameOptions {
@@ -209,7 +212,7 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * tariffMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -241,6 +244,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
     ['💰 기획재정부', x(cabBudget(s))],
     ['📜 법', x(1 + lawEff(s, 'budget'))],
     ['📦 관세(맞은 것·매긴 것)', x(tariffMult(s, me))],
+    ['🏳️ 속국 공물(바침·받음)', x(vassalMult(s, me))],
     ...(ordersBudget(s) !== 1 ? [['🛡️ 방어 태세(미리 명령)', x(ordersBudget(s))] as [string, string]] : []),
     ['무역 계약(시간당)', `${Math.round(contractMoneyPerHour(s)).toLocaleString('ko-KR')}`],
   ];
@@ -306,7 +310,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = pressureTick(annexTick(deployTick(civTick(cur, pairsBefore))));
+    cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
     cur = propTick(domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))));
     world = cur.world;
   }

@@ -6,6 +6,7 @@ import { RANKS } from '../data/ranks';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { onPlayerWar } from './civ';
+import { endVassalPair, isVassalPair, lordOf } from './surrender';
 import { ga, gwa, isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
 export const COMMAND_TOP = RANKS.length - 1;
@@ -51,7 +52,7 @@ export function canDiplo(s: GameState, id: string, act: DiploAct): string | null
   // 11-26 대장 요청(다 정복하고 싶음): 선전포고는 외교 대기 시간과 상관없이 바로, 연합국도 연합을 깨고 칠 수 있음
   if (act === '선전포고') return rel === '전쟁' ? '이미 전쟁 중이에요' : null;
   // 11-26 대장 요청: 연합은 언제든(외교 대기 없이) 깰 수 있음
-  if (act === '연합 깨기') return rel === '연합' ? null : '연합이 아니에요';
+  if (act === '연합 깨기') return rel !== '연합' ? '연합이 아니에요' : isVassalPair(s, me, id) ? (lordOf(s, me) === id ? '속국은 선전포고(독립 전쟁)로만 벗어나요' : '속국은 선전포고로만 다시 쳐요') : null;
   if (s.worldMs < diploReady(s)) return `외교 준비 중 · ${waitText(diploReady(s) - s.worldMs)} 남음`;
   if (act === '휴전 제안' && rel !== '전쟁') return '전쟁 중일 때만';
   if (act === '연합 제안' && (rel === '전쟁' || rel === '연합')) return rel === '연합' ? '이미 연합' : '먼저 휴전해야 해요';
@@ -69,18 +70,20 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
   const nm = countryById(id).name;
   const mine = countryById(me).name;
   let text: string;
+  let text0 = '';
   let trust = 0;
   let fame = 0;
   const promised = (s.officer.promises ?? []).some((x) => x.who === id && x.untilMs > s.worldMs);
   if (act === '선전포고') {
-    const brokeAlly = p.rel === '연합';
+    const brokeAlly = p.rel === '연합' && lordOf(s, me) !== id; // 독립 전쟁은 배신이 아님
     trust = (p.rel === '휴전' ? -5 : 0) + (promised ? -10 : 0) + (brokeAlly ? -10 : 0);
     fame = (promised ? -10 : 0) + (brokeAlly ? -10 : 0);
     const brokeTruce = p.rel === '휴전';
+    if (lordOf(s, me) === id) text0 = ' 🗽 독립 전쟁! 속국에서 벗어나요.';
     p.rel = '전쟁';
     p.tension = 0;
     p.weariness = 0;
-    text = `${mine}, ${nm}에 선전포고했어요.${brokeTruce ? ' (휴전을 깨서 신뢰도 −5)' : ''}${promised ? ' (불가침 약속을 깨서 신뢰 −10 · 명성 −10)' : ''}${brokeAlly ? ' (연합을 깨서 신뢰 −10 · 명성 −10)' : ''}`;
+    text = `${mine}, ${nm}에 선전포고했어요.${text0}${brokeTruce ? ' (휴전을 깨서 신뢰도 −5)' : ''}${promised ? ' (불가침 약속을 깨서 신뢰 −10 · 명성 −10)' : ''}${brokeAlly ? ' (연합을 깨서 신뢰 −10 · 명성 −10)' : ''}`;
   } else if (act === '연합 깨기') {
     p.rel = '중립';
     p.tension = 40;
@@ -110,5 +113,5 @@ export function doDiplo(s: GameState, id: string, act: DiploAct): { state: GameS
       world: { ...s.world, pairs, events: [ev, ...s.world.events] },
       officer: { ...s.officer, fame: Math.max(0, s.officer.fame + fame), promises: act === '선전포고' ? (s.officer.promises ?? []).filter((x) => x.who !== id) : s.officer.promises, diploReadyMs: act === '선전포고' || act === '연합 깨기' ? s.officer.diploReadyMs : s.worldMs + DIPLO_COOLDOWN_HOURS * H, trust: Math.max(0, Math.min(100, s.officer.trust + trust)) },
   };
-  return { ok: ok || act === '선전포고' || act === '연합 깨기', text, state: act === '선전포고' ? onPlayerWar(s, next, id) : next };
+  return { ok: ok || act === '선전포고' || act === '연합 깨기', text, state: act === '선전포고' ? endVassalPair(onPlayerWar(s, next, id), me, id) : next };
 }

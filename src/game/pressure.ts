@@ -11,6 +11,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { aiStrength } from './balance';
 import { islandLeader } from './civ';
 import { Rng } from './rng';
+import { isVassalPair } from './surrender';
 import type { GameState } from './state';
 import { declareWar, eul, ga, gwa, isAlive, isRival, pairKey, relationOf, sameBloc, type WorldState } from './world';
 
@@ -166,7 +167,7 @@ export function pressureTick(s: GameState): GameState {
   for (const [key, p] of Object.entries(w.pairs)) {
     if (p.rel !== '연합') continue;
     const [x, y] = key.split('|');
-    if (!isAlive(w, x) || !isAlive(w, y)) continue;
+    if (!isAlive(w, x) || !isAlive(w, y) || isVassalPair(s, x, y)) continue; // 속국은 독립 전쟁으로만(surrender.ts)
     // 깨는 쪽은 AI(둘 다 AI면 더 공격적인 쪽)
     const cands = [x, y].filter((id) => id !== me);
     if (!cands.length) continue;
