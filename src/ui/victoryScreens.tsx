@@ -81,7 +81,7 @@ function PeacePart({ state, onPropose }: { state: ScreenProps['state']; onPropos
         <p className="result">☮️ 헌장을 지키는 중! {timeLeft(left)} 더 평화를 지키면 평화 승리예요.</p>
       ) : (
         <button className="wide" style={{ marginTop: 4 }} disabled={!!why} title={why ?? ''} onClick={onPropose}>
-          ☮️ 세계 평화 헌장 제안 (국방예산 {PEACE_COST.toLocaleString('ko-KR')}){why ? ` · ${why}` : ''}
+          ☮️ 세계 평화 헌장 제안 (나라 예산 {PEACE_COST.toLocaleString('ko-KR')}){why ? ` · ${why}` : ''}
         </button>
       )}
       {last && <p className="muted">{last}</p>}

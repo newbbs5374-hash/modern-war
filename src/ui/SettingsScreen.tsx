@@ -117,7 +117,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
 
       <Card icon="🧪" title="시험 도구" right={<small className="muted">정식판에서는 빠짐</small>}>
         <div className="tiles c4">
-          <Tile icon="🎁" label="자원 넉넉히" sub="예산·자원·가속권" tone="gold" onClick={() => (actions.apply(grantTestResources), say('봉급·국방예산·병력·자원·가속권을 넉넉히 넣었어요.'))} />
+          <Tile icon="🎁" label="자원 넉넉히" sub="예산·자원·가속권" tone="gold" onClick={() => (actions.apply(grantTestResources), say('봉급·나라 예산·병력·자원·가속권을 넉넉히 넣었어요.'))} />
           <Tile icon="⏩" label="시간·빠르기" sub={speed === 1 ? '보통' : `×${speed}`} onClick={() => setPop('time')} />
           <Tile icon="🛠️" label="운영 시험" sub="연구·호칭·사건" onClick={() => setPop('ops')} />
           <Tile icon="🖼️" label="그림 칸" sub="사진·아이콘" onClick={() => setPop('art')} />

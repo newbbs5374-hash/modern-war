@@ -1,4 +1,4 @@
-// 첩보·특수 작전: 정보 점수와 국방예산을 써서 다른 나라에 공작원을 보냄.
+// 첩보·특수 작전: 정보 점수와 나라 예산을 써서 다른 나라에 공작원을 보냄.
 // 작전마다 걸리는 시간이 있고, 끝나면 성공/실패가 정해짐. 실패하면 들킨 나라 호감↓·긴장↑.
 // 공작 팀 수 = 1 + 지도자 등급 4마다 1(최대 3). 성공률 = 기본 + (은밀+정보) 스탯.
 import { originEff } from './origin';
@@ -33,11 +33,11 @@ export interface SpyOpDef {
 }
 
 export const SPY_OPS: SpyOpDef[] = [
-  { id: 'scout', name: '위성 정찰', icon: '🛰️', text: '그 나라 병력·국방예산을 24시간 동안 봐요(늘 성공). 다른 작전 성공률 +5%.', intel: 5, money: 300, hours: 1, base: 1, caught: { favor: 0, tension: 0 }, rank: 0 },
+  { id: 'scout', name: '위성 정찰', icon: '🛰️', text: '그 나라 병력·나라 예산을 24시간 동안 봐요(늘 성공). 다른 작전 성공률 +5%.', intel: 5, money: 300, hours: 1, base: 1, caught: { favor: 0, tension: 0 }, rank: 0 },
   { id: 'secret', name: '지도자 비밀 캐기', icon: '📂', text: '약점을 잡아 조용히 압박해요. 성공하면 우리와 긴장 -20, 불만 장부 절반으로.', intel: 15, money: 800, hours: 3, base: 0.6, caught: { favor: -15, tension: 10 }, rank: 1 },
   { id: 'steal', name: '연구 자료 훔치기', icon: '💾', text: '해킹으로 연구 자료를 빼 와요. 성공하면 군사·사회 연구 각각 6시간치.', intel: 20, money: 1200, hours: 4, base: 0.55, caught: { favor: -15, tension: 10 }, rank: 2 },
   { id: 'rumor', name: '여론 공작', icon: '📢', text: '그 나라와 맞수 사이에 소문을 퍼뜨려요. 성공하면 두 나라 긴장 +15(우리에게서 눈을 돌림).', intel: 15, money: 1000, hours: 3, base: 0.6, caught: { favor: -12, tension: 8 }, rank: 2 },
-  { id: 'sabotage', name: '군수공장 사보타주', icon: '💣', text: '공장을 멈춰요. 성공하면 그 나라 국방예산 -12%, 병력 -3%.', intel: 25, money: 1500, hours: 5, base: 0.5, caught: { favor: -25, tension: 20 }, rank: 3 },
+  { id: 'sabotage', name: '군수공장 사보타주', icon: '💣', text: '공장을 멈춰요. 성공하면 그 나라 예산 -12%, 병력 -3%.', intel: 25, money: 1500, hours: 5, base: 0.5, caught: { favor: -25, tension: 20 }, rank: 3 },
   { id: 'coup', name: '반란 지원', icon: '🔥', text: '그 나라 점령지 반군을 몰래 도와요. 성공하면 그 나라가 가진 남의 도시 하나 방어가 크게 떨어짐.', intel: 35, money: 2500, hours: 8, base: 0.4, caught: { favor: -30, tension: 25 }, rank: 5 },
 ];
 export const spyOpById = (id: SpyOpId) => SPY_OPS.find((x) => x.id === id)!;
@@ -84,7 +84,7 @@ export function canSpy(s: GameState, op: SpyOpId, target: string): string | null
   if (sp.active.length >= spyTeams(s)) return `공작 팀 ${spyTeams(s)}개가 모두 나가 있어요`;
   if (sp.active.some((m) => m.target === target && m.op === op)) return '이미 같은 작전 중이에요';
   if (s.officer.intel < d.intel) return `정보 점수 ${d.intel} 필요`;
-  if (s.nations[me].treasury < d.money) return `국방예산 ${d.money.toLocaleString('ko-KR')} 필요`;
+  if (s.nations[me].treasury < d.money) return `나라 예산 ${d.money.toLocaleString('ko-KR')} 필요`;
   if (op === 'coup' && !coupCity(s, target)) return '그 나라는 남의 도시를 가지고 있지 않아요';
   return null;
 }

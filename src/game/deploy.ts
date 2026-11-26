@@ -1,6 +1,6 @@
 // 해외 파병(11/24 대장 요청 "해외파병도 외교에 구현"). 외교 → 파병 탭.
 // 내가 만든 부대를 연합국·친한 나라로 보냄: 도착하면 그 나라 호감↑, 그 나라 도시 방어↑(전투력만큼, 최대 +40%).
-// 그 나라가 전쟁 중이면 가끔 부대를 잃고 명성을 얻음. 머무는 동안 국방예산에서 유지비. 부르면 돌아옴.
+// 그 나라가 전쟁 중이면 가끔 부대를 잃고 명성을 얻음. 머무는 동안 나라 예산에서 유지비. 부르면 돌아옴.
 import { CITIES } from '../data/cities';
 import { UNIT_COST, specialCost } from '../data/economy';
 import { SPECIALS } from '../data/specials';
@@ -230,7 +230,7 @@ export function settleClash(s: GameState, depId: number, win: boolean, stars: nu
     ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + money } }, officer: { ...ns.officer, fame: ns.officer.fame + fame } };
     const friend = isRegion(dep.to) ? regionById(dep.to)?.friend : dep.to;
     if (friend) ns = addFavorNote(ns, friend, `${placeName(dep.to)}에서 ${c.title}을(를) 막아 줌`, 5 + stars);
-    text = `⚔️ ${placeName(dep.to)} ${c.title}: 승리! 국방예산 +${money.toLocaleString('ko-KR')} · 명성 +${fame}${friend ? ' · 호감↑' : ''}`;
+    text = `⚔️ ${placeName(dep.to)} ${c.title}: 승리! 나라 예산 +${money.toLocaleString('ko-KR')} · 명성 +${fame}${friend ? ' · 호감↑' : ''}`;
   } else {
     // 지면 파병 부대 하나(현지에서 알아서 싸워 지면 둘)를 잃음
     const n = how === '현지' ? 2 : 1;
@@ -297,7 +297,7 @@ export function deployHelp(s: GameState): Record<string, number> {
   return out;
 }
 
-/** 시간당 유지비(국방예산) */
+/** 시간당 유지비(나라 예산) */
 export const upkeepPerHour = (s: GameState) => stationed(s).reduce((a, x) => a + unitsMoney(x.units) * UPKEEP * 4, 0);
 
 /** AI 판단마다: 요청 · 도착 · 임무 끝 · 교전 · 귀국 · 유지비 · 전쟁 피해 */
@@ -375,7 +375,7 @@ export function deployTick(s: GameState): GameState {
           const f = regionById(x.to)?.friend;
           ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + k.money } }, officer: { ...ns.officer, fame: ns.officer.fame + k.fame } };
           if (f) ns = addFavorNote(ns, f, `${placeName(x.to)} ${k.name} 임무를 마침`, 10);
-          ns = log(ns, `🎖️ ${placeName(x.to)} ${k.name} 임무를 마쳤어요! 국방예산 +${k.money.toLocaleString('ko-KR')} · 명성 +${k.fame}${f ? ` · ${countryById(f).name} 호감 +10` : ''}. 부대가 돌아와요.`);
+          ns = log(ns, `🎖️ ${placeName(x.to)} ${k.name} 임무를 마쳤어요! 나라 예산 +${k.money.toLocaleString('ko-KR')} · 명성 +${k.fame}${f ? ` · ${countryById(f).name} 호감 +10` : ''}. 부대가 돌아와요.`);
         }
         x.req = undefined;
         x.returnMs = s.worldMs + travelMs(me, x.to);

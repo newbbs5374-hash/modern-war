@@ -21,7 +21,7 @@ describe('지지도·신뢰도·분야 점수', () => {
     expect(presOf(s).approval).toBeLessThanOrEqual(Math.max(t, 100));
     expect(presOf(s).hist.length).toBeGreaterThan(3);
   });
-  it('지지도가 높으면 국방예산이 늘고 낮으면 줄어듦', () => {
+  it('지지도가 높으면 나라 예산이 늘고 낮으면 줄어듦', () => {
     const s = newGame('t', 'kr', 0, { seed: 3 });
     expect(approvalBudgetMult({ ...s, pres: { ...presOf(s), approval: 90 } })).toBeGreaterThan(1);
     expect(approvalBudgetMult({ ...s, pres: { ...presOf(s), approval: 10 } })).toBeLessThan(1);

@@ -124,13 +124,13 @@ export function PresModal({ state, onClose, focus }: { state: GameState; onClose
         </ul>
       </Fold>
       <p className="small muted">
-        지금 효과: 국방예산 {pct(approvalBudgetMult(state))} · 징병 {pct(approvalTroopMult(state))}
+        지금 효과: 나라 예산 {pct(approvalBudgetMult(state))} · 징병 {pct(approvalTroopMult(state))}
         <Help title="지지도와 신뢰도">
           <p>
             <b>🙂 지지도</b>는 국민 마음이에요. 사회 안정 40% · 경제 30% · 안보 20% · 지도자 평판 10%로 목표가 정해지고, 지지도는 그 목표 쪽으로 천천히 움직여요.
           </p>
           <p>
-            높으면 국방예산과 징병이 늘고, 낮으면 줄어요. {IMPEACH_BELOW} 밑으로 떨어지면 <b>탄핵 위기</b>: 실제 3일 안에 {IMPEACH_SAFE} 넘게 올리지 못하면 신뢰도 −15 · 명성 −100이 깎여 호칭이 내려갈 수 있어요(게임이 끝나지는 않아요).
+            높으면 나라 예산과 징병이 늘고, 낮으면 줄어요. {IMPEACH_BELOW} 밑으로 떨어지면 <b>탄핵 위기</b>: 실제 3일 안에 {IMPEACH_SAFE} 넘게 올리지 못하면 신뢰도 −15 · 명성 −100이 깎여 호칭이 내려갈 수 있어요(게임이 끝나지는 않아요).
           </p>
           <p>
             <b>🤝 신뢰도</b>는 의회·군·재계 마음이에요. 임무 성공·연설로 오르고, 정적 방해·도시 잃기로 떨어져요. 외교 40% · 안보 30% · 경제 30% 점수 쪽으로도 조금씩 끌려가요. 낮으면 불신임 경고가 와요.

@@ -1,5 +1,5 @@
 // 11-26 난이도 올리기(대장 요청 2번): AI 나라가 스스로 압박해 옴.
-// - 관세: 나라끼리 관세를 매기고(미국이 가장 자주·가장 세게), 맞은 나라는 국방예산이 줄어듦. 내 나라도 매기거나 협상할 수 있음
+// - 관세: 나라끼리 관세를 매기고(미국이 가장 자주·가장 세게), 맞은 나라는 나라 예산이 줄어듦. 내 나라도 매기거나 협상할 수 있음
 // - 분쟁 지역 전쟁: 자기가 다투는 섬을 남이 쥐고 있으면 긴장이 쌓이다 선전포고
 // - 자원 전쟁: 석유·희토류 같은 자원 산지를 노려 약한 이웃에 긴장을 크게 올리고, 차면 선전포고
 // - 연합 배신: 연합은 언제든 깨질 수 있음(AI도 깨고, 나도 '연합 깨기'로 깸)
@@ -35,7 +35,7 @@ export const TARIFF_CHANCE = 0.003;
 export const US_TARIFF_MULT = 3;
 /** 관세가 이어지는 시간(실제 시간) */
 export const TARIFF_HOURS: [number, number] = [24, 72];
-/** 관세 1(100%)마다 국방예산이 깎이는 몫(매긴 나라 경제 100 기준). 모두 합쳐 최대 TARIFF_CUT_MAX */
+/** 관세 1(100%)마다 나라 예산이 깎이는 몫(매긴 나라 경제 100 기준). 모두 합쳐 최대 TARIFF_CUT_MAX */
 export const TARIFF_CUT = 0.3;
 export const TARIFF_CUT_MAX = 0.4;
 /** 매긴 나라가 얻는 몫(맞은 나라 경제 100 기준) */
@@ -43,7 +43,7 @@ export const TARIFF_GAIN = 0.12;
 /** 관세를 맞으면 오르는 긴장도 · 맞관세 확률(AI) */
 export const TARIFF_TENSION = 6;
 export const RETALIATE_CHANCE = 0.5;
-/** 관세 협상: 관세율 × 경제 × 이 값만큼 국방예산을 내면 풀어 줌 */
+/** 관세 협상: 관세율 × 경제 × 이 값만큼 나라 예산을 내면 풀어 줌 */
 export const TARIFF_DEAL_COST = 300;
 
 /** 분쟁 지역을 남이 쥐고 있을 때 판단마다 오르는 긴장(× 공격성) */
@@ -73,7 +73,7 @@ export function tariffsBy(s: GameState, from: string): Tariff[] {
 export function tariffBetween(s: GameState, from: string, to: string): Tariff | undefined {
   return pressureOf(s).tariffs.find((t) => t.from === from && t.to === to && t.untilMs > s.worldMs);
 }
-/** 관세로 줄고(맞음) 느는(매김) 국방예산 배율 */
+/** 관세로 줄고(맞음) 느는(매김) 나라 예산 배율 */
 export function tariffMult(s: GameState, id: string): number {
   let cut = 0;
   for (const t of tariffsOn(s, id)) cut += t.rate * TARIFF_CUT * (countryById(t.from).economy / 100);
@@ -123,7 +123,7 @@ export function pressureTick(s: GameState): GameState {
     putTariff(tariffs, { from: a, to, rate, untilMs: t + rng.range(...TARIFF_HOURS) * H });
     addTension(w, a, to, TARIFF_TENSION);
     const goods = rng.pick(['자동차', '반도체', '철강', '배터리', '농산물', '조선', '가전제품', '화학제품']);
-    event(w, t, `📦 ${ga(nm(a))} ${nm(to)}산 ${goods}에 관세 ${Math.round(rate * 100)}%를 매겼어요.${to === me ? ' 우리 국방예산이 줄어요.' : ''}`, me, a, to);
+    event(w, t, `📦 ${ga(nm(a))} ${nm(to)}산 ${goods}에 관세 ${Math.round(rate * 100)}%를 매겼어요.${to === me ? ' 우리 나라 예산이 줄어요.' : ''}`, me, a, to);
     // AI가 맞으면 맞관세로 맞섬
     if (to !== me && rng.chance(RETALIATE_CHANCE * per(w, to).tension)) {
       const r2 = Math.round(rate * rng.range(0.6, 1.1) * 100) / 100;
@@ -214,16 +214,16 @@ export function dealCost(s: GameState, id: string): number {
 }
 export function canDeal(s: GameState, id: string): string | null {
   if (!tariffBetween(s, id, s.player.countryId)) return '우리에게 매긴 관세가 없어요';
-  if (s.nations[s.player.countryId].treasury < dealCost(s, id)) return `국방예산 ${dealCost(s, id).toLocaleString('ko-KR')} 필요`;
+  if (s.nations[s.player.countryId].treasury < dealCost(s, id)) return `나라 예산 ${dealCost(s, id).toLocaleString('ko-KR')} 필요`;
   return null;
 }
-/** 관세 협상: 국방예산을 내고(무기·농산물을 사 주는 조건) 관세를 풀어 받음 */
+/** 관세 협상: 나라 예산을 내고(무기·농산물을 사 주는 조건) 관세를 풀어 받음 */
 export function doDeal(s: GameState, id: string): { state: GameState; text: string } {
   if (canDeal(s, id)) return { state: s, text: '' };
   const me = s.player.countryId;
   const cost = dealCost(s, id);
   const tariffs = pressureOf(s).tariffs.filter((x) => x.untilMs > s.worldMs && !(x.from === id && x.to === me)).map((x) => ({ ...x }));
-  const text = `${gwa(nm(id))} 관세 협상 타결! 국방예산 ${cost.toLocaleString('ko-KR')}을 내고 관세를 풀었어요.`;
+  const text = `${gwa(nm(id))} 관세 협상 타결! 나라 예산 ${cost.toLocaleString('ko-KR')}을 내고 관세를 풀었어요.`;
   return {
     state: {
       ...s,

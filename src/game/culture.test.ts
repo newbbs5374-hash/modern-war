@@ -44,7 +44,7 @@ describe('문화', () => {
   it('돈이 모자라거나 공사 팀이 다 차면 못 짓는다', () => {
     let s = newGame('테스트', 'kr', 0);
     s = { ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 0 } } };
-    expect(canUpgrade(s, 'museum')).toMatch(/국방예산/);
+    expect(canUpgrade(s, 'museum')).toMatch(/나라 예산/);
     s = rich(s);
     s = upgradeVenue(upgradeVenue(s, 'museum'), 'stage');
     expect(canUpgrade(s, 'park')).toMatch(/공사 팀/);

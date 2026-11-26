@@ -383,7 +383,7 @@ function InfoTab({ state, who, intro, go }: WinProps & { intro: string }) {
                 <Row k="직함" v={LEADERS[id].title} />
                 <Row k="성향" v={state.world.personalities[id]} />
                 <Row k="도시" v={`${citiesOf(state.world, id).length}개`} />
-                <Row k="💰 국방예산" v={fmt(n.treasury)} />
+                <Row k="💰 나라 예산" v={fmt(n.treasury)} />
                 <Row k="🪖 병력" v={`${fmt(n.troops)}명`} />
               </div>
               <div className="pw-wide">
@@ -480,7 +480,7 @@ function StatsTab({ state, who }: WinProps) {
         <Bar label="🏭 경제" v={c.economy} max={10} tone="blue" />
         <Bar label="🛡️ 군사력" v={c.military} max={10} tone="red" />
         <p className="small muted">
-          국방예산 시간당 +{fmt(budgetPerDay(state, id))} · 병력 시간당 +{fmt(troopsPerDay(state, id))}
+          나라 예산 시간당 +{fmt(budgetPerDay(state, id))} · 병력 시간당 +{fmt(troopsPerDay(state, id))}
         </p>
       </div>
     );

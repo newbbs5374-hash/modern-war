@@ -80,7 +80,7 @@ export function CultureScreen(props: ScreenProps) {
         <span title="문화 우세 나라">🌏 {p.have}/{p.need}</span>
         <Help title="문화는 어떻게 하나요?">
           <p>🎨 <b>문화</b>: 시설·걸작이 시간마다 만들어요. 쌓인 <b>문화 점수 💠</b>로 걸작을 들여요.</p>
-          <p>✈️ <b>관광</b>: 우리 문화가 다른 나라로 퍼지는 힘. 나라마다 <b>영향력</b>이 쌓이고, 그 나라가 스스로 쌓은 문화보다 커지면 <b>문화 우세</b>가 돼요. 관광 1점마다 시간당 국방예산 {TOUR_INCOME}의 관광 수입도 들어와요.</p>
+          <p>✈️ <b>관광</b>: 우리 문화가 다른 나라로 퍼지는 힘. 나라마다 <b>영향력</b>이 쌓이고, 그 나라가 스스로 쌓은 문화보다 커지면 <b>문화 우세</b>가 돼요. 관광 1점마다 시간당 나라 예산 {TOUR_INCOME}의 관광 수입도 들어와요.</p>
           <p>⚔️ 전쟁 중인 나라엔 퍼지지 않고, 어느 나라와든 전쟁 중이면 관광이 20% 줄어요.</p>
           <p>🤝 문화 교류 협약·무역 계약·연합·호감 20 이상이면 그 나라에 더 잘 퍼져요.</p>
           {CULTURE_SPECIAL[state.player.countryId] && (
@@ -332,7 +332,7 @@ function StarsPanel({ state, actions }: ScreenProps) {
         right={<small className="muted">{stars.length}명</small>}
         help={
           <p>
-            <b>첫 스타는 그 분야 시설만 있으면 바로</b> 데려올 수 있어요. 두 번째부터는 시설이 시간마다 모으는 <b>인재 점수</b>가 필요하고, 모자라면 국방예산으로 채워서 바로 데려올 수도 있어요(분야마다 {STAR_MAX}명). 고고학자·예술가·감독은 걸작을 만들고, 스포츠 스타·건축가는 데리고만 있어도 효과가 있어요.
+            <b>첫 스타는 그 분야 시설만 있으면 바로</b> 데려올 수 있어요. 두 번째부터는 시설이 시간마다 모으는 <b>인재 점수</b>가 필요하고, 모자라면 나라 예산으로 채워서 바로 데려올 수도 있어요(분야마다 {STAR_MAX}명). 고고학자·예술가·감독은 걸작을 만들고, 스포츠 스타·건축가는 데리고만 있어도 효과가 있어요.
           </p>
         }
       >
@@ -429,7 +429,7 @@ function RecruitModal({ state, actions, k, onClose, onDone }: Pick<ScreenProps, 
           </button>
           {short > 0 && starVenueOk(state, k) && (
             <button className="wide" disabled={!!paid} onClick={() => go(true)}>
-              💰 국방예산 {fmt(money)}로 바로 데려오기{paid ? <small> ({paid})</small> : null}
+              💰 나라 예산 {fmt(money)}로 바로 데려오기{paid ? <small> ({paid})</small> : null}
             </button>
           )}
         </>
@@ -689,7 +689,7 @@ function WorldPanel({ state, actions }: ScreenProps) {
       right={<small className="muted">협약 {c.pacts.length}/{PACT_MAX}</small>}
       help={
         <p>
-          막대는 그 나라가 스스로 쌓은 문화 대비 우리 영향력이에요. 100%가 되면 <b>문화 우세</b>. 🤝 문화 교류 협약(국방예산 {fmt(PACT_COST)})을 맺으면 그 나라에 ×{PACT_MULT} 더 퍼지고 호감도 올라요. ★는 그 나라 문화 수준이에요.
+          막대는 그 나라가 스스로 쌓은 문화 대비 우리 영향력이에요. 100%가 되면 <b>문화 우세</b>. 🤝 문화 교류 협약(나라 예산 {fmt(PACT_COST)})을 맺으면 그 나라에 ×{PACT_MULT} 더 퍼지고 호감도 올라요. ★는 그 나라 문화 수준이에요.
         </p>
       }
     >

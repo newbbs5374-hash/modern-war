@@ -28,7 +28,7 @@ export function FleetWatchCard({ state, actions }: ScreenProps) {
           </div>
         ))
       )}
-      <p className="small muted">함대끼리 부딪히는 장면을 확대해서 봐요. 같은 두 나라 해전 결과는 6시간에 한 번 반영돼요(진 쪽 국방예산 -3%·병력 -1%, 우리가 이기면 공훈 +30). 남의 해전을 보면 정보 +3.</p>
+      <p className="small muted">함대끼리 부딪히는 장면을 확대해서 봐요. 같은 두 나라 해전 결과는 6시간에 한 번 반영돼요(진 쪽 나라 예산 -3%·병력 -1%, 우리가 이기면 공훈 +30). 남의 해전을 보면 정보 +3.</p>
       {f.log.length > 0 && (
         <details className="small">
           <summary>최근 해전</summary>

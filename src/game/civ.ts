@@ -395,7 +395,7 @@ export function canSetGov(s: GameState, id: GovId): string | null {
   const g = govById(id);
   if (g.needs && !hasTech(s, g.needs)) return `${techById(g.needs)?.name ?? ''} 연구 뒤 고를 수 있어요`;
   if (c.gov && !hasTech(s, 's-charter')) return '국가 헌장 연구 뒤 바꿀 수 있어요';
-  if (c.gov && s.nations[s.player.countryId].treasury < GOV_CHANGE_COST) return `국방예산 ${GOV_CHANGE_COST.toLocaleString()} 필요`;
+  if (c.gov && s.nations[s.player.countryId].treasury < GOV_CHANGE_COST) return `나라 예산 ${GOV_CHANGE_COST.toLocaleString()} 필요`;
   return null;
 }
 export function setGov(s: GameState, id: GovId): GameState {
@@ -548,7 +548,7 @@ export function canAgree(s: GameState, id: string, kind: AgreeId): string | null
   if (relationOf(s.world, me, id) === '전쟁') return '전쟁 중이에요';
   if (activeAgreements(s, id).some((x) => x.kind === kind)) return '이미 맺었어요';
   if (favorOf(s, id) < a.favorNeed) return `호감 ${a.favorNeed} 이상이어야 받아 줘요`;
-  if (s.nations[me].treasury < a.cost) return `국방예산 ${a.cost.toLocaleString()} 필요`;
+  if (s.nations[me].treasury < a.cost) return `나라 예산 ${a.cost.toLocaleString()} 필요`;
   return null;
 }
 export function makeAgreement(s: GameState, id: string, kind: AgreeId): GameState {
@@ -599,7 +599,7 @@ export function influenceMult(s: GameState, island?: string): number {
 export function canEnvoy(s: GameState, island: string): string | null {
   if (!PIONEER_ISLANDS.some((p) => p.id === island)) return '없는 섬';
   if (s.worldMs < civOf(s).envoyReadyMs) return '사절이 돌아오는 중';
-  if (s.nations[s.player.countryId].treasury < ENVOY_COST) return `국방예산 ${ENVOY_COST.toLocaleString()} 필요`;
+  if (s.nations[s.player.countryId].treasury < ENVOY_COST) return `나라 예산 ${ENVOY_COST.toLocaleString()} 필요`;
   return null;
 }
 function addInfluence(c: CivState, island: string, who: string, v: number) {
@@ -746,7 +746,7 @@ function closeCouncil(s: GameState, c: CivState): GameState {
   }
   return worldEvent(ns, `🏛️ 국제 회의 ${c.council.last}`);
 }
-/** 회의 제재 중인 나라의 국방예산 배율 */
+/** 회의 제재 중인 나라의 나라 예산 배율 */
 export function sanctionMult(s: GameState, id: string): number {
   return civOf(s).council.active.some((a) => a.agenda === 'sanction' && a.target === id && a.untilMs > s.worldMs) ? 0.8 : 1;
 }
@@ -826,7 +826,7 @@ export function canDistrict(s: GameState, cityId: string, tile: string, id: Dist
   if (d.where === '평지 칸' && ter !== '평지') return '평지 칸에만 지어요';
   if (d.where === '평지·바닷가 칸' && ter !== '평지' && ter !== '바닷가') return '산·유적 칸에는 못 지어요';
   const me = s.player.countryId;
-  if (s.nations[me].treasury < d.cost) return `국방예산 ${d.cost.toLocaleString()} 필요`;
+  if (s.nations[me].treasury < d.cost) return `나라 예산 ${d.cost.toLocaleString()} 필요`;
   for (const [r, v] of Object.entries(d.res)) if (s.economy.stock[r as Res] < v!) return `${r} ${v}개 필요`;
   return null;
 }
@@ -884,7 +884,7 @@ export function canMine(s: GameState, cityId: string, tile: string): string | nu
   const cc = cityCiv(s, cityId);
   if ((cc.mines ?? []).some((m) => m.tile === tile)) return '이미 채굴장이 있어요';
   if (cc.districts.some((d) => d.tile === tile)) return '구역이 있는 칸이에요';
-  if (s.nations[s.player.countryId].treasury < MINE_COST) return `국방예산 ${MINE_COST.toLocaleString()} 필요`;
+  if (s.nations[s.player.countryId].treasury < MINE_COST) return `나라 예산 ${MINE_COST.toLocaleString()} 필요`;
   for (const [r, v] of Object.entries(MINE_RES)) if (s.economy.stock[r as Res] < v!) return `${r} ${v}개 필요`;
   return null;
 }
@@ -1133,7 +1133,7 @@ export function canUpgradeMark(s: GameState, cityId: string, id: string): string
   const lv = markLevel(s, cityId, id);
   if (lv >= markMax(cityId, id)) return '가장 높은 단계예요';
   const c = markCostOf(cityId, id, lv);
-  if (s.nations[s.player.countryId].treasury < c.cost) return `국방예산 ${c.cost.toLocaleString()} 필요`;
+  if (s.nations[s.player.countryId].treasury < c.cost) return `나라 예산 ${c.cost.toLocaleString()} 필요`;
   for (const [r, v] of Object.entries(c.res)) if ((s.economy.stock[r as Res] ?? 0) < v!) return `${r} ${v}개 필요`;
   return null;
 }
@@ -1301,7 +1301,7 @@ export function migrateCityTiles(s: GameState): GameState {
   return ns;
 }
 
-// ── 기존 계산에 붙는 배율(국방예산·자원·모집·전투력·임무) ──
+// ── 기존 계산에 붙는 배율(나라 예산·자원·모집·전투력·임무) ──
 
 const islandPort = (s: GameState) => myIslands(s).filter((id) => PIONEER_ISLANDS.find((p) => p.id === id)!.res === '항구').length * 0.03;
 export function civBudgetMult(s: GameState): number {

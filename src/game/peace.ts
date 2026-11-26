@@ -66,7 +66,7 @@ export function canProposePeace(s: GameState): string | null {
   if (!hasTech(s, PEACE_TECH)) return '사회 연구 "국제 평화 헌장"이 필요해요';
   if (atWar(s)) return '전쟁을 모두 끝내야 제안할 수 있어요';
   if (s.worldMs < p.retryMs) return '지난 제안이 부결돼서 잠시 뒤에 다시 할 수 있어요';
-  if (s.nations[s.player.countryId].treasury < PEACE_COST) return `국방예산 ${PEACE_COST.toLocaleString('ko-KR')} 필요`;
+  if (s.nations[s.player.countryId].treasury < PEACE_COST) return `나라 예산 ${PEACE_COST.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 

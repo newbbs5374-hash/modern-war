@@ -136,11 +136,11 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
       </p>
       <NationTraits id={c.id} />
       <p className="small">
-        국방예산 {fmt(n.treasury)} (시간당 +{fmt(budgetPerDay(state, id))}) · 병력 {fmt(n.troops)}명 (시간당 +
+        나라 예산 {fmt(n.treasury)} (시간당 +{fmt(budgetPerDay(state, id))}) · 병력 {fmt(n.troops)}명 (시간당 +
         {fmt(troopsPerDay(state, id))})
       </p>
       <p className="small muted">
-        {c.intro} · 시작 수치: 경제 {c.economy} · 국방예산 {c.budget} · 군사력 {c.military}
+        {c.intro} · 시작 수치: 경제 {c.economy} · 나라 예산 {c.budget} · 군사력 {c.military}
       </p>
     </div>
   );

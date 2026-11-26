@@ -480,11 +480,11 @@ function invasions(ctx: Ctx) {
       const prevOwner = w.owner[target];
       const won = ap > dp * CAPTURE_MARGIN;
       if (won) w.defense[target] -= SIEGE_DAMAGE * Math.min(2, ratio);
-      // 11-26: 내 나라가 막아 내면 버리고 간 장비를 노획(국방예산)
+      // 11-26: 내 나라가 막아 내면 버리고 간 장비를 노획(나라 예산)
       if (!won && def === ctx.player) {
         const bounty = Math.round(commit * DEFEND_BOUNTY);
         nd.treasury += bounty;
-        log(ctx, '전투', `${ga(nm(att))} ${eul(city.name)} 쳤지만 막아 냈어요! 🛡️ 노획 국방예산 +${bounty.toLocaleString('ko-KR')}`, att, def);
+        log(ctx, '전투', `${ga(nm(att))} ${eul(city.name)} 쳤지만 막아 냈어요! 🛡️ 노획 나라 예산 +${bounty.toLocaleString('ko-KR')}`, att, def);
       }
       if (won && w.defense[target] <= 0) {
         if (att === ctx.player) {
@@ -492,7 +492,7 @@ function invasions(ctx: Ctx) {
           const loot = Math.round(city.value * SPOILS_PER_VALUE + nd.treasury * SPOILS_TREASURY_SHARE);
           nd.treasury = Math.max(0, nd.treasury - nd.treasury * SPOILS_TREASURY_SHARE);
           na.treasury += loot;
-          log(ctx, '점령', `💰 ${city.name} 전리품 국방예산 +${loot.toLocaleString('ko-KR')}`, att, def);
+          log(ctx, '점령', `💰 ${city.name} 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}`, att, def);
         }
         noteCapture(w, target, att);
         w.owner[target] = att;

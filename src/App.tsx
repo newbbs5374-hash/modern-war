@@ -1,3 +1,4 @@
+import { claimPay } from './game/payday';
 import { applyNation } from './game/nation';
 import { checkVictory } from './game/victory';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -241,7 +242,7 @@ export function App() {
   };
 
   const actions: GameActions = {
-    claim: () => update(G.claimSalary),
+    claim: () => update(claimPay),
     save: () => {
       saveGame(G.catchUp(state, Date.now(), speedRef.current));
       cloud.markDirty(true);

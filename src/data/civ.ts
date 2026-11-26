@@ -11,7 +11,7 @@ export interface Eff {
   power?: { dom: 'all' | '육' | '해' | '공'; v: number };
   /** 연구 속도 + 비율 */
   research?: number;
-  /** 국방예산 수입 + 비율 */
+  /** 나라 예산 수입 + 비율 */
   budget?: number;
   /** 자원 생산 + 비율 */
   res?: number;
@@ -154,7 +154,7 @@ export const SOC_TECHS: Tech[] = [
   // ── 11-23 더 잘게 나눈 사회 제도 15개(분야: 경제·외교·내정·인구·국방) ──
   // 도약기
   T({ id: 's-census', line: 'soc', name: '인구 조사', icon: '📊', era: 1, hours: 1, needs: [], eff: { growth: 0.1 }, text: '도시 성장 +10%', eureka: { key: { kind: 'train', name: '통솔', stars: 1 }, text: '통솔 훈련 성공' } }),
-  T({ id: 's-tax', line: 'soc', name: '조세 개혁', icon: '🧾', era: 1, hours: 1.5, needs: [], cards: ['경-조세'], eff: { budget: 0.05 }, text: '국방예산 +5% · 카드 1장', eureka: { key: { kind: 'train', name: '보급', stars: 2 }, text: '보급 훈련 별 2개 이상' } }),
+  T({ id: 's-tax', line: 'soc', name: '조세 개혁', icon: '🧾', era: 1, hours: 1.5, needs: [], cards: ['경-조세'], eff: { budget: 0.05 }, text: '나라 예산 +5% · 카드 1장', eureka: { key: { kind: 'train', name: '보급', stars: 2 }, text: '보급 훈련 별 2개 이상' } }),
   T({ id: 's-press', line: 'soc', name: '언론 자유', icon: '📰', era: 1, hours: 1.5, needs: [], cards: ['외-문화'], eff: { loyalty: 2, favor: 2 }, text: '민심 +2 · 모든 나라 호감 +2 · 카드 1장 · 대통령제', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
   T({ id: 's-school', line: 'soc', name: '의무 교육', icon: '🏫', era: 1, hours: 1.5, needs: [], eff: { research: 0.05 }, text: '연구 +5% · 기술 관료제', eureka: { key: { kind: 'rank', at: 2 }, text: '믿음직한 지도자 호칭 얻기' } }),
   // 항로기
@@ -163,12 +163,12 @@ export const SOC_TECHS: Tech[] = [
   T({ id: 's-intel', line: 'soc', name: '정보 기관법', icon: '🕵️', era: 2, hours: 3.5, needs: ['s-envoy'], cards: ['군-첩보'], eff: { mission: 0.03 }, text: '임무 성공률 +3% · 카드 1장', eureka: { key: { kind: 'mission', name: '정보보고' }, text: '정보 보고 임무 성공' } }),
   T({ id: 's-reserve', line: 'soc', name: '예비군 제도', icon: '🎒', era: 2, hours: 3, needs: ['s-charter'], cards: ['군-예비'], eff: { build: { dom: '육', v: 0.08 } }, text: '육군 모집 −8% · 카드 1장 · 군사 정부', eureka: { key: { kind: 'train', name: '모병', stars: 1 }, text: '모병 훈련 성공' } }),
   // 제공기
-  T({ id: 's-industry', line: 'soc', name: '산업 정책', icon: '🏗️', era: 3, hours: 5, needs: ['s-mining'], cards: ['경-산업'], eff: { res: 0.08, budget: 0.05 }, text: '자원 +8% · 국방예산 +5% · 카드 1장', eureka: { key: { kind: 'army', count: 15 }, text: '부대 15개 보유' } }),
+  T({ id: 's-industry', line: 'soc', name: '산업 정책', icon: '🏗️', era: 3, hours: 5, needs: ['s-mining'], cards: ['경-산업'], eff: { res: 0.08, budget: 0.05 }, text: '자원 +8% · 나라 예산 +5% · 카드 1장', eureka: { key: { kind: 'army', count: 15 }, text: '부대 15개 보유' } }),
   T({ id: 's-alliance', line: 'soc', name: '동맹 외교', icon: '🌐', era: 3, hours: 6, needs: ['s-nonagg'], cards: ['외-동맹'], eff: { favor: 4, contracts: 1 }, text: '모든 나라 호감 +4 · 정기 계약 +1칸 · 카드 1장', eureka: { key: { kind: 'agree', id: 'nonagg' }, text: '불가침 협정 맺기' } }),
   T({ id: 's-transport', line: 'soc', name: '교통망 확충', icon: '🛤️', era: 3, hours: 5, needs: ['s-urban'], eff: { district: 0.15, growth: 0.1 }, text: '구역 짓는 시간 −15% · 도시 성장 +10% · 연방제', eureka: { key: { kind: 'district', id: 'housing' }, text: '주거 구역 첫 완공' } }),
   T({ id: 's-veterans', line: 'soc', name: '보훈 제도', icon: '🎗️', era: 3, hours: 5, needs: ['s-reserve'], cards: ['군-보훈'], eff: { loyalty: 3, power: { dom: 'all', v: 0.03 } }, text: '민심 +3 · 모든 전투력 +3% · 카드 1장', eureka: { key: { kind: 'mission', name: '작전' }, text: '작전 성공' } }),
   // 대양기
-  T({ id: 's-digital', line: 'soc', name: '디지털 정부', icon: '🖥️', era: 4, hours: 9, needs: ['s-school', 's-media'], eff: { research: 0.1, budget: 0.05 }, text: '연구 +10% · 국방예산 +5%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
+  T({ id: 's-digital', line: 'soc', name: '디지털 정부', icon: '🖥️', era: 4, hours: 9, needs: ['s-school', 's-media'], eff: { research: 0.1, budget: 0.05 }, text: '연구 +10% · 나라 예산 +5%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
   T({ id: 's-aid', line: 'soc', name: '국제 원조', icon: '🎁', era: 4, hours: 10, needs: ['s-alliance'], cards: ['외-원조'], eff: { favor: 6, influence: 0.15 }, text: '모든 나라 호감 +6 · 분쟁 지역 영향력 +15% · 카드 1장', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
   T({ id: 's-unify', line: 'soc', name: '국민 통합', icon: '🫂', era: 4, hours: 11, needs: ['s-veterans', 's-press'], cards: ['외-중재'], eff: { loyalty: 6, votes: 1 }, text: '민심 +6 · 국제 회의 표 +1 · 카드 1장', eureka: { key: { kind: 'rank', at: 8 }, text: '위대한 지도자 호칭 얻기' } }),
 ];
@@ -203,7 +203,7 @@ export const GOVS: Gov[] = [
   { id: 'merchant', name: '상업 연합', icon: '⚖️', slots: ['경제', '경제', '외교', '경제', '자유'], eff: { trade: 0.1, contracts: 1 }, text: '무역 값 10% 이득 · 정기 계약 +1칸', play: '자원 부자' },
   { id: 'sanctum', name: '성지 회의', icon: '🔷', slots: ['외교', '군사', '외교', '자유', '자유'], eff: { votes: 1, research: 0.1 }, text: '국제 회의 표 +1 · 연구 +10%(갈륨 연구 ×2)', play: '성소와 유적 중심' },
   // 11-23 새 체제 4가지(사회 제도 연구로 열림)
-  { id: 'republic', name: '대통령제', icon: '🗳️', slots: ['군사', '경제', '외교', '경제', '자유'], eff: { budget: 0.08, loyalty: 3 }, text: '국방예산 +8% · 민심 +3', play: '고르게 키우기', needs: 's-press' },
+  { id: 'republic', name: '대통령제', icon: '🗳️', slots: ['군사', '경제', '외교', '경제', '자유'], eff: { budget: 0.08, loyalty: 3 }, text: '나라 예산 +8% · 민심 +3', play: '고르게 키우기', needs: 's-press' },
   { id: 'junta', name: '군사 정부', icon: '🎖️', slots: ['군사', '군사', '군사', '경제', '자유'], eff: { power: { dom: 'all', v: 0.1 }, loyalty: -4 }, text: '모든 전투력 +10% · 민심 −4', play: '빠른 정복', needs: 's-reserve' },
   { id: 'technocracy', name: '기술 관료제', icon: '🔬', slots: ['경제', '경제', '군사', '외교', '자유'], eff: { research: 0.2 }, text: '연구 +20%', play: '연구 앞서기', needs: 's-school' },
   { id: 'federation', name: '연방제', icon: '🗺️', slots: ['경제', '외교', '외교', '군사', '자유'], eff: { growth: 0.2, district: 0.15 }, text: '도시 성장 +20% · 구역 짓는 시간 −15%', play: '도시 키우기', needs: 's-transport' },
@@ -235,16 +235,16 @@ export const CARDS: Card[] = [
   C({ id: '군-해병', kind: '군사', name: '해병 전통', icon: '⚓', eff: { build: { dom: '해', v: 0.15 } }, text: '해군 모집 −15%' }),
   C({ id: '군-조종', kind: '군사', name: '조종사 양성', icon: '✈️', eff: { build: { dom: '공', v: 0.15 } }, text: '공군 모집 −15%' }),
   C({ id: '군-방위', kind: '군사', name: '국토 방위', icon: '🛡️', eff: { power: { dom: 'all', v: 0.08 } }, text: '모든 전투력 +8%' }),
-  C({ id: '군-동원', kind: '군사', name: '총동원', icon: '📣', eff: { build: { dom: 'all', v: 0.2 }, budget: -0.1 }, text: '모든 모집 −20% · 국방예산 −10%' }),
+  C({ id: '군-동원', kind: '군사', name: '총동원', icon: '📣', eff: { build: { dom: 'all', v: 0.2 }, budget: -0.1 }, text: '모든 모집 −20% · 나라 예산 −10%' }),
   C({ id: '군-정예', kind: '군사', name: '정예 부대', icon: '🎖️', eff: { power: { dom: 'all', v: 0.15 }, build: { dom: 'all', v: -0.1 } }, text: '전투력 +15% · 모집 +10% 느림' }),
-  C({ id: '경-세금', kind: '경제', name: '군수 세금', icon: '💰', eff: { budget: 0.08 }, text: '국방예산 +8%' }),
+  C({ id: '경-세금', kind: '경제', name: '군수 세금', icon: '💰', eff: { budget: 0.08 }, text: '나라 예산 +8%' }),
   C({ id: '경-광산', kind: '경제', name: '광산 장려', icon: '⛏️', eff: { res: 0.1 }, text: '자원 +10%' }),
   C({ id: '경-개척', kind: '경제', name: '지방 개발', icon: '🌱', eff: { growth: 0.25 }, text: '도시 성장 +25%' }),
   C({ id: '경-도시', kind: '경제', name: '도시 정비', icon: '🏗️', eff: { district: 0.25 }, text: '구역 짓는 시간 −25%' }),
   C({ id: '경-상회', kind: '경제', name: '자유 항구', icon: '🚢', eff: { trade: 0.08 }, text: '무역 값 8% 이득' }),
   C({ id: '경-학자', kind: '경제', name: '학자 초빙', icon: '🎓', eff: { research: 0.15 }, text: '연구 +15%' }),
-  C({ id: '경-복지', kind: '경제', name: '배급 확대', icon: '🍞', eff: { loyalty: 8, budget: -0.05 }, text: '민심 +8 · 국방예산 −5%' }),
-  C({ id: '경-연방', kind: '경제', name: '국가 투자', icon: '🏦', eff: { budget: 0.12, res: 0.1 }, text: '국방예산 +12% · 자원 +10%' }),
+  C({ id: '경-복지', kind: '경제', name: '배급 확대', icon: '🍞', eff: { loyalty: 8, budget: -0.05 }, text: '민심 +8 · 나라 예산 −5%' }),
+  C({ id: '경-연방', kind: '경제', name: '국가 투자', icon: '🏦', eff: { budget: 0.12, res: 0.1 }, text: '나라 예산 +12% · 자원 +10%' }),
   C({ id: '외-사절', kind: '외교', name: '상주 사절', icon: '🕊️', eff: { influence: 0.2 }, text: '분쟁 지역 영향력 +20%' }),
   C({ id: '외-친선', kind: '외교', name: '친선 방문', icon: '🤝', eff: { favor: 5 }, text: '모든 나라 호감 +5' }),
   C({ id: '외-정보', kind: '외교', name: '외교 정보망', icon: '🗝️', eff: { mission: 0.03, favor: -2 }, text: '임무 성공률 +3% · 호감 −2' }),
@@ -258,13 +258,13 @@ export const CARDS: Card[] = [
   C({ id: '군-예비', kind: '군사', name: '예비군 동원', icon: '🎒', eff: { build: { dom: '육', v: 0.12 }, power: { dom: '육', v: 0.04 } }, text: '육군 모집 −12% · 육군 전투력 +4%' }),
   C({ id: '군-보훈', kind: '군사', name: '보훈 우대', icon: '🎗️', eff: { loyalty: 4, power: { dom: 'all', v: 0.05 } }, text: '민심 +4 · 전투력 +5%' }),
   C({ id: '군-기동', kind: '군사', name: '신속 기동군', icon: '🚛', eff: { build: { dom: 'all', v: 0.1 }, power: { dom: '공', v: 0.05 } }, text: '모든 모집 −10% · 공군 전투력 +5%' }),
-  C({ id: '경-조세', kind: '경제', name: '세제 개편', icon: '🧾', eff: { budget: 0.1, loyalty: -2 }, text: '국방예산 +10% · 민심 −2' }),
-  C({ id: '경-관세', kind: '경제', name: '보호 관세', icon: '🛃', eff: { trade: 0.06, budget: 0.04 }, text: '무역 값 6% 이득 · 국방예산 +4%' }),
+  C({ id: '경-조세', kind: '경제', name: '세제 개편', icon: '🧾', eff: { budget: 0.1, loyalty: -2 }, text: '나라 예산 +10% · 민심 −2' }),
+  C({ id: '경-관세', kind: '경제', name: '보호 관세', icon: '🛃', eff: { trade: 0.06, budget: 0.04 }, text: '무역 값 6% 이득 · 나라 예산 +4%' }),
   C({ id: '경-채굴', kind: '경제', name: '광산 증산', icon: '⛏️', eff: { res: 0.15, loyalty: -2 }, text: '자원 +15% · 민심 −2' }),
   C({ id: '경-산업', kind: '경제', name: '산업 단지', icon: '🏗️', eff: { res: 0.08, district: 0.15 }, text: '자원 +8% · 구역 짓는 시간 −15%' }),
   C({ id: '외-문화', kind: '외교', name: '문화 교류', icon: '🎭', eff: { favor: 4, loyalty: 3 }, text: '호감 +4 · 민심 +3' }),
   C({ id: '외-동맹', kind: '외교', name: '동맹 강화', icon: '🤝', eff: { favor: 5, power: { dom: 'all', v: 0.03 } }, text: '호감 +5 · 전투력 +3%' }),
-  C({ id: '외-원조', kind: '외교', name: '원조 확대', icon: '🎁', eff: { favor: 4, influence: 0.2, budget: -0.05 }, text: '호감 +4 · 분쟁 지역 영향력 +20% · 국방예산 −5%' }),
+  C({ id: '외-원조', kind: '외교', name: '원조 확대', icon: '🎁', eff: { favor: 4, influence: 0.2, budget: -0.05 }, text: '호감 +4 · 분쟁 지역 영향력 +20% · 나라 예산 −5%' }),
   C({ id: '외-중재', kind: '외교', name: '분쟁 중재', icon: '⚖️', eff: { votes: 1, influence: 0.1 }, text: '국제 회의 표 +1 · 분쟁 지역 영향력 +10%' }),
 ];
 // 처음부터 쓸 수 있는 8장
@@ -357,7 +357,7 @@ export interface Agenda {
 }
 export const AGENDAS: Agenda[] = [
   { id: 'embargo', name: '갈륨 수출 금지', icon: '⛔', yes: { trade: -0.15 }, text: '하루 동안 모든 무역 값 15% 손해' },
-  { id: 'sanction', name: '항로 제재', icon: '🚫', yes: {}, text: '대상 나라의 국방예산 −20%, 하루 동안', target: true },
+  { id: 'sanction', name: '항로 제재', icon: '🚫', yes: {}, text: '대상 나라의 나라 예산 −20%, 하루 동안', target: true },
   { id: 'truce', name: '성지 휴전', icon: '☮️', yes: {}, text: '모든 나라 사이 긴장 −15 · 하루 동안 전쟁 선포 시 불만 큼' },
   { id: 'science', name: '연구 공유', icon: '📚', yes: { research: 0.15 }, text: '하루 동안 연구 +15%' },
   { id: 'islands', name: '분쟁 지역 보호', icon: '🏝️', yes: { influence: 0.5 }, text: '하루 동안 분쟁 지역 영향력 +50%' },
@@ -390,7 +390,7 @@ export interface District {
   adj: string;
 }
 export const DISTRICTS: District[] = [
-  { id: 'industry', name: '공업 구역', icon: '🏭', where: '아무 칸', cost: 3000, res: { 강철: 5 }, hours: 2, text: '국방예산 +4% · 자원 +4%', adj: '옆 공업 구역·산 칸마다 +1%씩 더' },
+  { id: 'industry', name: '공업 구역', icon: '🏭', where: '아무 칸', cost: 3000, res: { 강철: 5 }, hours: 2, text: '나라 예산 +4% · 자원 +4%', adj: '옆 공업 구역·산 칸마다 +1%씩 더' },
   { id: 'harbor', name: '항만', icon: '⚓', where: '바닷가 칸', free: true, cost: 4000, res: { 강철: 8 }, hours: 3, text: '군함을 만들 수 있음 · 해군 모집 −5%', adj: '옆 바다 칸마다 해군 모집 −2%씩 더' },
   { id: 'airfield', name: '비행장', icon: '🛫', where: '평지·바닷가 칸', free: true, cost: 4000, res: { 강철: 4, 석유: 4 }, hours: 3, text: '전투기·헬기·폭격기를 만들 수 있음 · 공군 모집 −5%', adj: '옆 공업 구역마다 공군 모집 −2%씩 더' },
   { id: 'lab', name: '연구소', icon: '🔬', where: '아무 칸', cost: 3500, res: { 반도체: 3 }, hours: 3, text: '연구 +12%', adj: '옆 산·유적 칸마다 연구 +4%씩 더' },
@@ -413,7 +413,7 @@ export const DISTRICT_SLOTS: Record<2 | 3 | 4, number> = { 2: 3, 3: 5, 4: 7 };
 export const POP_MAX = 10;
 /** 인구 1 → 2에 필요한 성장 점수(인구 × 이 값) */
 export const GROW_NEED_PER_POP = 6;
-/** 인구 1마다 국방예산 +2%(평균) */
+/** 인구 1마다 나라 예산 +2%(평균) */
 export const POP_BUDGET = 0.02;
 /** 민심이 이보다 낮으면 생산이 줄어듦(아주 낮아도 도시는 잃지 않음, 11-22 결정) */
 export const LOYALTY_OK = 50;

@@ -82,7 +82,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mof', icon: '💼', name: '기획재정부', short: '재정', tab: 'economy', role: '나라 돈과 세금',
     text: '나라 살림을 짜고 세금을 걷는 부처예요. 장관이 유능하면 같은 세금으로도 수입이 늘고 국민 불만은 줄어요.',
-    stats: ['경제', '행정'], spec: ['경제통'], effText: '국방예산 수입 · 세금 불만 줄이기',
+    stats: ['경제', '행정'], spec: ['경제통'], effText: '나라 예산 수입 · 세금 불만 줄이기',
     tasks: [
       { id: 'stimulus', icon: '📈', name: '경기 부양', hours: 6, text: '12시간 동안 경제 지수 +10 · 지지도 +3' },
       { id: 'bond', icon: '🏦', name: '국채 발행', hours: 2, text: '금고 +6시간치 수입(대신 하루 동안 경제 지수 −5)' },
@@ -210,7 +210,7 @@ export const MINISTRIES: Ministry[] = [
   {
     id: 'mss', icon: '🚀', name: '중소벤처기업부', short: '중기', tab: 'economy', role: '중소기업·창업·소상공인',
     text: '작은 회사와 새 회사를 키우는 부처예요. 일자리가 늘고 경제가 탄탄해져요.',
-    stats: ['경제', '과학'], spec: ['경제통'], effText: '경제 점수 · 국방예산 조금',
+    stats: ['경제', '과학'], spec: ['경제통'], effText: '경제 점수 · 나라 예산 조금',
     tasks: [
       { id: 'startup', icon: '💡', name: '창업 지원', hours: 6, text: '12시간 동안 경제 지수 +7', fx: { buff: [['econScore', 7, 12]] } },
       { id: 'shop', icon: '🏪', name: '소상공인 지원금', hours: 3, text: '12시간 동안 지지도 +3 · 금고 조금 −', fx: { pres: [3, 12], treasuryH: -1 } },
@@ -312,7 +312,7 @@ export const PERSON_ORIGINS: Record<PersonOrigin, { name: string; icon: string; 
 export type Faction = '군부파' | '경제파' | '개혁파' | '온건파';
 export const FACTIONS: Array<{ id: Faction; icon: string; bonus: string }> = [
   { id: '군부파', icon: '🎖️', bonus: '모든 모집 +6%' },
-  { id: '경제파', icon: '💹', bonus: '국방예산 +5%' },
+  { id: '경제파', icon: '💹', bonus: '나라 예산 +5%' },
   { id: '개혁파', icon: '🌱', bonus: '모든 도시 민심 +3' },
   { id: '온건파', icon: '🕊️', bonus: '모든 나라 호감 +5' },
 ];

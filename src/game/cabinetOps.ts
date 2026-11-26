@@ -591,7 +591,7 @@ export function canUpMinistry(s: GameState, min: MinistryId): string | null {
   if (!ministerOf(c, min)) return '장관이 있어야 키울 수 있어요';
   const k = minUpCost(s, min);
   if (minWorkDone(s, min) < k.work) return `부처 업무 ${minWorkDone(s, min)} / ${k.work}번`;
-  if ((s.nations[s.player.countryId]?.treasury ?? 0) < k.money) return `국방예산 ${k.money.toLocaleString('ko-KR')} 필요`;
+  if ((s.nations[s.player.countryId]?.treasury ?? 0) < k.money) return `나라 예산 ${k.money.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function upMinistry(s: GameState, min: MinistryId): GameState {

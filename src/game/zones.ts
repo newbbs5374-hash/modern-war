@@ -17,7 +17,7 @@ export interface ZoneDef {
   coastal?: boolean;
 }
 export const ZONES: ZoneDef[] = [
-  { id: 'fez', icon: '🏦', name: '경제자유구역', text: '국방예산 +4% · 경제 +2', eff: { budget: 0.04, economy: 2 }, groups: { biz: 5 } },
+  { id: 'fez', icon: '🏦', name: '경제자유구역', text: '나라 예산 +4% · 경제 +2', eff: { budget: 0.04, economy: 2 }, groups: { biz: 5 } },
   { id: 'rnd', icon: '🔬', name: '연구개발특구', text: '연구 +8%', eff: { research: 0.08 }, groups: { youth: 4 } },
   { id: 'port', icon: '⚓', name: '항만물류특구', text: '자원 +5% · 무역 길 (바닷가 도시만)', eff: { res: 0.05, diplo: 1 }, groups: { labor: 3, biz: 2 }, coastal: true },
   { id: 'tour', icon: '🎡', name: '관광특구', text: '지지도 +1 · 외교 +2', eff: { approval: 1, diplo: 2 }, groups: { civic: 2, youth: 2 } },
@@ -50,7 +50,7 @@ export function canZone(s: GameState, cityId: string, kind: string): string | nu
   const wait = Number(d.zones[`_wait_${cityId}`] ?? 0);
   if (wait > s.worldMs) return '해제한 지 하루가 안 지났어요';
   const me = s.nations[s.player.countryId];
-  if (!me || me.treasury < zoneCost(s)) return '국방예산이 모자라요';
+  if (!me || me.treasury < zoneCost(s)) return '나라 예산이 모자라요';
   return null;
 }
 export function setZone(s: GameState, cityId: string, kind: string): GameState {

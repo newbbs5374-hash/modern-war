@@ -247,7 +247,7 @@ export function moodLabel(v: number): { name: string; tone: 'green' | 'gold' | '
   return { name: '위험', tone: 'red' };
 }
 
-/** 지지도 → 국방예산 배율(50이면 1, 100이면 +10%, 0이면 −20%) */
+/** 지지도 → 나라 예산 배율(50이면 1, 100이면 +10%, 0이면 −20%) */
 export function approvalBudgetMult(s: GameState): number {
   const a = approvalOf(s);
   return a >= 50 ? 1 + (a - 50) / 500 : 1 - (50 - a) / 250;

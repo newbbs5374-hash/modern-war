@@ -1,5 +1,5 @@
 // 돌발 사건 카드: 가끔(실제 8~14시간마다) 사건이 터지고 2~3개 중 하나를 고름.
-// 고른 대로 국방예산·자원·병력·신뢰도·명성·호감·긴장·연구가 바뀜.
+// 고른 대로 나라 예산·자원·병력·신뢰도·명성·호감·긴장·연구가 바뀜.
 // 정해진 시간(8시간) 안에 안 고르면 부관이 무난한 쪽(auto)을 고름.
 import { COUNTRIES, countryById } from '../data/world';
 import type { Res } from '../data/economy';
@@ -114,7 +114,7 @@ export const CRISES: CrisisDef[] = [
     text: '수출이 잘돼 세금이 예상보다 많이 걷혔어요.',
     auto: 0,
     options: [
-      { label: '국방예산에 넣어요', fx: [{ k: 'money', v: 4000 }], say: '국방예산이 넉넉해졌습니다.' },
+      { label: '나라 예산에 넣어요', fx: [{ k: 'money', v: 4000 }], say: '나라 예산이 넉넉해졌습니다.' },
       { label: '국민에게 나눠요', fx: [{ k: 'trust', v: 8 }, { k: 'fame', v: 6 }], say: '국민들이 지도자님을 칭찬합니다.' },
       { label: '연구에 투자해요', fx: [{ k: 'research', v: 6 }, { k: 'money', v: 1000 }], say: '연구소마다 활기가 돕니다.' },
     ],
@@ -294,14 +294,14 @@ const nm = (id: string | null) => (id ? countryById(id).name : '');
 const leaderName = (id: string | null) => (id && LEADERS[id] ? `${countryById(id).name} ${LEADERS[id].title} ${LEADERS[id].name}` : '');
 export const fill = (t: string, target: string | null) => t.replace(/\{X\}/g, nm(target)).replace(/\{L\}/g, leaderName(target));
 
-/** 효과를 글로(예: "국방예산 -15,000 · 신뢰 +5") */
+/** 효과를 글로(예: "나라 예산 -15,000 · 신뢰 +5") */
 export function fxText(fx: Fx[], target: string | null): string {
   const sg = (v: number) => (v > 0 ? `+${v.toLocaleString('ko-KR')}` : v.toLocaleString('ko-KR'));
   return fx
     .map((f) => {
       switch (f.k) {
         case 'money':
-          return `💰 국방예산 ${sg(f.v)}`;
+          return `💰 나라 예산 ${sg(f.v)}`;
         case 'res':
           return `${f.r} ${sg(f.v)}`;
         case 'troops':
@@ -333,7 +333,7 @@ export function fxText(fx: Fx[], target: string | null): string {
 export function canChoose(s: GameState, opt: CrisisOption): string | null {
   const me = s.player.countryId;
   for (const f of opt.fx) {
-    if (f.k === 'money' && f.v < 0 && s.nations[me].treasury < -f.v) return '국방예산이 모자라요';
+    if (f.k === 'money' && f.v < 0 && s.nations[me].treasury < -f.v) return '나라 예산이 모자라요';
     if (f.k === 'res' && f.v < 0 && (s.economy.stock[f.r] ?? 0) < -f.v) return `${f.r}이(가) 모자라요`;
   }
   return null;

@@ -296,7 +296,7 @@ export const speakerOf = (s: GameState, key: string) => speakers(s).find((x) => 
 /* ───────── 건의 거리 고르기 ───────── */
 
 /** 돈·자원·경험치·공사만 모자란 것(기다리면 할 수 있는 것) */
-const WAIT = /국방예산|개 필요|경험치|공사 중/;
+const WAIT = /나라 예산|개 필요|경험치|공사 중/;
 const okOrWait = (why: string | null) => why === null || WAIT.test(why);
 const won = (v: number) => (v >= 10000 ? `${Math.round(v / 1000) / 10}만` : `${Math.round(v / 100) / 10}천`);
 

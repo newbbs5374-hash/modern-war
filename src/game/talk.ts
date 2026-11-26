@@ -34,7 +34,7 @@ export interface TalkEffect {
   fame?: number;
   merit?: number;
   intel?: number;
-  /** 내 나라 국방예산 비율(−0.05 = 5% 냄) */
+  /** 내 나라 예산 비율(−0.05 = 5% 냄) */
   treasury?: number;
   /** 내 나라 병력 비율 */
   troops?: number;
@@ -123,7 +123,7 @@ export function effectHint(e: TalkEffect): string {
   if (e.fame) out.push(`명성 ${sg(e.fame)}`);
   if (e.merit) out.push(`공훈 ${sg(e.merit)}`);
   if (e.intel) out.push(`정보 ${sg(e.intel)}`);
-  if (e.treasury) out.push(`국방예산 ${sg(Math.round(e.treasury * 100))}%`);
+  if (e.treasury) out.push(`나라 예산 ${sg(Math.round(e.treasury * 100))}%`);
   if (e.troops) out.push(`병력 ${sg(Math.round(e.troops * 100))}%`);
   return out.join(' · ');
 }

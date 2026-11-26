@@ -58,7 +58,7 @@ import {
 export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개), 7: 현실 나라·도시 이름(11-23) — 예전 저장은 새 판으로
 
 export interface NationState {
-  /** 나라 금고(국방예산) */
+  /** 나라 금고(나라 예산) */
   treasury: number;
   /** 병력(명) */
   troops: number;
@@ -194,7 +194,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
   };
   s.cabinet = newCabinet(s);
   if (opt.realWorld) {
-    // 시작부터 국제 제재를 받는 나라(러시아): 국방예산 −20%
+    // 시작부터 국제 제재를 받는 나라(러시아): 나라 예산 −20%
     for (const [id, days] of Object.entries(START_SANCTIONS)) s.civ!.council.active.push({ agenda: 'sanction', target: id, untilMs: days * REAL_MS_PER_GAME_DAY });
   }
   return syncTitle(opt.origin ? addBuddy(applyOrigin(s, opt.origin), opt.origin, null) : s, true);
@@ -209,7 +209,7 @@ export function salaryPerDay(s: GameState): number {
 export function pendingCap(s: GameState): number {
   return salaryPerDay(s) * (PENDING_CAP_HOURS * 60 * 60 * 1000) / REAL_MS_PER_GAME_DAY;
 }
-/** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
+/** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
   const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
@@ -233,7 +233,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
   const share = incomeShare(s.world, me);
   const x = (v: number) => `×${(Math.round(v * 100) / 100).toFixed(2)}`;
   return [
-    ['기본(나라 국방예산 점수)', `${Math.round(countryById(me).budget * BUDGET_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
+    ['기본(나라 예산 점수)', `${Math.round(countryById(me).budget * BUDGET_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
     [`지도자 성향(${p})`, x(PERSONALITIES[p].budget)],
     ['가진 도시(점령지는 절반)', x(share)],
     ['🏭 군수공장', x(budgetMult(s))],

@@ -20,7 +20,7 @@ export function SpyPanel({ state, actions }: ScreenProps) {
     <>
       <Card title="🕵️ 첩보 본부" right={<small className="muted">공작 팀 {sp.active.length}/{spyTeams(state)}</small>}>
         <p className="small">
-          🕵️ 정보 점수 <b>{fmt(state.officer.intel)}</b> · 💰 국방예산 <b>{fmt(state.nations[me].treasury)}</b>
+          🕵️ 정보 점수 <b>{fmt(state.officer.intel)}</b> · 💰 나라 예산 <b>{fmt(state.nations[me].treasury)}</b>
         </p>
         <p className="small muted">정보 점수는 부관 "정보 수집" 심부름과 정찰 임무로 모여요. 실패하면 들킨 나라가 우리를 미워하고 긴장이 올라요.</p>
         {sp.active.map((m) => {
@@ -53,7 +53,7 @@ export function SpyPanel({ state, actions }: ScreenProps) {
         </div>
         {view && (
           <p className="small result">
-            🛰️ 정찰 중({timeLeft(view.untilMs - state.worldMs)}): 국방예산 {fmt(view.treasury)} · 병력 {fmt(view.troops)}
+            🛰️ 정찰 중({timeLeft(view.untilMs - state.worldMs)}): 나라 예산 {fmt(view.treasury)} · 병력 {fmt(view.troops)}
           </p>
         )}
       </Card>

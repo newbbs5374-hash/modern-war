@@ -886,7 +886,7 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
         교민철수: '명성 +8 · 지지도 +2',
         군수협상: '병력 +3%',
         현장방문: '지지도 +4 · 신뢰도 +1',
-        방산시찰: '국방예산 +400',
+        방산시찰: '나라 예산 +400',
         방어: `${c.name} 방어도 +25`,
         기습: `${c.name} 방어도 −20`,
         정찰: '정보 점수 +10',
@@ -895,13 +895,13 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
         작전: extra,
         대전투: extra,
       };
-      // 11-26: 이기면 작전 수당(봉급)과 국방예산도 받음
+      // 11-26: 이기면 작전 수당(봉급)과 나라 예산도 받음
       const payK = kindMult * a.difficulty * (outcome ? starMult : 1);
       const payT = Math.round(MISSION_PAY_TREASURY * payK * (1 + 0.1 * r));
       const payS = Math.round(MISSION_PAY_SALARY * payK * (1 + 0.1 * r));
       ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + payT } };
       ns.player = { ...ns.player, salary: ns.player.salary + payS };
-      text = `${a.title} 성공!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''} 공훈 +${Math.round(merit)} · ${effect[a.kind]} · 💰 수당 봉급 +${payS.toLocaleString('ko-KR')} · 국방예산 +${payT.toLocaleString('ko-KR')}`;
+      text = `${a.title} 성공!${outcome ? ` ${'★'.repeat(outcome.stars)}` : ''} 공훈 +${Math.round(merit)} · ${effect[a.kind]} · 💰 수당 봉급 +${payS.toLocaleString('ko-KR')} · 나라 예산 +${payT.toLocaleString('ko-KR')}`;
     } else {
       o.trust = Math.max(0, o.trust - (a.kind === '대전투' ? 5 : 2));
       if (a.kind === '대전투') {
@@ -930,7 +930,7 @@ function captureCity(ns: GameState, city: string) {
   // 11-26: 전리품(도시 값어치 + 빼앗긴 나라 금고 일부)
   const loot = Math.round(cityById(city).value * SPOILS_PER_VALUE + (ns.nations[prev]?.treasury ?? 0) * SPOILS_TREASURY_SHARE);
   ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + loot }, ...(ns.nations[prev] ? { [prev]: { ...ns.nations[prev], treasury: Math.max(0, ns.nations[prev].treasury - (ns.nations[prev].treasury * SPOILS_TREASURY_SHARE)) } } : {}) };
-  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 국방예산 +${loot.toLocaleString('ko-KR')}`, mine: true };
+  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}`, mine: true };
   w.events.unshift(ev);
 }
 

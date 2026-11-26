@@ -13,7 +13,7 @@ describe('미리 명령 · 자리 비운 동안', () => {
     expect(s.player.salary).toBeGreaterThan(0);
   });
 
-  it('방어 태세: 국방예산 수입 10% 줄어듦', () => {
+  it('방어 태세: 나라 예산 수입 10% 줄어듦', () => {
     const s = newGame('t', 'kr', 0, { seed: 1 });
     const on = setOrder(s, 'defendFirst', true);
     expect(budgetPerDay(on, 'kr') / budgetPerDay(s, 'kr')).toBeCloseTo(0.9, 5);
@@ -36,12 +36,12 @@ describe('미리 명령 · 자리 비운 동안', () => {
     expect(crisisOf(s).log[0]).toContain('부관');
   });
 
-  it('자리 비운 동안 보고: 국방예산·병력 변화와 소식', () => {
+  it('자리 비운 동안 보고: 나라 예산·병력 변화와 소식', () => {
     const b = newGame('t', 'kr', 0, { seed: 3 });
     const a = advance(b, 10 * H);
     const sum = summarizeAway(b, a, 10 * H);
     expect(sum.hours).toBe(10);
-    expect(sum.rows.some((r) => r.label === '국방예산')).toBe(true);
+    expect(sum.rows.some((r) => r.label === '나라 예산')).toBe(true);
     expect(sum.rows.some((r) => r.label === '돌발 사건')).toBe(false); // 6시간 뒤 열렸지만 아직 안 고름
   });
 });

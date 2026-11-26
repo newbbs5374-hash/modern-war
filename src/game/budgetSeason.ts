@@ -1,5 +1,5 @@
 // A7 예산 국회 시즌(11/24): 실제 7일마다 예산안 철. 하루 안에 예산안(4가지)을 내면 6시간 뒤 국회 표결.
-// 통과하면 다음 철까지 그 예산 효과, 부결(또는 안 냄)이면 준예산: 국방예산 −5%·신뢰도 −3.
+// 통과하면 다음 철까지 그 예산 효과, 부결(또는 안 냄)이면 준예산: 나라 예산 −5%·신뢰도 −3.
 import type { GameState } from './state';
 import type { LawKey } from './laws';
 import { domLog, domOf, registerDomRows, snap, withDom, type Rows } from './domestic';
@@ -22,12 +22,12 @@ export interface BudgetPlan {
   ease: number;
 }
 export const PLANS: BudgetPlan[] = [
-  { id: 'tight', icon: '✂️', name: '긴축 예산', text: '국방예산 +4% · 경제 −3 · 지지도 −2', eff: { budget: 0.04, economy: -3, approval: -2 }, groups: { biz: 4, labor: -6, civic: -3 }, ease: 0.05 },
+  { id: 'tight', icon: '✂️', name: '긴축 예산', text: '나라 예산 +4% · 경제 −3 · 지지도 −2', eff: { budget: 0.04, economy: -3, approval: -2 }, groups: { biz: 4, labor: -6, civic: -3 }, ease: 0.05 },
   { id: 'even', icon: '⚖️', name: '균형 예산', text: '신뢰도 +2', eff: { trust: 2 }, groups: {}, ease: 0.15 },
-  { id: 'grow', icon: '📈', name: '확장 예산', text: '경제 +5 · 지지도 +2 · 국방예산 −4%', eff: { economy: 5, approval: 2, budget: -0.04 }, groups: { labor: 4, youth: 3, biz: -2 }, ease: -0.05 },
+  { id: 'grow', icon: '📈', name: '확장 예산', text: '경제 +5 · 지지도 +2 · 나라 예산 −4%', eff: { economy: 5, approval: 2, budget: -0.04 }, groups: { labor: 4, youth: 3, biz: -2 }, ease: -0.05 },
   { id: 'arms', icon: '🛡️', name: '국방 강화 예산', text: '모집 +5% · 안보 +3 · 경제 −2', eff: { build: 0.05, defense: 3, economy: -2 }, groups: { mil: 6, civic: -4 }, ease: 0 },
 ];
-export const CUT = { eff: { budget: -0.05 } as Partial<Record<LawKey, number>>, text: '준예산: 국방예산 −5%' };
+export const CUT = { eff: { budget: -0.05 } as Partial<Record<LawKey, number>>, text: '준예산: 나라 예산 −5%' };
 export const planById = (id: string) => PLANS.find((p) => p.id === id);
 
 export function planChance(s: GameState, id: string): number {
@@ -62,7 +62,7 @@ export function budgetTick(s: GameState): GameState {
     b = { ...b, open: null, active: { plan: 'cut', untilMs: b.nextMs, cut: true }, cut: b.cut + 1 };
     ns = withDom(ns, { budget: b });
     ns = { ...ns, officer: { ...ns.officer, trust: Math.max(0, ns.officer.trust - 3) } };
-    ns = domLog(ns, '⚠️ 예산안을 내지 않아 준예산(국방예산 −5%·신뢰도 −3)');
+    ns = domLog(ns, '⚠️ 예산안을 내지 않아 준예산(나라 예산 −5%·신뢰도 −3)');
   }
   // 표결
   if (b.open?.plan && b.open.voteMs !== null && ns.worldMs >= b.open.voteMs) {
@@ -77,7 +77,7 @@ export function budgetTick(s: GameState): GameState {
       b = { ...b, open: null, active: { plan: 'cut', untilMs: b.nextMs, cut: true }, cut: b.cut + 1 };
       ns = withDom(ns, { budget: b });
       ns = { ...ns, officer: { ...ns.officer, trust: Math.max(0, ns.officer.trust - 3) } };
-      ns = domLog(ns, `❌ ${plan.name} 부결 → 준예산(국방예산 −5%·신뢰도 −3)`);
+      ns = domLog(ns, `❌ ${plan.name} 부결 → 준예산(나라 예산 −5%·신뢰도 −3)`);
     }
   }
   return ns;

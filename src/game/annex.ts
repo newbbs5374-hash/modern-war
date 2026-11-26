@@ -363,9 +363,9 @@ const CAPTURED_DEFENSE_BACK = 40;
 export type OccTask = '소탕' | '구호' | '재건' | '선전';
 export interface OccTaskDef { icon: string; name: string; mini: string; when: string; desc: string; cost: (value: number) => number }
 export const OCC_TASKS: Record<OccTask, OccTaskDef> = {
-  소탕: { icon: '🪖', name: '잔당 소탕', mini: 'shoot-popup', when: '군정', desc: '하루 동안 반란 확률 −25%×별, 군정 2시간×별 단축, 노획 국방예산', cost: () => 0 },
-  구호: { icon: '📦', name: '구호품 배급', mini: 'sup-ration', when: '민정·꼭두각시', desc: '이틀 동안 민심 +4×별(국방예산 씀)', cost: (v) => v * 800 },
-  재건: { icon: '🏗️', name: '전후 재건', mini: 'sup-road', when: '피해가 있을 때', desc: '전쟁 피해 −8%×별 → 수입 회복(국방예산 씀)', cost: (v) => v * 1000 },
+  소탕: { icon: '🪖', name: '잔당 소탕', mini: 'shoot-popup', when: '군정', desc: '하루 동안 반란 확률 −25%×별, 군정 2시간×별 단축, 노획 나라 예산', cost: () => 0 },
+  구호: { icon: '📦', name: '구호품 배급', mini: 'sup-ration', when: '민정·꼭두각시', desc: '이틀 동안 민심 +4×별(나라 예산 씀)', cost: (v) => v * 800 },
+  재건: { icon: '🏗️', name: '전후 재건', mini: 'sup-road', when: '피해가 있을 때', desc: '전쟁 피해 −8%×별 → 수입 회복(나라 예산 씀)', cost: (v) => v * 1000 },
   선전: { icon: '📻', name: '선전 방송', mini: 'rec-speech', when: '민정', desc: '주민투표 찬성률 +3%×별(최대 +12%)', cost: () => 0 },
 };
 export const OCC_TASK_HOURS = 12;
@@ -385,7 +385,7 @@ export function canOccTask(s: GameState, cityId: string, t: OccTask): string | n
   if (t === '선전' && (a.stage !== '민정' || puppet || a.treaty)) return '편입을 기다리는 민정 도시에서 해요';
   if (t === '선전' && (a.propaganda ?? 0) >= 12) return '찬성률 보너스가 가득 찼어요';
   const cost = OCC_TASKS[t].cost(cityById(cityId).value);
-  if (cost && s.nations[s.player.countryId].treasury < cost) return `국방예산 ${cost.toLocaleString('ko-KR')} 필요`;
+  if (cost && s.nations[s.player.countryId].treasury < cost) return `나라 예산 ${cost.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 
@@ -401,12 +401,12 @@ export function applyOccTask(s: GameState, cityId: string, t: OccTask, stars: nu
   let treasury = s.nations[me].treasury - cost;
   let text = '';
   const st = Math.max(0, Math.min(3, stars));
-  if (!st) text = `${OCC_TASKS[t].name} 실패… 효과 없음${cost ? ` (국방예산 −${cost.toLocaleString('ko-KR')})` : ''}`;
+  if (!st) text = `${OCC_TASKS[t].name} 실패… 효과 없음${cost ? ` (나라 예산 −${cost.toLocaleString('ko-KR')})` : ''}`;
   else if (t === '소탕') {
     const loot = c.value * OCC_LOOT_PER_VALUE * st;
     treasury += loot;
     a = { ...a, sweepUntil: s.worldMs + 24 * H, sweepStars: st, since: a.since - 2 * H * st };
-    text = `잔당 소탕 ${'★'.repeat(st)} · 하루 동안 반란 −${25 * st}% · 군정 ${2 * st}시간 단축 · 노획 국방예산 +${loot.toLocaleString('ko-KR')}`;
+    text = `잔당 소탕 ${'★'.repeat(st)} · 하루 동안 반란 −${25 * st}% · 군정 ${2 * st}시간 단축 · 노획 나라 예산 +${loot.toLocaleString('ko-KR')}`;
   } else if (t === '구호') {
     a = { ...a, relief: 4 * st, reliefUntil: s.worldMs + 48 * H };
     text = `구호품 배급 ${'★'.repeat(st)} · 이틀 동안 민심 +${4 * st}`;

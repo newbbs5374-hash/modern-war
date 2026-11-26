@@ -44,7 +44,7 @@ export const NATION_GOV: Record<string, NationGov> = {
     posts: {},
     facilities: {},
     traits: [
-      T('🏭', '방산 수출', '무기를 팔아 국방예산 +6%', { budget: 0.06 }),
+      T('🏭', '방산 수출', '무기를 팔아 나라 예산 +6%', { budget: 0.06 }),
       T('📚', '교육열', '연구 속도 +6% · 사회 점수 +2', { research: 0.06, soc: 2 }),
       T('👶', '저출산', '인구 성장 −5%', { growth: -0.05 }, true),
     ],
@@ -80,7 +80,7 @@ export const NATION_GOV: Record<string, NationGov> = {
     },
     generals: { 합참: '합참의장', 정보: '국방정보국장', 군수: '군수사령관' },
     traits: [
-      T('💵', '달러 패권', '국방예산 +8%', { budget: 0.08 }),
+      T('💵', '달러 패권', '나라 예산 +8%', { budget: 0.08 }),
       T('🚢', '대양 항로', '부대 모집 속도 +6% · 모든 나라 호감 +2', { build: 0.06, favor: 2 }),
       T('🗳️', '갈라진 여론', '지지도 −3', { approval: -3 }, true),
     ],
@@ -255,7 +255,7 @@ export const NATION_GOV: Record<string, NationGov> = {
     generals: { 합참: '국방참모총장', 육군: '육군참모총장', 해군: '제1해군경', 공군: '공군참모총장', 정보: '국방정보국장', 군수: '전략사령관' },
     traits: [
       T('🕵️', '정보 강국', '임무 성공 +4% · 안보 점수 +2', { mission: 0.04, sec: 2 }),
-      T('💷', '금융 도시 런던', '국방예산 +5% · 경제 점수 +2', { budget: 0.05, econ: 2 }),
+      T('💷', '금융 도시 런던', '나라 예산 +5% · 경제 점수 +2', { budget: 0.05, econ: 2 }),
       T('🪖', '작은 군대', '병력 보충 −6%', { troop: -0.06 }, true),
     ],
   },
@@ -321,7 +321,7 @@ export const NATION_GOV: Record<string, NationGov> = {
     generals: { 합참: '총참모장', 육군: '지상군 사령관', 해군: '해군 사령관', 공군: '공군 사령관', 정보: '군 정보국장', 군수: '군수사령관' },
     traits: [
       T('🛸', '무인기 강국', '부대 모집 속도 +6% · 연구 속도 +3%', { build: 0.06, research: 0.03 }),
-      T('🌉', '해협의 열쇠', '외교 점수 +5 · 국방예산 +3%', { diplo: 5, budget: 0.03 }),
+      T('🌉', '해협의 열쇠', '외교 점수 +5 · 나라 예산 +3%', { diplo: 5, budget: 0.03 }),
       T('📈', '물가 불안', '경제 점수 −4 · 지지도 −1', { econ: -4, approval: -1 }, true),
     ],
   },
@@ -386,7 +386,7 @@ export const NATION_GOV: Record<string, NationGov> = {
     traits: [
       T('🕌', '혁명수비대', '병력 보충 +8% · 안보 점수 +2', { troop: 0.08, sec: 2 }),
       T('⚓', '해협 봉쇄', '안보 점수 +3 · 외교 점수 +2', { sec: 3, diplo: 2 }),
-      T('⛔', '국제 제재', '국방예산 −6%', { budget: -0.06 }, true),
+      T('⛔', '국제 제재', '나라 예산 −6%', { budget: -0.06 }, true),
     ],
   },
   ua: {
@@ -417,7 +417,7 @@ export const NATION_GOV: Record<string, NationGov> = {
     generals: { 합참: '총사령관', 육군: '지상군 사령관', 해군: '해군 사령관', 공군: '공군 사령관', 정보: '국방정보총국(HUR) 국장', 군수: '지원군 사령관' },
     traits: [
       T('💙', '국토 방위 의지', '모든 도시 민심 +5 · 안보 점수 +3', { loyalty: 5, sec: 3 }),
-      T('🤝', '서방 지원', '모든 나라 호감 +5 · 국방예산 +4%', { favor: 5, budget: 0.04 }),
+      T('🤝', '서방 지원', '모든 나라 호감 +5 · 나라 예산 +4%', { favor: 5, budget: 0.04 }),
       T('💥', '전쟁 피해', '경제 점수 −6 · 자원 생산 −5%', { econ: -6, res: -0.05 }, true),
     ],
   },

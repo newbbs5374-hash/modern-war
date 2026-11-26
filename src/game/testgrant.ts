@@ -10,7 +10,7 @@ import { goalsOf } from './goals';
 export const TEST_RUBY = 5000;
 export const TEST_GRANT_NOW = 4;
 
-/** 봉급·국방예산·병력·자원·가속권·정보·훈련 일정 */
+/** 봉급·나라 예산·병력·자원·가속권·정보·훈련 일정 */
 export function grantTestResources(s: GameState): GameState {
   const me = s.player.countryId;
   const stock = { ...s.economy.stock };

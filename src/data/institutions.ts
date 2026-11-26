@@ -13,7 +13,7 @@ export interface InstDef {
 export const INSTS: InstDef[] = [
   { id: 'lab', name: '국립 연구소', icon: '🔬', does: '연구 +0.15/시간' },
   { id: 'univ', name: '명문 대학', icon: '🎓', does: '연구 +0.1/시간' },
-  { id: 'bank', name: '금융 센터', icon: '🏦', does: '국방예산 +4%' },
+  { id: 'bank', name: '금융 센터', icon: '🏦', does: '나라 예산 +4%' },
   { id: 'army', name: '육군 기지', icon: '🪖', does: '육군 모집 +8% · 이 도시 방어 +15%' },
   { id: 'navy', name: '해군 기지', icon: '⚓', does: '해군 모집 +10% · 함대 모항' },
   { id: 'air', name: '공군 기지', icon: '🛩️', does: '공군 모집 +10% · 전투기 출격지' },

@@ -1,4 +1,5 @@
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
+import { payPreview } from '../game/payday';
 import { CITY_INST, instById } from '../data/institutions';
 import { ReportScreen, reportCount } from './ReportScreen';
 import { CultureScreen } from './CultureScreen';
@@ -76,6 +77,7 @@ export function HomeScreen(props: ScreenProps) {
   const me = countryById(state.player.countryId);
   const pending = state.player.pendingSalary;
   const cap = pendingCap(state);
+  const pay = payPreview(state);
   const wars = COUNTRIES.filter((c) => c.id !== me.id && isAlive(state.world, c.id) && relationOf(state.world, me.id, c.id) === '전쟁');
   const latest = state.world.events.find((e) => e.mine);
   const fallen = !isAlive(state.world, me.id);
@@ -249,6 +251,7 @@ export function HomeScreen(props: ScreenProps) {
             <span>💵</span>
             <span className="hq-main">
               <b>봉급 받기 +{fmt(pending)}</b>
+              {pay.salary > 0 && <small>💰예산 +{fmt(pay.budget)}{pay.ruby ? ` · 💎+${pay.ruby}` : ''}{pay.boosts ? ` · 🎫+${pay.boosts}` : ''}</small>}
               <span className="bar">
                 <span className="bar-fill" style={{ width: `${Math.min(100, (pending / cap) * 100)}%` }} />
               </span>
