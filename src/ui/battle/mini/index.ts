@@ -15,6 +15,8 @@ import { AirFlare, AirIntercept, AirLanding } from './air';
 import { SeaFormation, SeaSonar, SeaTorpedo } from './sea';
 import { FAirCockpit, FArtyObserve, FFitRun, FSeaBridge, FShootScope, FSneakFP } from './freshA';
 import { FHackNet, FTacWego } from './freshB';
+import { FInterro } from './freshC';
+import { FLeadRadio, FRecAds, FSupBase } from './freshD';
 import { M3AirFlare, M3AirIntercept, M3ArtyLead, M3SeaSonar, M3SeaTorpedo, M3ShootMoving, M3ShootPopup, M3SneakLight } from './three';
 
 export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
@@ -70,4 +72,8 @@ export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'n-fit-run3d': FFitRun,
   'n-tac-wego': FTacWego,
   'n-hack-net': FHackNet,
+  'n-intel-interro': FInterro,
+  'n-sup-base': FSupBase,
+  'n-lead-radio': FLeadRadio,
+  'n-rec-ads': FRecAds,
 };

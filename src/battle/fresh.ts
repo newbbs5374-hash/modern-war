@@ -333,23 +333,36 @@ export const ADS = [
   { k: '학교', icon: '🏫' },
   { k: '박람회', icon: '🎪' },
 ] as const;
-export interface AdState { day: number; spend: number[]; eff: number[]; hist: number[]; total: number; event: string; boost: number }
-export const AD = { DAYS: 7, BUDGET: 10, DAY_SECS: 8, TARGET: 420 } as const;
-/** 채널마다 숨은 효과(씨앗마다 다름). 같은 곳에 몰면 효과가 줄어요(제곱근) */
+export interface AdState { day: number; spend: number[]; eff: number[]; hist: number[]; last: number[]; total: number; event: string; boost: number; target: number }
+export const AD = { DAYS: 7, BUDGET: 10, DAY_SECS: 8, POW: 0.8 } as const;
+const adGain = (eff: number[], spend: number[], boost: number) => spend.map((x, i) => eff[i] * (i === boost ? 2 : 1) * Math.pow(Math.max(0, x), AD.POW));
+/** 예산 10을 가장 잘 나눴을 때 하루 지원자(이벤트 없음) */
+export function adBestDay(eff: number[]): number {
+  let best = 0;
+  for (let a = 0; a <= AD.BUDGET; a++)
+    for (let b = 0; a + b <= AD.BUDGET; b++)
+      for (let c = 0; a + b + c <= AD.BUDGET; c++) {
+        const v = adGain(eff, [a, b, c, AD.BUDGET - a - b - c], -1).reduce((x, y) => x + y, 0);
+        if (v > best) best = v;
+      }
+  return best;
+}
+/** 채널마다 숨은 효과(씨앗마다 다름). 같은 곳에 몰수록 효과가 줄어요 */
 export function adNew(seed: number): AdState {
   const rng = new Rng(seed >>> 0 || 1);
-  const eff = ADS.map(() => rng.range(6, 16));
-  return { day: 0, spend: [3, 3, 2, 2], eff, hist: [], total: 0, event: '', boost: -1 };
+  const eff = ADS.map(() => rng.range(1, 20));
+  return { day: 0, spend: [3, 3, 2, 2], eff, hist: [], last: [0, 0, 0, 0], total: 0, event: '', boost: -1, target: Math.round(adBestDay(eff) * AD.DAYS * 1.2) };
 }
 export function adDay(s: AdState, rng: Rng): number {
-  const mult = s.eff.map((e, i) => e * (i === s.boost ? 2 : 1));
-  const n = Math.round(s.spend.reduce((a, x, i) => a + mult[i] * Math.sqrt(x), 0) * rng.range(0.9, 1.1));
+  const r = rng.range(0.92, 1.08);
+  s.last = adGain(s.eff, s.spend, s.boost).map((x) => Math.round(x * r));
+  const n = s.last.reduce((a, b) => a + b, 0);
   s.hist.push(n);
   s.total += n;
   s.day++;
   // 다음 날 일(가끔 한 채널 효과 2배)
   s.boost = rng.chance(0.45) ? ri(rng, 0, ADS.length - 1) : -1;
-  s.event = s.boost < 0 ? '' : ['군대 드라마 방영: TV 효과 2배', '유명 유튜버가 부대 체험: 인터넷 효과 2배', '진로 주간: 학교 효과 2배', '주말 큰 행사: 박람회 효과 2배'][s.boost];
+  s.event = s.boost < 0 ? '' : ['군대 드라마 방영: 내일 TV 효과 2배', '유명 유튜버가 부대 체험: 내일 인터넷 효과 2배', '진로 주간: 내일 학교 효과 2배', '주말 큰 행사: 내일 박람회 효과 2배'][s.boost];
   return n;
 }
-export const adScore = (s: AdState) => Math.max(0, Math.min(1, s.total / AD.TARGET));
+export const adScore = (s: AdState) => Math.max(0, Math.min(1, s.total / s.target));
