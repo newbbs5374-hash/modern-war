@@ -119,6 +119,17 @@ export const UNIT_COST: Record<string, UnitCost> = {
   잠수함: { money: 4500, res: { 강철: 8, 특수강: 2, 리튬: 4, 반도체: 3, 우라늄: 1, 니켈: 1 }, hours: 10, power: 28, troops: 150 },
   미사일: { money: 2500, res: { 티타늄: 2, 희토류: 3, 반도체: 2, 구리: 2, 정밀부품: 1, 텅스텐: 1, 게르마늄: 1 }, hours: 4, power: 18, troops: 0 },
   항공모함: { money: 12000, res: { 강철: 24, 특수강: 4, 석유: 10, 반도체: 6, 티타늄: 4, 우라늄: 2 }, hours: 24, power: 70, troops: 2000 },
+  // 새 병과 10개(11-26 대장 요청, 3D 전투 battle3d/sim.ts NEW_KINDS)
+  탄도미사일: { money: 3200, res: { 강철: 3, 티타늄: 2, 희토류: 2, 반도체: 2, 정밀부품: 2, 텅스텐: 1 }, hours: 5, power: 22, troops: 200 },
+  다연장로켓: { money: 1600, res: { 강철: 4, 석유: 1, 구리: 2, 텅스텐: 1 }, hours: 3, power: 12, troops: 300 },
+  '장거리 방공': { money: 2400, res: { 강철: 3, 반도체: 2, 희토류: 2, 정밀부품: 2, 갈륨: 1 }, hours: 4, power: 15, troops: 300 },
+  '해안 미사일': { money: 2000, res: { 강철: 3, 반도체: 1, 희토류: 1, 정밀부품: 1, 구리: 1 }, hours: 4, power: 13, troops: 250 },
+  '정찰 무인기': { money: 900, res: { 알루미늄: 2, 리튬: 1, 반도체: 2, 복합소재: 1 }, hours: 2, power: 6, troops: 0 },
+  '스텔스 전투기': { money: 5000, res: { 알루미늄: 2, 복합소재: 4, 티타늄: 4, 반도체: 3, 희토류: 1, 석유: 2 }, hours: 9, power: 30, troops: 100 },
+  조기경보기: { money: 3800, res: { 알루미늄: 4, 반도체: 4, 구리: 2, 석유: 3, 갈륨: 1 }, hours: 7, power: 16, troops: 100 },
+  '지상 공격기': { money: 3200, res: { 알루미늄: 4, 티타늄: 2, 석유: 3, 텅스텐: 1 }, hours: 6, power: 20, troops: 100 },
+  상륙장갑차: { money: 900, res: { 강철: 3, 석유: 1, 알루미늄: 1 }, hours: 2, power: 6, troops: 500 },
+  '바다 드론': { money: 500, res: { 알루미늄: 1, 리튬: 1, 반도체: 1 }, hours: 1, power: 4, troops: 0 },
   // 독점 병과(몇 나라만 만듦, data/specials.ts EXCLUSIVES)
   강습상륙함: { money: 6000, res: { 강철: 14, 특수강: 2, 석유: 6, 반도체: 3, 구리: 2 }, hours: 12, power: 34, troops: 1500 },
   '원자력 잠수함': { money: 7000, res: { 강철: 10, 특수강: 2, 니켈: 2, 리튬: 2, 반도체: 4, 우라늄: 3 }, hours: 14, power: 40, troops: 150 },

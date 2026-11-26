@@ -86,7 +86,7 @@ export function makeField(f: FieldSpec): Stage {
   };
 }
 
-const SEA_KINDS: Kind[] = ['dd', 'cv', 'sub', 'lha', 'ssn', 'laser', 'drone', 'heli', 'jet', 'bomber', 'missile'];
+const SEA_KINDS: Kind[] = ['dd', 'cv', 'sub', 'lha', 'ssn', 'laser', 'usv', 'drone', 'heli', 'jet', 'bomber', 'missile', 'uav', 'f35', 'awacs', 'gunship'];
 export const LAND_AIR: Kind[] = ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa', 'drone', 'heli', 'jet', 'bomber', 'missile'];
 
 /* ───────── 임무·작전·대전투에 쓰는 큰 전장 ───────── */
