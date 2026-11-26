@@ -90,7 +90,7 @@ describe('내정', () => {
     s = advance(s, 4 * H);
     expect(s.economy.queue.length).toBe(0);
     expect(s.economy.army.전차).toBe(1);
-    expect(s.economy.power).toBe(21); // 9 + 2, 연구 40개(육군·전체 전투력 강화들)로 ×1.9쯤
+    expect(s.economy.power).toBe(27); // 9 + 2, 군사 연구 100개(육군·전체 전투력 강화들)로 ×2.5쯤
     expect(s.nations.kr.troops).toBeGreaterThan(base.nations.kr.troops + 2000);
     // 특화 유닛(한국: ① 자주포 포병대 · ② 흑표 수출 전차). 바탕 병과도 계속 만들 수 있음
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 80, 석유: 30, 구리: 10, 텅스텐: 10, 특수강: 10 } } };

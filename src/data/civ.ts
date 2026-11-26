@@ -77,7 +77,7 @@ export interface Tech {
 
 const T = (t: Tech) => t;
 
-/** 군사 기술 40개 */
+/** 군사 기술 100개(11-26 대장 요청으로 40 → 100) */
 export const MIL_TECHS: Tech[] = [
   // 도약기
   T({ id: 'm-drone', line: 'mil', name: '무인기 기술', icon: '🛸', era: 1, hours: 1, needs: [], units: ['무인드론'], text: '싸고 빠른 정찰·자폭 드론', eureka: { key: { kind: 'train', name: '정보', stars: 2 }, text: '정보 훈련 별 2개 이상' } }),
@@ -94,7 +94,7 @@ export const MIL_TECHS: Tech[] = [
   // 제공기
   T({ id: 'm-bomber', line: 'mil', name: '전략 폭격', icon: '🛩️', era: 3, hours: 6, needs: ['m-jet'], units: ['폭격기'], text: '도시·기지에 큰 피해', eureka: { key: { kind: 'train', name: '항공', stars: 3 }, text: '항공 훈련 별 3개' } }),
   T({ id: 'm-silent', line: 'mil', name: '잠수함 정숙화', icon: '🫧', era: 3, hours: 6, needs: ['m-aegis'], units: ['잠수함', '원자력 잠수함'], text: '소리 없이 숨어 기습 · 원자력 잠수함(독점)', eureka: { key: { kind: 'train', name: '해상', stars: 2 }, text: '해상 훈련 별 2개 이상(해전 승리)' } }),
-  T({ id: 'm-guided', line: 'mil', name: '정밀 유도', icon: '🚀', era: 3, hours: 6, needs: ['m-arty', 'm-radar'], units: ['미사일'], text: '아주 멀리서 정확히', eureka: { key: { kind: 'train', name: '포격', stars: 3 }, text: '포격 훈련 별 3개' } }),
+  T({ id: 'm-guided', line: 'mil', name: '정밀 유도', icon: '🚀', era: 3, hours: 6, needs: ['m-radar'], units: ['미사일'], text: '아주 멀리서 정확히', eureka: { key: { kind: 'train', name: '포격', stars: 3 }, text: '포격 훈련 별 3개' } }),
   T({ id: 'm-stealth', line: 'mil', name: '스텔스 도료', icon: '🦇', era: 3, hours: 7, needs: ['m-jet'], eff: { power: { dom: '공', v: 0.15 } }, text: '공군 전투력 +15%', eureka: { key: { kind: 'train', name: '잠입', stars: 3 }, text: '잠입 훈련 별 3개' } }),
   T({ id: 'm-sat', line: 'mil', name: '정찰 위성', icon: '🛰️', era: 3, hours: 7, needs: ['m-radar'], eff: { mission: 0.05 }, text: '임무 성공률 +5%', eureka: { key: { kind: 'mission', name: '정보보고' }, text: '정보 보고 임무 성공' } }),
   // 대양기
@@ -119,7 +119,7 @@ export const MIL_TECHS: Tech[] = [
   // 제공기
   T({ id: 'm-active', line: 'mil', name: '능동 방호', icon: '🧿', era: 3, hours: 6, needs: ['m-armor'], eff: { power: { dom: '육', v: 0.1 } }, text: '날아오는 포탄을 맞혀 떨어뜨려요 · 육군 전투력 +10%', eureka: { key: { kind: 'mission', name: '안보회의' }, text: '방어 안보회의 성공' } }),
   T({ id: 'm-vls', line: 'mil', name: '수직 발사관', icon: '🎯', era: 3, hours: 6, needs: ['m-aegis'], eff: { power: { dom: '해', v: 0.1 } }, text: '군함에서 미사일을 한꺼번에 · 해군 전투력 +10%', eureka: { key: { kind: 'district', id: 'harbor' }, text: '항만 구역 첫 완공' } }),
-  T({ id: 'm-awacs', line: 'mil', name: '공중 조기경보', icon: '🛩️', era: 3, hours: 6.5, needs: ['m-jet'], eff: { power: { dom: '공', v: 0.1 }, mission: 0.02 }, text: '하늘의 눈 · 공군 전투력 +10% · 임무 +2%', eureka: { key: { kind: 'district', id: 'airfield' }, text: '비행장 구역 첫 완공' } }),
+  T({ id: 'm-awacs', line: 'mil', name: '공중 조기경보', icon: '🛩️', era: 3, hours: 6.5, needs: ['m-jet'], units: ['조기경보기'], eff: { power: { dom: '공', v: 0.1 }, mission: 0.02 }, text: '하늘의 눈 · 공군 전투력 +10% · 임무 +2% · 조기경보기 부대', eureka: { key: { kind: 'district', id: 'airfield' }, text: '비행장 구역 첫 완공' } }),
   T({ id: 'm-ai', line: 'mil', name: '인공지능 표적', icon: '🤖', era: 3, hours: 7, needs: ['m-ew'], eff: { power: { dom: 'all', v: 0.05 }, research: 0.05 }, text: '모든 전투력 +5% · 연구 +5%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
   T({ id: 'm-sealift', line: 'mil', name: '전략 수송', icon: '🚛', era: 3, hours: 6, needs: ['m-depot', 'm-supply'], cards: ['군-기동'], eff: { build: { dom: 'all', v: 0.1 } }, text: '모든 부대 모집 −10% · 카드 1장', eureka: { key: { kind: 'army', count: 12 }, text: '부대 12개 보유' } }),
   // 대양기
@@ -128,9 +128,75 @@ export const MIL_TECHS: Tech[] = [
   T({ id: 'm-laser', line: 'mil', name: '레이저 무기', icon: '🔆', era: 4, hours: 12, needs: ['m-vls'], eff: { power: { dom: '해', v: 0.12 } }, text: '빛으로 미사일을 떨어뜨려요 · 해군 전투력 +12%', eureka: { key: { kind: 'island' }, text: '분쟁 지역 한 곳에서 영향력 1등' } }),
   T({ id: 'm-space', line: 'mil', name: '우주 작전', icon: '🌌', era: 4, hours: 12, needs: ['m-sat'], eff: { mission: 0.05, power: { dom: 'all', v: 0.05 } }, text: '위성으로 전장을 본다 · 임무 +5% · 모든 전투력 +5%', eureka: { key: { kind: 'mission', name: '대전투' }, text: '대전투 승리' } }),
   T({ id: 'm-exo', line: 'mil', name: '강화 외골격', icon: '🦾', era: 4, hours: 10, needs: ['m-active', 'm-nightvis'], eff: { power: { dom: '육', v: 0.12 }, build: { dom: '육', v: 0.1 } }, text: '로봇 옷을 입은 보병 · 육군 전투력 +12% · 육군 모집 −10%', eureka: { key: { kind: 'train', name: '체력', stars: 3 }, text: '체력 훈련 별 3개' } }),
+  // ── 11-26 대장 요청: 군사 연구 100개(병과마다 더 잘게 · 새 병과 10개 여는 연구) ──
+  // 육군 · 포병 · 상륙
+  T({ id: 'm-armorvest', line: 'mil', name: '방탄 장구', icon: '🦺', era: 1, hours: 1, needs: ['m-rifle'], eff: { power: { dom: '육', v: 0.015 } }, text: '방탄복·방탄모 · 육군 +1.5%', eureka: { key: { kind: 'train', name: '체력', stars: 1 }, text: '체력 훈련 성공' } }),
+  T({ id: 'm-sof', line: 'mil', name: '특수전 교리', icon: '🥷', era: 1, hours: 1.5, needs: ['m-rifle'], eff: { power: { dom: '육', v: 0.015 }, mission: 0.02 }, text: '특수부대 쓰는 법 · 육군 +1.5% · 임무 +2%', eureka: { key: { kind: 'train', name: '잠입', stars: 1 }, text: '잠입 훈련 성공' } }),
+  T({ id: 'm-ifv', line: 'mil', name: '보병 전투차', icon: '🚐', era: 1, hours: 1.5, needs: ['m-mech'], eff: { build: { dom: '육', v: 0.05 } }, text: '포를 단 장갑차 · 육군 모집 −5%', eureka: { key: { kind: 'train', name: '전술', stars: 1 }, text: '전술 훈련 성공' } }),
+  T({ id: 'm-mlrs', line: 'mil', name: '다연장 로켓', icon: '🎆', era: 2, hours: 2.5, needs: ['m-arty'], units: ['다연장로켓'], text: '로켓 수십 발을 한꺼번에 · 다연장로켓 부대', eureka: { key: { kind: 'train', name: '포격', stars: 1 }, text: '포격 훈련 성공' } }),
+  T({ id: 'm-amphib', line: 'mil', name: '상륙 장갑차', icon: '🐊', era: 2, hours: 2.5, needs: ['m-ifv'], units: ['상륙장갑차'], text: '바다에서 헤엄쳐 해변으로 · 상륙장갑차 부대', eureka: { key: { kind: 'district', id: 'harbor' }, text: '항만 구역 첫 완공' } }),
+  T({ id: 'm-tankgun', line: 'mil', name: '활강포 개량', icon: '🔩', era: 2, hours: 2.5, needs: ['m-armor'], eff: { power: { dom: '육', v: 0.025 } }, text: '전차 포를 더 세게 · 육군 +2.5%', eureka: { key: { kind: 'train', name: '사격', stars: 2 }, text: '사격 훈련 별 2개 이상' } }),
+  T({ id: 'm-counterbat', line: 'mil', name: '대포병 레이더', icon: '📍', era: 3, hours: 2.5, needs: ['m-mlrs'], eff: { power: { dom: '육', v: 0.025 } }, text: '적 대포 자리를 바로 찾아요 · 육군 +2.5%', eureka: { key: { kind: 'train', name: '포격', stars: 2 }, text: '포격 훈련 별 2개 이상' } }),
+  T({ id: 'm-marine', line: 'mil', name: '해병 상륙 교리', icon: '🏖️', era: 3, hours: 2.5, needs: ['m-amphib'], eff: { power: { dom: '육', v: 0.025 } }, text: '바다에서 땅으로 한 번에 · 육군 +2.5%', eureka: { key: { kind: 'train', name: '해상', stars: 1 }, text: '해상 훈련 성공' } }),
+  T({ id: 'm-urban', line: 'mil', name: '시가전 교리', icon: '🏙️', era: 2, hours: 2.5, needs: ['m-sof'], eff: { power: { dom: '육', v: 0.025 } }, text: '건물 사이 싸움 · 육군 +2.5%', eureka: { key: { kind: 'train', name: '전술', stars: 2 }, text: '전술 훈련 별 2개 이상' } }),
+  T({ id: 'm-guidedshell', line: 'mil', name: '유도 포탄', icon: '🎯', era: 3, hours: 5, needs: ['m-counterbat'], eff: { power: { dom: '육', v: 0.035 } }, text: '포탄이 스스로 길을 찾아요 · 육군 +3.5%', eureka: { key: { kind: 'train', name: '포격', stars: 3 }, text: '포격 훈련 별 3개' } }),
+  T({ id: 'm-longrocket', line: 'mil', name: '장거리 로켓탄', icon: '🧨', era: 3, hours: 5, needs: ['m-mlrs'], eff: { power: { dom: '육', v: 0.025 }, build: { dom: '육', v: 0.05 } }, text: '로켓이 더 멀리 · 육군 +2.5% · 육군 모집 −5%', eureka: { key: { kind: 'mission', name: '작전' }, text: '작전 성공' } }),
+  T({ id: 'm-assault', line: 'mil', name: '강습 상륙', icon: '⚓', era: 4, hours: 5, needs: ['m-marine'], eff: { power: { dom: '육', v: 0.03 } }, text: '헬기·장갑차로 동시에 상륙 · 육군 +3%', eureka: { key: { kind: 'island' }, text: '분쟁 지역 한 곳에서 영향력 1등' } }),
+  T({ id: 'm-mbt3', line: 'mil', name: '3세대 전차', icon: '🛡️', era: 3, hours: 5.5, needs: ['m-tankgun'], eff: { power: { dom: '육', v: 0.035 } }, text: '빠르고 단단한 전차 · 육군 +3.5%', eureka: { key: { kind: 'army', count: 10 }, text: '부대 10개 보유' } }),
+  T({ id: 'm-ugv', line: 'mil', name: '무인 지상 차량', icon: '🦿', era: 3, hours: 5, needs: ['m-urban'], eff: { build: { dom: '육', v: 0.08 } }, text: '사람 대신 로봇 차가 앞장 · 육군 모집 −8%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
+  T({ id: 'm-railgun', line: 'mil', name: '레일건 함포', icon: '⚡', era: 4, hours: 8, needs: ['m-vls'], eff: { power: { dom: 'all', v: 0.025 } }, text: '군함이 전기로 쏘는 포 · 모든 전투력 +2.5%', eureka: { key: { kind: 'mission', name: '대전투' }, text: '대전투 승리' } }),
+  T({ id: 'm-nextmbt', line: 'mil', name: '차세대 전차', icon: '🪖', era: 4, hours: 8, needs: ['m-mbt3'], eff: { power: { dom: '육', v: 0.05 } }, text: '무인 포탑·능동 장갑 · 육군 +5%', eureka: { key: { kind: 'army', count: 25 }, text: '부대 25개 보유' } }),
+  T({ id: 'm-robotsq', line: 'mil', name: '로봇 분대', icon: '🤖', era: 4, hours: 8, needs: ['m-ugv'], eff: { power: { dom: '육', v: 0.035 }, build: { dom: '육', v: 0.07 } }, text: '로봇과 함께 싸우는 보병 · 육군 +3.5% · 모집 −7%', eureka: { key: { kind: 'train', name: '전술', stars: 3 }, text: '전술 훈련 별 3개' } }),
+  T({ id: 'm-amphibnext', line: 'mil', name: '수륙 기동 여단', icon: '🌊', era: 4, hours: 8, needs: ['m-assault'], eff: { power: { dom: '육', v: 0.04 } }, text: '섬 어디든 하루 만에 · 육군 +4%', eureka: { key: { kind: 'train', name: '해상', stars: 3 }, text: '해상 훈련 별 3개' } }),
+  // 공군 · 무인기
+  T({ id: 'm-uavrecon', line: 'mil', name: '정찰 무인기', icon: '🛰️', era: 1, hours: 1.5, needs: ['m-drone'], units: ['정찰 무인기'], text: '하늘에서 오래 지켜보는 눈 · 정찰 무인기 부대', eureka: { key: { kind: 'train', name: '정보', stars: 1 }, text: '정보 훈련 성공' } }),
+  T({ id: 'm-pilot', line: 'mil', name: '조종사 양성', icon: '👨‍✈️', era: 2, hours: 1.5, needs: ['m-recon'], eff: { power: { dom: '공', v: 0.015 } }, text: '비행 학교 · 공군 +1.5%', eureka: { key: { kind: 'train', name: '항공', stars: 1 }, text: '항공 훈련 성공' } }),
+  T({ id: 'm-gunship', line: 'mil', name: '지상 공격기', icon: '🛩️', era: 2, hours: 3, needs: ['m-heli'], units: ['지상 공격기'], text: '느리게 돌며 땅을 두드리는 비행기 · 지상 공격기 부대', eureka: { key: { kind: 'mission', name: '특수작전' }, text: '특수작전 승인 성공' } }),
+  T({ id: 'm-datalink', line: 'mil', name: '공중 데이터링크', icon: '🔗', era: 2, hours: 2.5, needs: ['m-uavrecon'], eff: { power: { dom: '공', v: 0.02 }, mission: 0.02 }, text: '비행기끼리 화면을 나눠 봐요 · 공군 +2% · 임무 +2%', eureka: { key: { kind: 'train', name: '정보', stars: 2 }, text: '정보 훈련 별 2개 이상' } }),
+  T({ id: 'm-pgm', line: 'mil', name: '정밀 유도 폭탄', icon: '💣', era: 3, hours: 2.5, needs: ['m-gunship'], eff: { power: { dom: '공', v: 0.025 } }, text: '떨어뜨리면 그 자리에 · 공군 +2.5%', eureka: { key: { kind: 'train', name: '항공', stars: 2 }, text: '항공 훈련 별 2개 이상' } }),
+  T({ id: 'm-jet4', line: 'mil', name: '4.5세대 전투기', icon: '🛫', era: 3, hours: 3, needs: ['m-jet'], eff: { power: { dom: '공', v: 0.025 } }, text: '레이더·미사일 새로 · 공군 +2.5%', eureka: { key: { kind: 'district', id: 'airfield' }, text: '비행장 구역 첫 완공' } }),
+  T({ id: 'm-c2', line: 'mil', name: '공중 지휘 통제', icon: '🎛️', era: 3, hours: 5, needs: ['m-awacs'], eff: { power: { dom: '공', v: 0.025 }, mission: 0.03 }, text: '하늘에서 싸움을 지휘 · 공군 +2.5% · 임무 +3%', eureka: { key: { kind: 'train', name: '통솔', stars: 2 }, text: '통솔 훈련 별 2개 이상' } }),
+  T({ id: 'm-f5', line: 'mil', name: '스텔스 전투기', icon: '🦅', era: 3, hours: 6, needs: ['m-stealth'], units: ['스텔스 전투기'], text: '레이더에 안 잡히는 전투기 · 스텔스 전투기 부대', eureka: { key: { kind: 'train', name: '항공', stars: 3 }, text: '항공 훈련 별 3개' } }),
+  T({ id: 'm-hale', line: 'mil', name: '고고도 무인기', icon: '🪁', era: 3, hours: 5, needs: ['m-datalink'], eff: { power: { dom: '공', v: 0.025 }, mission: 0.02 }, text: '아주 높이 하루 종일 · 공군 +2.5% · 임무 +2%', eureka: { key: { kind: 'mission', name: '정보보고' }, text: '정보 보고 임무 성공' } }),
+  T({ id: 'm-cas', line: 'mil', name: '근접 항공 지원', icon: '📢', era: 4, hours: 5, needs: ['m-pgm'], eff: { power: { dom: '공', v: 0.025 } }, text: '보병이 부르면 바로 날아와요 · 공군 +2.5%', eureka: { key: { kind: 'mission', name: '작전' }, text: '작전 성공' } }),
+  T({ id: 'm-ram', line: 'mil', name: '전파 흡수 소재', icon: '🧥', era: 4, hours: 5.5, needs: ['m-f5'], eff: { power: { dom: '공', v: 0.03 } }, text: '레이더 전파를 먹는 겉칠 · 공군 +3%', eureka: { key: { kind: 'train', name: '잠입', stars: 2 }, text: '잠입 훈련 별 2개 이상' } }),
+  T({ id: 'm-jet6', line: 'mil', name: '6세대 전투기', icon: '🚀', era: 4, hours: 9, needs: ['m-ram'], eff: { power: { dom: '공', v: 0.05 } }, text: '무인기를 거느리는 전투기 · 공군 +5%', eureka: { key: { kind: 'mission', name: '대전투' }, text: '대전투 승리' } }),
+  T({ id: 'm-loyal', line: 'mil', name: '유무인 복합 편대', icon: '🛸', era: 4, hours: 8, needs: ['m-hale'], eff: { power: { dom: '공', v: 0.035 }, build: { dom: '공', v: 0.07 } }, text: '사람 1대 + 무인기 4대 · 공군 +3.5% · 모집 −7%', eureka: { key: { kind: 'train', name: '정보', stars: 3 }, text: '정보 훈련 별 3개' } }),
+  T({ id: 'm-glide', line: 'mil', name: '극초음속 활공탄', icon: '☄️', era: 4, hours: 8, needs: ['m-bomber'], eff: { power: { dom: '공', v: 0.04 } }, text: '폭격기가 쏘는 아주 빠른 탄 · 공군 +4%', eureka: { key: { kind: 'train', name: '항공', stars: 3 }, text: '항공 훈련 별 3개' } }),
+  T({ id: 'm-airsup', line: 'mil', name: '제공권 교리', icon: '🌤️', era: 4, hours: 8, needs: ['m-c2'], eff: { power: { dom: '공', v: 0.04 } }, text: '하늘부터 가져가요 · 공군 +4%', eureka: { key: { kind: 'army', count: 20 }, text: '부대 20개 보유' } }),
+  // 해군 · 바다 무인기
+  T({ id: 'm-mine', line: 'mil', name: '기뢰전', icon: '💠', era: 1, hours: 1.5, needs: ['m-coast'], eff: { power: { dom: '해', v: 0.02 } }, text: '바닷길에 기뢰를 깔고 걷어요 · 해군 +2%', eureka: { key: { kind: 'train', name: '해상', stars: 1 }, text: '해상 훈련 성공' } }),
+  T({ id: 'm-navbase', line: 'mil', name: '해군 기지 정비', icon: '🏗️', era: 1, hours: 1.5, needs: ['m-coast'], eff: { build: { dom: '해', v: 0.05 } }, text: '부두·수리창 · 해군 모집 −5%', eureka: { key: { kind: 'train', name: '보급', stars: 1 }, text: '보급 훈련 성공' } }),
+  T({ id: 'm-coastal', line: 'mil', name: '해안 미사일', icon: '🏝️', era: 2, hours: 3, needs: ['m-mine'], units: ['해안 미사일'], text: '바닷가 트럭에서 군함을 쏴요 · 해안 미사일 부대', eureka: { key: { kind: 'district', id: 'harbor' }, text: '항만 구역 첫 완공' } }),
+  T({ id: 'm-seadrone', line: 'mil', name: '바다 드론', icon: '🚤', era: 2, hours: 3, needs: ['m-sonar'], units: ['바다 드론'], text: '사람 없는 작은 배가 돌진 · 바다 드론 부대', eureka: { key: { kind: 'train', name: '해킹', stars: 1 }, text: '해킹 훈련 성공' } }),
+  T({ id: 'm-asw', line: 'mil', name: '대잠 헬기', icon: '🚁', era: 2, hours: 2.5, needs: ['m-sonar'], eff: { power: { dom: '해', v: 0.025 } }, text: '하늘에서 잠수함을 찾아요 · 해군 +2.5%', eureka: { key: { kind: 'train', name: '항공', stars: 1 }, text: '항공 훈련 성공' } }),
+  T({ id: 'm-frigate', line: 'mil', name: '호위함 개량', icon: '🛥️', era: 2, hours: 2.5, needs: ['m-navbase'], eff: { build: { dom: '해', v: 0.06 } }, text: '작고 싼 군함을 많이 · 해군 모집 −6%', eureka: { key: { kind: 'mission', name: '군수협상' }, text: '무기 지원 협상 성공' } }),
+  T({ id: 'm-ashm', line: 'mil', name: '초음속 대함 미사일', icon: '🎇', era: 3, hours: 5, needs: ['m-coastal'], eff: { power: { dom: '해', v: 0.035 } }, text: '막기 어려운 빠른 대함탄 · 해군 +3.5%', eureka: { key: { kind: 'train', name: '포격', stars: 2 }, text: '포격 훈련 별 2개 이상' } }),
+  T({ id: 'm-usv', line: 'mil', name: '무인 함정 군집', icon: '🐟', era: 3, hours: 5, needs: ['m-seadrone'], eff: { power: { dom: '해', v: 0.025 }, build: { dom: '해', v: 0.05 } }, text: '바다 드론 떼 · 해군 +2.5% · 모집 −5%', eureka: { key: { kind: 'train', name: '해킹', stars: 2 }, text: '해킹 훈련 별 2개 이상' } }),
+  T({ id: 'm-aip', line: 'mil', name: '공기 없이 추진', icon: '🫧', era: 3, hours: 5.5, needs: ['m-silent'], eff: { power: { dom: '해', v: 0.03 } }, text: '잠수함이 몇 주씩 물속에 · 해군 +3%', eureka: { key: { kind: 'train', name: '잠입', stars: 2 }, text: '잠입 훈련 별 2개 이상' } }),
+  T({ id: 'm-dock', line: 'mil', name: '대형 조선소', icon: '🏭', era: 3, hours: 5, needs: ['m-frigate'], eff: { build: { dom: '해', v: 0.08 } }, text: '큰 배를 빨리 · 해군 모집 −8%', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
+  T({ id: 'm-uuv', line: 'mil', name: '무인 잠수정', icon: '🐋', era: 4, hours: 8, needs: ['m-usv'], eff: { power: { dom: '해', v: 0.04 } }, text: '물속을 혼자 다니는 로봇 · 해군 +4%', eureka: { key: { kind: 'train', name: '해상', stars: 3 }, text: '해상 훈련 별 3개' } }),
+  T({ id: 'm-coastnet', line: 'mil', name: '해안 방어망', icon: '🧱', era: 4, hours: 8, needs: ['m-ashm'], eff: { power: { dom: '해', v: 0.04 } }, text: '해안 미사일·레이더를 하나로 · 해군 +4%', eureka: { key: { kind: 'island' }, text: '분쟁 지역 한 곳에서 영향력 1등' } }),
+  T({ id: 'm-slbm', line: 'mil', name: '잠수함 발사 미사일', icon: '🌋', era: 4, hours: 9, needs: ['m-aip'], eff: { power: { dom: '해', v: 0.05 } }, text: '물속에서 쏘는 미사일 · 해군 +5%', eureka: { key: { kind: 'mission', name: '대전투' }, text: '대전투 승리' } }),
+  T({ id: 'm-navew', line: 'mil', name: '함정 전자전', icon: '📡', era: 4, hours: 8, needs: ['m-laser'], eff: { power: { dom: '해', v: 0.025 }, mission: 0.02 }, text: '적 미사일 눈을 가려요 · 해군 +2.5% · 임무 +2%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
+  // 미사일 · 방공
+  T({ id: 'm-sam', line: 'mil', name: '장거리 방공', icon: '🎯', era: 2, hours: 3, needs: ['m-radar'], units: ['장거리 방공'], text: '수백 km 밖 비행기·미사일을 잡아요 · 장거리 방공 부대', eureka: { key: { kind: 'train', name: '항공', stars: 2 }, text: '항공 훈련 별 2개 이상' } }),
+  T({ id: 'm-shorad', line: 'mil', name: '근거리 방공포', icon: '🔫', era: 2, hours: 2.5, needs: ['m-radar'], eff: { power: { dom: '육', v: 0.02 } }, text: '드론·헬기를 가까이서 · 육군 +2%', eureka: { key: { kind: 'train', name: '사격', stars: 2 }, text: '사격 훈련 별 2개 이상' } }),
+  T({ id: 'm-ballistic', line: 'mil', name: '탄도미사일', icon: '🚀', era: 3, hours: 6, needs: ['m-guided'], units: ['탄도미사일'], text: '하늘 높이 올라갔다 내리꽂아요 · 탄도미사일 부대', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
+  T({ id: 'm-bmd', line: 'mil', name: '미사일 방어', icon: '☂️', era: 3, hours: 5.5, needs: ['m-sam'], eff: { power: { dom: 'all', v: 0.02 } }, text: '날아오는 미사일을 맞혀요 · 모든 전투력 +2%', eureka: { key: { kind: 'mission', name: '안보회의' }, text: '방어 안보회의 성공' } }),
+  T({ id: 'm-tel', line: 'mil', name: '이동식 발사대', icon: '🚛', era: 4, hours: 5, needs: ['m-ballistic'], eff: { build: { dom: 'all', v: 0.05 } }, text: '숨었다 쏘고 사라져요 · 모든 모집 −5%', eureka: { key: { kind: 'train', name: '보급', stars: 3 }, text: '보급 훈련 별 3개' } }),
+  T({ id: 'm-mirv', line: 'mil', name: '다탄두 미사일', icon: '🎇', era: 4, hours: 9, needs: ['m-tel'], eff: { power: { dom: 'all', v: 0.03 } }, text: '한 발에 탄두 여러 개 · 모든 전투력 +3%', eureka: { key: { kind: 'rank', at: 8 }, text: '위대한 지도자 호칭 얻기' } }),
+  T({ id: 'm-layered', line: 'mil', name: '다층 방공망', icon: '🛡️', era: 4, hours: 8, needs: ['m-bmd'], eff: { power: { dom: 'all', v: 0.025 } }, text: '높이마다 다른 방공 · 모든 전투력 +2.5%', eureka: { key: { kind: 'army', count: 30 }, text: '부대 30개 보유' } }),
+  // 정보 · 사이버 · 보급
+  T({ id: 'm-crypto', line: 'mil', name: '암호 통신', icon: '🔐', era: 1, hours: 1.5, needs: ['m-comms'], eff: { mission: 0.02 }, text: '적이 못 엿들어요 · 임무 +2%', eureka: { key: { kind: 'train', name: '해킹', stars: 1 }, text: '해킹 훈련 성공' } }),
+  T({ id: 'm-sigint', line: 'mil', name: '신호 정보', icon: '👂', era: 2, hours: 2.5, needs: ['m-crypto'], eff: { mission: 0.03 }, text: '적 전파를 엿들어요 · 임무 +3%', eureka: { key: { kind: 'mission', name: '정보보고' }, text: '정보 보고 임무 성공' } }),
+  T({ id: 'm-medic', line: 'mil', name: '야전 의무대', icon: '⛑️', era: 2, hours: 2.5, needs: ['m-depot'], eff: { power: { dom: '육', v: 0.02 } }, text: '다친 병사를 빨리 살려요 · 육군 +2%', eureka: { key: { kind: 'train', name: '체력', stars: 2 }, text: '체력 훈련 별 2개 이상' } }),
+  T({ id: 'm-cybercmd', line: 'mil', name: '사이버 사령부', icon: '🧑‍💻', era: 3, hours: 5, needs: ['m-sigint'], eff: { power: { dom: 'all', v: 0.015 }, mission: 0.02 }, text: '해커 부대를 한곳에서 · 모든 전투력 +1.5% · 임무 +2%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
+  T({ id: 'm-quantum', line: 'mil', name: '양자 통신', icon: '⚛️', era: 4, hours: 9, needs: ['m-cybercmd'], eff: { mission: 0.04, research: 0.05 }, text: '절대 못 뚫는 통신 · 임무 +4% · 연구 +5%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
+  T({ id: 'm-autolog', line: 'mil', name: '자동화 보급', icon: '📦', era: 4, hours: 8, needs: ['m-sealift'], eff: { build: { dom: 'all', v: 0.08 } }, text: '로봇·드론이 보급을 날라요 · 모든 모집 −8%', eureka: { key: { kind: 'army', count: 20 }, text: '부대 20개 보유' } }),
 ];
 
-/** 사회 제도 30개 */
+/** 사회 제도 70개(11-26 대장 요청으로 30 → 70) */
 export const SOC_TECHS: Tech[] = [
   // 도약기
   T({ id: 's-charter', line: 'soc', name: '국가 헌장', icon: '📜', era: 1, hours: 1, needs: [], cards: ['군-징집', '경-개척'], text: '체제 바꾸기 · 카드 2장', eureka: { key: { kind: 'rank', at: 1 }, text: '초보 지도자 호칭 얻기' } }),
@@ -171,6 +237,51 @@ export const SOC_TECHS: Tech[] = [
   T({ id: 's-digital', line: 'soc', name: '디지털 정부', icon: '🖥️', era: 4, hours: 9, needs: ['s-school', 's-media'], eff: { research: 0.1, budget: 0.05 }, text: '연구 +10% · 나라 예산 +5%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
   T({ id: 's-aid', line: 'soc', name: '국제 원조', icon: '🎁', era: 4, hours: 10, needs: ['s-alliance'], cards: ['외-원조'], eff: { favor: 6, influence: 0.15 }, text: '모든 나라 호감 +6 · 분쟁 지역 영향력 +15% · 카드 1장', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
   T({ id: 's-unify', line: 'soc', name: '국민 통합', icon: '🫂', era: 4, hours: 11, needs: ['s-veterans', 's-press'], cards: ['외-중재'], eff: { loyalty: 6, votes: 1 }, text: '민심 +6 · 국제 회의 표 +1 · 카드 1장', eureka: { key: { kind: 'rank', at: 8 }, text: '위대한 지도자 호칭 얻기' } }),
+  // ── 11-26 대장 요청: 사회 제도 70개(경제·외교·내정·인구·과학·국방 더 잘게) ──
+  // 도약기
+  T({ id: 's-bank', line: 'soc', name: '중앙은행', icon: '🏦', era: 1, hours: 1, needs: ['s-tax'], eff: { budget: 0.04 }, text: '돈 흐름을 다스려요 · 나라 예산 +4%', eureka: { key: { kind: 'train', name: '보급', stars: 1 }, text: '보급 훈련 성공' } }),
+  T({ id: 's-police', line: 'soc', name: '치안 제도', icon: '👮', era: 1, hours: 1, needs: ['s-charter'], eff: { loyalty: 2 }, text: '골목이 안전해요 · 민심 +2', eureka: { key: { kind: 'train', name: '통솔', stars: 1 }, text: '통솔 훈련 성공' } }),
+  T({ id: 's-health', line: 'soc', name: '보건소', icon: '🩺', era: 1, hours: 1, needs: ['s-census'], eff: { growth: 0.05 }, text: '동네마다 보건소 · 도시 성장 +5%', eureka: { key: { kind: 'train', name: '체력', stars: 1 }, text: '체력 훈련 성공' } }),
+  T({ id: 's-market', line: 'soc', name: '시장 개방', icon: '🛒', era: 1, hours: 1.5, needs: ['s-guild'], eff: { trade: 0.03 }, text: '외국 물건도 자유롭게 · 무역 3% 이득', eureka: { key: { kind: 'talk', att: '거래' }, text: '대화에서 거래 성공' } }),
+  T({ id: 's-library', line: 'soc', name: '공공 도서관', icon: '📚', era: 1, hours: 1, needs: ['s-school'], eff: { research: 0.03 }, text: '누구나 책을 · 연구 +3%', eureka: { key: { kind: 'train', name: '정보', stars: 1 }, text: '정보 훈련 성공' } }),
+  T({ id: 's-postal', line: 'soc', name: '우편·통신망', icon: '📮', era: 1, hours: 1, needs: ['s-urban'], eff: { district: 0.05 }, text: '전국을 잇는 통신 · 구역 짓기 −5%', eureka: { key: { kind: 'train', name: '통솔', stars: 2 }, text: '통솔 훈련 별 2개 이상' } }),
+  // 항로기
+  T({ id: 's-bond', line: 'soc', name: '국채 발행', icon: '💴', era: 2, hours: 2.5, needs: ['s-bank'], eff: { budget: 0.05 }, text: '나라가 돈을 빌려 크게 써요 · 나라 예산 +5%', eureka: { key: { kind: 'talk', att: '거래' }, text: '대화에서 거래 성공' } }),
+  T({ id: 's-labor', line: 'soc', name: '노동법', icon: '👷', era: 2, hours: 2.5, needs: ['s-police'], eff: { loyalty: 3, res: 0.03 }, text: '일하는 사람을 지켜요 · 민심 +3 · 자원 +3%', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
+  T({ id: 's-housing', line: 'soc', name: '공공 주택', icon: '🏢', era: 2, hours: 2.5, needs: ['s-health'], eff: { growth: 0.08 }, text: '싼 집을 많이 · 도시 성장 +8%', eureka: { key: { kind: 'district', id: 'housing' }, text: '주거 구역 첫 완공' } }),
+  T({ id: 's-port', line: 'soc', name: '자유 무역항', icon: '🚢', era: 2, hours: 3, needs: ['s-customs'], eff: { trade: 0.04, contracts: 1 }, text: '세금 없는 항구 · 무역 4% 이득 · 정기 계약 +1칸', eureka: { key: { kind: 'district', id: 'harbor' }, text: '항만 구역 첫 완공' } }),
+  T({ id: 's-embassy', line: 'soc', name: '상주 대사관', icon: '🏛️', era: 2, hours: 2.5, needs: ['s-envoy'], eff: { favor: 3 }, text: '나라마다 대사관 · 모든 나라 호감 +3', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
+  T({ id: 's-univ', line: 'soc', name: '국립 대학', icon: '🎓', era: 2, hours: 3, needs: ['s-library'], eff: { research: 0.05 }, text: '인재를 길러요 · 연구 +5%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
+  T({ id: 's-energy', line: 'soc', name: '에너지 정책', icon: '🔌', era: 2, hours: 2.5, needs: ['s-mining'], eff: { res: 0.05 }, text: '발전소·송전망 · 자원 +5%', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
+  T({ id: 's-civdef', line: 'soc', name: '민방위', icon: '🚨', era: 2, hours: 2.5, needs: ['s-reserve'], eff: { loyalty: 2, power: { dom: '육', v: 0.03 } }, text: '온 국민이 대피·대비 · 민심 +2 · 육군 +3%', eureka: { key: { kind: 'train', name: '모병', stars: 1 }, text: '모병 훈련 성공' } }),
+  T({ id: 's-tourism', line: 'soc', name: '관광 진흥', icon: '🗺️', era: 2, hours: 2.5, needs: ['s-press'], eff: { favor: 2, budget: 0.02 }, text: '외국 손님을 불러요 · 호감 +2 · 나라 예산 +2%', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
+  // 제공기
+  T({ id: 's-fta', line: 'soc', name: '자유 무역 협정', icon: '🤝', era: 3, hours: 5, needs: ['s-port'], eff: { trade: 0.05 }, text: '관세를 서로 없애요 · 무역 5% 이득', eureka: { key: { kind: 'agree', id: 'swap' }, text: '자원 교환 계약 맺기' } }),
+  T({ id: 's-insure', line: 'soc', name: '국민 보험', icon: '💊', era: 3, hours: 5, needs: ['s-welfare'], eff: { loyalty: 3, growth: 0.05 }, text: '병원비 걱정 덜어요 · 민심 +3 · 성장 +5%', eureka: { key: { kind: 'district', id: 'housing' }, text: '주거 구역 첫 완공' } }),
+  T({ id: 's-newcity', line: 'soc', name: '신도시 개발', icon: '🏗️', era: 3, hours: 5, needs: ['s-housing'], eff: { growth: 0.08, district: 0.08 }, text: '새 도시를 통째로 · 성장 +8% · 구역 짓기 −8%', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
+  T({ id: 's-refugee', line: 'soc', name: '이민 제도', icon: '🧳', era: 3, hours: 4.5, needs: ['s-housing'], eff: { growth: 0.07 }, text: '사람이 들어와 살아요 · 성장 +7%', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
+  T({ id: 's-rnd', line: 'soc', name: '연구 개발 투자', icon: '🔬', era: 3, hours: 5, needs: ['s-univ'], eff: { research: 0.07 }, text: '기업·대학 연구에 돈을 · 연구 +7%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
+  T({ id: 's-chaebol', line: 'soc', name: '대기업 육성', icon: '🏢', era: 3, hours: 5, needs: ['s-industry'], eff: { budget: 0.05, res: 0.04 }, text: '큰 회사를 키워요 · 나라 예산 +5% · 자원 +4%', eureka: { key: { kind: 'army', count: 15 }, text: '부대 15개 보유' } }),
+  T({ id: 's-union', line: 'soc', name: '노사 협약', icon: '🤜', era: 3, hours: 4.5, needs: ['s-labor'], eff: { loyalty: 3, res: 0.03 }, text: '파업 대신 대화 · 민심 +3 · 자원 +3%', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
+  T({ id: 's-softpower', line: 'soc', name: '문화 외교', icon: '🎤', era: 3, hours: 5, needs: ['s-embassy'], eff: { favor: 5 }, text: '노래·드라마로 친해져요 · 모든 나라 호감 +5', eureka: { key: { kind: 'talk' }, text: '성소 회담(대화) 성공' } }),
+  T({ id: 's-defind', line: 'soc', name: '방위 산업 육성', icon: '🏭', era: 3, hours: 5, needs: ['s-civdef'], eff: { build: { dom: 'all', v: 0.06 } }, text: '무기를 직접 만들어요 · 모든 모집 −6%', eureka: { key: { kind: 'mission', name: '군수협상' }, text: '무기 지원 협상 성공' } }),
+  T({ id: 's-treasury', line: 'soc', name: '재정 건전화', icon: '📈', era: 3, hours: 5, needs: ['s-bond'], eff: { budget: 0.06 }, text: '빚을 줄이고 곳간을 채워요 · 나라 예산 +6%', eureka: { key: { kind: 'rank', at: 4 }, text: '지도자 호칭 4단계 얻기' } }),
+  T({ id: 's-anticorrupt', line: 'soc', name: '반부패법', icon: '⚖️', era: 3, hours: 4.5, needs: ['s-tourism'], eff: { loyalty: 4 }, text: '뇌물을 막아요 · 민심 +4', eureka: { key: { kind: 'mission', name: '정보보고' }, text: '정보 보고 임무 성공' } }),
+  T({ id: 's-green', line: 'soc', name: '친환경 에너지', icon: '🌞', era: 3, hours: 5, needs: ['s-energy'], eff: { res: 0.06 }, text: '해·바람으로 전기 · 자원 +6%', eureka: { key: { kind: 'district', id: 'industry' }, text: '공업 구역 첫 완공' } }),
+  // 대양기
+  T({ id: 's-fintech', line: 'soc', name: '금융 허브', icon: '💹', era: 4, hours: 8, needs: ['s-treasury'], eff: { budget: 0.08 }, text: '세계 돈이 모여요 · 나라 예산 +8%', eureka: { key: { kind: 'train', name: '해킹', stars: 2 }, text: '해킹 훈련 별 2개 이상' } }),
+  T({ id: 's-smartcity', line: 'soc', name: '스마트 시티', icon: '🌆', era: 4, hours: 8, needs: ['s-newcity'], eff: { growth: 0.12, research: 0.03 }, text: '똑똑한 도시 · 성장 +12% · 연구 +3%', eureka: { key: { kind: 'district', id: 'lab' }, text: '연구소 구역 첫 완공' } }),
+  T({ id: 's-spaceagency', line: 'soc', name: '우주 개발청', icon: '🚀', era: 4, hours: 9, needs: ['s-rnd'], eff: { research: 0.08 }, text: '로켓·위성을 우리 손으로 · 연구 +8%', eureka: { key: { kind: 'mission', name: '정보보고' }, text: '정보 보고 임무 성공' } }),
+  T({ id: 's-wto', line: 'soc', name: '세계 무역 기구', icon: '🌐', era: 4, hours: 8, needs: ['s-fta'], eff: { trade: 0.05, contracts: 1 }, text: '세계 무역 규칙을 만들어요 · 무역 5% 이득 · 계약 +1칸', eureka: { key: { kind: 'agree', id: 'swap' }, text: '자원 교환 계약 맺기' } }),
+  T({ id: 's-pension', line: 'soc', name: '국민 연금', icon: '👵', era: 4, hours: 8, needs: ['s-insure'], eff: { loyalty: 5 }, text: '늙어도 걱정 없게 · 민심 +5', eureka: { key: { kind: 'rank', at: 6 }, text: '존경받는 지도자 호칭 얻기' } }),
+  T({ id: 's-unsc', line: 'soc', name: '상임 이사국 외교', icon: '🕊️', era: 4, hours: 9, needs: ['s-softpower'], eff: { votes: 1, favor: 4 }, text: '세계 회의의 주인공 · 회의 표 +1 · 호감 +4', eureka: { key: { kind: 'agree', id: 'defense' }, text: '방위 약속 협정 맺기' } }),
+  T({ id: 's-armsexport', line: 'soc', name: '방산 수출', icon: '📦', era: 4, hours: 8, needs: ['s-defind'], eff: { budget: 0.05, favor: 2 }, text: '무기를 팔아 돈과 친구를 · 나라 예산 +5% · 호감 +2', eureka: { key: { kind: 'mission', name: '군수협상' }, text: '무기 지원 협상 성공' } }),
+  T({ id: 's-carbon', line: 'soc', name: '탄소 중립', icon: '🌳', era: 4, hours: 8, needs: ['s-green'], eff: { res: 0.05, favor: 3 }, text: '깨끗한 나라 · 자원 +5% · 호감 +3', eureka: { key: { kind: 'talk', att: '원칙' }, text: '대화에서 원칙 성공' } }),
+  T({ id: 's-democracy', line: 'soc', name: '성숙한 민주주의', icon: '🗳️', era: 4, hours: 8, needs: ['s-anticorrupt'], eff: { loyalty: 5, favor: 2 }, text: '국민이 믿는 정부 · 민심 +5 · 호감 +2', eureka: { key: { kind: 'rank', at: 8 }, text: '위대한 지도자 호칭 얻기' } }),
+  T({ id: 's-global', line: 'soc', name: '세계 기업', icon: '🏙️', era: 4, hours: 8, needs: ['s-chaebol'], eff: { budget: 0.05, trade: 0.03 }, text: '우리 회사가 세계로 · 나라 예산 +5% · 무역 3% 이득', eureka: { key: { kind: 'agree', id: 'route' }, text: '항로 개방 협정 맺기' } }),
+  T({ id: 's-aigov', line: 'soc', name: '인공지능 행정', icon: '🧠', era: 4, hours: 9, needs: ['s-digital'], eff: { research: 0.06, budget: 0.03 }, text: '서류는 AI가 · 연구 +6% · 나라 예산 +3%', eureka: { key: { kind: 'train', name: '해킹', stars: 3 }, text: '해킹 훈련 별 3개' } }),
+  T({ id: 's-4day', line: 'soc', name: '주 4일제', icon: '🏖️', era: 4, hours: 8, needs: ['s-union'], eff: { loyalty: 4, growth: 0.05 }, text: '쉬는 날이 늘어요 · 민심 +4 · 성장 +5%', eureka: { key: { kind: 'talk', att: '화해' }, text: '대화에서 화해 성공' } }),
+  T({ id: 's-ktx', line: 'soc', name: '고속철도망', icon: '🚄', era: 4, hours: 8, needs: ['s-transport'], eff: { district: 0.1, growth: 0.05 }, text: '전국 반나절 · 구역 짓기 −10% · 성장 +5%', eureka: { key: { kind: 'district', id: 'housing' }, text: '주거 구역 첫 완공' } }),
 ];
 
 export const TECHS: Tech[] = [...MIL_TECHS, ...SOC_TECHS];
