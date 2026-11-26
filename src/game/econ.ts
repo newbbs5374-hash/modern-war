@@ -31,6 +31,11 @@ const BASE: Record<string, { cpi: number; growth: number; rate: number }> = {
   il: { cpi: 3, growth: 2, rate: 4.5 },
   ua: { cpi: 10, growth: 3, rate: 13 },
   kp: { cpi: 5, growth: 1, rate: 5 },
+  tw: { cpi: 2, growth: 3, rate: 2 },
+  pl: { cpi: 4, growth: 3, rate: 5.5 },
+  ph: { cpi: 3.5, growth: 5.5, rate: 6 },
+  pk: { cpi: 12, growth: 2.5, rate: 15 },
+  sa: { cpi: 2, growth: 3.5, rate: 5.5 },
 };
 export const baseOf = (s: GameState) => BASE[s.player.countryId] ?? BASE.kr;
 /** 나라마다 금리 폭이 다름(튀르키예 40% 등) → '중립 금리'를 기준으로 계산 */

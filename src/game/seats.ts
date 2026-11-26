@@ -19,13 +19,14 @@ export const RALLY_PER_DAY = 2;
 export const RALLY_GAIN = 1.2;
 export const RALLY_MAX = 10;
 /** 한 사람이 오래 다스리는 나라(여당이 크게 시작, 선거에서 +15) */
-export const STRONG_RULE = ['cn', 'ru', 'kp', 'ir'];
+export const STRONG_RULE = ['cn', 'ru', 'kp', 'ir', 'sa'];
 
 const START: Record<string, Seats> = {
   cn: { ruling: 230, opp: 30, ind: 40 },
   ru: { ruling: 210, opp: 55, ind: 35 },
   kp: { ruling: 280, opp: 0, ind: 20 },
   ir: { ruling: 190, opp: 70, ind: 40 },
+  sa: { ruling: 250, opp: 0, ind: 50 }, // 국왕이 임명하는 슈라 위원회
 };
 registerPolityInit((s, p) => {
   p.seats = { ...(START[s.player.countryId] ?? { ruling: 140, opp: 125, ind: 35 }) };
