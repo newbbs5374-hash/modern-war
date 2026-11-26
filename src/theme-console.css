@@ -1067,3 +1067,8 @@ select.wide, button.wide { width: 100%; }
 .pr-grid button small { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .pr-grid button.on { border-color: var(--hud); color: var(--hud); box-shadow: inset 0 0 10px #67c5d344; }
 .pr-sum { margin: 8px 0 4px; text-align: center; }
+/* 11-26 파병 요청 · 교전 */
+.deploy-req, .deploy-clash { margin-top: 8px; padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); }
+.deploy-req.on { border-color: var(--accent, #2fc5b5); }
+.deploy-clash { border-color: rgba(255,140,60,.55); background: rgba(255,120,40,.08); }
+.deploy-req .buttons, .deploy-clash .buttons { display: flex; gap: 6px; flex-wrap: wrap; }

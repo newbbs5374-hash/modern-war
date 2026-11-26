@@ -33,6 +33,7 @@ import { REL_COLORS } from './WorldMap';
 import { PersonFace } from './People';
 import { ForeignPeople, MinistryCards } from './CabinetUI';
 import { SummitPanel } from './MediaUI';
+import { clashes, openRequests } from '../game/deploy';
 import { DeployPanel } from './DeployPanel';
 import { CountryDetail } from './CountryDetail';
 import { AdviceBar } from './AdviceBar';
@@ -55,7 +56,7 @@ export function DiplomacyScreen(props: ScreenProps) {
           { id: 'nations', label: '국가정보', icon: '🗂️' },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
           { id: 'agree', label: '호감·협정', icon: '🤝' },
-          { id: 'deploy', label: '파병', icon: '🪖', badge: props.state.deploy?.list.length ? String(props.state.deploy.list.length) : null },
+          { id: 'deploy', label: '파병', icon: '🪖', badge: clashes(props.state).length ? `⚔️${clashes(props.state).length}` : openRequests(props.state).length ? `📨${openRequests(props.state).length}` : props.state.deploy?.list.length ? String(props.state.deploy.list.length) : null },
           { id: 'isle', label: '분쟁 지역', icon: '🏝️' },
           { id: 'council', label: '국제 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
         ]}
