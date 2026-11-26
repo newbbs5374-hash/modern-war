@@ -1,5 +1,7 @@
 // 게임 상태와 시간 흐름. 화면과 떨어진 순수 계산이라 시험(테스트)하기 쉽다.
 
+import { addDef, defOf } from './defFund';
+export { addDef, defOf };
 import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
@@ -62,6 +64,8 @@ export interface NationState {
   treasury: number;
   /** 병력(명) */
   troops: number;
+  /** 국방비(11-26): 내 나라만. 부대 만들기·국방 시설 짓기·올리기·파병 유지비에만 쓴다 */
+  def?: number;
 }
 
 export interface GameState {
@@ -174,6 +178,10 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
       treasury: c.budget * START_TREASURY_PER_POINT * k * (mine ? PLAYER_START_TREASURY_MULT : 1),
       troops: c.military * START_TROOPS_PER_POINT * k * (mine ? PLAYER_START_TROOPS_MULT : 1),
     };
+    if (mine) {
+      // 11-26 국방비 나누기: 나라 예산과 따로 시작 국방비(나라 예산의 절반)
+      nations[c.id] = { ...nations[c.id], def: nations[c.id].treasury * START_DEF_SHARE };
+    }
   }
   const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
   if (opt.realWorld) applyNowConflicts(world, countryId);
@@ -209,6 +217,17 @@ export function salaryPerDay(s: GameState): number {
 export function pendingCap(s: GameState): number {
   return salaryPerDay(s) * (PENDING_CAP_HOURS * 60 * 60 * 1000) / REAL_MS_PER_GAME_DAY;
 }
+// ── 국방비(11-26 대장 결정) ──
+// 나라 수입 중 예산 나누기의 국방 몫(기본 40%)은 국방비로, 나머지는 나라 예산으로 들어간다.
+// 국방비는 부대 만들기·국방 시설 짓기·올리기(·파병 유지비)에만 쓰고, 나머지는 모두 나라 예산을 쓴다.
+/** 새 판 시작 국방비 = 시작 나라 예산 × 이 값 */
+export const START_DEF_SHARE = 0.5;
+/** 수입 중 국방비로 가는 몫(0~1) */
+export const defShare = (s: GameState) => splitOf(s).def / 100;
+/** 국방비 시간당 */
+export const defPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId) * defShare(s);
+/** 나라 예산 시간당(국방비 몫을 뺀 것) */
+export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId) * (1 - defShare(s));
 /** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
@@ -276,9 +295,13 @@ function accrue(s: GameState, ms: number): GameState {
   if (!(ms > 0)) return s;
   const days = ms / REAL_MS_PER_GAME_DAY;
   const nations: Record<string, NationState> = {};
+  const me = s.player.countryId;
+  const share = defShare(s);
   for (const [id, n] of Object.entries(s.nations)) {
+    const inc = budgetPerDay(s, id) * days;
     nations[id] = {
-      treasury: n.treasury + budgetPerDay(s, id) * days,
+      ...(id === me ? { def: (n.def ?? 0) + inc * share } : {}),
+      treasury: n.treasury + (id === me ? inc * (1 - share) : inc),
       troops: n.troops * Math.exp(-TROOP_ATTRITION_PER_DAY * (id === s.player.countryId ? attritionMult(s) : 1) * days) + troopsPerDay(s, id) * days,
     };
   }

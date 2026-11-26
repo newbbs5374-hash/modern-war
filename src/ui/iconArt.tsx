@@ -147,7 +147,7 @@ export function ArtIcon({ k, emoji, alt = '', cls = '' }: { k: string; emoji: Re
 
 /** 금고 칸 10개 → icon-vault-<key> */
 export const VAULT_KEY = {
-  '나라 예산': 'budget', 국방예산: 'budget', 병력: 'troops', 봉급: 'salary', 도시: 'cities', 전투력: 'power',
+  '나라 예산': 'budget', 국방예산: 'budget', 국방비: 'power', 병력: 'troops', 봉급: 'salary', 도시: 'cities', 전투력: 'power',
   외교: 'diplo', '자원 값어치': 'stock', '무역 계약': 'trade', 시설: 'facility', '정보 · 신뢰': 'intel',
 } as const;
 export type VaultName = keyof typeof VAULT_KEY;

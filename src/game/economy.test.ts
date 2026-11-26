@@ -8,7 +8,7 @@ import { civResMult, debugAllResearch } from './civ';
 import { TRAIN_EXP_LOSE } from '../data/officers';
 
 const H = 3600e3;
-const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } });
+const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6, def: 1e6 } } });
 
 /** 새 세계관은 평화로 시작하므로 시험에서 전쟁을 직접 걸어 둠 */
 function war(s: GameState, a: string, b: string): GameState {

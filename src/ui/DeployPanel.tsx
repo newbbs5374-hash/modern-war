@@ -67,7 +67,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
         <div className="row">
           <b>🪖 해외 파병</b>
           <small className="muted">
-            {d.list.length}/{DEPLOY_MAX}곳 · 유지비 시간당 💰{Math.round(upkeep).toLocaleString('ko-KR')}
+            {d.list.length}/{DEPLOY_MAX}곳 · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
           </small>
           <Help title="해외 파병">
             <p>
@@ -76,7 +76,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
             <p>
               도착하면 그 나라 호감 +15, 그 나라 도시를 함께 지켜 <b>방어가 전투력만큼(최대 +40%)</b> 올라요. 세계지도에서 우리 병과가 그 나라 둘레를 움직여요.
             </p>
-            <p>그 나라가 전쟁 중이면 가끔 부대를 하나씩 잃지만 명성을 얻어요. 머무는 동안 나라 예산에서 유지비가 나가요. 언제든 불러들일 수 있어요.</p>
+            <p>그 나라가 전쟁 중이면 가끔 부대를 하나씩 잃지만 명성을 얻어요. 머무는 동안 국방비에서 유지비가 나가요. 언제든 불러들일 수 있어요.</p>
             <p>
               <b>📨 파병 요청</b>: 인도양·아덴만·폴란드·사헬 등 28곳에서 해적 퇴치·평화유지·영공 초계 같은 요청이 자주 와요(한 번에 {REQ_MAX}개까지, 10시간 기다려 줌). 요청에 맞는 병과를 보내 임무 시간을 채우면 나라 예산·명성을 받아요.
             </p>

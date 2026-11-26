@@ -124,7 +124,7 @@ export function applyOrigin(s: GameState, id: OriginId): GameState {
   const stats = { ...s.officer.stats };
   for (const [k, v] of Object.entries(o.stats)) stats[k as StatId] = Math.max(3, (stats[k as StatId] ?? 8) + (v ?? 0));
   const me = s.player.countryId;
-  const nations = { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury * (o.treasury ?? 1) } };
+  const nations = { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury * (o.treasury ?? 1), def: (s.nations[me].def ?? 0) * (o.treasury ?? 1) } };
   const civ = s.civ && o.bank ? { ...s.civ, bank: { mil: s.civ.bank.mil + o.bank, soc: s.civ.bank.soc + o.bank } } : s.civ;
   return {
     ...s,

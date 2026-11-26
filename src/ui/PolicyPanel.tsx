@@ -80,7 +80,7 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
           </div>
         ))}
         <div className="row" style={{ marginTop: 6 }}>
-          <small className={total === 100 ? 'muted' : 'warn'}>합 {total}%</small>
+          <small className={total === 100 ? 'muted' : 'warn'}>합 {total}% · 🛡️ 국방 몫은 국방비로 들어가요(시간당 {fmt(perHour * p.split.def / 100)})</small>
           <button onClick={() => setDraft({ ...SPLIT_DEFAULT })}>
             기본으로
           </button>
@@ -89,7 +89,7 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
           </button>
         </div>
       </Card>
-      <Card title="세금" icon="🧾" right={<small className="muted">나라 예산 시간당 {fmt(perHour)}</small>}>
+      <Card title="세금" icon="🧾" right={<small className="muted">수입 시간당 {fmt(perHour)}</small>}>
         <div className="tax-row">
           {(Object.keys(TAX_INFO) as Tax[]).map((t) => (
             <button key={t} className={`tax-btn ${p.tax === t ? 'on' : ''}`} disabled={p.tax === t || !!waitTax} onClick={() => actions.apply((s) => setTax(s, t))}>

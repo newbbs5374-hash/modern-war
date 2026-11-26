@@ -53,8 +53,10 @@ import {
   tradePrice,
   upgradeCost,
   upgradeFacility,
+  isDefBuilding,
 } from '../game/economy';
-import { budgetBreakdown, budgetPerDay, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
+import { splitOf } from '../game/policy';
+import { budgetBreakdown, budgetPerDay, defPerDay, defShare, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
 import { citiesOf, homeOf, isAlive, relationOf } from '../game/world';
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, startAndFinish } from '../game/boost';
@@ -237,7 +239,12 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
         <div className="vbox big">
           <VaultLabel n="나라 예산" emoji="💰" />
           <b>{fmt(n.treasury)}</b>
-          <Tip label={`+${fmt(budget + cm)}/시간`} title="나라 예산 시간당" rows={bRows} total={`+${fmt(budget + cm)}`} />
+          <Tip label={`+${fmt(budget * (1 - defShare(state)) + cm)}/시간`} title="나라 예산 시간당" rows={[...bRows, [`🛡️ 국방비로 감(국방 몫 ${splitOf(state).def}%)`, `-${fmt(budget * defShare(state))}`]]} total={`+${fmt(budget * (1 - defShare(state)) + cm)}`} />
+        </div>
+        <div className="vbox">
+          <VaultLabel n="국방비" emoji="🛡️" />
+          <b>{fmt(n.def ?? 0)}</b>
+          <Tip label={`+${fmt(defPerDay(state))}/시간`} title="국방비 시간당" rows={[['수입 전체', fmt(budget)], [`국방 몫(예산 나누기)`, `${splitOf(state).def}%`], ['쓰는 곳', '부대 만들기·국방 시설·파병 유지비']]} total={`+${fmt(defPerDay(state))}`} />
         </div>
         <div className="vbox big">
           <VaultLabel n="병력" emoji="🪖" />
@@ -675,9 +682,9 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
             <b>
               {fmt(state.economy.facilities[info.fac].exp)} / {c.exp}
             </b>
-            <span>예산 · 공사</span>
+            <span>{isDefBuilding(id) ? '국방비' : '나라 예산'} · 공사</span>
             <b>
-              💰{fmt(c.money)} · {c.hours}시간
+              {isDefBuilding(id) ? '🛡️' : '💰'}{fmt(c.money)} · {c.hours}시간
             </b>
             <span>올릴 수 있는 최고</span>
             <b>{maxLevel(state.player.rankIndex)}단계</b>

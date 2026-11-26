@@ -13,6 +13,7 @@ import type { BattlePlan } from '../battle/spec';
 import { addFavorNote, favorOf } from './civ';
 import { Rng } from './rng';
 import type { GameState } from './state';
+import { addDef } from './defFund';
 import { isAlive, relationOf, type WorldEvent } from './world';
 
 const HOUR = 3600e3;
@@ -399,10 +400,10 @@ export function deployTick(s: GameState): GameState {
     }
     keep.push(x);
   }
-  const treasury = Math.max(0, ns.nations[me].treasury - money);
+  // 11-26 파병 유지비는 국방비에서
+  ns = addDef(ns, -money);
   ns = {
     ...ns,
-    nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury } },
     economy: { ...ns.economy, army, power },
     deploy: { ...deployOf(ns), list: keep },
   };

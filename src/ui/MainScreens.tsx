@@ -38,7 +38,8 @@ import { AdviceBar } from './AdviceBar';
 import { VictoryPanel, winBadge } from './victoryScreens';
 
 /** 시설 31개를 효과가 닿는 화면으로 나눔(11-24 새 16개: 산업·민간 인프라는 경제, 복지·과학은 사회) */
-export const DEFENSE_BUILDINGS: readonly BuildingId[] = ['철도망', '군항', '공군기지', '방공포대', '훈련소', '비축창고', '정보본부', '우주기지'];
+export { DEFENSE_BUILDINGS } from '../game/economy';
+import { DEFENSE_BUILDINGS } from '../game/economy';
 export const SOCIETY_BUILDINGS: readonly BuildingId[] = ['징병소', '군병원', '치안청', '공공주택단지', '국립대학교', '문화체육센터', '보훈복지관', '국방과학연구소', '기초과학연구원', '원자력연구원', '인공지능센터', '해양과학기지'];
 export const ECONOMY_BUILDINGS: readonly BuildingId[] = ['군수공장', '제련소', '첨단공단', '반도체팹', '석유화학단지', '조선소', '항공우주단지', '발전소', '고속도로망', '국제무역항', '정보통신망'];
 

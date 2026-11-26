@@ -85,6 +85,15 @@ export function parseSave(text: string): GameState | null {
       const n = s.nations?.[c.id];
       if (!n || typeof n.treasury !== 'number' || typeof n.troops !== 'number') return null;
     }
+    // 11-26 국방비 나누기(옛 저장): 내 금고를 예산 나누기 국방 몫만큼 국방비로 옮김
+    {
+      const mine = s.nations[p.countryId];
+      if (typeof mine.def !== 'number') {
+        const share = (s.policy?.split?.def ?? 40) / 100;
+        mine.def = mine.treasury * share;
+        mine.treasury -= mine.def;
+      }
+    }
     if (typeof s.debugSkippedMs !== 'number') s.debugSkippedMs = 0;
     const e = s.economy;
     if (!e || !e.facilities || !e.stock || !Array.isArray(e.queue)) return null;
