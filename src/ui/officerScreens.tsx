@@ -56,6 +56,7 @@ import {
 } from '../game/officer';
 import { AIDE_EFFECT } from '../battle/grid';
 import { minisFor } from '../battle/minigames';
+import { UNIT_LV_AT, threeFor, unitBonusPct, unitLevel, unitName, weekLeftMs, weekOf, weeklyInfo, weeklyTraining } from '../battle3d/train3d';
 import { TEST_MODE } from '../game/balance';
 import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
 import { Card, fmt } from './common';
@@ -809,6 +810,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
         )}
         {msg && <p className="small result">{msg}</p>}
       </section>
+      <WeeklyCard state={state} onStart={start} />
       <div className="tlist">
         {TRAININGS.map((tr) => {
           const lock = rank < tr.rank;
@@ -871,8 +873,54 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
   );
 }
 
+/** 11-26 안 5·6: 주간 합동 훈련(주마다 전장이 바뀜, 보상 ×3은 주에 한 번) · 병과 숙련(본 3D 전투 +2%씩) */
+function WeeklyCard({ state, onStart }: { state: ScreenProps['state']; onStart: (name: string, mini?: string) => void }) {
+  const o = state.officer;
+  const rank = state.player.rankIndex;
+  const wk = weeklyInfo(state.worldMs);
+  const done = o.weekly3d === wk.week;
+  const open = TRAININGS.filter((t) => rank >= t.rank).map((t) => t.name);
+  const tr = weeklyTraining(state.worldMs, open);
+  const units = Object.entries(o.unitXp ?? {}).sort((a, b) => b[1] - a[1]);
+  return (
+    <section className="card">
+      <div className="d3-week">
+        <span className="d3-week-ico">🎖️</span>
+        <div className="d3-week-main">
+          <b>주간 합동 훈련 · {wk.name}</b>
+          <small>{wk.text}</small>
+          <small className="muted">
+            이번 주 {tr} 경험치 ×3 · {done ? '이번 주 보상 받음(다시 해도 보통 보상)' : `${Math.max(1, Math.ceil(weekLeftMs(state.worldMs) / 86400000))}일 뒤 바뀜`}
+          </small>
+        </div>
+        <button className={done ? '' : 'gold'} onClick={() => onStart(tr, `w3:${weekOf(state.worldMs)}`)}>
+          ▶ 출전
+        </button>
+      </div>
+      <details style={{ marginTop: 6 }}>
+        <summary className="small">🪖 병과 숙련 {units.length ? `· ${units.filter(([, v]) => unitLevel(v) > 0).length}개 병과 강화` : '· 3D 훈련에서 쓴 병과가 강해져요'}</summary>
+        <p className="small muted">3D 훈련에서 별을 받으면 나간 병과에 숙련이 쌓여요. 단계마다 본 3D 전투·공성전에서 그 병과 공격·체력 +2%(최대 +10%).</p>
+        {units.length > 0 && (
+          <div className="d3-units">
+            {units.map(([k, v]) => {
+              const lv = unitLevel(v);
+              return (
+                <span key={k}>
+                  {unitName(k)} {lv}단계
+                  <b>{lv ? `+${unitBonusPct(v)}%` : `${v}/${UNIT_LV_AT[0]}`}</b>
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </details>
+    </section>
+  );
+}
+
 function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
   const minis = minisFor(name);
+  const three = threeFor(name);
   const [mini, setMini] = useState(minis[0]?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;
@@ -897,17 +945,33 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       }
     >
       <p>
-        🎮 미니게임 {minis.length}개 중 고르기 · 계급이 오를수록 빨라지고 어려워져요
+        🎮 미니게임·🪖 3D 훈련 {minis.length + three.length}개 중 고르기 · 계급이 오를수록 빨라지고 어려워져요
         {featured ? ' · 🔥 오늘 2배' : ''}
       </p>
-      <div className="mg-pick">
-        {minis.map((m) => (
-          <button key={m.id} className={mini === m.id ? 'on' : ''} onClick={() => setMini(m.id)}>
-            <b>{m.name}</b>
-            <small>{m.how}</small>
-          </button>
+      {(
+        [
+          ['🎮 미니게임', minis.filter((m) => !m.three).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '' }))],
+          ['🧊 3D 미니게임', minis.filter((m) => m.three).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
+          ['🪖 3D 실전 훈련', three.map((m) => ({ id: m.id, name: m.name, how: m.how, tag: m.tag }))],
+        ] as const
+      )
+        .filter(([, list]) => list.length)
+        .map(([head, list]) => (
+          <div key={head}>
+            <p className="mg-sec">{head}</p>
+            <div className="mg-pick">
+              {list.map((m) => (
+                <button key={m.id} className={mini === m.id ? 'on' : ''} onClick={() => setMini(m.id)}>
+                  <b>
+                    {m.name}
+                    {m.tag && <i className="mg-tag">{m.tag}</i>}
+                  </b>
+                  <small>{m.how}</small>
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
-      </div>
       <div className="kv2">
         <span>오르는 스탯</span>
         <b>{TRAINING_STATS[name].map((x) => `${STAT_ICON[x]}${x} ${Math.floor(o.stats[x])}`).join(' · ')}</b>

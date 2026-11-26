@@ -1,0 +1,152 @@
+{
+ "1": {
+  "budget": 60,
+  "parCost": 45,
+  "parT": 77
+ },
+ "2": {
+  "budget": 70,
+  "parCost": 50,
+  "parT": 115
+ },
+ "3": {
+  "budget": 50,
+  "parCost": 40,
+  "parT": 59
+ },
+ "4": {
+  "budget": 50,
+  "parCost": 35,
+  "parT": 83
+ },
+ "5": {
+  "budget": 60,
+  "parCost": 40,
+  "parT": 63
+ },
+ "6": {
+  "budget": 90,
+  "parCost": 70,
+  "parT": 95
+ },
+ "7": {
+  "budget": 70,
+  "parCost": 50,
+  "parT": 57
+ },
+ "8": {
+  "budget": 130,
+  "parCost": 95,
+  "parT": 99
+ },
+ "9": {
+  "budget": 90,
+  "parCost": 70,
+  "parT": 115
+ },
+ "10": {
+  "budget": 80,
+  "parCost": 60,
+  "parT": 82
+ },
+ "11": {
+  "budget": 70,
+  "parCost": 50,
+  "parT": 100
+ },
+ "12": {
+  "budget": 120,
+  "parCost": 90,
+  "parT": 98
+ },
+ "13": {
+  "budget": 140,
+  "parCost": 105,
+  "parT": 72
+ },
+ "14": {
+  "budget": 170,
+  "parCost": 130,
+  "parT": 115
+ },
+ "15": {
+  "budget": 80,
+  "parCost": 60,
+  "parT": 115
+ },
+ "16": {
+  "budget": 110,
+  "parCost": 80,
+  "parT": 82
+ },
+ "17": {
+  "budget": 70,
+  "parCost": 55,
+  "parT": 95
+ },
+ "18": {
+  "budget": 180,
+  "parCost": 135,
+  "parT": 69
+ },
+ "19": {
+  "budget": 160,
+  "parCost": 120,
+  "parT": 104
+ },
+ "20": {
+  "budget": 250,
+  "parCost": 185,
+  "parT": 115
+ },
+ "21": {
+  "budget": 190,
+  "parCost": 140,
+  "parT": 115
+ },
+ "22": {
+  "budget": 160,
+  "parCost": 120,
+  "parT": 104
+ },
+ "23": {
+  "budget": 100,
+  "parCost": 70,
+  "parT": 83
+ },
+ "24": {
+  "budget": 210,
+  "parCost": 155,
+  "parT": 115
+ },
+ "25": {
+  "budget": 170,
+  "parCost": 130,
+  "parT": 96
+ },
+ "26": {
+  "budget": 230,
+  "parCost": 175,
+  "parT": 115
+ },
+ "27": {
+  "budget": 160,
+  "parCost": 120,
+  "parT": 115
+ },
+ "28": {
+  "budget": 150,
+  "parCost": 115,
+  "parT": 58
+ },
+ "29": {
+  "budget": 90,
+  "parCost": 70,
+  "parT": 115
+ },
+ "30": {
+  "budget": 280,
+  "parCost": 210,
+  "parT": 115
+ }
+}

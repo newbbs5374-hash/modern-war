@@ -1,4 +1,5 @@
 // 어떤 전투를 열지 정하는 곳: 훈련 12개 · 임무 · 작전(여러 판) · 대전투(도시 점령) · 승급 심사 · 연습장.
+import { drillName as threeName } from '../battle3d/train3d';
 import type { ActiveMission } from '../game/officer';
 import type { MissionKind } from '../data/officers';
 import { Rng } from '../game/rng';
@@ -6,7 +7,7 @@ import type { Weather } from './grid';
 import { pickMini } from './minigames';
 import type { FKind } from './field';
 
-export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini' | 'b3d';
+export type Frame = 'grid' | 'side' | 'arty' | 'shooter' | 'puzzle' | 'course' | 'range' | 'field' | 'mini' | 'b3d' | 'd3';
 export type Source = 'mission' | 'practice' | 'training' | 'occupy';
 
 export interface BattleSpec {
@@ -61,6 +62,7 @@ export const FRAME_NAMES: Record<Frame, string> = {
   field: '⑥ 2.5D 전장',
   mini: '🎮 훈련 미니게임',
   b3d: '⑦ 3D 전투',
+  d3: '🪖 3D 훈련',
 };
 
 type Pick = { frame: Frame; variant: string; label?: string };
@@ -93,6 +95,11 @@ export function trainingScale(name: string, rank: number): string {
 /** 훈련 = 미니게임 1판(11-25). mini = 고른 미니게임 id(없으면 씨앗으로) */
 export function trainingPlan(name: string, rank: number, seed: number, mini?: string): BattlePlan {
   void rank;
+  // 11-26: 3D 훈련(실전 d3-* · 사격장 c3-* · 배치 퍼즐 p3 · 주간 합동 w3)
+  if (mini && /^(d3-|c3-|p3|w3)/.test(mini)) {
+    const t3 = threeName(mini);
+    return { title: `${name} 훈련 · ${t3}`, source: 'training', training: name, mainIdx: 0, stages: [{ frame: 'd3', variant: mini, title: `${name} 훈련`, difficulty: 1, seed }] };
+  }
   const m = pickMini(name, seed, mini);
   return {
     title: `${name} 훈련 · ${m.name}`,

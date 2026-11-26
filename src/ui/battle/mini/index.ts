@@ -13,6 +13,7 @@ import { HackCode, HackFirewall, HackFlow } from './hack';
 import { RecInterview, RecPoster, RecSpeech } from './recruit';
 import { AirFlare, AirIntercept, AirLanding } from './air';
 import { SeaFormation, SeaSonar, SeaTorpedo } from './sea';
+import { M3AirFlare, M3AirIntercept, M3ArtyLead, M3SeaSonar, M3SeaTorpedo, M3ShootMoving, M3ShootPopup, M3SneakLight } from './three';
 
 export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'sneak-path': SneakPath,
@@ -51,4 +52,12 @@ export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'sea-sonar': SeaSonar,
   'sea-torpedo': SeaTorpedo,
   'sea-formation': SeaFormation,
+  'm3-shoot-popup': M3ShootPopup,
+  'm3-shoot-moving': M3ShootMoving,
+  'm3-arty-lead': M3ArtyLead,
+  'm3-sea-torpedo': M3SeaTorpedo,
+  'm3-sea-sonar': M3SeaSonar,
+  'm3-air-intercept': M3AirIntercept,
+  'm3-air-flare': M3AirFlare,
+  'm3-sneak-light': M3SneakLight,
 };
