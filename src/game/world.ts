@@ -57,6 +57,7 @@ import { noteCapture } from './territory';
 import { FRONT_CITIES, NOW_CONFLICTS } from '../data/conflicts';
 import { instDefense } from './institutions';
 import type { NationState } from './state';
+import { growFort, growOverseas, growQuality, growReach, growRegen, type AiGrow } from './aiGrowth';
 
 export interface PairState {
   rel: Relation;
@@ -66,7 +67,7 @@ export interface PairState {
   weariness: number;
 }
 
-export type EventKind = '외교' | '전투' | '점령' | '신앙' | '멸망' | '장교';
+export type EventKind = '외교' | '전투' | '점령' | '신앙' | '멸망' | '장교' | '성장';
 
 export interface WorldEvent {
   /** 일어난 세계 시간(ms) */
@@ -97,6 +98,8 @@ export interface WorldState {
   annexed?: Record<string, string>;
   /** 도시 → 바로 앞 주인(해방할 수 있는지 보려고, 11-26). 옛 저장은 없음 */
   from?: Record<string, string>;
+  /** AI 나라 성장 단계(11-26, aiGrowth.ts). 옛 저장은 없음 */
+  grow?: Record<string, AiGrow>;
 }
 
 /** 편입 단계: 군정(점령 직후) → 민정(치안 확보 후) → 주민투표 → 편입 */
@@ -403,13 +406,15 @@ function diplomacy(ctx: Ctx) {
 function power(ctx: Ctx, country: string, troops: number, defending: boolean, overseas: boolean): number {
   const c = countryById(country);
   // 11-26 난이도: 한국을 뺀 AI 나라는 병사 한 명의 힘도 조금 셈(미국 > 중국 > 러시아)
-  const quality = 1 + (aiStrength(country, ctx.player) - 1) * AI_QUALITY_SHARE;
+  const quality = (1 + (aiStrength(country, ctx.player) - 1) * AI_QUALITY_SHARE) * growQuality(ctx.w, country);
   let pw = troops * (0.5 + c.military / 100) * quality * ctx.rng.range(0.75, 1.25);
   if (defending) {
     if (country === 'ru') pw *= 1.25; // 혹한 요새
     if (country === 'ua') pw *= 1.2; // 국토 방위 의지
+    pw *= growFort(ctx.w, country); // 11-26 AI 성장: 요새
   } else if (overseas) {
-    pw *= country === 'us' ? US_OVERSEAS : OVERSEAS_PENALTY;
+    const pen = country === 'us' ? US_OVERSEAS : OVERSEAS_PENALTY;
+    pw *= pen + (1 - pen) * growOverseas(ctx.w, country); // 11-26 AI 성장: 세력이 크면 바다 건너도 덜 약해짐
   }
   return pw;
 }
@@ -427,7 +432,7 @@ function invasions(ctx: Ctx) {
   const { w, rng, nations } = ctx;
   for (const att of COUNTRIES.map((c) => c.id)) {
     if (!isAlive(w, att)) continue;
-    const agg = pInfo(w, att).aggression;
+    const agg = pInfo(w, att).aggression * growReach(w, att);
     const enemies = COUNTRIES.map((c) => c.id).filter(
       (b) => b !== att && isAlive(w, b) && relationOf(w, att, b) === '전쟁',
     );
@@ -549,7 +554,7 @@ function rebellions(ctx: Ctx) {
 
 /** 도시 방어도가 조금씩 회복 */
 function regen(w: WorldState) {
-  for (const c of CITIES) w.defense[c.id] = Math.min(CITY_DEFENSE_MAX, w.defense[c.id] + CITY_DEFENSE_REGEN);
+  for (const c of CITIES) w.defense[c.id] = Math.min(CITY_DEFENSE_MAX, w.defense[c.id] + CITY_DEFENSE_REGEN * growRegen(w, w.owner[c.id]));
 }
 
 /** AI 판단 한 번(실제 15분마다). w와 nations를 바꾼다 */

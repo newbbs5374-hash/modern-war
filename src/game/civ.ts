@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 지역 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { growReach } from './aiGrowth';
 import { CLAIM_INFLUENCE, CLAIM_TENSION, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { instSum } from './institutions';
 import { originEff, originOf } from './origin';
@@ -1489,7 +1490,7 @@ export function civTick(s: GameState, pairsBefore: Record<string, { tension: num
     const near = [...PIONEER_ISLANDS].sort((a, b) => Math.hypot(a.x - cap.x, a.y - cap.y) - Math.hypot(b.x - cap.x, b.y - cap.y)).slice(0, 2);
     // 실제로 다투는 섬은 멀어도 챙김
     for (const p of PIONEER_ISLANDS) if (claimsIsland(p.id, x.id) && !near.includes(p)) near.push(p);
-    const k = (c.aiGov[x.id] === 'assembly' ? 1.25 : 1) * (s.world.personalities[x.id] === '경제형' ? 1.2 : 1);
+    const k = (c.aiGov[x.id] === 'assembly' ? 1.25 : 1) * (s.world.personalities[x.id] === '경제형' ? 1.2 : 1) * growReach(s.world, x.id);
     for (const p of near) if (rng.chance(0.6)) addInfluence(c, p.id, x.id, AI_INFLUENCE_PER_TICK * k * (claimsIsland(p.id, x.id) ? 1 + CLAIM_INFLUENCE : 1) * (1 + rng.next()));
   }
   // 남이 다투는 섬에서 우리가 1등이거나, 우리가 다투는 섬에서 남이 1등이면 그 나라와 긴장이 조금씩 오름
