@@ -31,4 +31,9 @@ export const COUNTRY_FACTS: Record<string, CountryFacts> = {
   ir: { capital: '테헤란', pop: 89, area: 165, gdpRank: 35, nuke: '없음', active: 61, note: '호르무즈 해협 옆 석유 대국, 미사일·무인기 개발', exports: ['석유', '가스', '석유화학'] },
   ua: { capital: '키이우', pop: 37, area: 60, gdpRank: 55, nuke: '없음', active: 90, note: '유럽의 곡창, 2022년부터 전쟁 중', exports: ['곡물', '해바라기유', '철강'] },
   kp: { capital: '평양', pop: 26, area: 12, gdpRank: 150, nuke: '보유', active: 128, note: '병력 비율이 가장 높은 닫힌 나라', exports: ['석탄', '광물', '무기'] },
+  tw: { capital: '타이베이', pop: 23, area: 3.6, gdpRank: 21, nuke: '없음', active: 17, note: '세계 최첨단 반도체의 대부분을 만드는 섬', exports: ['반도체', '전자제품', '기계'] },
+  pl: { capital: '바르샤바', pop: 37, area: 31, gdpRank: 20, nuke: '없음', active: 20, note: '국방비 비율이 나토에서 가장 높은 나라 중 하나', exports: ['자동차 부품', '가구', '전자제품'] },
+  ph: { capital: '마닐라', pop: 115, area: 30, gdpRank: 32, nuke: '없음', active: 15, note: '섬 7천여 개, 남중국해 암초를 두고 중국과 다툼', exports: ['전자제품', '니켈', '바나나'] },
+  pk: { capital: '이슬라마바드', pop: 240, area: 80, gdpRank: 42, nuke: '보유', active: 65, note: '핵무기를 가진 나라, 카슈미르를 두고 인도와 대치', exports: ['섬유', '쌀', '가죽'] },
+  sa: { capital: '리야드', pop: 33, area: 215, gdpRank: 18, nuke: '없음', active: 26, note: '석유 수출 세계 1위, 국방비 세계 상위권', exports: ['석유', '석유화학', '플라스틱'] },
 };

@@ -41,4 +41,10 @@ export const CITY_INST: Record<string, InstId[]> = {
   테헤란: ['intel'], 이스파한: ['nuke'], 반다르아바스: ['navy'], 시라즈: [],
   키이우: ['univ'], 하르키우: ['army'], 오데사: ['navy'],
   평양: ['army', 'intel'], 남포: ['navy'],
+  // 11-26 새 나라
+  타이베이: ['intel', 'bank'], 가오슝: ['navy'], 신주: ['lab', 'univ'], 타이중: ['air'], 마궁: ['navy'],
+  바르샤바: ['univ', 'bank'], 크라쿠프: ['univ'], 그단스크: ['navy'], 제슈프: ['air'], 루블린: ['army'],
+  마닐라: ['intel', 'bank'], 수비크: ['navy'], 다바오: ['army'], 세부: [],
+  이슬라마바드: ['intel', 'army'], 카라치: ['navy', 'bank'], 라호르: ['univ'], 페샤와르: ['army'], 퀘타: ['nuke'],
+  리야드: ['intel', 'bank'], 담맘: ['air'], 제다: ['navy'], 네옴: ['lab'], 타부크: ['air'],
 };

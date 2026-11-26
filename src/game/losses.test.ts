@@ -24,3 +24,14 @@ describe('3D 전투 손실(11-26)', () => {
     expect(miss).toEqual([]);
   });
 });
+
+describe('가진 부대만 냄(11-26)', () => {
+  it('특화 유닛은 바탕 병과로 세고, 앞 판에서 쓰러진 만큼 뺌', async () => {
+    const { ownedByBase } = await import('./losses');
+    const { SPECIALS } = await import('../data/specials');
+    const sp = SPECIALS.find((d) => d.base === '구축함')!;
+    expect(ownedByBase({ 구축함: 1, [sp.name]: 2, 전차: 0 }, { 구축함: 1 })).toEqual({ 구축함: 2 });
+    const r = subtractDead({ 구축함: 1, [sp.name]: 2 }, { 구축함: 2 });
+    expect(r.units).toEqual({ [sp.name]: 1 });
+  });
+});

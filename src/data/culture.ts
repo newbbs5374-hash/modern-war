@@ -243,6 +243,7 @@ export const cultureEventById = (id: CultureEventId) => CULTURE_EVENTS.find((e) 
 /** 나라마다 타고난 문화 힘(AI 나라 문화가 쌓이는 빠르기). 1 = 보통 */
 export const CULTURE_BASE: Record<string, number> = {
   us: 1.35, uk: 1.2, jp: 1.2, de: 1.05, kr: 1.15, cn: 1.15, in: 1.05, ru: 0.95, tr: 1.0, il: 0.85, ir: 0.85, ua: 0.8, kp: 0.45,
+  tw: 1.0, pl: 0.9, ph: 0.85, pk: 0.75, sa: 0.8,
 };
 /** 나라별 문화 특기: 이 시설 관광·문화 +30% */
 export const CULTURE_SPECIAL: Record<string, { venue: VenueId; text: string }> = {
@@ -259,6 +260,11 @@ export const CULTURE_SPECIAL: Record<string, { venue: VenueId; text: string }> =
   ir: { venue: 'heritage', text: '페르시아 궁전 터' },
   ua: { venue: 'stadium', text: '축구 사랑' },
   kp: { venue: 'stadium', text: '대집단 체조' },
+  tw: { venue: 'museum', text: '고궁 보물과 야시장' },
+  pl: { venue: 'stage', text: '쇼팽의 피아노' },
+  ph: { venue: 'stage', text: '노래 대회와 노래방' },
+  pk: { venue: 'stadium', text: '크리켓 열기' },
+  sa: { venue: 'heritage', text: '사막의 옛 오아시스 도시' },
 };
 export const SPECIAL_BONUS = 0.3;
 

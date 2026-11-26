@@ -18,6 +18,11 @@ export const SECRETARY: Record<string, Secretary> = {
   ir: { name: '야사민 라히미', age: 26 },
   il: { name: '노아 샤피라', age: 25 },
   tr: { name: '엘리프 아이든', age: 27 },
+  tw: { name: '천위팅', age: 26 },
+  pl: { name: '조피아 노바크', age: 25 },
+  ph: { name: '안젤리카 레예스', age: 26 },
+  pk: { name: '아이만 쿠레시', age: 27 },
+  sa: { name: '리마 알하르비', age: 26 },
 };
 export const secretaryOf = (country: string): Secretary => SECRETARY[country] ?? SECRETARY.kr;
 /** 얼굴 그림 이름(앞에서부터 있는 것) */

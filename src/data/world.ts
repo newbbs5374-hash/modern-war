@@ -199,6 +199,53 @@ export const COUNTRIES: Country[] = [
     ability: { name: '철벽 체제', effect: '국방비 비율 상한 높음 · 병력 +50% · 대신 경제 성장 −50%' },
     shapes: [{ x: 655, y: 140, w: 70, h: 62 }],
   }),
+  // 11-26 대장 요청 "스토리·이슈 있는 나라 추가": 대만·폴란드·필리핀·파키스탄·사우디아라비아(13→18개국)
+  // shapes = 육각 칸 지도(도시·전투 화면용)의 빈 바다 자리. 세계지도 자리는 실제 위치(realmap.ts)
+  C({
+    id: 'tw', name: '대만', continent: 'asien', intro: '세계 반도체를 쥔 섬. 바다 건너 큰 이웃의 압박을 버텨 냄',
+    cities: ['타이베이', '가오슝', '타이중', '타이난', '신주', '지룽', '화롄', '마궁'],
+    economy: 17, budget: 15, military: 22, difficulty: '매우 어려움',
+    bloc: 'independent', faith: 'pantheon', faithStrength: '중',
+    specialUnit: { name: '해협 미사일 포대', base: '해안 미사일', effect: '적 군함 상대 +50% · 바다 위 배도 제대로 때림' },
+    ability: { name: '호저 전략', effect: '자기 땅 방어 때 힘 +25% · 바다를 건너온 적을 막는 데 강함' },
+    shapes: [{ x: 696, y: 624, w: 30, h: 30 }],
+  }),
+  C({
+    id: 'pl', name: '폴란드', continent: 'eurona', intro: '러시아와 맞닿은 유럽 동쪽의 방패. 가장 빠르게 무장하는 나라',
+    cities: ['바르샤바', '크라쿠프', '그단스크', '브로츠와프', '포즈난', '우치', '루블린', '제슈프', '슈체친'],
+    economy: 18, budget: 21, military: 24, difficulty: '보통',
+    bloc: 'europe', faith: 'covenant', faithStrength: '중',
+    specialUnit: { name: '백독수리 기갑여단', base: '전차', effect: '한국산 전차 바탕 · 방어 +20% · 우리 땅 지킬 때 +25%' },
+    ability: { name: '동쪽 방패', effect: '자기 땅 방어 때 힘 +15% · 병력 +10%' },
+    shapes: [{ x: 46, y: 124, w: 30, h: 30 }],
+  }),
+  C({
+    id: 'ph', name: '필리핀', continent: 'amern', intro: '섬 7천 개의 나라. 남중국해 암초에서 큰 이웃의 해경과 맞섬',
+    cities: ['마닐라', '세부', '다바오', '수비크', '푸에르토프린세사', '일로일로', '삼보앙가', '바기오', '바스코'],
+    economy: 13, budget: 8, military: 12, difficulty: '어려움',
+    bloc: 'pacific', faith: 'covenant', faithStrength: '강',
+    specialUnit: { name: '해안경비 선단', base: '구축함', effect: '값 −30% · 빠른 배 · 시야 +1' },
+    ability: { name: '섬 7천 개', effect: '자기 땅 방어 때 힘 +20% · 섬이 많아 상륙이 어려움' },
+    shapes: [{ x: 878, y: 565, w: 30, h: 30 }],
+  }),
+  C({
+    id: 'pk', name: '파키스탄', continent: 'asien', intro: '카슈미르를 두고 인도와 다투는 핵 보유국. 산악 부대가 강함',
+    cities: ['이슬라마바드', '카라치', '라호르', '페샤와르', '퀘타', '과다르', '물탄', '파이살라바드', '스카르두'],
+    economy: 12, budget: 10, military: 33, difficulty: '어려움',
+    bloc: 'independent', faith: 'blade', faithStrength: '강',
+    specialUnit: { name: '카라코룸 산악연대', base: '보병', effect: '산·고지 전투 +25% · 받는 피해 −10%' },
+    ability: { name: '핵 억지', effect: '다른 나라가 침공을 걸 확률 −30%' },
+    shapes: [{ x: 491, y: 531, w: 30, h: 30 }],
+  }),
+  C({
+    id: 'sa', name: '사우디아라비아', continent: 'sahar', intro: '석유의 왕국. 걸프만 건너 이란과 맞서며 사막에 미래 도시를 지음',
+    cities: ['리야드', '제다', '담맘', '타부크', '지잔', '네옴', '주바일', '얀부', '아브하', '하일'],
+    economy: 20, budget: 29, military: 23, difficulty: '보통',
+    bloc: 'independent', faith: 'blade', faithStrength: '강',
+    specialUnit: { name: '왕실 공군 편대', base: '전투기', effect: '공격 +20% · 체력 +20% · 값이 비쌈' },
+    ability: { name: '오일 머니', effect: '나라 예산 +20%(석유 수출)' },
+    shapes: [{ x: 254, y: 630, w: 30, h: 30 }],
+  }),
 ];
 
 export type Relation = '전쟁' | '휴전' | '연합' | '중립';

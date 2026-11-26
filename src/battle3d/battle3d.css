@@ -22,3 +22,4 @@
 .b3d-between p{margin:0;font-size:13.5px;line-height:1.6;color:#c4cfcd}
 .b3d-between ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:#ffc35a}
 .b3d-between-go{appearance:none;border:0;border-radius:999px;background:#3d8bff;color:#fff;font-weight:700;font-size:15px;height:46px;margin-top:6px;cursor:pointer;box-shadow:0 0 18px rgba(61,139,255,.35)}
+.b3d .b3-card .b3-own{font-family:var(--mono);font-size:9.5px;color:var(--us)}

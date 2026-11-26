@@ -164,7 +164,9 @@ describe('승리', () => {
     const { CITIES } = await import('../data/cities');
     let s = newGame('t', 'kr', 0, { seed: 9 });
     const owner = { ...s.world.owner };
-    for (const c of CITIES.filter((x) => x.front).slice(0, 36)) owner[c.id] = 'kr';
+    const fronts = CITIES.filter((x) => x.front);
+    // 11-26 나라 18개: 정복 승리 조건(점령 도시의 48%)만큼 차지
+    for (const c of fronts.slice(0, Math.ceil(fronts.length * 0.5))) owner[c.id] = 'kr';
     s = { ...s, world: { ...s.world, owner } };
     expect(victoryProgress(s).mine).toBeGreaterThanOrEqual(20);
     expect(checkVictory(s).ending).toBeNull(); // 아직 지도자 아님
