@@ -8,7 +8,7 @@ import { ACTS, URBAN_FILL } from './stages';
 /** 2·3막에 새로 보낼 수 있는 보충 예산 */
 export const REINF_BUDGET = 240;
 /** 막 하나 결과 */
-export interface ActResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; carried?: number }
+export interface ActResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; carried?: number; dead?: Record<string, number> }
 /** 다음 막으로 넘어가는 것: 땅·하늘 부대(남은 체력 비율), 살아남은 배 수(함포 지원 → 지휘력) */
 export interface Carry { units: Array<{ kind: Kind; hp: number }>; naval: number }
 
@@ -68,7 +68,9 @@ export function actResult(S: Sim): ActResult {
 }
 
 /** 세 막 결과 → 임무 결과(별·글) */
-export function siegeOutcome(results: ActResult[], acts: Stage[] = ACTS): { win: boolean; stars: number; text: string } {
+export function siegeOutcome(results: ActResult[], acts: Stage[] = ACTS): { win: boolean; stars: number; text: string; dead: Record<string, number> } {
+  const dead: Record<string, number> = {};
+  for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) dead[k] = (dead[k] ?? 0) + v;
   const win = results.length === 3 && results.every((r) => r.win);
   // 넘어온 부대는 한 번만 셈
   const total = results.reduce((s, r) => s + r.total - (r.carried ?? 0), 0) || 1, lost = results.reduce((s, r) => s + r.lost, 0);
@@ -79,7 +81,7 @@ export function siegeOutcome(results: ActResult[], acts: Stage[] = ACTS): { win:
   const failAt = results.findIndex((r) => !r.win);
   const head = win ? '외곽·시가전·도심을 모두 뚫고 도시를 차지했어요.'
     : failAt >= 0 ? `${actName(acts, failAt)}에서 밀려났어요.` : '공성전을 그만뒀어요.';
-  return { win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${lost}/${total}` };
+  return { win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${lost}/${total}`, dead };
 }
 
 /** 막 이름(앞에 '1막 ·' 붙임) */

@@ -9,6 +9,8 @@ import { assemblyOf } from './assembly';
 import { annexedCount } from './annex';
 import { cabinetOf, ministerCount } from './cabinet';
 import { mediaOf } from './media';
+import { cultureOf, starsOf } from './culture';
+import { domOf } from './domestic';
 import { scheduleOf } from './schedule';
 import { presOf } from './approval';
 import { favorOf } from './civ';
@@ -36,7 +38,20 @@ export type Count =
   | 'spy' // 첩보 작전 성공
   | 'star3' // 훈련 별 3개(11-26)
   | 'annex' // 점령 도시 편입 완료(11-26)
-  | 'facUp'; // 시설·부처 건물 한 단계 올림(11-26 보상 더 늘리기)
+  | 'facUp' // 시설·부처 건물 한 단계 올림(11-26 보상 더 늘리기)
+  // 11-26 모든 콘텐츠에서 루비·가속권
+  | 'plan' // 대통령 일정 소화
+  | 'law' // 법안 통과·재신임 통과
+  | 'petition' // 국민 청원 들어주기
+  | 'summit' // 정상회담 성공
+  | 'culture' // 문화 작품·스타 얻기
+  | 'budgetPass' // 예산안 국회 통과
+  | 'project' // 대형 사업 단계 진행·완공
+  | 'task' // 부처 업무 끝내기
+  | 'deployWin' // 파병 교전 승리
+  | 'appoint' // 장관·참모 자리 채우기
+  | 'stat' // 스탯 오르기
+  | 'general'; // 장군 늘리기
 
 export interface DailyTask {
   id: Count;
@@ -99,23 +114,41 @@ export const DAILY_POOL: Array<{ id: Count; name: string; icon: string; need: nu
 
 // ── 전과 보상(11-26 루비 얻는 곳 늘리기) ──
 // 큰 일(점령·편입·등급)은 그때마다, 작은 일(훈련 별 3개·전투 승리)은 하루 상한까지 루비가 쌓이고, 상점에서 받는다.
-export type SpoilKind = 'capture' | 'annex' | 'rank' | 'research' | 'facUp' | 'event' | 'spy' | 'pact' | 'star3' | 'merit';
-export const SPOILS: Record<SpoilKind, { icon: string; name: string; ruby: number; boosts?: number; small?: boolean }> = {
-  capture: { icon: '🏴', name: '도시 점령', ruby: 12, boosts: 2 },
-  annex: { icon: '🗳️', name: '점령 도시 편입', ruby: 18, boosts: 3 },
-  rank: { icon: '⭐', name: '호칭 오름', ruby: 15, boosts: 3 },
-  research: { icon: '🔬', name: '연구 끝', ruby: 4, boosts: 1 },
-  facUp: { icon: '🏗️', name: '시설·청사 올림', ruby: 3, boosts: 1, small: true },
-  event: { icon: '⚡', name: '돌발 사건 해결', ruby: 3, boosts: 1, small: true },
-  spy: { icon: '🕵️', name: '첩보 작전 성공', ruby: 3, small: true },
-  pact: { icon: '🤝', name: '협정·무역 계약', ruby: 3, small: true },
-  star3: { icon: '🎯', name: '훈련 별 3개', ruby: 3, small: true },
-  merit: { icon: '🎖️', name: '임무·전투 승리', ruby: 3, small: true },
+export type SpoilKind = Exclude<Count, 'salary'> | 'salary';
+export const SPOILS: Record<SpoilKind, { icon: string; name: string; ruby: number; boosts?: number; small?: boolean; where: string }> = {
+  capture: { icon: '🏴', name: '도시 점령', ruby: 12, boosts: 2, where: '국방' },
+  annex: { icon: '🗳️', name: '점령 도시 편입', ruby: 18, boosts: 3, where: '국방' },
+  rank: { icon: '⭐', name: '호칭 오름', ruby: 15, boosts: 3, where: '개인' },
+  island: { icon: '🏝️', name: '분쟁 지역 차지', ruby: 10, boosts: 2, where: '외교' },
+  research: { icon: '🔬', name: '연구 끝', ruby: 4, boosts: 1, where: '사회' },
+  law: { icon: '📜', name: '법안·재신임 통과', ruby: 6, boosts: 1, where: '사회' },
+  budgetPass: { icon: '🧾', name: '예산안 통과', ruby: 6, boosts: 1, where: '경제' },
+  summit: { icon: '🤝', name: '정상회담 성공', ruby: 5, boosts: 1, where: '외교' },
+  culture: { icon: '🎭', name: '문화 작품·스타', ruby: 4, boosts: 1, where: '문화' },
+  project: { icon: '🏗️', name: '대형 사업 진행', ruby: 4, boosts: 1, where: '경제' },
+  facUp: { icon: '🏗️', name: '시설·청사 올림', ruby: 3, boosts: 1, small: true, where: '경제' },
+  event: { icon: '⚡', name: '돌발 사건 해결', ruby: 3, boosts: 1, small: true, where: '본부' },
+  deployWin: { icon: '🪖', name: '파병 교전 승리', ruby: 3, boosts: 1, small: true, where: '국방' },
+  general: { icon: '⭐', name: '장군 늘림', ruby: 3, boosts: 1, small: true, where: '국방' },
+  appoint: { icon: '🏛️', name: '장관·참모 자리 채움', ruby: 2, boosts: 1, small: true, where: '사회' },
+  spy: { icon: '🕵️', name: '첩보 작전 성공', ruby: 3, small: true, where: '외교' },
+  pact: { icon: '🤝', name: '협정·무역 계약', ruby: 3, small: true, where: '외교' },
+  vote: { icon: '🏛️', name: '국제 회의 투표', ruby: 2, small: true, where: '외교' },
+  petition: { icon: '📝', name: '국민 청원', ruby: 2, small: true, where: '사회' },
+  task: { icon: '📋', name: '부처 업무 끝', ruby: 2, small: true, where: '사회' },
+  plan: { icon: '🗓️', name: '대통령 일정', ruby: 2, small: true, where: '개인' },
+  chore: { icon: '🏗️', name: '내정 업무 시작', ruby: 2, small: true, where: '경제' },
+  star3: { icon: '🎯', name: '훈련 별 3개', ruby: 3, small: true, where: '국방' },
+  train: { icon: '🎯', name: '훈련 끝', ruby: 1, small: true, where: '국방' },
+  merit: { icon: '🎖️', name: '임무·전투 승리', ruby: 3, small: true, where: '국방' },
+  recruit: { icon: '🪖', name: '부대 모집 완료', ruby: 1, small: true, where: '국방' },
+  stat: { icon: '💪', name: '스탯 오름', ruby: 1, small: true, where: '개인' },
+  salary: { icon: '💵', name: '봉급 받기', ruby: 0, where: '본부' },
 };
 /** 작은 전과 루비 하루 상한(11-26: 12 → 30) */
-export const SPOIL_SMALL_CAP = 30;
+export const SPOIL_SMALL_CAP = 50; // 11-26 모든 콘텐츠: 30 → 50
 /** 작은 전과 가속권 하루 상한 */
-export const SPOIL_SMALL_BOOST_CAP = 6;
+export const SPOIL_SMALL_BOOST_CAP = 10;
 /** 업적 가속권: 루비 20마다 1장(적어도 1장) */
 export const achBoosts = (a: { ruby: number }) => Math.max(1, Math.round(a.ruby / 20));
 export const dailyInfo = (id: Count) => DAILY_POOL.find((d) => d.id === id)!;
@@ -265,6 +298,35 @@ export function countDiff(b: GameState, a: GameState): Partial<Record<Count, num
   if (b.player.countryId === me) add('annex', annexedCount(a) - annexedCount(b));
   const lv = (x: GameState) => Object.values(x.economy.buildings ?? {}).reduce((n, y) => n + (y?.level ?? 0), 0) + sum(x.cabinet?.minLv as Record<string, number> | undefined) + sum(x.cabinet?.fac);
   add('facUp', lv(a) - lv(b));
+  add('island', myIslands(a).length - myIslands(b).length);
+  if (a.schedule && b.schedule) add('plan', scheduleOf(a).total - scheduleOf(b).total);
+  if (a.assembly && b.assembly) {
+    const asA = assemblyOf(a), asB = assemblyOf(b);
+    add('law', (asA.passed ?? 0) + asA.confWins - (asB.passed ?? 0) - asB.confWins);
+  }
+  if (a.media && b.media) {
+    const mA = mediaOf(a), mB = mediaOf(b);
+    add('petition', mA.petDone - mB.petDone);
+    add('summit', mA.summits - mB.summits);
+  }
+  const cul = (x: GameState) => {
+    const c = cultureOf(x);
+    return (c.works?.relic?.length ?? 0) + (c.works?.show?.length ?? 0) + (c.works?.hit?.length ?? 0) + starsOf(c).length;
+  };
+  if (a.culture && b.culture) add('culture', cul(a) - cul(b));
+  if (a.dom && b.dom) {
+    const dA = domOf(a), dB = domOf(b);
+    add('budgetPass', (dA.budget?.passed ?? 0) - (dB.budget?.passed ?? 0));
+    const st = (d: typeof dA) => Object.values(d.projects ?? {}).reduce((n, p) => n + p.stage, 0);
+    add('project', st(dA) - st(dB));
+  }
+  add('task', sum(a.cabinet?.minWork as Record<string, number> | undefined) - sum(b.cabinet?.minWork as Record<string, number> | undefined));
+  const wins = (x: GameState) => (x.deploy?.list ?? []).reduce((n, d) => n + (d.wins ?? 0), 0);
+  add('deployWin', wins(a) - wins(b));
+  const seated = (x: GameState) => (x.cabinet?.people ?? []).filter((p) => p.seat || p.post).length;
+  add('appoint', seated(a) - seated(b));
+  add('stat', sum(a.officer.stats) - sum(b.officer.stats));
+  add('general', a.officer.generals.length - b.officer.generals.length);
   return out;
 }
 

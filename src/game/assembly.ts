@@ -8,6 +8,7 @@ import { note, withOfficer } from './officer';
 import { originEff } from './origin';
 import { influenceOf, roleOf } from './rivals';
 import { Rng } from './rng';
+import { amendConfBonus, seatBonus } from './polity';
 import type { GameState } from './state';
 import { titleOf, titleScore } from './title';
 
@@ -49,6 +50,8 @@ export function billRows(s: GameState, id: BillId): Array<[string, number]> {
   if (pr) rows.push(['📏 원칙주의 각료', pr * 0.03]);
   const og = originEff(s, 'law');
   if (og) rows.push(['🎓 출신', og]);
+  const sb = seatBonus(s);
+  if (sb) rows.push([`🏛️ 여당 의석 ${s.polity!.seats.ruling}/300`, Math.round(sb * 100) / 100]);
   const hard = billById(id).hard;
   if (hard) rows.push(['법안이 어려움', -hard]);
   return rows;
@@ -83,6 +86,7 @@ export function confRows(s: GameState): Array<[string, number]> {
   return [
     [`지지도 ${Math.round(ap)}`, (ap - 35) / 30],
     [`호칭(평판) 「${t.name}」`, Math.round(((titleScore(s) - 100) / 400) * 100) / 100],
+    ...(amendConfBonus(s) ? [['📜 개헌 임기 연장', amendConfBonus(s)] as [string, number]] : []),
   ];
 }
 export const confChance = (s: GameState) => clamp(confRows(s).reduce((a, [, v]) => a + v, 0), 0, 1);

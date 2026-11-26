@@ -1,5 +1,6 @@
 // A7 예산 국회 시즌(11/24): 실제 7일마다 예산안 철. 하루 안에 예산안(4가지)을 내면 6시간 뒤 국회 표결.
 // 통과하면 다음 철까지 그 예산 효과, 부결(또는 안 냄)이면 준예산: 나라 예산 −5%·신뢰도 −3.
+import { seatBonus } from './polity';
 import type { GameState } from './state';
 import type { LawKey } from './laws';
 import { domLog, domOf, registerDomRows, snap, withDom, type Rows } from './domestic';
@@ -31,7 +32,7 @@ export const CUT = { eff: { budget: -0.05 } as Partial<Record<LawKey, number>>, 
 export const planById = (id: string) => PLANS.find((p) => p.id === id);
 
 export function planChance(s: GameState, id: string): number {
-  return Math.max(0.15, Math.min(0.95, 0.4 + s.officer.trust / 200 + (planById(id)?.ease ?? 0)));
+  return Math.max(0.15, Math.min(0.95, 0.4 + s.officer.trust / 200 + seatBonus(s) + (planById(id)?.ease ?? 0)));
 }
 export function canSubmitBudget(s: GameState, id: string): string | null {
   const b = domOf(s).budget;
