@@ -1,6 +1,7 @@
 // 2단계: 세계가 스스로 움직이는 규칙(외교·긴장도·침공·점령). 화면과 떨어진 순수 계산.
 // 실제 15분(게임 6시간)마다 한 번 "판단"한다. 같은 씨앗이면 결과가 늘 같다.
 
+import { isArchRival } from '../data/archRivals';
 import { CITIES, FRONT, cityById, homeValue } from '../data/cities';
 import { LEADERS, PERSONALITIES, PERSONALITY_LIST, type Personality } from '../data/leaders';
 import { COUNTRIES, countryById, startingRelation, type Relation } from '../data/world';
@@ -253,6 +254,9 @@ export function isLosing(w: WorldState, id: string): boolean {
   return kept * 2 < home.length;
 }
 
+/** 숙적 사이 판단마다 더 오르는 긴장(× 지도자 성향) */
+export const TENSION_ARCH = 0.15;
+
 const pInfo = (w: WorldState, id: string) => PERSONALITIES[w.personalities[id]];
 
 /** 두 나라 신앙이 부딪히는가(빛의 언약 ↔ 성검 교단, 또는 같은 북극성 정교끼리 정통 다툼) */
@@ -273,6 +277,7 @@ export function isRival(a: string, b: string): boolean {
   const ab = [a, b].sort().join('-');
   if (ab === 'cn-in') return true;
   if (ab === 'cn-tw' || ab === 'in-pk' || ab === 'ir-sa') return true; // 11-26 새 나라 맞수
+  if (isArchRival(a, b)) return true; // 11-26 나라마다 정한 숙적(data/archRivals.ts)
   return faithClash(a, b);
 }
 
@@ -372,6 +377,7 @@ function diplomacy(ctx: Ctx) {
     else if (isRival(a, b)) {
       rise = (p.rel === '휴전' ? TENSION_TRUCE : TENSION_NEUTRAL) * mult;
       if (faithClash(a, b)) rise += TENSION_FAITH;
+      if (isArchRival(a, b)) rise += TENSION_ARCH * mult;
     } else {
       const neighbor = countryById(a).continent === countryById(b).continent;
       rise = (mult - 1) * TENSION_OTHER_LEADER + (neighbor ? TENSION_OTHER_NEIGHBOR : -TENSION_OTHER_NEIGHBOR);

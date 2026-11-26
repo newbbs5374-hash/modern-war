@@ -456,8 +456,9 @@ export function crisisTick(s: GameState): GameState {
 export const PRESS_FIRST_MS = 3 * H;
 export const PRESS_MIN_MS = 4 * H;
 export const PRESS_MAX_MS = 7 * H;
-export const NEWS_MIN_MS = 2 * H;
-export const NEWS_MAX_MS = 4 * H;
+// 11-26 정상 발언 늘리기: 세계 소식 2~4시간 → 1~2시간
+export const NEWS_MIN_MS = 1 * H;
+export const NEWS_MAX_MS = 2 * H;
 
 /** 지금 나에게 나올 수 있는 압박 카드와 무게(공격형 지도자·맞수·전쟁 상대일수록 자주) */
 export function pressuresFor(s: GameState): Array<{ d: PressureDef; w: number }> {

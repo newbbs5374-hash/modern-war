@@ -1,3 +1,4 @@
+import { archRivalsOf, archWhy, isArchRival } from '../data/archRivals';
 import type { ReactNode } from 'react';
 import { NationTraits } from './NationUI';
 import { Help } from './kit';
@@ -98,6 +99,12 @@ export function CountryInfo({ id, state }: { id: string; state: GameState }) {
         <PersonFace who={{ kind: 'leader', country: id }} keys={[`leader-${id}`]} fallback={<Flag id={id} />} className="leader-mini" />
         <span>지도자: {leaderText(state, id)}</span>
       </p>
+      {archRivalsOf(id).length > 0 && (
+        <p className="small">
+          🔥 숙적: {archRivalsOf(id).map((r) => `${countryById(r).name}(${archWhy(id, r)})`).join(' · ')}
+          {id !== me && isArchRival(me, id) ? ' — 우리와 숙적이라 무역 값이 비싸고 정기 계약을 거절해요' : ''}
+        </p>
+      )}
       {p && p.rel !== '전쟁' && p.rel !== '연합' && (
         <p className="small">
           우리와 긴장도 {Math.round(p.tension)} / 100 {p.rel === '휴전' ? '(100이 되면 휴전이 깨짐)' : ''}

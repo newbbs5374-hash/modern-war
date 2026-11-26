@@ -1,5 +1,6 @@
 // 6단계 내정: 시설 3개(산업·인프라·복지) · 전략 자원 7종 · 병과 생산 · 무역.
 // 내 나라만 다룸. 순수 계산(새 상태를 돌려줌).
+import { isArchRival } from '../data/archRivals';
 import { originEff } from './origin';
 import { CITIES } from '../data/cities';
 import { UNITS } from '../data/catalog';
@@ -397,6 +398,9 @@ export function producesOf(s: GameState, id: string): Res[] {
   for (const c of CITIES) if (s.world.owner[c.id] === id) for (const r of Object.keys(CITY_RES[c.name] ?? {})) out.add(r as Res);
   return RESOURCES.filter((r) => out.has(r));
 }
+/** 숙적(data/archRivals.ts)과 교역: 살 때 값 × ARCH_PRICE, 팔 때 값 × ARCH_SELL, 정기 계약은 거절 */
+export const ARCH_PRICE = 1.6;
+export const ARCH_SELL = 0.6;
 export function tradePartners(s: GameState): string[] {
   const me = s.player.countryId;
   return COUNTRIES.map((c) => c.id).filter((id) => id !== me && isAlive(s.world, id) && relationOf(s.world, me, id) !== '전쟁');
@@ -404,13 +408,13 @@ export function tradePartners(s: GameState): string[] {
 /** 1개 값(사기) */
 export function tradePrice(s: GameState, id: string, r: Res): number {
   const me = s.player.countryId;
-  const mult = (TRADE_MULT[s.world.personalities[id]] ?? 1) * (relationOf(s.world, me, id) === '연합' ? ALLY_DISCOUNT : 1);
+  const mult = (TRADE_MULT[s.world.personalities[id]] ?? 1) * (relationOf(s.world, me, id) === '연합' ? ALLY_DISCOUNT : 1) * (isArchRival(me, id) ? ARCH_PRICE : 1);
   return Math.round(RES_PRICE[r] * mult * (1 - tradeEdge(s, id)));
 }
 /** 팔 때 값 비율(항로 개방·체제 이득이면 더 비싸게 팖) */
 export function sellRate(s: GameState, id: string): number {
   const e = tradeEdge(s, id);
-  return (SELL_RATE * (1 + e)) / (1 - e);
+  return ((SELL_RATE * (1 + e)) / (1 - e)) * (isArchRival(s.player.countryId, id) ? ARCH_SELL : 1);
 }
 export const contractMax = (s: GameState) => CONTRACT_MAX + extraContracts(s);
 export function canTrade(s: GameState, id: string, r: Res, qty: number, buy: boolean): string | null {
@@ -442,6 +446,7 @@ export function trade(s: GameState, id: string, r: Res, qty: number, buy: boolea
 export function contractPaused(s: GameState, c: Contract): string | null {
   if (!isAlive(s.world, c.country)) return '상대 나라가 무너졌어요';
   if (relationOf(s.world, s.player.countryId, c.country) === '전쟁') return '전쟁 중이라 멈췄어요';
+  if (isArchRival(s.player.countryId, c.country)) return '숙적이라 계약을 멈췄어요';
   if (c.buy && !producesOf(s, c.country).includes(c.res)) return `상대에게 ${c.res}이(가) 없어요`;
   return null;
 }
@@ -461,6 +466,7 @@ export function contractResPerHour(s: GameState, r: Res): number {
 export function canContract(s: GameState, country: string, r: Res, qty: number, buy: boolean): string | null {
   if ((s.economy.contracts ?? []).length >= contractMax(s)) return `계약은 ${contractMax(s)}개까지`;
   if (!tradePartners(s).includes(country)) return '전쟁 중인 나라와는 계약할 수 없어요';
+  if (isArchRival(s.player.countryId, country)) return `${countryById(country).name}은(는) 숙적이라 정기 계약을 거절해요`;
   if (buy && !producesOf(s, country).includes(r)) return `${countryById(country).name}에는 ${r}이(가) 없어요`;
   if (!(qty > 0)) return '수량';
   return null;

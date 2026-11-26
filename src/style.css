@@ -1437,3 +1437,31 @@ button.big { min-height: 64px; font-size: 18px; }
 .dm-chart span { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; text-align: center; }
 .dm-chart i { display: block; background: #3fc1b0; border-radius: 3px 3px 0 0; min-height: 1px; }
 .dm-chart small { font-size: 9.5px; opacity: 0.7; }
+
+/* ───────── 정상 SNS(11-26): 핸드폰 화면 느낌 ───────── */
+.sns-phone { display: flex; flex-direction: column; gap: 8px; max-width: 460px; margin: 0 auto; background: #10161d; border: 2px solid #ffffff22; border-radius: 22px; padding: 10px 10px 12px; box-shadow: inset 0 0 0 4px #0b0f14; }
+.sns-bar { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0 6px; border-bottom: 1px solid #ffffff14; }
+.sns-bar b { font-size: 15px; letter-spacing: 0.5px; }
+.sns-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.sns-tabs button { font-size: 11.5px; padding: 6px 2px; border-radius: 999px; background: #1e2833; border: 1px solid #ffffff1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sns-tabs button.on { background: #14b8a6; color: #04201d; border-color: #14b8a6; font-weight: 800; }
+.sns-msg { background: #14b8a622; border: 1px solid #14b8a655; border-radius: 10px; padding: 6px 8px; margin: 0; }
+.sns-feed { display: flex; flex-direction: column; max-height: 62vh; overflow-y: auto; }
+.sns-empty { text-align: center; padding: 24px 0; }
+.sns-post { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; padding: 10px 4px; border-bottom: 1px solid #ffffff12; }
+.sns-post.hot { background: linear-gradient(90deg, #f9731618, transparent); }
+.sns-post.mine { background: linear-gradient(90deg, #14b8a61c, transparent); }
+.sns-face { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #1e2833; font-size: 22px; }
+.sns-face img, .sns-face > * { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.sns-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sns-head { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+.sns-head b { font-size: 13.5px; }
+.sns-head small { font-size: 11px; }
+.sns-flag { font-size: 13px; }
+.sns-re { font-size: 11px; }
+.sns-text { margin: 0; font-size: 13.5px; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
+.sns-foot { display: flex; gap: 12px; align-items: center; color: #9fb0c0; }
+.sns-foot small { font-size: 11px; }
+.sns-tag { color: #fb923c; font-weight: 700; }
+.sns-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.sns-act button { font-size: 12px; padding: 5px 10px; }
