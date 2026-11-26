@@ -88,6 +88,12 @@ export const MINIGAMES: MiniDef[] = [
   // 11-26 새 훈련 틀 B "계획 짜고 재생"
   { id: 'n-tac-wego', training: '전술', name: '작전 지도 동시 진행', how: '우리 분대를 누르고 땅을 눌러 갈 곳을 찍어요(3곳까지). ▶ 실행을 누르면 적도 몰래 세운 계획대로 동시에 8초 움직여요. 4판 안에 적을 제압하고 깃발 건물을 차지.', secs: 180, on: true, three: true, fresh: 'B' },
   { id: 'n-hack-net', training: '해킹', name: '서버 침투 지도', how: '입구부터 목표 서버까지 서버를 눌러 길을 이어요. 빨간 서버는 들킴이 많고, 그물(방화벽)은 오래 머물러요. 빨간 고리(탐지기)를 피해 ▶ 침투 실행. 서버 3곳.', secs: 150, on: true, three: true, fresh: 'B' },
+  // 11-26 새 훈련 틀 C "대화로 풀기"
+  { id: 'n-intel-interro', training: '정보', name: '포로 심문', how: '포로의 진술 6개 중 하나를 골라 😠 다그치면 반응을 봐요. 앞뒤가 안 맞는 진술에 맞는 🗂 증거를 내밀면 거짓말이 들통나요. 거짓말 3개를 찾아요. 헛짚음 4번이면 끝.', secs: 150, on: true, three: true, fresh: 'C' },
+  // 11-26 새 훈련 틀 D "기지 관리판"
+  { id: 'n-sup-base', training: '보급', name: '보급 기지 운영', how: '전선 요청이 계속 들어와요. 요청을 누르면 빈 트럭이 물자를 싣고 가요(트럭 3대). 재고가 모자라면 공장에 주문(6초 뒤 도착, 예산 8). 마감 전에 많이 보내요.', secs: 80, on: true, three: true, fresh: 'D' },
+  { id: 'n-lead-radio', training: '통솔', name: '동시 무전 지휘', how: '분대 5곳 무전이 한꺼번에 들어와요. 급한 것부터 맞는 지시를 골라요. 8초 안에 답하지 않으면 그 분대 사기가 떨어져요.', secs: 65, on: true, three: true, fresh: 'D' },
+  { id: 'n-rec-ads', training: '모병', name: '광고 캠페인', how: '하루 예산 10을 TV·인터넷·학교·박람회에 나눠요. 채널마다 효과가 숨어 있어요. 어제 결과를 보고 고쳐요. 뉴스가 뜨면 그 채널이 2배. 7일 동안.', secs: 70, on: true, three: true, fresh: 'D' },
 ];
 
 export const miniById = (id: string): MiniDef | undefined => MINIGAMES.find((m) => m.id === id);

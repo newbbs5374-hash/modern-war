@@ -1399,3 +1399,41 @@ button.big { min-height: 64px; font-size: 18px; }
 .fp-sta i { flex: 1; display: block; height: 7px; background: #3fc1b0; border-radius: 4px; }
 .fp-sta i.low { background: #ff5a3a; }
 .mg-3d-pad b { color: var(--text, #fff); }
+
+/* 11-26 새 훈련 틀 C(대화) · D(관리판) */
+.ci-say { position: absolute; left: 6px; right: 6px; bottom: 6px; background: #000c; color: #fff; border: 1px solid #fff3; border-radius: 8px; padding: 6px 8px; font-size: 12.5px; line-height: 1.4; z-index: 3; }
+.ci-lines, .ci-cards, .dm-list { display: grid; gap: 4px; max-width: 380px; margin: 6px auto 0; }
+.ci-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ci-lines button, .ci-cards button, .dm-list > button { text-align: left; font-size: 12px; padding: 5px 8px; line-height: 1.35; display: block; width: 100%; }
+.ci-lines button small { color: var(--muted, #9fb6c2); margin-right: 4px; }
+.ci-lines button i { float: right; font-style: normal; font-size: 11px; color: #f39a3d; }
+.ci-lines button.on, .ci-cards button.on { outline: 2px solid #f39a3d; }
+.ci-lines button.lie { text-decoration: line-through; opacity: 0.7; }
+.ci-cards button b { display: block; font-size: 12px; }
+.ci-cards button small { display: block; font-size: 10.5px; opacity: 0.8; }
+.dm-stock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; max-width: 380px; margin: 6px auto 0; }
+.dm-stock button { padding: 4px 2px; font-size: 11.5px; line-height: 1.3; }
+.dm-stock button b, .dm-stock button small { display: block; }
+.dm-list > button.hot, .dm-radio.hot { border-color: #ff5a3a; }
+.dm-bar { display: block; height: 4px; background: #0005; border-radius: 2px; margin-top: 3px; }
+.dm-bar i { display: block; height: 100%; background: #3fc1b0; border-radius: 2px; }
+.hot .dm-bar i { background: #ff5a3a; }
+.dm-radio { border: 1px solid var(--line, #3a5260); border-radius: 8px; padding: 5px 7px; font-size: 12px; }
+.dm-radio small { opacity: 0.85; }
+.dm-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin-top: 4px; }
+.dm-opts button { font-size: 11px; padding: 4px 3px; line-height: 1.25; }
+.dm-morale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; max-width: 380px; margin: 6px auto 0; }
+.dm-morale span { font-size: 10.5px; text-align: center; }
+.dm-morale i { display: block; height: 6px; background: #3fc1b0; border-radius: 3px; margin-top: 2px; }
+.dm-morale i.mid { background: #f3c23d; }
+.dm-morale i.low { background: #ff5a3a; }
+.dm-ads { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; max-width: 380px; margin: 6px auto 0; }
+.dm-ads > div { border: 1px solid var(--line, #3a5260); border-radius: 8px; padding: 4px; text-align: center; font-size: 11.5px; }
+.dm-ads > div.boost { border-color: #f39a3d; box-shadow: 0 0 6px #f39a3d88; }
+.dm-ads small { display: block; opacity: 0.8; font-size: 10.5px; }
+.dm-ads span { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 3px; }
+.dm-ads span button { min-width: 26px; padding: 2px 0; }
+.dm-chart { display: flex; gap: 4px; align-items: flex-end; height: 64px; max-width: 380px; margin: 6px auto 0; }
+.dm-chart span { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; text-align: center; }
+.dm-chart i { display: block; background: #3fc1b0; border-radius: 3px 3px 0 0; min-height: 1px; }
+.dm-chart small { font-size: 9.5px; opacity: 0.7; }
