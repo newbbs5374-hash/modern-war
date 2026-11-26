@@ -10,7 +10,9 @@ export type Kind =
   | 'dd' | 'cv' | 'sub' | 'lha' | 'ssn' | 'laser'
   | 'cvjet' | 'hq'
   /** 11-26 새 전장용: 무장 고속정(해적) · 무장 트럭(반군) · 지켜야 할 상선 · 지켜야 할 차량·민간인 */
-  | 'boat' | 'tech' | 'cargo' | 'vip';
+  | 'boat' | 'tech' | 'cargo' | 'vip'
+  /** 11-26 새 병과 10개: 탄도미사일 · 다연장로켓 · 장거리 방공 · 해안 미사일 · 정찰 무인기 · 스텔스 전투기 · 조기경보기 · 지상 공격기 · 상륙장갑차 · 바다 드론 */
+  | 'bm' | 'mlrs' | 'sam' | 'csm' | 'uav' | 'f35' | 'awacs' | 'gunship' | 'aav' | 'usv';
 export type CmdKey = 'arty' | 'smoke' | 'air' | 'cruise' | 'emp' | 'repair' | 'para';
 
 export interface UnitDef {
@@ -20,6 +22,8 @@ export interface UnitDef {
   bomber?: boolean; missile?: boolean; carrier?: boolean; lha?: boolean; cruise?: boolean; aura?: boolean; model?: string;
   /** 11-26 다른 병과 모형을 빌려 씀(크기 배수) · 지켜야 할 대상(쓰러지면 짐) */
   look?: Kind; lookScale?: number; ally?: boolean;
+  /** 11-26 새 병과: 멀리 날아가는 탄도탄(요격될 수 있음) · 로켓 일제 사격 · 날아오는 탄 요격 · 둘레 적을 드러냄 · 조기경보(둘레 공군 사거리↑, 뒤에서 돔) · 땅과 바다를 둘 다 다님 */
+  ballistic?: boolean; salvo?: boolean; intercept?: boolean; spot?: boolean; awacs?: boolean; amph?: boolean;
 }
 
 /* ───────── 숫자(초안) ───────── */
@@ -48,11 +52,24 @@ export const DEF: Record<Kind, UnitDef> = {
   tech:  { name: '무장 트럭', cost: 10, hp: 280, atk: 14, def: 12, range: 2.8, cd: .6, spd: 1.6, dom: 'land', hits: { land: 1, air: .3 }, r: .5, look: 'ifv', lookScale: .85 },
   cargo: { name: '상선', cost: 0, hp: 1500, atk: 0, def: 30, range: 0, cd: 99, spd: .32, dom: 'sea', hits: {}, r: 1.2, look: 'lha', ally: true },
   vip:   { name: '호송 차량', cost: 0, hp: 900, atk: 0, def: 45, range: 0, cd: 99, spd: .3, dom: 'land', hits: {}, r: .6, look: 'hack', ally: true },
+  // 11-26 새 병과 10개
+  bm:    { name: '탄도미사일', cost: 30, hp: 280, atk: 240, def: 15, range: 30, minR: 5, cd: 16, spd: .55, dom: 'land', hits: { land: 1, sea: 1 }, splash: 1.8, r: .66, ballistic: true },
+  mlrs:  { name: '다연장로켓', cost: 26, hp: 300, atk: 34, def: 18, range: 14, minR: 3, cd: 10, spd: .65, dom: 'land', hits: { land: 1, sea: .6 }, splash: .85, r: .62, salvo: true },
+  sam:   { name: '장거리 방공', cost: 26, hp: 320, atk: 46, def: 25, range: 9, cd: 1.8, spd: .6, dom: 'land', hits: { air: 3 }, r: .62, intercept: true },
+  csm:   { name: '해안 미사일', cost: 24, hp: 300, atk: 150, def: 20, range: 9, cd: 4, spd: .7, dom: 'land', hits: { sea: 1.3, sub: .4 }, r: .6 },
+  uav:   { name: '정찰 무인기', cost: 14, hp: 200, atk: 8, def: 10, range: 3, cd: 1, spd: 1.1, dom: 'air', y: 3.2, hits: { land: .6, sea: .5 }, r: .6, spot: true },
+  f35:   { name: '스텔스 전투기', cost: 32, hp: 280, atk: 30, def: 18, range: 3.4, cd: .8, spd: 3, dom: 'air', y: 2.9, jet: true, stealth: true, hits: { air: 1.5, land: .8, sea: .6 }, r: .6 },
+  awacs: { name: '조기경보기', cost: 22, hp: 440, atk: 0, def: 20, range: 0, cd: 99, spd: 1.6, dom: 'air', y: 4.3, jet: true, hits: {}, r: 1, spot: true, awacs: true },
+  gunship: { name: '지상 공격기', cost: 28, hp: 620, atk: 16, def: 20, range: 3.8, cd: .45, spd: 1, dom: 'air', y: 3.3, hits: { land: 1.2, sea: .6 }, r: .9 },
+  aav:   { name: '상륙장갑차', cost: 18, hp: 460, atk: 15, def: 36, range: 2.8, cd: .55, spd: 1.2, dom: 'land', amph: true, hits: { land: 1, sea: .4, air: .3 }, r: .55 },
+  usv:   { name: '바다 드론', cost: 8, hp: 110, atk: 190, def: 0, range: .6, cd: 99, spd: 2.6, dom: 'sea', kamikaze: true, splash: .9, hits: { sea: 1, sub: .6 }, r: .36 },
 };
+/** 11-26 새 병과 10개(훈련·시험에서 씀) */
+export const NEW_KINDS: Kind[] = ['bm', 'mlrs', 'sam', 'csm', 'uav', 'f35', 'awacs', 'gunship', 'aav', 'usv'];
 export const TABS: Array<{ id: 'land' | 'sea' | 'air'; name: string; kinds: Kind[] }> = [
-  { id: 'land', name: '육군', kinds: ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa'] },
-  { id: 'sea', name: '해군', kinds: ['dd', 'cv', 'sub', 'lha', 'ssn', 'laser'] },
-  { id: 'air', name: '공군', kinds: ['drone', 'heli', 'jet', 'bomber', 'missile'] },
+  { id: 'land', name: '육군', kinds: ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa', 'mlrs', 'bm', 'sam', 'csm', 'aav'] },
+  { id: 'sea', name: '해군', kinds: ['dd', 'cv', 'sub', 'lha', 'ssn', 'laser', 'usv'] },
+  { id: 'air', name: '공군', kinds: ['drone', 'heli', 'jet', 'bomber', 'missile', 'uav', 'f35', 'awacs', 'gunship'] },
 ];
 export const BUDGET = 460, TICK = 0.05, FOE_MUL = 0.78, SC = .72;
 /** 전투 시간 한도(초) */
@@ -165,7 +182,7 @@ function makeTiles(): Tile[] {
 export let TILES: Tile[] = makeTiles();
 /** 전장 바꾸기(배치 전에 부름) */
 export function useStage(st: Stage) { ST = st; FIELD = st.field ?? FIELD0; BRIDGES = st.bridges; TILES = makeTiles(); }
-export function tileOk(t: Tile, kind: Kind) { const dm = DEF[kind].dom; return dm === 'air' || (dm === 'sub' ? 'sea' : dm) === t.dom; }
+export function tileOk(t: Tile, kind: Kind) { const dm = DEF[kind].dom; return dm === 'air' || !!DEF[kind].amph || (dm === 'sub' ? 'sea' : dm) === t.dom; }
 
 /* ───────── 전투 상태 ───────── */
 export interface Unit {
@@ -181,6 +198,8 @@ export interface Unit {
   goal?: { x: number; z: number }; hidden?: boolean; buff?: number;
   /** 제자리 지키기(goal에 서서 쏨) · 이 병과만 노림 */
   hold?: boolean; only?: Kind;
+  /** 11-26 조기경보기 둘레면 사거리 배수(1초마다 다시 셈) */
+  rk?: number;
   /** 화면 연출용(계산에는 안 씀): 마지막 사격 · 순항 미사일 */
   visFire?: VisFire | null; visCruise?: { x: number; z: number } | null;
   /** 화면이 붙이는 모형(계산에는 안 씀) */
@@ -201,7 +220,10 @@ export type SimEvent =
   | { type: 'para'; x: number; z: number }
   | { type: 'point'; name: string; own: Side; x: number; z: number }
   | { type: 'reinf'; n: number }
-  | { type: 'wave'; n: number; of: number };
+  | { type: 'wave'; n: number; of: number }
+  /** 11-26 탄도탄: 떨어질 곳 경고 · 공중 요격 */
+  | { type: 'warn'; x: number; z: number; t: number; side: Side }
+  | { type: 'intercept'; x: number; z: number; by: Kind };
 export interface SimHooks {
   spawn?(u: Unit): void;
   death?(u: Unit, src?: Unit | null): void;
@@ -245,6 +267,19 @@ export function removeUnit(S: Sim, u: Unit) { S.units = S.units.filter((o) => o 
 export const dist = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z);
 const hitMul = (u: Unit, t: Unit) => u.d.hits[t.d.dom] || 0;
 const inSmoke = (S: Sim, u: Unit) => S.smokes.some((s) => Math.hypot(s.x - u.x, s.z - u.z) < s.r);
+/** 11-26 정찰 무인기·조기경보기가 이 부대를 보고 있나(by 편의 눈) */
+export const spotted = (S: Sim, t: { x: number; z: number }, by: Side) => S.units.some((o) => o.alive && o.side === by && o.d.spot && dist(o, t) < (o.d.awacs ? 7 : 5));
+/** 11-26 날아오는 탄도탄을 막는 부대(x,z에 떨어질 탄, side = 막는 편). 없으면 null */
+function interceptor(S: Sim, x: number, z: number, side: Side): Unit | null {
+  const eye = S.units.some((o) => o.alive && o.side === side && o.d.awacs) ? .1 : 0;
+  for (const o of S.units) {
+    if (!o.alive || o.side !== side || o.jam > S.simT) continue;
+    const q = Math.hypot(o.x - x, o.z - z);
+    const p = o.d.intercept ? (q < 10 ? .55 : 0) : o.d.aura ? (q < 6 ? .45 : 0) : o.kind === 'dd' ? (q < 6 ? .2 : 0) : o.kind === 'aa' ? (q < 4 ? .2 : 0) : 0;
+    if (p && rnd(S) < p + eye) return o;
+  }
+  return null;
+}
 
 export function damage(S: Sim, t: Unit, amt: number, src: Unit | null) {
   if (!t.alive) return;
@@ -289,7 +324,7 @@ function goalFor(S: Sim, u: Unit) { // 칠 대상이 없을 때 향할 곳
 }
 function clampDomain(u: Unit) {
   u.x = Math.max(FIELD.xMin + .4, Math.min(FIELD.xMax - .4, u.x)); u.z = Math.max(FIELD.zTop + .3, Math.min(FIELD.zBot - .3, u.z));
-  if (u.d.dom === 'land') { const m = coastX(u.z) + .35; if (u.x < m) u.x = m; }
+  if (u.d.dom === 'land' && !u.d.amph) { const m = coastX(u.z) + .35; if (u.x < m) u.x = m; }
   else if (u.d.dom === 'sea' || u.d.dom === 'sub') { const m = coastX(u.z) - (u.d.r * .55 + .35); if (u.x > m) u.x = m; }
   if (ST.blocks && u.d.dom === 'land') {
     const m = u.d.r * .55; const b = inBlock(u.x, u.z, m);
@@ -391,10 +426,17 @@ export function step(S: Sim) {
     if (!u.tgt || !u.tgt.alive || ((S.simT * 20 | 0) % 20 === u.id % 20)) {
       let best: Unit | null = null, bd = 1e9;
       const leash = leashOf(S, u);
+      // 11-26 조기경보기 둘레 공군은 사거리 +15% · 정찰기는 둘레 숨은 적을 드러냄
+      u.rk = u.d.dom === 'air' && !u.d.awacs && S.units.some((o) => o.alive && o.side === u.side && o.d.awacs && dist(o, u) < 6) ? 1.15 : 1;
+      if (u.d.spot) for (const o of S.units) if (o.hidden && o.alive && o.side !== u.side && dist(o, u) < 3.5) { o.hidden = false; S.hooks.log?.(`${u.d.name}이 숨은 ${o.d.name}을 찾았어요`, u.side === 'us' ? 'k' : 'x'); }
       for (const t of S.units) {
         if (!t.alive || t.side === u.side || t.hidden || (u.only && t.kind !== u.only)) continue; if (!hitMul(u, t)) continue;
         if (leash && dist(u, t) > leash) continue;
-        let dd = dist(u, t); if (t.id === S.focus && u.side === 'us') dd -= 40; if (t.kind === 'hq') dd += 6; if (t.d.stealth) dd += 3; if (u.kind === 'spg' && dd < u.d.minR!) dd += 20; if (u.kind === 'aa' && t.d.dom === 'air') dd -= 4; if (u.d.aura && t.d.missile) dd -= 8;
+        const seen = !t.d.stealth || spotted(S, t, u.side);
+        // 스텔스 비행기는 아주 가까이 오거나 우리 눈(정찰기·조기경보기)이 볼 때만 잡힘
+        if (!seen && t.d.dom === 'air' && dist(u, t) > u.d.range * .55) continue;
+        let dd = dist(u, t); if (t.id === S.focus && u.side === 'us') dd -= 40; if (t.kind === 'hq') dd += 6; if (!seen) dd += 3; if (u.d.minR && dd < u.d.minR) dd += 20; if (u.kind === 'aa' && t.d.dom === 'air') dd -= 4; if (u.d.aura && t.d.missile) dd -= 8;
+        if (u.d.intercept && (t.d.missile || t.d.bomber)) dd -= 10;
         if (u.d.missile) dd = -t.max + dd * 20;
         if (dd < bd) { bd = dd; best = t; }
       }
@@ -418,7 +460,7 @@ export function step(S: Sim) {
       if (gd > .3) { const a = Math.atan2(g.x - u.x, g.z - u.z); u.x += Math.sin(a) * u.d.spd * TICK; u.z += Math.cos(a) * u.d.spd * TICK; clampDomain(u); u.moveFace = a; u.moving = true; } else u.moving = false;
       if (t) u.aim = Math.atan2(t.x - u.x, t.z - u.z);
       u.cd -= TICK;
-      if (t && !jam && dist(u, t) <= u.d.range && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
+      if (t && !jam && dist(u, t) <= u.d.range * (u.rk ?? 1) && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
       continue;
     }
     let gx: number, gz: number;
@@ -435,22 +477,26 @@ export function step(S: Sim) {
     if (u.d.kamikaze) {
       if (!t) { u.moving = false; continue; }
       u.x += Math.sin(want) * sp * TICK; u.z += Math.cos(want) * sp * TICK; u.moving = true; u.moveFace = want;
+      if (u.d.dom !== 'air') clampDomain(u);
       if (dd < u.d.range) { splash(S, u.x, u.z, u.d.splash!, u.d.atk, u.side, u, SURF); u.hp = 0; u.alive = false; onDeath(S, u); }
       continue;
     }
     if (u.d.jet) {
       let ta = want;
-      if (u.x < FIELD.xMin + 1.6 || u.x > FIELD.xMax - 1.6 || u.z < FIELD.zTop + 1.4 || u.z > FIELD.zBot - 1.6) ta = Math.atan2((FIELD.xMin + FIELD.xMax) / 2 + 2 - u.x, (FIELD.zTop + FIELD.zBot) / 2 - .5 - u.z);
+      if (u.d.awacs) { // 조기경보기: 우리 쪽 뒤 하늘에서 크게 돎
+        const cx = (FIELD.xMin + FIELD.xMax) / 2 + 2, cz = u.side === 'us' ? FIELD.zBot - 4.5 : FIELD.zTop + 4.5, a = S.simT * .25 + u.id;
+        ta = Math.atan2(cx + Math.sin(a) * 3.5 - u.x, cz + Math.cos(a) * 3.5 - u.z);
+      } else if (u.x < FIELD.xMin + 1.6 || u.x > FIELD.xMax - 1.6 || u.z < FIELD.zTop + 1.4 || u.z > FIELD.zBot - 1.6) ta = Math.atan2((FIELD.xMin + FIELD.xMax) / 2 + 2 - u.x, (FIELD.zTop + FIELD.zBot) / 2 - .5 - u.z);
       else if (dd < 1.2 && !u.d.bomber) ta = u.hd;
       const diff = angDiff(ta, u.hd), mt = (u.d.bomber ? 1.3 : 2.1) * TICK;
       u.hd += Math.max(-mt, Math.min(mt, diff)); u.bank = Math.max(-1, Math.min(1, diff * 1.6));
       u.x += Math.sin(u.hd) * sp * TICK; u.z += Math.cos(u.hd) * sp * TICK;
       u.x = Math.max(FIELD.xMin - 1, Math.min(FIELD.xMax + 1, u.x)); u.z = Math.max(FIELD.zTop - 1, Math.min(FIELD.zBot + 1, u.z));
       u.moving = true; u.moveFace = u.hd; u.cd -= TICK;
-      if (t && !jam && dd <= u.d.range && (u.d.bomber || Math.abs(angDiff(want, u.hd)) < .5) && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
+      if (t && !jam && dd <= u.d.range * (u.rk ?? 1) && (u.d.bomber || Math.abs(angDiff(want, u.hd)) < .5) && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
       continue;
     }
-    const reach = t ? u.d.range * .92 : .4;
+    const reach = t ? u.d.range * (u.rk ?? 1) * .92 : .4;
     if (dd > reach) {
       let vx = Math.sin(want), vz = Math.cos(want);
       const grp = u.d.dom === 'air' ? 'air' : u.d.dom === 'land' ? 'land' : 'sea';
@@ -460,13 +506,14 @@ export function step(S: Sim) {
       }
       [vx, vz] = steer(u, vx, vz, gx, gz);
       const L = Math.hypot(vx, vz) || 1; let s2 = sp;
-      if (u.d.dom === 'land' && Math.abs(u.z - riverZ(u.x)) < .9 && !BRIDGES.some((bx) => Math.abs(u.x - bx) < .7)) s2 *= .45;
+      if (u.d.dom === 'land' && !u.d.amph && Math.abs(u.z - riverZ(u.x)) < .9 && !BRIDGES.some((bx) => Math.abs(u.x - bx) < .7)) s2 *= .45;
+      if (u.d.amph && isSea(u.x, u.z)) s2 *= .6; // 상륙장갑차: 물에서는 느림
       // 바다 쪽 유닛은 해안에 막히면 해안을 따라 미끄러짐
       u.x += vx / L * s2 * TICK; u.z += vz / L * s2 * TICK; clampDomain(u);
       u.moveFace = Math.atan2(vx, vz); u.moving = true;
     } else u.moving = false;
     u.cd -= TICK;
-    if (t && !jam && dd <= u.d.range && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
+    if (t && !jam && dd <= u.d.range * (u.rk ?? 1) && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
   }
   if (ST.rule) { const r = ST.rule(S); if (r) endBattle(S, r === 'win', r === 'time'); return; }
   const usLeft = S.units.some((u) => u.alive && u.side === 'us' && !u.d.missile && !u.d.ally);
@@ -532,7 +579,29 @@ function stageRules(S: Sim): boolean {
   return !foeAlive;
 }
 function fire(S: Sim, u: Unit, t: Unit) {
-  const mul = hitMul(u, t);
+  let mul = hitMul(u, t);
+  // 11-26 멀리 쏘는 병과는 우리 눈(정찰기·조기경보기)이 보는 적에게 +20%
+  if ((u.kind === 'spg' || u.d.ballistic || u.d.salvo || u.kind === 'csm') && spotted(S, t, u.side)) mul *= 1.2;
+  if (u.d.ballistic) { // 탄도탄: 떨어질 곳에 경고 → 3.2초 뒤 떨어짐(그 사이 방공에 요격될 수 있음)
+    const tx = t.x, tz = t.z, fly = 3.2, def: Side = u.side === 'us' ? 'foe' : 'us';
+    u.visFire = { kind: 'bm', tx, tz, fly };
+    S.hooks.event?.({ type: 'warn', x: tx, z: tz, t: fly, side: u.side });
+    S.pending.push({ at: S.simT + fly, fn: () => {
+      const by = interceptor(S, tx, tz, def);
+      if (by) { S.hooks.event?.({ type: 'intercept', x: tx, z: tz, by: by.kind }); S.hooks.log?.(`${def === 'us' ? '아군' : '적'} ${by.d.name}이 탄도탄을 요격했어요`, def === 'us' ? 'k' : 'x'); return; }
+      splash(S, tx, tz, u.d.splash!, u.d.atk * mul, u.side, u, SURF); S.hooks.event?.({ type: 'boom', x: tx, z: tz, size: 2.2 });
+    } });
+    return;
+  }
+  if (u.d.salvo) { // 다연장로켓: 12발을 넓게 뿌림
+    const fly = 1.2 + dist(u, t) * .06;
+    u.visFire = { kind: 'mlrs', tx: t.x, tz: t.z, fly };
+    for (let i = 0; i < 12; i++) {
+      const a = rnd(S) * Math.PI * 2, r = Math.sqrt(rnd(S)) * 1.6, x = t.x + Math.cos(a) * r, z = t.z + Math.sin(a) * r;
+      S.pending.push({ at: S.simT + fly + i * .08, fn: () => splash(S, x, z, u.d.splash!, u.d.atk * mul, u.side, u, SURF) });
+    }
+    return;
+  }
   if (u.kind === 'spg') {
     const tx = t.x + (rnd(S) - .5) * .9, tz = t.z + (rnd(S) - .5) * .9; const fly = 1.4 + dist(u, t) * .08;
     u.visFire = { kind: 'spg', tx, tz, fly };
@@ -548,7 +617,7 @@ function fire(S: Sim, u: Unit, t: Unit) {
     u.visFire = { kind: 'bomber', tx, tz }; return;
   }
   if (u.d.hack) { t.jam = S.simT + 3; S.pending.push({ at: S.simT + .1, fn: () => { if (t.alive) damage(S, t, u.d.atk * mul, u); } }); u.visFire = { kind: 'hack', tx: t.x, tz: t.z, tgt: t }; return; }
-  const delay = u.kind === 'tank' ? .12 : (u.kind === 'sub' || u.kind === 'ssn') ? Math.min(2, dist(u, t) * .25) : u.kind === 'heli' ? .35 : .05;
+  const delay = u.kind === 'tank' ? .12 : (u.kind === 'sub' || u.kind === 'ssn') ? Math.min(2, dist(u, t) * .25) : u.kind === 'heli' ? .35 : u.kind === 'csm' ? 1.4 : u.kind === 'sam' ? .5 : .05;
   S.pending.push({ at: S.simT + delay, fn: () => { if (t.alive) damage(S, t, u.d.atk * mul, u); } });
   u.visFire = { kind: u.d.look ?? u.kind, tx: t.x, tz: t.z, tgt: t, air: t.d.dom === 'air', fly: delay };
 }
@@ -600,12 +669,12 @@ export function runHeadless(mine = defaultDeploy(), maxSteps = 4000): Sim {
 }
 
 /** 전투 결과 → 별·글(임무 결과로 씀). 손실 1/4 이하 + 시간 60% 안 = ★3, 손실 절반 이하 = ★2 */
-export function outcome(r: { win: boolean; timeout: boolean; t: number; lost: number; total: number }): { win: boolean; stars: number; text: string } {
+export function outcome(r: { win: boolean; timeout: boolean; t: number; lost: number; total: number; dead?: Record<string, number> }): { win: boolean; stars: number; text: string; dead?: Record<string, number> } {
   const loss = r.total ? r.lost / r.total : 1;
   const stars = r.win ? (loss <= 0.25 && r.t <= ST.timeLimit * 0.6 ? 3 : loss <= 0.5 ? 2 : 1) : 0;
   const m = Math.floor(r.t / 60), s = Math.floor(r.t % 60);
   const head = winText(r.win, r.timeout);
-  return { win: r.win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${r.lost}/${r.total}` };
+  return { win: r.win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${r.lost}/${r.total}`, dead: r.dead };
 }
 /** 이기고 진 까닭(이기는 조건마다) */
 export function winText(win: boolean, timeout: boolean): string {

@@ -24,6 +24,7 @@ import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { remarksTick, type RemarkState } from './remarks';
+import { ensureRivalRoster } from './rivals';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
 import type { FleetState } from './fleet';
@@ -59,6 +60,9 @@ import {
 } from './balance';
 
 export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개), 7: 현실 나라·도시 이름(11-23) — 예전 저장은 새 판으로
+
+import { growBudget, growTroop } from './aiGrowth';
+import { growTick } from './aiGrowthTick';
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -204,6 +208,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     crisis: newCrisis(0),
   };
   s.cabinet = newCabinet(s);
+  ensureRivalRoster(s, true); // 11/26 정적 12명: 그 나라 이름·얼굴
   if (opt.realWorld) {
     // 시작부터 국제 제재를 받는 나라(러시아): 나라 예산 −20%
     for (const [id, days] of Object.entries(START_SANCTIONS)) s.civ!.council.active.push({ agenda: 'sanction', target: id, untilMs: days * REAL_MS_PER_GAME_DAY });
@@ -234,7 +239,7 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 /** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -244,7 +249,7 @@ export function troopsPerDay(s: GameState, countryId: string): number {
     TROOPS_PER_DAY_PER_POINT *
     (TROOP_BONUS[countryId] ?? 1) *
     incomeShare(s.world, countryId) *
-    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) * (1 + lawEff(s, 'troop')) : aiStrength(countryId, s.player.countryId))
+    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) * (1 + lawEff(s, 'troop')) : aiStrength(countryId, s.player.countryId) * growTroop(s.world, countryId))
   );
 }
 
@@ -333,6 +338,7 @@ export function advance(s: GameState, ms: number): GameState {
     const ownerBefore = { ...world.owner };
     const pairsBefore = Object.fromEntries(Object.entries(world.pairs).map(([k, p]) => [k, { tension: p.tension }]));
     aiTick(world, nations, cur.worldMs, cur.player.countryId, generalDefense(cur.officer) * defenseMult(cur) * ordersDefense(cur), occupyHold(cur), deployHelp(cur));
+    growTick(world, nations, cur.worldMs, cur.player.countryId); // 11-26 AI 나라가 성향대로 성장
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);

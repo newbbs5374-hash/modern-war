@@ -1,20 +1,24 @@
-// 정치인 발언(11-24 대장 지시: 야당 대표 등의 발언을 더 많이).
-// 실제 1~2시간마다 한 명이 지금 나라 형편(전쟁·지지도·의회 신뢰·법·위기)에 맞는 말을 해요.
+// 정치인 발언(11-24 대장 지시: 야당 대표 등의 발언을 더 많이). 11-26 대장 "반 지도자 인물을 더 많이, 발언도 자주":
+// 실제 20~40분마다 한 명이 지금 나라 형편(전쟁·지지도·의회 신뢰·법·위기)에 맞는 말을 하고,
+// 정적이 말하면 다른 정적이 거들기도 해요(40%). 정적 12명의 말은 다른 목소리보다 3배 자주 골라요.
 // 정적(야당 대표·군부 실력자·재벌)은 이름으로, 여당·시민단체·경제계·예비역·논객은 직함으로 말해요.
 // 효과는 작아요: 적대 정적 발언 = 영향력 +1~2, 비판 = 의회 신뢰 −1, 칭찬·협력 = 신뢰 +1.
 import { approvalOf } from './approval';
 import { crisisOf } from './crisis';
 import { liveLaws } from './laws';
 import { note } from './officer';
-import { roleOf, type RivalRole } from './rivals';
+import { RIVAL_ROLES, roleOf, type RivalRole } from './rivals';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { relationOf } from './world';
 import { COUNTRIES } from '../data/world';
 
 const H = 3600e3;
-export const REMARK_MIN_MS = 1 * H;
-export const REMARK_MAX_MS = 2 * H;
+export const REMARK_MIN_MS = H / 3;
+export const REMARK_MAX_MS = (2 * H) / 3;
+/** 정적이 말한 뒤 다른 정적이 거들 확률 */
+export const ECHO_CHANCE = 0.4;
+export const LOG_MAX = 40;
 
 export type Mood = 'war' | 'peace' | 'lowAp' | 'highAp' | 'lowTrust' | 'law' | 'crisis' | 'any';
 export type Voice = RivalRole | '여당 원내대표' | '시민단체' | '경제단체장' | '예비역 장성 모임' | '유명 논객';
@@ -37,6 +41,15 @@ export const VOICE_ICON: Record<Voice, string> = {
   경제단체장: '🏭',
   '예비역 장성 모임': '🪖',
   '유명 논객': '🗞️',
+  '야당 원내대표': '🏛️',
+  '퇴역 대장': '🪖',
+  '금융 큰손': '🏦',
+  '언론 사주': '📰',
+  '노조 위원장': '✊',
+  '지방 실세': '🏙️',
+  '종교계 거물': '🕊️',
+  '전 정보기관장': '🕶️',
+  '여당 비주류': '🎭',
 };
 
 const L = (who: Voice, mood: Mood, text: string, trust = 0, inf = 0): Line => ({ who, mood, text, trust, inf });
@@ -64,12 +77,102 @@ export const LINES: Line[] = [
   L('군부 실력자', 'peace', '"평화 무드에 군 예산을 깎는다? 위험한 발상입니다."', 0, 1),
   L('군부 실력자', 'any', '"장성 인사는 실력으로 해야지, 줄 서기로 하면 안 됩니다."', -1, 1),
   L('군부 실력자', 'any', '"요즘 군 기강이 해이해졌다는 말이 많습니다."', 0, 1),
+  L('군부 실력자', 'war', '"이런 식으로 싸우면 도시를 또 잃습니다. 작전권을 군에 돌려주십시오."', -1, 2),
+  L('군부 실력자', 'lowAp', '"국민이 정부를 못 믿는데 군이 어떻게 믿겠습니까?"', -1, 2),
+  L('군부 실력자', 'crisis', '"위기 때 지도자가 보이지 않습니다. 군은 지켜보고 있습니다."', -1, 2),
+  L('군부 실력자', 'lowTrust', '"정치가 흔들리면 나라를 지킬 사람은 결국 군입니다."', -1, 2),
+  L('군부 실력자', 'any', '"국방 예산을 정치 선심에 쓰지 마십시오."', 0, 1),
   // 재벌
   L('재벌', 'war', '"전쟁이 길어지면 수출 길이 막힙니다. 경제를 생각하십시오."', -1, 1),
   L('재벌', 'peace', '"평화가 곧 돈입니다. 규제부터 풀어 주시죠."', 0, 1),
   L('재벌', 'lowAp', '"정부가 흔들리니 투자자들이 떠납니다."', -1, 1),
   L('재벌', 'any', '"세금이 너무 높아요. 이러면 공장을 해외로 옮길 수밖에 없습니다."', 0, 2),
   L('재벌', 'any', '"정부 사업, 우리 그룹이 맡으면 더 잘할 수 있습니다."', 0, 1),
+  L('재벌', 'war', '"공장이 폭격 걱정에 멈췄습니다. 정부가 손실을 물어 주셔야 합니다."', -1, 2),
+  L('재벌', 'lowTrust', '"국회도 못 다루는 정부와 어떻게 사업을 합니까?"', -1, 1),
+  L('재벌', 'law', '"새 법이 기업 손발을 묶습니다. 투자 계획을 다시 봐야겠어요."', -1, 2),
+  L('재벌', 'crisis', '"이 혼란이 계속되면 우리 그룹도 정부를 돕기 어렵습니다."', -1, 1),
+  L('재벌', 'any', '"다음 선거 때 누구를 밀지, 우리도 생각이 있습니다."', 0, 2),
+  // 야당 원내대표
+  L('야당 원내대표', 'any', '"이번 회기 법안, 하나도 그냥 넘기지 않겠습니다."', -1, 1),
+  L('야당 원내대표', 'any', '"장관 청문회에서 모든 의혹을 하나하나 따지겠습니다."', -1, 1),
+  L('야당 원내대표', 'war', '"전쟁 추가 예산은 국회 동의 없이는 한 푼도 안 됩니다."', -1, 2),
+  L('야당 원내대표', 'lowTrust', '"불신임안 표는 이미 모였습니다. 날짜만 남았어요."', -1, 2),
+  L('야당 원내대표', 'law', '"날치기 법안입니다. 헌법 재판으로 가져가겠습니다."', -1, 2),
+  L('야당 원내대표', 'lowAp', '"여당 의원들도 흔들리고 있습니다. 판이 바뀝니다."', -1, 2),
+  L('야당 원내대표', 'peace', '"평화 협정문 전체를 국회에 내놓으십시오. 밀실 외교는 안 됩니다."', 0, 1),
+  L('야당 원내대표', 'crisis', '"긴급 현안 질의를 열겠습니다. 총리와 장관 모두 나오세요."', -1, 1),
+  // 퇴역 대장
+  L('퇴역 대장', 'war', '"내가 현역이었으면 이 전쟁은 벌써 끝났습니다."', -1, 2),
+  L('퇴역 대장', 'war', '"후배 장군들이 제게 전화를 합니다. 다들 답답하답니다."', -1, 2),
+  L('퇴역 대장', 'peace', '"평화는 강한 군대가 만듭니다. 서명 한 장이 아니에요."', 0, 1),
+  L('퇴역 대장', 'lowAp', '"예비역 수십만이 이 정부에 등을 돌렸습니다."', -1, 2),
+  L('퇴역 대장', 'any', '"지도자는 군복 한 번 제대로 입어 본 적이 있습니까?"', -1, 1),
+  L('퇴역 대장', 'any', '"장군 인사에 정치 냄새가 납니다."', -1, 1),
+  L('퇴역 대장', 'crisis', '"나라가 이 지경인데 예비역이 가만히 있을 수 없습니다."', -1, 2),
+  L('퇴역 대장', 'highAp', '"인기는 바람입니다. 전쟁은 실력이에요."', 0, 1),
+  // 금융 큰손
+  L('금융 큰손', 'any', '"정부 채권 금리가 오르고 있습니다. 시장은 거짓말을 안 해요."', 0, 1),
+  L('금융 큰손', 'war', '"전쟁이 길어지면 돈이 나라 밖으로 빠집니다. 벌써 시작됐어요."', -1, 2),
+  L('금융 큰손', 'lowAp', '"이 정부에 돈을 빌려줄 사람은 점점 줄어듭니다."', -1, 2),
+  L('금융 큰손', 'law', '"규제 법안 하나에 주가가 3% 빠졌습니다."', -1, 1),
+  L('금융 큰손', 'peace', '"평화 덕에 시장이 오르지만, 정부 덕은 아닙니다."', 0, 1),
+  L('금융 큰손', 'crisis', '"위기 대응 실패는 곧 신용 등급 하락입니다."', -1, 2),
+  L('금융 큰손', 'any', '"세금을 더 걷겠다고요? 돈은 발이 달렸습니다."', 0, 1),
+  // 언론 사주
+  L('언론 사주', 'any', '"내일 아침 1면 제목은 이미 정해 뒀습니다."', -1, 1),
+  L('언론 사주', 'any', '"정부가 기자들을 피하는 건 숨길 게 많다는 뜻이죠."', -1, 1),
+  L('언론 사주', 'war', '"전선 사진, 정부가 감추는 걸 우리는 다 보여 드리겠습니다."', -1, 2),
+  L('언론 사주', 'lowAp', '"여론조사 결과, 우리 방송이 제일 먼저 알려 드립니다."', -1, 2),
+  L('언론 사주', 'highAp', '"높은 지지도요? 조사 방법부터 따져 봐야죠."', 0, 1),
+  L('언론 사주', 'law', '"이번 법, 언론 자유를 막으려는 것 아닙니까?"', -1, 2),
+  L('언론 사주', 'crisis', '"특집 방송을 편성했습니다. 제목은 \'무능한 정부\'."', -1, 2),
+  L('언론 사주', 'peace', '"평화 회담 뒷이야기, 곧 단독 보도로 나갑니다."', 0, 1),
+  // 노조 위원장
+  L('노조 위원장', 'any', '"월급은 그대로인데 물가만 올랐습니다. 총파업을 검토합니다."', -1, 1),
+  L('노조 위원장', 'any', '"노동자 목소리를 듣지 않는 정부에 협조할 수 없습니다."', -1, 1),
+  L('노조 위원장', 'war', '"전쟁 물자를 만드는 건 노동자입니다. 안전 대책부터 내놓으세요."', 0, 1),
+  L('노조 위원장', 'lowAp', '"이번 주말 광장 집회에 조합원 20만이 모입니다."', -1, 2),
+  L('노조 위원장', 'law', '"노동법 개악을 멈추지 않으면 공장이 멈춥니다."', -1, 2),
+  L('노조 위원장', 'peace', '"평화가 왔으면 이제 일하는 사람 몫을 챙겨야죠."', 0, 1),
+  L('노조 위원장', 'crisis', '"위기를 핑계로 노동자에게 희생을 강요하지 마십시오."', -1, 1),
+  L('노조 위원장', 'highAp', '"지지도가 높다고 노동자를 잊으면 곧 떨어집니다."', 0, 1),
+  // 지방 실세
+  L('지방 실세', 'any', '"중앙 정부 예산, 우리 지방엔 늘 마지막에 옵니다."', -1, 1),
+  L('지방 실세', 'any', '"이 지방 사람들은 정부 말보다 제 말을 믿습니다."', 0, 2),
+  L('지방 실세', 'war', '"피란민을 우리 지방에 떠넘기고 지원은 없습니까?"', -1, 1),
+  L('지방 실세', 'lowAp', '"다음 선거, 이 지방 표는 기대하지 마십시오."', -1, 2),
+  L('지방 실세', 'law', '"그 법은 우리 지방에선 따르지 않겠습니다."', -1, 2),
+  L('지방 실세', 'crisis', '"재난 복구는 우리가 알아서 합니다. 정부는 늘 늦어요."', -1, 1),
+  L('지방 실세', 'peace', '"평화 배당금은 지방부터 나눠야 합니다."', 0, 1),
+  L('지방 실세', 'highAp', '"수도에서만 인기 있으면 뭐 합니까?"', 0, 1),
+  // 종교계 거물
+  L('종교계 거물', 'war', '"생명을 가볍게 여기는 지도자에게 축복은 없습니다."', -1, 2),
+  L('종교계 거물', 'war', '"전쟁을 멈추라는 기도가 전국에서 울립니다."', -1, 1),
+  L('종교계 거물', 'any', '"신도들이 정부의 오만함을 걱정합니다."', -1, 1),
+  L('종교계 거물', 'lowAp', '"민심은 하늘의 뜻입니다. 지도자는 고개를 숙이세요."', -1, 2),
+  L('종교계 거물', 'law', '"이번 법은 우리 신앙과 맞지 않습니다. 반대 서명을 받겠습니다."', -1, 2),
+  L('종교계 거물', 'peace', '"평화는 좋지만, 마음의 평화는 정부가 주지 못합니다."', 0, 1),
+  L('종교계 거물', 'crisis', '"재난 앞에서 정부보다 교단이 먼저 달려갔습니다."', -1, 1),
+  L('종교계 거물', 'highAp', '"높은 자리일수록 겸손해야 합니다."', 0, 1),
+  // 전 정보기관장
+  L('전 정보기관장', 'any', '"제가 아는 걸 다 말하면 이 정부는 하루도 못 버팁니다."', -1, 2),
+  L('전 정보기관장', 'any', '"정보기관이 정치에 이용되고 있다는 제보가 많습니다."', -1, 1),
+  L('전 정보기관장', 'war', '"적의 움직임, 정부는 미리 알고도 손을 놓았습니다."', -1, 2),
+  L('전 정보기관장', 'lowTrust', '"의원님들, 비공개 자료 몇 장 보여 드릴까요?"', -1, 2),
+  L('전 정보기관장', 'peace', '"평화 협상 뒤에서 무슨 약속이 오갔는지 저는 압니다."', -1, 1),
+  L('전 정보기관장', 'crisis', '"이번 위기, 내부 문건에 이미 경고가 있었습니다."', -1, 2),
+  L('전 정보기관장', 'lowAp', '"곧 책 한 권 내려고 합니다. 제목은 비밀입니다."', 0, 1),
+  L('전 정보기관장', 'law', '"이 법은 정보기관 손발을 묶어 적만 좋게 합니다."', 0, 1),
+  // 여당 비주류
+  L('여당 비주류', 'any', '"당이 지도자 한 사람의 것은 아닙니다."', -1, 1),
+  L('여당 비주류', 'any', '"쓴소리를 하는 것도 충성입니다."', 0, 1),
+  L('여당 비주류', 'lowAp', '"이대로면 다음 선거에서 당이 무너집니다. 새 얼굴이 필요해요."', -1, 2),
+  L('여당 비주류', 'lowTrust', '"의원들 사이에서 지도자 교체 이야기가 나오는 건 사실입니다."', -1, 2),
+  L('여당 비주류', 'war', '"전쟁 방식에 대해 당 안에서도 다른 목소리가 많습니다."', -1, 1),
+  L('여당 비주류', 'law', '"이 법, 당과 충분히 의논하지 않았습니다."', -1, 1),
+  L('여당 비주류', 'highAp', '"지금 잘될 때 다음을 준비해야죠. 저도 준비하고 있습니다."', 0, 2),
+  L('여당 비주류', 'crisis', '"위기에 책임지는 사람이 없습니다. 당이 나서야 합니다."', -1, 1),
   // 여당 원내대표(지도자 편)
   L('여당 원내대표', 'war', '"지금은 하나로 뭉칠 때입니다. 정부를 믿고 힘을 모아 주십시오."', 1),
   L('여당 원내대표', 'highAp', '"국민께서 정부의 노력을 알아주고 계십니다."', 1),
@@ -104,6 +207,8 @@ export interface Remark {
   who: Voice;
   name?: string;
   text: string;
+  /** 다른 정적 말에 거든 말 */
+  echo?: boolean;
 }
 export interface RemarkState {
   nextMs: number;
@@ -125,15 +230,21 @@ export function moodsOf(s: GameState): Mood[] {
   return out;
 }
 
-/** 한 마디 고르기(정적은 이름이 있는 사람으로, 내 편이 된 정적은 비판 대신 협력 발언) */
-export function pickRemark(s: GameState, rng: Rng): { line: Line; name?: string; ally: boolean } | null {
+const isRivalVoice = (v: Voice): v is RivalRole => (RIVAL_ROLES as readonly string[]).includes(v);
+
+/** 한 마디 고르기(정적은 이름이 있는 사람으로, 내 편이 된 정적은 비판 대신 협력 발언). only = 이 정적들만, skip = 빼고 */
+export function pickRemark(s: GameState, rng: Rng, opt: { rivalsOnly?: boolean; skip?: string } = {}): { line: Line; name?: string; ally: boolean } | null {
   const moods = moodsOf(s);
-  const pool = LINES.filter((l) => moods.includes(l.mood));
-  // 상황 발언(any가 아닌 것)을 더 자주
-  const weighted = pool.flatMap((l) => (l.mood === 'any' ? [l] : [l, l]));
+  const rivals = s.officer.rivals.map((r, i) => ({ r, role: roleOf(r, i) }));
+  const pool = LINES.filter((l) => moods.includes(l.mood) && (!opt.rivalsOnly || isRivalVoice(l.who)) && (!isRivalVoice(l.who) || rivals.some((x) => x.role === l.who && x.r.name !== opt.skip)));
+  // 상황 발언(any가 아닌 것)은 2배, 정적 발언은 3배 더 자주(11-26 "반 지도자 인물이 자주 말하게")
+  const weighted = pool.flatMap((l) => {
+    const w = (l.mood === 'any' ? 1 : 2) * (isRivalVoice(l.who) ? 3 : 1);
+    return Array.from({ length: w }, () => l);
+  });
   if (!weighted.length) return null;
   const line = rng.pick(weighted);
-  const rv = s.officer.rivals.map((r, i) => ({ r, role: roleOf(r, i) })).find((x) => x.role === line.who);
+  const rv = rivals.find((x) => x.role === line.who && x.r.name !== opt.skip);
   if (rv?.r.ally) return { line: { ...line, text: ALLY_LINE[rv.role], trust: 1, inf: 0 }, name: rv.r.name, ally: true };
   return { line, name: rv?.r.name, ally: false };
 }
@@ -141,7 +252,32 @@ const ALLY_LINE: Record<RivalRole, string> = {
   '야당 대표': '"이번만큼은 정부 안에 찬성합니다. 나라가 먼저입니다."',
   '군부 실력자': '"군은 지도자를 믿고 따릅니다."',
   재벌: '"우리 그룹도 정부 정책에 힘을 보태겠습니다."',
+  '야당 원내대표': '"이 법안은 여야가 함께 처리하겠습니다."',
+  '퇴역 대장': '"예비역도 지도자 뒤에 서겠습니다."',
+  '금융 큰손': '"정부 채권, 우리가 더 사겠습니다. 시장은 정부를 믿어요."',
+  '언론 사주': '"이번엔 정부가 잘했습니다. 우리 신문도 그렇게 씁니다."',
+  '노조 위원장': '"노동자도 정부와 손잡고 나라를 지키겠습니다."',
+  '지방 실세': '"우리 지방은 정부 정책에 함께합니다."',
+  '종교계 거물': '"지도자와 나라를 위해 함께 기도합니다."',
+  '전 정보기관장': '"옛 후배들에게 정부를 도우라고 했습니다."',
+  '여당 비주류': '"당은 지금 하나로 뭉쳐야 합니다. 지도자를 돕겠습니다."',
 };
+
+/** 한 마디를 상태에 반영(효과·기록·소식) */
+function apply(ns: GameState, got: { line: Line; name?: string; ally: boolean }, echo: boolean) {
+  const { line, name } = got;
+  const o = ns.officer;
+  if (line.trust) o.trust = Math.max(0, Math.min(100, o.trust + line.trust));
+  if (line.inf && name) {
+    const rv = o.rivals.find((r) => r.name === name);
+    if (rv && !rv.ally) rv.influence = Math.max(0, Math.min(100, (rv.influence ?? 0) + line.inf));
+  }
+  const who = name ? `${line.who} ${name}` : line.who;
+  const eff = [line.trust ? `의회 신뢰 ${line.trust > 0 ? '+' : ''}${line.trust}` : '', line.inf && name && !got.ally ? `영향력 +${line.inf}` : ''].filter(Boolean).join(' · ');
+  const st = ns.remarks!;
+  ns.remarks = { ...st, log: [{ t: ns.worldMs, who: line.who, name, text: line.text, echo }, ...st.log].slice(0, LOG_MAX) };
+  note(ns, `${VOICE_ICON[line.who]} ${echo ? '↪ ' : ''}${who}: ${line.text}${eff ? ` (${eff})` : ''}`);
+}
 
 /** 시간이 흐를 때: 때가 되면 한 마디 */
 export function remarksTick(s: GameState): GameState {
@@ -152,16 +288,12 @@ export function remarksTick(s: GameState): GameState {
   const nextMs = s.worldMs + rng.range(REMARK_MIN_MS, REMARK_MAX_MS);
   const got = pickRemark(s, rng);
   if (!got) return { ...s, remarks: { ...st, nextMs } };
-  const { line, name } = got;
-  const o = structuredClone(s.officer);
-  if (line.trust) o.trust = Math.max(0, Math.min(100, o.trust + line.trust));
-  if (line.inf && name) {
-    const rv = o.rivals.find((r) => r.name === name);
-    if (rv && !rv.ally) rv.influence = Math.max(0, Math.min(100, (rv.influence ?? 0) + line.inf));
+  const ns: GameState = { ...s, officer: structuredClone(s.officer), world: { ...s.world, events: [...s.world.events] }, remarks: { nextMs, log: st.log } };
+  apply(ns, got, false);
+  // 정적이 말하면 다른 정적이 거들기도 함
+  if (got.name && !got.ally && rng.chance(ECHO_CHANCE)) {
+    const two = pickRemark(ns, rng, { rivalsOnly: true, skip: got.name });
+    if (two && !two.ally) apply(ns, two, true);
   }
-  const who = name ? `${line.who} ${name}` : line.who;
-  const eff = [line.trust ? `의회 신뢰 ${line.trust > 0 ? '+' : ''}${line.trust}` : '', line.inf && name && !got.ally ? `영향력 +${line.inf}` : ''].filter(Boolean).join(' · ');
-  const ns: GameState = { ...s, officer: o, world: { ...s.world, events: [...s.world.events] }, remarks: { nextMs, log: [{ t: s.worldMs, who: line.who, name, text: line.text }, ...st.log].slice(0, 20) } };
-  note(ns, `${VOICE_ICON[line.who]} ${who}: ${line.text}${eff ? ` (${eff})` : ''}`);
   return ns;
 }

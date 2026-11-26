@@ -8,11 +8,11 @@ import { miniOutcome } from '../battle/minigames';
 import { CORE, STREET } from './stages';
 
 /* ───────── 훈련 창 목록 ───────── */
-export interface Three3D { id: string; name: string; how: string; tag: '3D 실전' | '사격장' | '배치 퍼즐' }
+export interface Three3D { id: string; name: string; how: string; tag: '3D 실전' | '사격장' | '배치 퍼즐' | '새 병과' }
 
 /** 이 훈련에서 할 수 있는 3D 훈련(실전 1 · 사격장 0~1 · 퍼즐은 전술·통솔) */
 export function threeFor(training: string): Three3D[] {
-  const out: Three3D[] = DRILLS.filter((d) => d.training === training).map((d) => ({ id: d.id, name: d.name, how: d.how, tag: d.id.startsWith('c3-') ? '사격장' : '3D 실전' }));
+  const out: Three3D[] = DRILLS.filter((d) => d.training === training).map((d) => ({ id: d.id, name: d.name, how: d.how, tag: d.id.startsWith('c3-') ? '사격장' : d.id.startsWith('n3-') ? '새 병과' : '3D 실전' }));
   if (training === '전술' || training === '통솔') out.push({ id: 'p3', name: `배치 퍼즐 ${PUZZLES.length}판`, how: '정해진 예산으로 적 진지를 부수는 부대 조합을 찾아요. 같은 배치면 늘 같은 결과라 생각하는 만큼 풀려요. 판마다 별 3개.', tag: '배치 퍼즐' });
   return out;
 }

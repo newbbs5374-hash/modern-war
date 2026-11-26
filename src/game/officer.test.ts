@@ -117,7 +117,7 @@ describe('장교', () => {
     void _o;
     const loaded = parseSave(JSON.stringify({ ...rest, version: 2 }));
     expect(loaded?.version).toBe(SAVE_VERSION);
-    expect(loaded?.officer.rivals.length).toBe(3);
+    expect(loaded?.officer.rivals.length).toBe(12);
   });
 });
 

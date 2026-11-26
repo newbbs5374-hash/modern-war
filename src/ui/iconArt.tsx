@@ -36,6 +36,16 @@ export const UNIT_KEY: Record<string, { key: string; field?: string; who: string
   잠수함: { key: 'submarine', field: 'unit-submarine', who: '잠수함' },
   미사일: { key: 'missile', who: '미사일' },
   항공모함: { key: 'carrier', field: 'unit-carrier', who: '항공모함' },
+  탄도미사일: { key: 'ballistic', who: '탄도미사일' },
+  다연장로켓: { key: 'mlrs', who: '다연장로켓' },
+  '장거리 방공': { key: 'sam', who: '장거리 방공' },
+  '해안 미사일': { key: 'coastal', who: '해안 미사일' },
+  '정찰 무인기': { key: 'uav', who: '정찰 무인기' },
+  '스텔스 전투기': { key: 'stealth', who: '스텔스 전투기' },
+  조기경보기: { key: 'awacs', who: '조기경보기' },
+  '지상 공격기': { key: 'gunship', who: '지상 공격기' },
+  상륙장갑차: { key: 'aav', who: '상륙장갑차' },
+  '바다 드론': { key: 'usv', who: '바다 드론' },
 };
 export const TRAIN_KEY: Record<string, string> = {
   잠입: 'stealth', 체력: 'fitness', 전술: 'tactics', 사격: 'shooting', 포격: 'artillery', 정보: 'intel',
