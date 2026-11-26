@@ -39,6 +39,7 @@ import { lawEff, type AssemblyState } from './laws';
 import { assemblyTick } from './assembly';
 import { mediaTick, type MediaState } from './media';
 import { domTick } from './domesticTick';
+import type { PolityState } from './polity';
 import type { DomState } from './domestic';
 import { approvalBudgetMult, approvalTroopMult, presTick, type PresState } from './approval';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
@@ -155,6 +156,8 @@ export interface GameState {
   pressure?: PressureState;
   /** 속국 항복(11-26). 없으면 속국 없음 */
   vassal?: VassalState;
+  /** 내정 새 콘텐츠 8가지(11-26: 선거·경제 지표·재난·감사·지사·인구·개헌·연설). 없으면 처음 쓸 때 채움 */
+  polity?: PolityState;
 }
 
 export interface NewGameOptions {

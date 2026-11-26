@@ -1,5 +1,6 @@
 // A5 기본법 8칸(11/24): 칸마다 3~4가지 중 하나. 바꾸려면 국회 개정 표결(바로 결과, 신뢰도가 높을수록 잘 통과).
 // 이익집단(groups.ts)마다 찬반이 갈려 만족도가 움직임. 바꾼 뒤 하루 동안은 다시 못 바꿈.
+import { seatBonus } from './polity';
 import type { GameState } from './state';
 import type { LawKey } from './laws';
 import { domLog, domOf, registerDomRows, snap, withDom } from './domestic';
@@ -122,7 +123,7 @@ export function atWar(s: GameState): boolean {
 }
 /** 개정 통과 확률 */
 export function codeChance(s: GameState): number {
-  return Math.max(0.2, Math.min(0.95, 0.35 + s.officer.trust / 160));
+  return Math.max(0.2, Math.min(0.95, 0.35 + s.officer.trust / 160 + seatBonus(s)));
 }
 export function canChangeCode(s: GameState, id: string, opt: number): string | null {
   const c = codeById(id);
