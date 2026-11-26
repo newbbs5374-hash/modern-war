@@ -4,7 +4,7 @@ import { civBudgetMult } from './civ';
 import { firstTestGrant } from './testgrant';
 import { CITIES } from '../data/cities';
 import { COUNTRIES, startingRelation } from '../data/world';
-import { advance, budgetPerDay, catchUp, claimSalary, gameClock, newGame, pendingCap, salaryPerDay, setRank, skip, troopsPerDay } from './state';
+import { advance, budgetPerDay, catchUp, claimSalary, gameClock, newGame, pendingCap, defShare, salaryPerDay, setRank, skip, troopsPerDay } from './state';
 import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } from './save';
 
 const HOUR = 60 * 60 * 1000;
@@ -54,7 +54,9 @@ describe('시간당 누적', () => {
     const s0 = newGame('테스트', 'kr', 0);
     const s1 = advance(s0, HOUR / 6);
     expect(s1.player.pendingSalary).toBeCloseTo(salaryPerDay(s0) / 6);
-    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0) * cabBudget(s0), 1); // 금융 센터·도시 특성·실제 시설(11/24) · 나라 특징 방산 수출(11/25)
+    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0) * cabBudget(s0) * (1 - defShare(s0)), 1);
+    // 11-26 국방 몫(예산 나누기 40%)은 국방비로
+    expect((s1.nations.kr.def ?? 0) - (s0.nations.kr.def ?? 0)).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0) * cabBudget(s0) * defShare(s0), 1); // 금융 센터·도시 특성·실제 시설(11/24) · 나라 특징 방산 수출(11/25)
     const t0 = s0.nations.kr.troops;
     expect(s1.nations.kr.troops).toBeCloseTo(t0 * Math.exp(-0.008 / 6) + (45 * 40) / 6);
   });

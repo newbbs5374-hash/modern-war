@@ -420,6 +420,17 @@ export const SHOP: ShopItem[] = [
     },
   },
   {
+    id: 'defFund',
+    name: '긴급 국방비',
+    icon: '🛡️',
+    text: '국방비 +5,000(부대 만들기·국방 시설)',
+    price: 30,
+    give: (s) => {
+      const me = s.player.countryId;
+      return { ...s, nations: { ...s.nations, [me]: { ...s.nations[me], def: (s.nations[me].def ?? 0) + 5000 } } };
+    },
+  },
+  {
     id: 'rare',
     name: '첨단 자원 상자',
     icon: '💠',

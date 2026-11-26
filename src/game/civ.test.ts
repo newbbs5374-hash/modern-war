@@ -14,7 +14,7 @@ import { relationOf } from './world';
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({
   ...s,
-  nations: { ...s.nations, [s.player.countryId]: { ...s.nations[s.player.countryId], treasury: 1e7 } },
+  nations: { ...s.nations, [s.player.countryId]: { ...s.nations[s.player.countryId], treasury: 1e7, def: 1e7 } },
   economy: { ...s.economy, stock: Object.fromEntries(Object.keys(s.economy.stock).map((k) => [k, 500])) as GameState['economy']['stock'] },
 });
 

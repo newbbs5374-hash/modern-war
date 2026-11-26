@@ -40,6 +40,7 @@ import {
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
+import { addDef, defOf } from './defFund';
 import { generalBuildMult, generalPowerMult, generalResMult } from './loyal';
 import { homeOf, isAlive, isPuppet, relationOf } from './world';
 import { facBonus, facEff, facNeedWhy } from './facility';
@@ -258,6 +259,10 @@ export function claimChore(s: GameState): GameState {
   return { ...s, economy: e };
 }
 
+/** 국방 시설(국방 탭에 보이는 8개)은 국방비로 짓고 올린다(11-26) */
+export const DEFENSE_BUILDINGS: readonly BuildingId[] = ['철도망', '군항', '공군기지', '방공포대', '훈련소', '비축창고', '정보본부', '우주기지'];
+export const isDefBuilding = (id: BuildingId) => DEFENSE_BUILDINGS.includes(id);
+
 // ── 시설 올리기: 분야 경험치 + 예산 + 공사 시간. 지도자 등급마다 최고 단계가 오름 ──
 
 export function maxLevel(rank: number): number {
@@ -281,7 +286,9 @@ export function canUpgrade(s: GameState, id: BuildingId): string | null {
   const c = upgradeCost(s, id);
   const fac = buildingInfo(id).fac;
   if (s.economy.facilities[fac].exp < c.exp) return `${fac} 경험치 ${Math.floor(s.economy.facilities[fac].exp)} / ${c.exp}`;
-  if (s.nations[s.player.countryId].treasury < c.money) return `나라 예산 ${c.money.toLocaleString()} 필요`;
+  if (isDefBuilding(id)) {
+    if (defOf(s) < c.money) return `국방비 ${c.money.toLocaleString()} 필요`;
+  } else if (s.nations[s.player.countryId].treasury < c.money) return `나라 예산 ${c.money.toLocaleString()} 필요`;
   return null;
 }
 export function upgradeFacility(s: GameState, id: BuildingId): GameState {
@@ -292,6 +299,7 @@ export function upgradeFacility(s: GameState, id: BuildingId): GameState {
   e.buildings[id].buildEndMs = s.worldMs + c.hours * HOUR;
   log(e, `${id} 공사 시작(${c.hours}시간).`);
   const me = s.player.countryId;
+  if (isDefBuilding(id)) return addDef({ ...s, economy: e }, -c.money);
   return { ...s, economy: e, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - c.money } } };
 }
 
@@ -336,7 +344,7 @@ export function canProduce(s: GameState, unit: string, variant?: string | boolea
   if (tech) return tech;
   if (s.economy.queue.length >= QUEUE_MAX) return `생산 줄은 ${QUEUE_MAX}개까지`;
   const c = costOf(s, unit, variant);
-  if (s.nations[me].treasury < c.money) return '나라 예산이 모자라요';
+  if (defOf(s) < c.money) return '국방비가 모자라요';
   for (const [r, n] of Object.entries(c.res)) if ((s.economy.stock[r as Res] ?? 0) < n!) return `${r}이(가) 모자라요`;
   return null;
 }
@@ -350,8 +358,7 @@ export function produce(s: GameState, unit: string, variant?: string | boolean):
   if (crystal) e.stock.갈륨 -= 1;
   const startMs = Math.max(s.worldMs, ...e.queue.map((q) => q.endMs));
   e.queue.push({ id: e.nextId++, unit, special: !!v, sp: v?.id, crystal: crystal || undefined, startMs, endMs: startMs + buildMs(s, unit, v?.id) });
-  const me = s.player.countryId;
-  return { ...s, economy: e, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - c.money } } };
+  return addDef({ ...s, economy: e }, -c.money);
 }
 
 /** 지도 위 전투에 데려갈 우리 특화 유닛·독점 병과(가진 것만, 이름표 → 부대 수) */

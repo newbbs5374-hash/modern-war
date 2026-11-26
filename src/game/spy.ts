@@ -161,7 +161,7 @@ function finish(s: GameState, m: SpyMission): GameState {
       }
       case 'sabotage': {
         const n = ns.nations[m.target];
-        ns = { ...ns, nations: { ...ns.nations, [m.target]: { treasury: n.treasury * 0.88, troops: n.troops * 0.97 } } };
+        ns = { ...ns, nations: { ...ns.nations, [m.target]: { ...n, treasury: n.treasury * 0.88, troops: n.troops * 0.97 } } };
         text = `${name} 군수공장이 멈췄어요! 예산 -12%, 병력 -3%.`;
         break;
       }

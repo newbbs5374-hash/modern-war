@@ -172,7 +172,7 @@ export function finishFleet(s: GameState, plan: FleetPlan): GameState {
   const ln = s.nations[lose];
   let ns: GameState = {
     ...s,
-    nations: { ...s.nations, [lose]: { treasury: ln.treasury * 0.97, troops: ln.troops * 0.99 } },
+    nations: { ...s.nations, [lose]: { ...ln, treasury: ln.treasury * 0.97, troops: ln.troops * 0.99 } },
     fleet: { last: { ...f.last, [k]: s.worldMs }, log: [text, ...f.log].slice(0, 8), watched: f.watched + 1 },
   };
   const o = { ...ns.officer };

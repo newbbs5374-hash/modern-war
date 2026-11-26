@@ -7,6 +7,7 @@ import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
 import { buildMs, canProduce, costOf, crystalReady, produce } from '../game/economy';
 import { fmt } from './common';
+import { defOf } from '../game/defFund';
 import { timeLeft } from './officerScreens';
 import { ResIcon, UnitIcon } from './iconArt';
 import { Modal } from './kit';
@@ -15,7 +16,7 @@ import type { ScreenProps } from './screens';
 export function Cost({ c, stock, money }: { c: UnitCost; stock: Record<Res, number>; money: number }) {
   return (
     <div className="cost">
-      <span className={money < c.money ? 'lack' : ''}>💰{fmt(c.money)}</span>
+      <span className={money < c.money ? 'lack' : ''}>🛡️국방비 {fmt(c.money)}</span>
       {Object.entries(c.res).map(([k, v]) => (
         <span key={k} className={(stock[k as Res] ?? 0) < v! ? 'lack' : ''}>
           <ResIcon res={k as Res} inline />
@@ -28,7 +29,6 @@ export function Cost({ c, stock, money }: { c: UnitCost; stock: Record<Res, numb
 
 
 export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { unit: string; onClose: () => void }) {
-  const me = countryById(state.player.countryId);
   const [name, spId] = unit.split('|');
   const sp = spId ? specialById(spId) : undefined;
   const ex = exclusiveByName(name);
@@ -88,7 +88,7 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
       <p className="small muted" style={{ marginTop: 6 }}>
         비용
       </p>
-      <Cost c={c} stock={state.economy.stock} money={state.nations[me.id].treasury} />
+      <Cost c={c} stock={state.economy.stock} money={defOf(state)} />
       {msg && <p className="small result">{msg}</p>}
     </Modal>
   );

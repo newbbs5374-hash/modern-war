@@ -1,3 +1,4 @@
+import { splitOf } from '../game/policy';
 import { drillsNow } from '../game/officer';
 import { playerKeys } from '../data/looks';
 import { goalsReady, rubyOf } from '../game/goals';
@@ -58,6 +59,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
   const wallet = (
     <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
       <span>💰{fmtK(n.treasury)}</span>
+      <span>🛡️{fmtK(n.def ?? 0)}</span>
       <span>🪖{fmtK(n.troops)}</span>
       <span>💵{fmtK(state.player.salary)}</span>
       <span>💎{fmtK(rubyOf(state))}</span>
@@ -66,7 +68,8 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
   const nationRows: Array<{ icon: string; name: string; where: string; v: string; tone?: string }> = [
     { icon: '🙂', name: '지지도', where: pres.impeachMs !== null ? '⚠️ 탄핵 위기' : '국민이 나를 지지하는 정도', v: String(Math.round(pres.approval)), tone: moodLabel(pres.approval).tone },
     { icon: '🤝', name: '신뢰도', where: state.officer.dismissDeadlineMs !== null ? '⚠️ 해임 위기' : '윗선·동료가 나를 믿는 정도', v: String(Math.round(state.officer.trust)), tone: moodLabel(state.officer.trust).tone },
-    { icon: '💰', name: '나라 예산', where: '시설·건물 올리기·부대 모집·외교에 써요(봉급 받을 때도 들어와요)', v: fmt(n.treasury) },
+    { icon: '💰', name: '나라 예산', where: '시설·건물·외교·내정·문화 등 국방 말고 모두(봉급 받을 때도 들어와요)', v: fmt(n.treasury) },
+    { icon: '🛡️', name: '국방비', where: `부대 만들기·국방 시설·파병 유지비에만 써요(수입의 국방 몫 ${splitOf(state).def}%)`, v: fmt(n.def ?? 0) },
     { icon: '🪖', name: '병력', where: '우리나라 전체 병력', v: fmt(n.troops) },
     { icon: '🏙️', name: '도시', where: '우리나라가 가진 도시', v: String(citiesOf(state.world, me.id).length) },
   ];

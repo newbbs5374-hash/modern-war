@@ -18,7 +18,7 @@ export function grantTestResources(s: GameState): GameState {
   return {
     ...s,
     player: { ...s.player, salary: s.player.salary + 200_000 },
-    nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 2_000_000, troops: s.nations[me].troops + 300_000 } },
+    nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + 2_000_000, def: (s.nations[me].def ?? 0) + 2_000_000, troops: s.nations[me].troops + 300_000 } },
     economy: {
       ...s.economy,
       stock,
