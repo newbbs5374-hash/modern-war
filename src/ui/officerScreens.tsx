@@ -9,7 +9,9 @@ import { STAT_GROUPS, TRAININGS } from '../data/catalog';
 import { GRAND_COOLDOWN_HOURS, GRAND_RANK, MISSION_KINDS, OPERATION_RANK, STAT_IDS, TRAIN_EXP_LOSE, TRAIN_EXP_PER_STAR, aideSlots, generalSlots, statCap, statExpNeed, type StatId } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { cityById } from '../data/cities';
-import { countryById } from '../data/world';
+import { COUNTRIES, countryById } from '../data/world';
+import { canDiplo, doDiplo } from '../game/command';
+import { isAlive, relationOf } from '../game/world';
 import {
   AIDE_STORIES,
   COMMAND_RANK,
@@ -215,6 +217,42 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
   );
 }
 
+/** 전쟁 중인 나라가 없을 때: 대전투 칸에서 바로 선전포고할 나라 고르기 */
+function WarPick({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
+  const me = state.player.countryId;
+  const [msg, setMsg] = useState('');
+  const list = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id));
+  return (
+    <>
+      <p className="empty">지금 전쟁 중인 나라가 없어요. 선전포고하면 그 나라 도시를 점령하러 갈 수 있어요.</p>
+      <div className="tiles c3">
+        {list.map((c) => {
+          const rel = relationOf(state.world, me, c.id);
+          const no = canDiplo(state, c.id, '선전포고');
+          return (
+            <Tile
+              key={c.id}
+              icon={FLAG[c.id]}
+              label={c.name}
+              sub={no ?? (rel === '연합' ? '⚔️ 연합을 깨고 선전포고' : rel === '휴전' ? '⚔️ 휴전을 깨고 선전포고' : '⚔️ 선전포고')}
+              onClick={() => {
+                if (no) return;
+                const warn = rel === '연합' ? '\n(연합을 깨요: 신뢰 −10 · 명성 −10)' : rel === '휴전' ? '\n(휴전을 깨요: 신뢰 −5)' : '';
+                if (!window.confirm(`${c.name}에 선전포고할까요?${warn}`)) return;
+                setMsg(actions.applyWith((s) => {
+                  const r = doDiplo(s, c.id, '선전포고');
+                  return { state: r.state, out: r.text };
+                }) ?? '');
+              }}
+            />
+          );
+        })}
+      </div>
+      {msg && <p className="small">{msg}</p>}
+    </>
+  );
+}
+
 /* ───────── 대전투(존경받는 지도자부터): 도시 하나를 다섯 판으로 차지 ───────── */
 export function GrandCard({ state, actions }: ScreenProps) {
   const rank = state.player.rankIndex;
@@ -233,7 +271,9 @@ export function GrandCard({ state, actions }: ScreenProps) {
   );
   return (
     <Card title="대전투 · 도시 점령" icon="🏙️" help={help} right={<small className="muted">{rank >= GRAND_RANK ? `${GRAND_COOLDOWN_HOURS}시간마다` : `${RANKS[GRAND_RANK].name}부터`}</small>}>
-      {rank < GRAND_RANK || why ? (
+      {rank >= GRAND_RANK && !targets.length ? (
+        <WarPick state={state} actions={actions} />
+      ) : rank < GRAND_RANK || why ? (
         <>
           <p className="empty">{why}</p>
           {rank >= GRAND_RANK && <BoostBar state={state} apply={actions.apply} target={{ kind: 'grand' }} />}

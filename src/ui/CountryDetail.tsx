@@ -226,7 +226,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                         disabled={!!why}
                         title={why ?? ''}
                         onClick={() => {
-                          if (act === '선전포고' && !window.confirm(`${c.name}에 선전포고할까요?`)) return;
+                          if (act === '선전포고' && !window.confirm(`${c.name}에 선전포고할까요?${relationOf(w, me, id) === '연합' ? '\n(연합을 깨요: 신뢰 −10 · 명성 −10)' : relationOf(w, me, id) === '휴전' ? '\n(휴전을 깨요: 신뢰 −5)' : ''}`)) return;
                           setMsg(
                             actions.applyWith((s) => {
                               const r = doDiplo(s, id, act);

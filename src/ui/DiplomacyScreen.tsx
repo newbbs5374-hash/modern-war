@@ -281,7 +281,7 @@ function RelationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) 
         ))}
         <Help title="외교관계">
           <p>가운데가 우리 나라예요. 선 색이 관계예요: 파랑 연합 · 회색 중립 · 주황 휴전 · 빨강 전쟁. 중립·휴전 선이 굵을수록 긴장도가 높아요(100이 되면 휴전이 깨지거나 전쟁).</p>
-          <p>나라를 누르면 자세한 정보가 나오고, 가장 높은 호칭(전설의 지도자)이 되면 선전포고·휴전 제안·연합 제안을 해요({DIPLO_COOLDOWN_HOURS}시간마다 한 번).</p>
+          <p>나라를 누르면 자세한 정보가 나오고, 나라 창 요약 칸에서 ⚔️ 선전포고(언제든, 연합국도 연합을 깨고 칠 수 있음)·🕊️ 휴전 제안·🤝 연합 제안({DIPLO_COOLDOWN_HOURS}시간마다 한 번)을 해요. 전쟁이 나면 국방 → 작전 → 🏙️ 대전투에서 그 나라 도시를 점령해요.</p>
         </Help>
       </div>
       <svg className="rel-web" viewBox="0 0 320 296" role="img" aria-label="외교 관계도">
