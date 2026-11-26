@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react';
 import { MINISTRIES, type FieldTab, type MinistryId } from '../data/cabinet';
 import { OFFICES, postById } from '../data/staff';
-import { REFRESH_RUBY, cabinetOf, postHolder, refreshPool, type Person } from '../game/cabinet';
-import { URGENCY_NAME, betterFor, filledSeats, canTakeRec, recommend, seatKey, takeRec, takeRecs, urgencyOf, type Rec, type RecReport, type SeatInfo } from '../game/recommend';
+import { cabinetOf, postHolder, type Person } from '../game/cabinet';
+import { PoolRefreshButton } from './PoolRefresh';
+import { URGENCY_NAME, neededSpec, betterFor, filledSeats, canTakeRec, recommend, seatKey, takeRec, takeRecs, urgencyOf, type Rec, type RecReport, type SeatInfo } from '../game/recommend';
 import type { GameState } from '../game/state';
 import { fmt } from './common';
 import { Modal } from './kit';
@@ -115,9 +116,7 @@ export function RecommendModal({ state, actions, onClose, part: start }: Pick<Sc
       <RecGroups state={state} rep={rep} part={part} onTake={take} onFace={setWho} />
       <FilledSection state={state} rep={rep} part={part} onTake={take} onFace={setWho} />
       {rep.noOne.length > 0 && (
-        <button className="wide" disabled={(state.goals?.ruby ?? 0) < REFRESH_RUBY} onClick={() => (actions.apply(refreshPool), setMsg('🔄 인재 명단을 새로 받았어요'))}>
-          🔄 인재 명단 새로 받기(빈 자리 {rep.noOne.length}곳에 맞는 분 찾기) <small>💎{REFRESH_RUBY}</small>
-        </button>
+        <PoolRefreshButton state={state} actions={actions} suggest={neededSpec(rep)} onDone={setMsg} label={`🔄 인재 명단 새로 받기(빈 자리 ${rep.noOne.length}곳에 맞는 분 찾기)`} />
       )}
       {who !== null && <PersonModal state={state} actions={actions} pid={who} onClose={() => setWho(null)} />}
     </Modal>

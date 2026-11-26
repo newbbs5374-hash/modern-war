@@ -25,7 +25,6 @@ import {
   ENCOURAGE_COST,
   HEARING,
   unpost,
-  REFRESH_RUBY,
   VET_INTEL,
   appointMinister,
   appointVice,
@@ -46,7 +45,6 @@ import {
   personPower,
   recruit,
   recruitCost,
-  refreshPool,
   unseat,
   vet,
   viceOf,
@@ -69,6 +67,7 @@ import { minArtAt } from './iconArt';
 import { MIN_LV_LOOK, MIN_LV_MAX, MIN_LV_NAME, minLvText } from '../data/ministryGrowth';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
+import { PoolRefreshButton } from './PoolRefresh';
 import { RecommendButton } from './RecommendUI';
 
 const flag = (id: string) => <Flag id={id} size={0.55} />;
@@ -314,7 +313,6 @@ export function TalentPanel(props: ScreenProps) {
   const [group, setGroup] = useState<Group>('정계');
   const pool = c.people.filter((p) => p.group === '인재').sort((a, b) => statTotal(b) - statTotal(a));
   const mine = c.people.filter((p) => p.group === '내각').sort((a, b) => Number(!!b.seat) - Number(!!a.seat) || statTotal(b) - statTotal(a));
-  const ruby = state.goals?.ruby ?? 0;
   const hearing = c.hearing ? c.people.find((x) => x.id === c.hearing!.pid) : null;
   return (
     <>
@@ -365,9 +363,7 @@ export function TalentPanel(props: ScreenProps) {
               </>
             )}
             top={
-              <button className="wide pgrid-refresh" disabled={ruby < REFRESH_RUBY} onClick={() => actions.apply(refreshPool)}>
-                🔄 명단 새로 받기 <small>💎{REFRESH_RUBY}</small>
-              </button>
+              <PoolRefreshButton state={state} actions={actions} className="wide pgrid-refresh" label="🔄 명단 새로 받기(성향·분야 고르기)" />
             }
           />
         </div>
