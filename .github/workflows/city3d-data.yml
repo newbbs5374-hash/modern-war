@@ -1,8 +1,6 @@
+# 도시 3D 자료(OpenStreetMap) 다시 만들기: Actions 탭에서 손으로 실행
 name: city3d-data
 on:
-  push:
-    branches: ['claude/project-thread-ay4caw']
-    paths: ['scripts/gen_city3d.py', '.github/workflows/city3d-data.yml']
   workflow_dispatch:
 permissions:
   contents: write
