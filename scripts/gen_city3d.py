@@ -7,9 +7,15 @@ Overpass에서 건물·큰길·물·공원을 받아 작은 JSON(public/city3d/s
 import json, math, os, sys, time, urllib.parse, urllib.request
 
 C_LON, C_LAT = 126.978, 37.5665
-BBOX = (37.49, 126.90, 37.60, 127.08)  # 남, 서, 북, 동
-NX, NY = 5, 4
 MAX_B = 16000
+OUT = 'seoul'
+NAME = '서울'
+# 다른 도시: python scripts/gen_city3d.py <geojsonseq> <파일이름> <경도> <위도> <최대 건물 수> <이름>
+HALF = 0  # 자른 범위 반쪽(km). 있으면 바다(해안선)를 만듦
+if len(sys.argv) > 2:
+    OUT, C_LON, C_LAT, MAX_B, NAME = sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), int(sys.argv[5]), sys.argv[6]
+if len(sys.argv) > 7:
+    HALF = float(sys.argv[7])
 SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter']
 MX = 111320 * math.cos(math.radians(C_LAT))
 MY = 110540
@@ -123,10 +129,55 @@ def poly_rings(geom):
     return []
 
 
+def sea_polys(coast, half_m):
+    """해안선(육지가 왼쪽) 조각들 → 범위 안 바다 다각형(섬은 구멍). shapely 필요."""
+    try:
+        from shapely.geometry import LineString, box
+        from shapely.ops import polygonize, unary_union
+    except ImportError:
+        print('shapely 없음: 바다 생략', file=sys.stderr)
+        return []
+    if not coast:
+        return []
+    B = box(-half_m, -half_m, half_m, half_m)
+    lines = [LineString(c) for c in coast if len(c) >= 2]
+    # 범위보다 조금 넓게 자른 뒤 테두리와 합쳐야 교차점이 정확히 이어짐(딱 맞게 자르면 틈이 생겨 바다가 안 나뉨)
+    B2 = B.buffer(2000)
+    cut = [l.intersection(B2) for l in lines]
+    noded = unary_union([g for g in cut if not g.is_empty] + [B.boundary])
+    segs = [(c[i], c[i + 1]) for c in coast for i in range(len(c) - 1)]
+
+    def is_sea(pt):
+        px, py = pt.x, pt.y
+        best, side = 1e30, 0
+        for (ax, ay), (bx, by) in segs:
+            dx, dy = bx - ax, by - ay
+            L = dx * dx + dy * dy
+            t = 0 if L == 0 else max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / L))
+            qx, qy = ax + t * dx, ay + t * dy
+            d = (px - qx) ** 2 + (py - qy) ** 2
+            if d < best:
+                best, side = d, dx * (py - ay) - dy * (px - ax)
+        return side < 0  # 오른쪽 = 바다
+
+    out = []
+    for face in polygonize(noded):
+        if not B.contains(face.representative_point()):
+            continue
+        if face.area < 20000 or not is_sea(face.representative_point()):
+            continue
+        f = face.simplify(12)
+        if f.is_empty or f.geom_type != 'Polygon':
+            continue
+        rings = [list(f.exterior.coords)[:-1]] + [list(h.coords)[:-1] for h in f.interiors if abs(__import__('shapely').geometry.Polygon(h).area) > 5000]
+        out.append([[v for pt in r for v in (round(pt[0]), round(pt[1]))] for r in rings])
+    return out
+
+
 def main():
     # 입력: osmium export -f geojsonseq 결과(작업 흐름이 Geofabrik 한국 파일에서 잘라 만듦)
     src = sys.argv[1] if len(sys.argv) > 1 else 'seoul.geojsonseq'
-    blds, roads, water, parks = [], [], [], []
+    blds, roads, water, parks, coast = [], [], [], [], []
     with open(src, encoding='utf-8') as f:
         for line in f:
             line = line.strip().lstrip('\x1e')
@@ -135,6 +186,9 @@ def main():
             ft = json.loads(line)
             t = ft.get('properties') or {}
             g = ft.get('geometry') or {}
+            if t.get('natural') == 'coastline' and g.get('type') == 'LineString':
+                coast.append([xy(c[0], c[1]) for c in g['coordinates']])
+                continue
             if 'building' in t and t.get('building') != 'no':
                 for rr in poly_rings(g):
                     r = ring([{'lon': c[0], 'lat': c[1]} for c in rr])
@@ -163,7 +217,7 @@ def main():
     items = items[:MAX_B]
     rd = lambda p: [v for pt in p for v in (round(pt[0]), round(pt[1]))]
     out = {
-        'name': '서울',
+        'name': NAME,
         'center': [C_LON, C_LAT],
         'credit': '© OpenStreetMap contributors (ODbL)',
         'b': [[round(h), k] + rd(r) for (r, h, k, a) in items],
@@ -171,10 +225,14 @@ def main():
         'w': [rd(r) for r in water],
         'p': [rd(r) for r in parks],
     }
+    if HALF:
+        sea = sea_polys(coast, HALF * 1000)
+        if sea:
+            out['s'] = sea
     os.makedirs('public/city3d', exist_ok=True)
-    with open('public/city3d/seoul.json', 'w') as f:
+    with open(f'public/city3d/{OUT}.json', 'w') as f:
         json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
-    print('buildings', len(blds), '->', len(out['b']), 'roads', len(out['r']), 'water', len(out['w']), 'parks', len(out['p']), file=sys.stderr)
+    print(OUT, 'buildings', len(blds), '->', len(out['b']), 'roads', len(out['r']), 'water', len(out['w']), 'parks', len(out['p']), 'sea', len(out.get('s', [])), file=sys.stderr)
 
 
 main()

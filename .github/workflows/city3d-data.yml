@@ -1,29 +1,73 @@
-# 도시 3D 자료(OpenStreetMap) 다시 만들기: Actions 탭에서 손으로 실행
+# 도시 3D 자료(OpenStreetMap) 만들기: scripts/city3d_cities.json 목록. 목록이 바뀌면 실행, Actions 탭에서 손으로도 실행.
+# 지역마다 따로 돌리고(동시에 4개), 끝나면 된 것만 모아 한 번에 커밋.
 name: city3d-data
 on:
+  push:
+    branches: ['claude/**']
+    paths: ['scripts/city3d_cities.json', 'scripts/city3d_build.py', '.github/workflows/city3d-data.yml']
   workflow_dispatch:
+    inputs:
+      only:
+        description: '다시 만들 파일 이름들(쉼표). 비우면 아직 없는 것만'
+        required: false
+        default: ''
 permissions:
   contents: write
+concurrency:
+  group: city3d-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  gen:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    outputs:
+      regions: ${{ steps.r.outputs.regions }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-      - run: curl -sSfL -o kr.osm.pbf https://download.geofabrik.de/asia/south-korea-latest.osm.pbf && ls -la kr.osm.pbf
+      - id: r
+        run: echo "regions=$(python3 scripts/city3d_build.py --regions '${{ github.event.inputs.only }}')" >> "$GITHUB_OUTPUT"
+  gen:
+    needs: plan
+    if: needs.plan.outputs.regions != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        region: ${{ fromJson(needs.plan.outputs.regions) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-shapely
+      - run: python3 scripts/city3d_build.py "${{ github.event.inputs.only }}" "${{ matrix.region }}"
+      - id: name
+        if: always()
+        run: |
+          echo "n=$(echo '${{ matrix.region }}' | tr '/' '_')" >> "$GITHUB_OUTPUT"
+          mkdir -p out && git ls-files -m -o --exclude-standard public/city3d | grep '\.json$' | xargs -r cp -t out
+          ls out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: city3d-${{ steps.name.outputs.n }}
+          path: out/*.json
+          if-no-files-found: ignore
+  commit:
+    needs: gen
+    if: always() && needs.gen.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+          pattern: city3d-*
       - run: |
-          osmium extract -b 126.90,37.49,127.08,37.60 --strategy smart kr.osm.pbf -o seoul.osm.pbf
-          osmium tags-filter seoul.osm.pbf nwr/building w/highway=motorway,trunk,primary,secondary nwr/natural=water,wood w/waterway=riverbank nwr/leisure=park nwr/landuse=grass,forest -o f.osm.pbf
-          osmium export -f geojsonseq f.osm.pbf -o seoul.geojsonseq
-          wc -l seoul.geojsonseq
-      - run: python scripts/gen_city3d.py seoul.geojsonseq
-      - run: ls -la public/city3d && gzip -c public/city3d/seoul.json | wc -c
-      - run: |
+          mkdir -p public/city3d
+          find art -name '*.json' -exec cp {} public/city3d/ \;
+          ls -la public/city3d && du -sh public/city3d
           git config user.name "github-actions[bot]"
           git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
-          git add public/city3d/seoul.json
-          git commit -m "서울 3D 시험 자료(OpenStreetMap) 자동 생성" || exit 0
-          git push
+          git add public/city3d/*.json
+          git commit -m "도시 3D 자료(OpenStreetMap) 자동 생성" || exit 0
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git push origin HEAD:"${GITHUB_REF_NAME}"

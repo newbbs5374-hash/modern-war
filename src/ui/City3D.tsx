@@ -17,6 +17,8 @@ export interface City3DData {
   r: number[][];
   /** 물 */
   w: number[][];
+  /** 바다(해안선으로 만듦): [바깥 고리, 섬 구멍...] */
+  s?: number[][][];
   /** 공원·숲 */
   p: number[][];
 }
@@ -93,6 +95,11 @@ function windowTextures() {
   };
   return { day: mk(false), night: mk(true) };
 }
+
+/** 도시별 처음 카메라 자리(없으면 기본) */
+const START_VIEW: Record<string, { cam: [number, number, number]; at: [number, number, number] }> = {
+  seoul: { cam: [1100, 1300, 7000], at: [100, 0, 3700] },
+};
 
 const KIND_COLOR = ['#d9d2c5', '#b9c4cf', '#b8b2a6', '#d6c7b0', '#cfcac0'];
 
@@ -214,6 +221,31 @@ function flatShapes(list: number[][], y: number): THREE.BufferGeometry {
   return g;
 }
 
+/** 바다: 섬은 구멍으로 뚫음 */
+function seaShapes(list: number[][][], y: number): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const idx: number[] = [];
+  const v2 = (f: number[]) => {
+    const pts: THREE.Vector2[] = [];
+    for (let k = 0; k + 1 < f.length; k += 2) pts.push(new THREE.Vector2(f[k], f[k + 1]));
+    return pts;
+  };
+  for (const poly of list) {
+    const outer = v2(poly[0]);
+    if (outer.length < 3) continue;
+    const holes = poly.slice(1).map(v2).filter((h) => h.length >= 3);
+    const tris = THREE.ShapeUtils.triangulateShape(outer, holes);
+    const b = pos.length / 3;
+    for (const p of [outer, ...holes].flat()) pos.push(p.x, y, -p.y);
+    for (const t of tris) idx.push(b + t[0], b + t[2], b + t[1]);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
 /** 큰길: 띠 모양 + 차가 다닐 길 목록 */
 function roadStrips(list: number[][]) {
   const pos: number[] = [];
@@ -285,10 +317,11 @@ export default function City3D({ file, level, night }: Props) {
     el.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
     const cam = new THREE.PerspectiveCamera(40, 1, 40, 40000);
-    // 한강 남쪽 위에서 도심(북쪽)을 바라봄
-    cam.position.set(1100, 1300, 7000);
+    // 처음 보는 자리: 서울은 한강 남쪽 위에서 도심(북쪽)을, 다른 도시는 남쪽 위에서 중심을 바라봄
+    const v = START_VIEW[file] ?? { cam: [700, 1500, 3300], at: [0, 0, 300] };
+    cam.position.set(...v.cam);
     const ctl = new MapControls(cam, renderer.domElement);
-    ctl.target.set(100, 0, 3700);
+    ctl.target.set(...v.at);
     ctl.enableDamping = true;
     ctl.maxPolarAngle = 1.32;
     ctl.minDistance = 250;
@@ -388,6 +421,21 @@ export default function City3D({ file, level, night }: Props) {
         const rs = roadStrips(d.r);
         const roads = new THREE.Mesh(rs.g, roadMat);
         scene.add(parks, roads, water);
+        if (d.s?.length) {
+          scene.add(new THREE.Mesh(seaShapes(d.s, 0.6), waterMat));
+          // 바다 도시: 바다를 도시 너머로 보이게, 바다 반대쪽 위에서 바다 쪽을 바라봄
+          if (!START_VIEW[file]) {
+            let sx = 0, sy = 0, n = 0;
+            for (const poly of d.s) for (let k = 0; k + 1 < poly[0].length; k += 2) { sx += poly[0][k]; sy += poly[0][k + 1]; n++; }
+            const L = Math.hypot(sx, sy);
+            if (n && L > 1) {
+              const dx = sx / L, dz = -sy / L;
+              cam.position.set(-dx * 3300, 1500, -dz * 3300);
+              ctl.target.set(dx * 300, 0, dz * 300);
+              ctl.update();
+            }
+          }
+        }
         paths = rs.paths;
         for (let i = 0; i < 4; i++) {
           const c = makeCrane();
