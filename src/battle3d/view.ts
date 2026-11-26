@@ -24,6 +24,8 @@ export interface Battle3DOptions {
   onTap?(S: unknown, x: number, z: number, u: unknown): string | void;
   bar?(S: unknown): { label: string; pct: number; txt: string };
   endText?(S: unknown, win: boolean, timeout: boolean): string;
+  /** 11-26 가진 부대만: 3D 병과별 낼 수 있는 수(없으면 제한 없음 · 앞 막에서 넘어온 부대는 안 셈) */
+  owned?: Record<string, number>;
   /** 개발용: window.__snapUnits로 모형 아이콘 찍기 */
   snap?: boolean;
 }
@@ -1176,7 +1178,7 @@ function buildCards(){
   // 11-26 병과가 7개를 넘으면 한 줄로 두고 옆으로 밀어서 봄
   wrap.classList.toggle("b3-scroll",kinds.length>6);wrap.style.gridTemplateColumns=kinds.length>6?"":`repeat(${Math.max(6,kinds.length)},1fr)`;
   kinds.forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-card";b.id="card-"+k;b.setAttribute("aria-pressed",String(k===selKind));
-    b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함").replace("장거리 방공","장거리방공").replace("해안 미사일","해안미사일").replace("정찰 무인기","정찰기").replace("스텔스 전투기","스텔스기").replace("지상 공격기","공격기").replace("다연장로켓","다연장").replace("바다 드론","바다드론");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);
+    b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함").replace("장거리 방공","장거리방공").replace("해안 미사일","해안미사일").replace("정찰 무인기","정찰기").replace("스텔스 전투기","스텔스기").replace("지상 공격기","공격기").replace("다연장로켓","다연장").replace("바다 드론","바다드론");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);if(CAP){const o=document.createElement("span");o.className="b3-own";b.append(o);}
     b.onclick=()=>{selKind=k;root.querySelectorAll(".b3-card").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));highlightTiles();};
     wrap.append(b);});
   highlightTiles();
@@ -1189,9 +1191,14 @@ function buildCmds(){
 }
 function highlightTiles(){depTiles.forEach(t=>{const ok=tileOk(t,selKind);t.m.material.opacity=ok?.16:.04;t.e.material.opacity=ok?.6:.12;});}
 function spent(){return deploy.reduce((s,d)=>s+(d.carried?0:DEF[d.kind].cost),0);}
+const CAP=opts.owned||null;
+function usedOf(k){return deploy.filter(d=>d.kind===k&&!d.carried).length;}
+function leftOf(k){return CAP?(CAP[k]||0)-usedOf(k):99;}
+/** 가진 수를 넘는 기본 배치는 뺌 */
+function capPicks(list){if(!CAP)return list;const n={};return list.filter(d=>{if(d.carried)return true;n[d.kind]=(n[d.kind]||0)+1;return n[d.kind]<=(CAP[d.kind]||0);});}
 function refreshDeploy(){
   $("#budget").textContent=spent();
-  root.querySelectorAll(".b3-card").forEach(b=>{const k=b.id.slice(5);b.disabled=spent()+DEF[k].cost>BUDGET_NOW;});
+  root.querySelectorAll(".b3-card").forEach(b=>{const k=b.id.slice(5);b.disabled=spent()+DEF[k].cost>BUDGET_NOW||leftOf(k)<=0;const o=b.querySelector(".b3-own");if(o)o.textContent=leftOf(k)>0?`×${leftOf(k)}`:"없음";});
   TABS.forEach(t=>{const n=deploy.filter(d=>t.kinds.includes(d.kind)).length;const el=$("#cnt-"+t.id);if(el)el.textContent=n||"";});
   $("#go").disabled=deploy.length===0;
 }
@@ -1202,17 +1209,19 @@ function placeAt(i){
   if(j>=0&&deploy[j].carried){$("#dhint").textContent="앞 막에서 살아남은 부대예요(체력 그대로 이어서 싸워요)";return;}
   if(j>=0){scene.remove(deploy[j].u.root);S.units=S.units.filter(u=>u!==deploy[j].u);deploy.splice(j,1);refreshDeploy();return;}
   if(!tileOk(t,selKind)){$("#dhint").textContent=DEF[selKind].dom==="land"?"육군은 땅 칸에만 놓을 수 있어요":"해군은 바다 칸에만 놓을 수 있어요";return;}
+  if(leftOf(selKind)<=0){$("#dhint").textContent=`가진 ${DEF[selKind].name} 부대를 다 냈어요(국방 › 부대에서 모집)`;return;}
   if(spent()+DEF[selKind].cost>BUDGET_NOW){$("#dhint").textContent="예산이 모자라요";return;}
   const u=makeUnit(S,selKind,"us",t.x,t.z); deploy.push({kind:selKind,tile:i,u}); refreshDeploy();
 }
 function setupDeploy(useDefault){
   clearUnits(); fx.splice(0).forEach(f=>scene.remove(f.o)); vq.length=0; lastResult=null;
-  const prev=useDefault?(opts.preset?(URBAN&&!opts.lockDeploy&&!ST.drill?fillReinf(opts.preset,BUDGET_NOW):opts.preset):autoDeploy(BUDGET_NOW)):deploy.map(d=>({kind:d.kind,tile:d.tile,hp:d.hp,carried:d.carried}));
+  const prev=useDefault?capPicks(opts.preset?(URBAN&&!opts.lockDeploy&&!ST.drill?fillReinf(opts.preset,BUDGET_NOW):opts.preset):autoDeploy(BUDGET_NOW)):deploy.map(d=>({kind:d.kind,tile:d.tile,hp:d.hp,carried:d.carried}));
   const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp,usBuff:opts.usBuff}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
   depTiles.forEach(t=>{t.m.visible=t.e.visible=true;});
   $("#deployUI").hidden=false;$("#battleUI").hidden=true;$("#end").hidden=true;$("#aim").hidden=true;
   if(opts.lockDeploy){$("#tabs").hidden=true;$("#cards").hidden=true;$("#clear").hidden=true;$("#dhint").textContent="부대가 정해진 훈련이에요 · 시점을 보고 '작전 개시'";}
   $("#goal").textContent=ST.drill?ST.goal:opts.preset?"살아남은 부대가 이어서 싸워요 · 보충 부대를 더하세요":"부대를 배치하세요";$("#log").innerHTML="";
+  if(CAP&&!Object.values(CAP).some(v=>v>0)&&!deploy.length)$("#dhint").textContent="가진 부대가 없어요 · 국방 › 부대에서 모집하거나 '맡기기'로 넘겨요";
   refreshDeploy(); hud();
 }
 function startBattle(){
