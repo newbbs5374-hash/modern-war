@@ -37,7 +37,10 @@ describe('3D 훈련', () => {
     expect(trainingPlan('전술', 3, 1, 'd3-tac').stages[0].frame).toBe('d3');
     expect(trainingPlan('전술', 3, 1, 'p3').stages[0].frame).toBe('d3');
     expect(trainingPlan('전술', 3, 1, 'w3:5').stages[0].variant).toBe('w3:5');
-    expect(trainingPlan('전술', 3, 1).stages[0].frame).toBe('mini');
+    expect(trainingPlan('전술', 3, 1).stages[0].frame).toBe('d3');
+    // 11-26: 2D 미니게임은 훈련에서 안 나옴
+    expect(trainingPlan('전술', 3, 1, 'tac-puzzle').stages[0].frame).toBe('d3');
+    expect(trainingPlan('사격', 3, 1, 'm3-shoot-popup').stages[0].frame).toBe('mini');
   });
   it('병과 숙련: 단계마다 +2%, 최대 +10%', () => {
     expect(unitLevel(0)).toBe(0);
