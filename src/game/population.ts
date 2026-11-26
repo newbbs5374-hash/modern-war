@@ -24,6 +24,11 @@ const BASE: Record<string, { birth: number; old: number; young: number; migrant:
   uk: { birth: 1.5, old: 19, young: 17, migrant: 14 },
   tr: { birth: 1.6, old: 10, young: 22, migrant: 7 },
   kp: { birth: 1.8, old: 10, young: 20, migrant: 0.1 },
+  tw: { birth: 0.87, old: 19, young: 12, migrant: 3 },
+  pl: { birth: 1.2, old: 20, young: 15, migrant: 4 },
+  ph: { birth: 1.9, old: 6, young: 29, migrant: 0.3 },
+  pk: { birth: 3.3, old: 4, young: 36, migrant: 1.5 },
+  sa: { birth: 2.4, old: 3, young: 25, migrant: 38 },
 };
 export const popBase = (s: GameState) => BASE[s.player.countryId] ?? BASE.kr;
 registerPolityInit((s, p) => {

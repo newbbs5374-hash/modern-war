@@ -60,6 +60,11 @@ const POWER_COUNTRY: Record<string, Partial<Record<string, number>>> = {
   jp: { biz: 22, mil: 10, youth: 15 },
   in: { labor: 22, youth: 20, press: 13 },
   tr: { mil: 21, press: 11 },
+  tw: { biz: 22, youth: 19, mil: 13 },
+  pl: { mil: 20, civic: 18, labor: 18 },
+  ph: { civic: 20, press: 17, mil: 14 },
+  pk: { mil: 30, press: 9, civic: 10 },
+  sa: { biz: 24, mil: 22, press: 5, civic: 5 },
 };
 export function groupPower(s: GameState): Record<string, number> {
   const raw: Record<string, number> = { ...POWER_BASE, ...(POWER_COUNTRY[s.player.countryId] ?? {}) } as Record<string, number>;

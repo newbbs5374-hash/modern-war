@@ -31,7 +31,13 @@ export const US_ETH_NAME: Record<UsEth, string> = { we: '백인', bl: '흑인', 
 export const US_ETH_WEIGHT: Record<UsEth, number> = { we: 0.5, bl: 0.2, hi: 0.2, as: 0.1 };
 
 /** 사람의 얼굴 묶음 이름 */
-export const faceTag = (country: string, eth?: string) => (country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : 'us-we');
+export const faceTag = (country: string, eth?: string): string =>
+  country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : FACE_BORROW[country] ? faceTag(FACE_BORROW[country]) : 'us-we';
+/**
+ * 11-26 새 나라 5개: 얼굴 그림이 오기 전까지 가까운 나라 얼굴을 빌려 씀(이름은 그 나라 이름표에서 뽑음).
+ * 그림이 들어오면 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2·YOUNG_READY에 그 나라를 넣고 여기서 지우면 돼요.
+ */
+export const FACE_BORROW: Record<string, string> = { tw: 'cn', pl: 'ua', ph: 'jp', pk: 'in', sa: 'ir' };
 
 /**
  * 추가 얼굴(11-24 대장 결정 "나라별 더"): 나라마다 22장(남 13 · 여 9) → 모두 62장.
@@ -155,7 +161,7 @@ export const youngFile = (tag: string, sex: 'm' | 'f', i: number) => `face-${tag
 export const isYoungFace = (key?: string) => !!key && /^face-.+-[mf]-30-\d+$/.test(key);
 /** 그 나라에 젊은 얼굴이 (한 성별이라도) 들어 있나 */
 export const youngReady = (country: string) => {
-  const tags = country === 'us' ? US_ETH.map((e) => `us-${e}`) : [country];
+  const tags = country === 'us' ? US_ETH.map((e) => `us-${e}`) : [faceTag(country)];
   return tags.some((t) => youngSize(t, 'm') + youngSize(t, 'f') > 0);
 };
 /** 모든 젊은 얼굴 파일(계획 전체) */
