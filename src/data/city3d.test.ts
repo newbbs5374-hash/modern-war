@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
 import { CITY3D_FILE } from './city3d';
 import { CITIES, cityById } from './cities';
+
+const FILES = new Set(Object.keys(import.meta.glob('../../public/city3d/*.json')).map((p) => p.split('/').pop()!.replace('.json', '')));
 
 describe('도시 3D 자료(11/26)', () => {
   it('목록의 도시는 모두 있는 도시이고 자료 파일도 있음', () => {
     for (const [id, file] of Object.entries(CITY3D_FILE)) {
       expect(cityById(id), id).toBeTruthy();
-      expect(existsSync(`public/city3d/${file}.json`), file).toBe(true);
+      expect(FILES.has(file), file).toBe(true);
     }
   });
   it('한국 도시는 모두, 다른 나라는 수도를 포함해 3곳', () => {
