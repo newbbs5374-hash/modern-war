@@ -17,6 +17,8 @@ export interface City3DData {
   r: number[][];
   /** 물 */
   w: number[][];
+  /** 바다(해안선으로 만듦): [바깥 고리, 섬 구멍...] */
+  s?: number[][][];
   /** 공원·숲 */
   p: number[][];
 }
@@ -219,6 +221,31 @@ function flatShapes(list: number[][], y: number): THREE.BufferGeometry {
   return g;
 }
 
+/** 바다: 섬은 구멍으로 뚫음 */
+function seaShapes(list: number[][][], y: number): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const idx: number[] = [];
+  const v2 = (f: number[]) => {
+    const pts: THREE.Vector2[] = [];
+    for (let k = 0; k + 1 < f.length; k += 2) pts.push(new THREE.Vector2(f[k], f[k + 1]));
+    return pts;
+  };
+  for (const poly of list) {
+    const outer = v2(poly[0]);
+    if (outer.length < 3) continue;
+    const holes = poly.slice(1).map(v2).filter((h) => h.length >= 3);
+    const tris = THREE.ShapeUtils.triangulateShape(outer, holes);
+    const b = pos.length / 3;
+    for (const p of [outer, ...holes].flat()) pos.push(p.x, y, -p.y);
+    for (const t of tris) idx.push(b + t[0], b + t[2], b + t[1]);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
 /** 큰길: 띠 모양 + 차가 다닐 길 목록 */
 function roadStrips(list: number[][]) {
   const pos: number[] = [];
@@ -394,6 +421,7 @@ export default function City3D({ file, level, night }: Props) {
         const rs = roadStrips(d.r);
         const roads = new THREE.Mesh(rs.g, roadMat);
         scene.add(parks, roads, water);
+        if (d.s?.length) scene.add(new THREE.Mesh(seaShapes(d.s, 0.6), waterMat));
         paths = rs.paths;
         for (let i = 0; i < 4; i++) {
           const c = makeCrane();

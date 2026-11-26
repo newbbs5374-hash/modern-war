@@ -37,7 +37,7 @@ jobs:
         region: ${{ fromJson(needs.plan.outputs.regions) }}
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-shapely
       - run: python3 scripts/city3d_build.py "${{ github.event.inputs.only }}" "${{ matrix.region }}"
       - id: name
         run: echo "n=$(echo '${{ matrix.region }}' | tr '/' '_')" >> "$GITHUB_OUTPUT"

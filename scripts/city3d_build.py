@@ -58,9 +58,9 @@ for region, cs in by.items():
             fail.append(f)
             continue
         print('만들기', f, flush=True)
-        ok = subprocess.call(['osmium', 'tags-filter', f'work/{f}.osm.pbf', 'nwr/building', 'w/highway=motorway,trunk,primary,secondary', 'nwr/natural=water,wood', 'w/waterway=riverbank', 'nwr/leisure=park', 'nwr/landuse=grass,forest', '-o', f'work/{f}.f.pbf', '--overwrite']) == 0
+        ok = subprocess.call(['osmium', 'tags-filter', f'work/{f}.osm.pbf', 'nwr/building', 'w/highway=motorway,trunk,primary,secondary', 'nwr/natural=water,wood,coastline', 'w/waterway=riverbank', 'nwr/leisure=park', 'nwr/landuse=grass,forest', '-o', f'work/{f}.f.pbf', '--overwrite']) == 0
         ok = ok and subprocess.call(['osmium', 'export', '-f', 'geojsonseq', f'work/{f}.f.pbf', '-o', f'work/{f}.geojsonseq', '--overwrite']) == 0
-        ok = ok and subprocess.call([sys.executable, 'scripts/gen_city3d.py', f'work/{f}.geojsonseq', f, str(c['lon']), str(c['lat']), str(c['max']), c['name']]) == 0
+        ok = ok and subprocess.call([sys.executable, 'scripts/gen_city3d.py', f'work/{f}.geojsonseq', f, str(c['lon']), str(c['lat']), str(c['max']), c['name'], str(c['half'])]) == 0
         if not ok:
             fail.append(f)
     os.remove(pbf)
