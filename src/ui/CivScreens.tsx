@@ -10,8 +10,7 @@ import { Suspense, lazy, useLayoutEffect, useMemo, useRef, useState, type ReactN
 
 /** 3D 도시(11/26 서울 시험): 누를 때만 three.js를 불러옴 */
 const City3D = lazy(() => import('./City3D'));
-/** 3D 자료가 있는 도시 → public/city3d/ 파일 이름 */
-const CITY3D_FILE: Record<string, string> = { 'kr-0': 'seoul' };
+import { CITY3D_FILE } from '../data/city3d';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
