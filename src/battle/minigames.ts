@@ -13,6 +13,8 @@ export interface MiniDef {
   secs: number;
   /** false = 훈련에서 안 나옴 */
   on: boolean;
+  /** 11-26 안 4: 3D 전투 모형으로 만든 화면 */
+  three?: boolean;
 }
 
 export const MINIGAMES: MiniDef[] = [
@@ -64,6 +66,15 @@ export const MINIGAMES: MiniDef[] = [
   { id: 'sea-sonar', training: '해상', name: '소나 사냥', how: '소나 칸을 누르면 잠수함까지 거리(칸 수)가 나와요. 찾았다 싶으면 💣 폭뢰로 바꿔 눌러요. 3척.', secs: 90, on: true },
   { id: 'sea-torpedo', training: '해상', name: '어뢰 피하기', how: '◀ ▶을 눌러 배를 옮겨 어뢰를 피해요.', secs: 45, on: true },
   { id: 'sea-formation', training: '해상', name: '함대 대형', how: '보여 준 대형을 기억했다가, 배를 고르고 칸을 눌러 똑같이 놓아요. 3번.', secs: 80, on: true },
+  // 11-26 안 4: 2D 미니게임 8개를 3D 모형 화면으로(규칙은 같음)
+  { id: 'm3-shoot-popup', training: '사격', name: '3D 마을 표적', how: '3D 마을 창문·골목에 나온 적 병사만 빨리 눌러요. 민간인을 쏘면 감점.', secs: 45, on: true, three: true },
+  { id: 'm3-shoot-moving', training: '사격', name: '3D 달리는 차량', how: '탄이 조금 늦게 닿아요. 달리는 적 차량 앞쪽 땅을 미리 눌러요.', secs: 50, on: true, three: true },
+  { id: 'm3-arty-lead', training: '포격', name: '3D 대열 끊기', how: '포탄은 2초 뒤 떨어져요. 다가오는 전차 대열 앞쪽 길을 눌러요. 6발.', secs: 50, on: true, three: true },
+  { id: 'm3-sea-torpedo', training: '해상', name: '3D 어뢰 피하기', how: '◀ ▶을 눌러 구축함을 옮겨 하얀 물살(어뢰)을 피해요.', secs: 45, on: true, three: true },
+  { id: 'm3-sea-sonar', training: '해상', name: '3D 소나 사냥', how: '바다 칸을 누르면 잠수함까지 거리가 떠요. 찾았다 싶으면 💣 폭뢰로 바꿔 눌러요. 3척.', secs: 90, on: true, three: true },
+  { id: 'm3-air-intercept', training: '항공', name: '3D 요격 비행', how: '화면을 끌면 전투기가 따라와요. 사격은 저절로. 적 총알을 피해요.', secs: 45, on: true, three: true },
+  { id: 'm3-air-flare', training: '항공', name: '3D 미사일 따돌리기', how: '미사일이 노란 원까지 오면 플레어! 너무 빠르면 다시 쫓아오고, 늦으면 맞아요. 10발.', secs: 55, on: true, three: true },
+  { id: 'm3-sneak-light', training: '잠입', name: '3D 탐조등 박자', how: '누르고 있으면 멈추고, 떼면 달려요. 탐조등 빛 속에서 움직이면 들켜요.', secs: 60, on: true, three: true },
 ];
 
 export const miniById = (id: string): MiniDef | undefined => MINIGAMES.find((m) => m.id === id);
@@ -78,7 +89,8 @@ export function minisFor(training: string): MiniDef[] {
 /** 고르지 않았으면 씨앗으로 하나 */
 export function pickMini(training: string, seed: number, want?: string): MiniDef {
   const list = minisFor(training);
-  return list.find((m) => m.id === want) ?? list[Math.abs(seed) % list.length];
+  const flat = list.filter((m) => !m.three);
+  return list.find((m) => m.id === want) ?? (flat.length ? flat : list)[Math.abs(seed) % (flat.length || list.length)];
 }
 
 /** 계급이 오르면 조금씩 어려워짐(1 ~ 2) */
