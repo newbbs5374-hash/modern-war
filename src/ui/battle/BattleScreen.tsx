@@ -38,6 +38,8 @@ export interface FrameProps {
   /** 11-26 안 6: 병과 숙련 배수(3D 전투) · 배치 퍼즐 판별 별 */
   usBuff?: Partial<Record<string, number>>;
   puzzleStars?: Record<string, number>;
+  /** 11-26: 싸우기 전에 나가거나 화면 오류로 나가면 결과 없이 돌아감(패배 아님) */
+  onCancel?: () => void;
 }
 
 /** 자동전투·즉시완료를 썼는지(훈련은 별 최대 2개) */
@@ -130,7 +132,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   const perks = perkBonus(o);
   const stats: Record<string, number> = { ...o.stats };
   for (const [k, v] of Object.entries(perks)) stats[k] = (stats[k] ?? 0) + v;
-  const props: FrameProps = { spec, stats, rank, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d };
+  const props: FrameProps = { spec, stats, rank, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
