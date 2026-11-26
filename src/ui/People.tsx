@@ -151,7 +151,7 @@ export function personCard(s: GameState, p: PersonRef): Card {
       return {
         name: rv.name,
         title: `정적 · ${role}`,
-        keys: [`aide-${rv.name}`, `rival-${rv.name}`],
+        keys: [rv.faceKey, `aide-${rv.name}`, `rival-${rv.name}`],
         fallback: ROLE_INFO[role].icon,
         tags: rv.ally ? ['🤝 내 편'] : [`영향력 ${Math.round(influenceOf(rv))}`, o.chiefRival === rv.name ? '⚠️ 최고 호칭을 막는 중' : watching(rv, s.worldMs) ? '🕵️ 지켜보는 중' : '적대'],
         intro: `${ROLE_INFO[role].text} ${rv.ally ? ROLE_INFO[role].ally : ROLE_INFO[role].plot}`,

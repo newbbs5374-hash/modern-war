@@ -703,14 +703,14 @@ export function RivalsPanel({ state }: ScreenProps) {
       icon="🏁"
       help={
         <p>
-          지도자 자리를 흔드는 정적 3명이에요. 영향력이 {PLOT_MIN}을 넘으면 몇 시간마다 방해 공작을 해요(야당 대표 = 의회 신뢰 −, 군부 실력자 = 장군·부관 충성 −, 재벌 = 봉급 −). 영향력이 {BLOCK_AT}을 넘으면 전설의 지도자 호칭을 막아요. 사진을 눌러 🕵️동향 살피기(공작을 미리 막음)·🗞️견제(영향력 −)·🤝회유(3번 성공하면 내 편)를 하세요. 연설은 영향력을 낮추고, 도시를 잃으면 올라가요.
+          지도자 자리를 흔드는 정적 {rivals.length}명이에요. 영향력이 {PLOT_MIN}을 넘으면 몇 시간마다 방해 공작을 해요(야당·여당 비주류 = 의회 신뢰 −, 군부·퇴역 대장 = 장군·부관 충성 −, 재벌·금융 = 봉급 −, 언론·노조·지방·종교 = 지지도 −, 전 정보기관장 = 정보 −). 20~40분마다 누군가 발언하고, 다른 정적이 거들기도 해요. 영향력이 {BLOCK_AT}을 넘으면 전설의 지도자 호칭을 막아요. 사진을 눌러 🕵️동향 살피기(공작을 미리 막음)·🗞️견제(영향력 −)·🤝회유(3번 성공하면 내 편)를 하세요. 연설은 영향력을 낮추고, 도시를 잃으면 올라가요.
         </p>
       }
     >
       {rivals.map((x) => (
         <div key={x.name} className="line-item">
           <span className="li-ico">
-            <PersonFace who={{ kind: 'rival', name: x.name }} keys={[`aide-${x.name}`, `rival-${x.name}`]} fallback={ROLE_INFO[x.role].icon} />
+            <PersonFace who={{ kind: 'rival', name: x.name }} keys={[x.faceKey, `aide-${x.name}`, `rival-${x.name}`]} fallback={ROLE_INFO[x.role].icon} />
           </span>
           <span className="li-main">
             <b>
@@ -732,9 +732,10 @@ export function RivalsPanel({ state }: ScreenProps) {
         <>
           <h4 className="cab-h">🎙️ 최근 발언</h4>
           {remarksOf(state)
-            .log.slice(0, 6)
+            .log.slice(0, 10)
             .map((r) => (
               <p key={r.t + r.who} className="small">
+                {r.echo ? '↪ ' : ''}
                 {VOICE_ICON[r.who]} <b>{r.name ? `${r.who} ${r.name}` : r.who}</b> {r.text}
               </p>
             ))}

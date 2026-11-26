@@ -75,6 +75,7 @@ function faceUse(s: GameState): Map<string, number> {
   for (const p of cabinetOf(s).people) if (p.face !== undefined) add(faceFile(faceTag(p.country, p.eth), p.sex, p.face));
   for (const a of s.officer.aides) if (a.faceKey) add(a.faceKey);
   for (const g of s.officer.generals) if (g.faceKey) add(g.faceKey);
+  for (const r of s.officer.rivals) if (r.faceKey) add(r.faceKey);
   return m;
 }
 
