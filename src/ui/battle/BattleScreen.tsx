@@ -20,6 +20,7 @@ import { CourseView } from './CourseView';
 import { RangeView } from './RangeView';
 import { FieldView } from './FieldView';
 import { MiniView } from './MiniView';
+import { Battle3DView } from './Battle3DView';
 
 export interface Outcome {
   win: boolean;
@@ -85,7 +86,7 @@ export function BattleBar(props: {
   );
 }
 
-const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView };
+const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView, b3d: Battle3DView };
 const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 export function BattleScreen({ state, actions, go }: ScreenProps) {

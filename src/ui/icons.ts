@@ -10,5 +10,5 @@ export const MISSION_ICON: Record<string, string> = { 안보회의: '🏛️', �
 export const STAT_ICON: Record<string, string> = { 체력: '💪', 사격: '🎯', 은밀: '🥷', 통솔: '📣', 전술: '♟️', 포격: '💥', 군수: '📦', 정치: '🏛️', 정보: '🔐' };
 export const FACILITY_ICON: Record<string, string> = { 산업: '🏭', 인프라: '🛤️', 복지: '🏥', 과학: '🔬', 국방: '🛡️' };
 export const AIDE_ICON: Record<string, string> = { 저격: '🎯', 의무: '⛑️', 통신: '📻', 공병: '🛠️', 정찰: '🔭' };
-export const FRAME_ICON: Record<string, string> = { grid: '♟️', side: '⚔️', course: '🏃', range: '🎯', arty: '💥', shooter: '✈️', puzzle: '🧩', field: '🛰️', mini: '🎮' };
+export const FRAME_ICON: Record<string, string> = { grid: '♟️', side: '⚔️', course: '🏃', range: '🎯', arty: '💥', shooter: '✈️', puzzle: '🧩', field: '🛰️', mini: '🎮', b3d: '🪖' };
 export const RANK_ICON = ['▫️', '◽', '🔹', '🔷', '🔶', '🟧', '⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '🎖️'];

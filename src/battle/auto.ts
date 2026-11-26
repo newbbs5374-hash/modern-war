@@ -9,6 +9,7 @@ import { createSideBattle, finishSide, type SideGoal } from './side';
 import type { BattleSpec } from './spec';
 import { createField, finishField } from './field';
 import { autoMini } from './minigames';
+import { headlessOutcome, runHeadless } from '../battle3d/sim';
 
 export interface AutoInput {
   spec: BattleSpec;
@@ -45,6 +46,8 @@ export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: bool
       return finishRange(createRange({ rank, stats, seed }), rangeAim(stats, rank)).result!;
     case 'mini':
       return autoMini(spec.variant, stats, rank, seed);
+    case 'b3d':
+      return headlessOutcome(runHeadless());
     case 'field':
       return finishField(createField({ city: spec.city, difficulty: d, rank, stats, seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) })).result!;
   }

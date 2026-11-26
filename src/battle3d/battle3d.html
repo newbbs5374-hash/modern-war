@@ -1,0 +1,42 @@
+<div id="app">
+  <canvas id="gl"></canvas>
+  <div id="scan"></div>
+  <div id="bang"></div>
+  <svg id="reticle" viewBox="0 0 120 120" fill="none" stroke="#fff" stroke-width="1.5"><path d="M10 30V10h20M90 10h20v20M110 90v20H90M30 110H10V90"/><path d="M60 48v-14M60 72v14M48 60H34M72 60h14"/><circle cx="60" cy="60" r="2" fill="#fff"/></svg>
+
+  <div class="b3-hud" id="top">
+    <div class="b3-row"><span class="b3-op">OP <b>COASTLINE-05</b> · 육해공 시험판</span><span class="b3-clock" id="clock">T+00:00</span></div>
+    <div class="b3-row"><span class="b3-title" id="goal">부대를 배치하세요</span></div>
+    <div class="b3-bars">
+      <div class="b3-bar b3-us"><span>아군 전력 <span id="usn"></span></span><i><u id="usb"></u></i></div>
+      <div class="b3-bar b3-foe"><span>적 지휘소 <span id="hqn"></span></span><i><u id="hqb"></u></i></div>
+    </div>
+  </div>
+  <div id="log"></div>
+  <canvas id="mini" width="168" height="252"></canvas>
+  <button id="camreset" type="button" aria-label="시점 처음으로">↺ 시점</button>
+  <button id="quit" type="button" hidden>✕ 나가기</button>
+  <button id="fxbtn" type="button" aria-pressed="true">효과 높음</button>
+
+  <div class="b3-hud" id="bottom">
+    <div id="deployUI">
+      <div class="b3-tabs" role="tablist" id="tabs"></div>
+      <div class="b3-cards" id="cards" style="margin-top:6px"></div>
+      <div class="b3-actions" style="margin-top:8px">
+        <span class="b3-budget">예산 <b id="budget">0</b> / 460</span>
+        <button class="b3-btn b3-ghost" id="clear" type="button">비우기</button>
+        <button class="b3-btn" id="go" type="button">작전 개시</button>
+      </div>
+      <div class="b3-hint" style="margin-top:6px" id="dhint">카드를 고르고 칸을 누르면 배치 · 육군은 땅, 해군은 바다, 공군은 어디든</div>
+      <div class="b3-hint" style="margin-top:3px;opacity:.7;font-size:10px">모형: Quaternius (CC0) · 전투기·헬기 “Jet”, “Helicopter” by jeremy, Poly Pizza (CC-BY 3.0)</div>
+    </div>
+    <div id="battleUI" hidden>
+      <div class="b3-cp"><span>지휘력</span><div class="b3-pips" id="pips"></div><span id="cpn">0</span>
+        <button class="b3-tog" id="speed" type="button">×1</button>
+        <button class="b3-tog" id="flir" type="button" aria-pressed="false">열상</button></div>
+      <div class="b3-cmds" id="cmds" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div id="aim" hidden><p id="aimtxt">목표 지점을 누르세요 · 시간 정지</p></div>
+  <div id="end" hidden><div class="b3-box"><h2 id="endt">승리</h2><p id="endp"></p><button class="b3-btn" id="again" type="button">다시 배치</button></div></div></div>
