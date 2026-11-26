@@ -2,6 +2,7 @@
 // 끄고 켜기: 아래 목록의 on 을 false 로 바꾸면 그 미니게임은 훈련에서 나오지 않음(한 곳만 고치면 됨).
 // 계산(점수 → 별)은 여기, 화면은 src/ui/battle/mini/*.
 import { Rng } from '../game/rng';
+import type { FreshFrame } from './fresh';
 
 export interface MiniDef {
   id: string;
@@ -15,6 +16,8 @@ export interface MiniDef {
   on: boolean;
   /** 11-26 안 4: 3D 전투 모형으로 만든 화면 */
   three?: boolean;
+  /** 11-26 새 훈련 틀(A 1인칭 · B 계획→재생 · C 대화 · D 관리판) */
+  fresh?: FreshFrame;
 }
 
 export const MINIGAMES: MiniDef[] = [
@@ -75,6 +78,13 @@ export const MINIGAMES: MiniDef[] = [
   { id: 'm3-air-intercept', training: '항공', name: '3D 요격 비행', how: '화면을 끌면 전투기가 따라와요. 사격은 저절로. 적 총알을 피해요.', secs: 45, on: true, three: true },
   { id: 'm3-air-flare', training: '항공', name: '3D 미사일 따돌리기', how: '미사일이 노란 원까지 오면 플레어! 너무 빠르면 다시 쫓아오고, 늦으면 맞아요. 10발.', secs: 55, on: true, three: true },
   { id: 'm3-sneak-light', training: '잠입', name: '3D 탐조등 박자', how: '누르고 있으면 멈추고, 떼면 달려요. 탐조등 빛 속에서 움직이면 들켜요.', secs: 60, on: true, three: true },
+  // 11-26 새 훈련 틀 A "1인칭 눈높이"
+  { id: 'n-shoot-scope', training: '사격', name: '1인칭 조준경 사격', how: '화면을 끌어 겨눠요. 🔭 조준하면 크게 보이고, 🫁 숨을 참는 동안 흔들림이 줄어요. 쏘면 총구가 튀어 올라요. 일어선 적 12명.', secs: 75, on: true, three: true, fresh: 'A' },
+  { id: 'n-air-cockpit', training: '항공', name: '조종석 비행', how: '조종석에서 날아요. 누른 채 끌면 조종간: 옆으로 끌면 돌고, 아래로 끌면 올라가요. 산 사이 주황 고리 12개를 통과해요. 땅에 닿으면 감점.', secs: 90, on: true, three: true, fresh: 'A' },
+  { id: 'n-sneak-fp', training: '잠입', name: '1인칭 그림자 잠입', how: '내 눈높이로 적 기지를 걸어요. 노란 시야 부채꼴 안에 들어가면 들킴 막대가 차요. 벽 뒤로 숨고, 웅크리면 발소리가 작아요. 초록 깃발까지.', secs: 100, on: true, three: true, fresh: 'A' },
+  { id: 'n-arty-observe', training: '포격', name: '관측병 무전', how: '쌍안경으로 표적을 봐요. 포탄이 떨어진 곳을 보고 "좌·우·가까이·멀리 50"을 골라 다시 요청해요. 표적 3개, 표적마다 5발.', secs: 120, on: true, three: true, fresh: 'A' },
+  { id: 'n-sea-bridge', training: '해상', name: '함교 조함', how: '함교에서 키와 속도로 배를 몰아요. 큰 배는 천천히 돌고 조류에 밀려요. 부표 사이로 들어가 초록 선석에 천천히 곧게 대고 ⚓ 계류.', secs: 150, on: true, three: true, fresh: 'A' },
+  { id: 'n-fit-run3d', training: '체력', name: '3D 달리기 코스', how: '뒤에서 본 달리기. 밀어서 ◀▶ 줄 바꾸기, ⬆ 허들 넘기, ⬇ 철조망 포복. 숨 막대가 바닥나면 끝. 💧 물병으로 숨 회복.', secs: 70, on: true, three: true, fresh: 'A' },
 ];
 
 export const miniById = (id: string): MiniDef | undefined => MINIGAMES.find((m) => m.id === id);

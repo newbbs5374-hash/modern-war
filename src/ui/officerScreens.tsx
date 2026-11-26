@@ -55,6 +55,7 @@ import {
 } from '../game/officer';
 import { AIDE_EFFECT } from '../data/aideEffect';
 import { minisFor } from '../battle/minigames';
+import { FRAME_NAME } from '../battle/fresh';
 import { UNIT_LV_AT, threeFor, unitBonusPct, unitLevel, unitName, weekLeftMs, weekOf, weeklyInfo, weeklyTraining } from '../battle3d/train3d';
 import { TEST_MODE } from '../game/balance';
 import { OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
@@ -910,7 +911,7 @@ function WeeklyCard({ state, onStart }: { state: ScreenProps['state']; onStart: 
 function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
   const minis = minisFor(name);
   const three = threeFor(name);
-  const [mini, setMini] = useState((three[0] ?? minis[0])?.id);
+  const [mini, setMini] = useState((minis.find((m) => m.fresh) ?? three[0] ?? minis[0])?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;
   const t = TRAININGS.find((x) => x.name === name)!;
@@ -939,7 +940,8 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       </p>
       {(
         [
-          ['🧊 3D 미니게임', minis.map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
+          ['✨ 새 훈련', minis.filter((m) => m.fresh).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: FRAME_NAME[m.fresh!] }))],
+          ['🧊 3D 미니게임', minis.filter((m) => !m.fresh).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
           ['🪖 3D 실전 훈련', three.map((m) => ({ id: m.id, name: m.name, how: m.how, tag: m.tag }))],
         ] as const
       )
