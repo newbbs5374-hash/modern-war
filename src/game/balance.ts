@@ -86,7 +86,7 @@ export const CAPTURED_DEFENSE = 35;
 /** 바다 건너 침공은 덜 자주 */
 export const OVERSEAS_ATTACK_RATE = 0.35;
 /** 점령지 반란: 판단마다 원래 주인에게 돌아갈 확률(신앙이 다르면 × 1.5). 망한 나라도 반란으로 되살아남 */
-export const REBEL_CHANCE = 0.004;
+export const REBEL_CHANCE = 0.002; // 11-27 밸런스: 0.004 → 0.002(되찾기 반복 줄이기)
 export const REBEL_FAITH_MULT = 1.5;
 /** 반란으로 되살아난 나라의 최소 병력 */
 export const REVIVE_TROOPS = 30000;
@@ -133,3 +133,22 @@ export const SPOILS_PER_VALUE = 1500;
 export const SPOILS_TREASURY_SHARE = 0.06;
 /** 적 침공을 막아 내면 노획: 쳐들어온 병력 × 이 값(나라 예산) */
 export const DEFEND_BOUNTY = 0.012;
+
+// ── 11-27 밸런스 조정(세계정복 무과금 4~5주) ──
+
+/** 대전투 난이도에 상대 나라 힘을 얹음: (힘 배율 − 1) × 이 값. 미국 +0.16 · 중국 +0.14 · 러시아 +0.08 · 나머지 +0.05 */
+export const GRAND_NATION_DIFF = 0.2;
+/** 상대 나라 요새 성장(수비 힘 +%)만큼 대전투가 어려워짐: 요새 +30%면 난이도 + 0.3 × 이 값 */
+export const GRAND_FORT_DIFF = 0.25;
+/** 수도를 칠 때 난이도 */
+export const GRAND_CAPITAL_DIFF = 0.15;
+/** 만든 부대 전투력만큼 대전투가 쉬워짐: 전투력 ÷ PER, 최대 MAX (예전: 300마다 … 최대 0.3 → 전투력 90이면 끝) */
+export const GRAND_ARMY_PER = 3000;
+export const GRAND_ARMY_MAX = 0.4;
+/** 점령했던 남의 도시를 잃을 때 신뢰도(예전 2) */
+export const OCC_LOSS_TRUST = 1;
+/** 패권 견제: 내 나라가 세계 점령 도시의 이 비율을 넘으면, 나와 싸우는 AI 나라의 공격 힘·횟수가 넘은 만큼 세짐 */
+export const HEGEMON_FROM = 0.3;
+export const HEGEMON_POWER = 0.5;
+/** 정적의 발언·방해 공작으로 깎이는 의회 신뢰도 하루(실제 24시간) 상한. 예전엔 상한이 없어 정적 12명이면 하루 반 만에 0이 됨 */
+export const RIVAL_TRUST_LOSS_PER_DAY = 6;

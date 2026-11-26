@@ -31,7 +31,8 @@ export type Count =
   | 'pact' // 협정·무역 계약 맺기
   | 'chore' // 내정 일 시작
   | 'vote' // 국제 회의 투표
-  | 'capture' // 도시 차지
+  | 'capture' // 도시 차지(처음 차지한 도시만)
+  | 'recapture' // 잃었던 점령 도시를 다시 차지(11-27 밸런스: 보상 작게)
   | 'rank' // 등급 오르기
   | 'island' // 분쟁 지역 차지
   | 'event' // 돌발 사건 고르기
@@ -83,6 +84,8 @@ export interface GoalsState {
   payDay?: number;
   payRuby?: number;
   payBoost?: number;
+  /** 한 번이라도 차지했던 남의 도시(11-27: 되찾기는 보상을 작게) */
+  capSeen?: string[];
 }
 export interface Spoil {
   k: SpoilKind;
@@ -116,7 +119,8 @@ export const DAILY_POOL: Array<{ id: Count; name: string; icon: string; need: nu
 // 큰 일(점령·편입·등급)은 그때마다, 작은 일(훈련 별 3개·전투 승리)은 하루 상한까지 루비가 쌓이고, 상점에서 받는다.
 export type SpoilKind = Exclude<Count, 'salary'> | 'salary';
 export const SPOILS: Record<SpoilKind, { icon: string; name: string; ruby: number; boosts?: number; small?: boolean; where: string }> = {
-  capture: { icon: '🏴', name: '도시 점령', ruby: 12, boosts: 2, where: '국방' },
+  capture: { icon: '🏴', name: '도시 점령(처음)', ruby: 12, boosts: 2, where: '국방' },
+  recapture: { icon: '🔁', name: '도시 되찾기', ruby: 4, boosts: 1, where: '국방' },
   annex: { icon: '🗳️', name: '점령 도시 편입', ruby: 18, boosts: 3, where: '국방' },
   rank: { icon: '⭐', name: '호칭 오름', ruby: 15, boosts: 3, where: '개인' },
   island: { icon: '🏝️', name: '분쟁 지역 차지', ruby: 10, boosts: 2, where: '외교' },
@@ -335,7 +339,18 @@ export function trackGoals(b: GameState | null, a: GameState): GameState {
   if (!b || b === a || b.player.countryId !== a.player.countryId) return a;
   const d = countDiff(b, a);
   const g0 = goalsOf(a);
-  const g = rollover(a, g0);
+  let g = rollover(a, g0);
+  if (d.capture) {
+    // 처음 차지한 도시만 '도시 점령', 잃었다가 다시 차지한 도시는 '도시 되찾기'
+    const me = a.player.countryId;
+    const got = FRONT.filter((c) => c.home !== me && a.world.owner[c.id] === me && b.world.owner[c.id] !== me).map((c) => c.id);
+    const seen = g.capSeen ?? [];
+    const first = got.filter((id) => !seen.includes(id));
+    if (first.length < got.length) d.recapture = got.length - first.length;
+    if (first.length) d.capture = first.length;
+    else delete d.capture;
+    if (first.length) g = { ...g, capSeen: [...seen, ...first] };
+  }
   if (!Object.keys(d).length) return g === g0 && a.goals ? a : { ...a, goals: g };
   const total = { ...g.total };
   for (const [k, v] of Object.entries(d)) total[k as Count] = (total[k as Count] ?? 0) + v;

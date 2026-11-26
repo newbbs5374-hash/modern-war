@@ -48,6 +48,8 @@ import {
   TRUCE_START_TENSION,
   WEARINESS_SCALE,
   AI_QUALITY_SHARE,
+  HEGEMON_FROM,
+  HEGEMON_POWER,
   DEFEND_BOUNTY,
   SPOILS_PER_VALUE,
   SPOILS_TREASURY_SHARE,
@@ -450,7 +452,9 @@ function invasions(ctx: Ctx) {
       (b) => b !== att && isAlive(w, b) && relationOf(w, att, b) === '전쟁',
     );
     for (const def of enemies) {
-      const bonus = (def === ctx.player ? PLAYER_TARGET_BONUS : 1) * (DETERRENCE[def] ?? 1);
+      // 11-27 밸런스(패권 견제): 내 나라가 세계를 많이 차지할수록 나와 싸우는 나라들이 더 자주·더 세게 쳐들어옴
+      const hegemon = def === ctx.player ? 1 + HEGEMON_POWER * Math.max(0, frontOf(w, def).length / FRONT.length - HEGEMON_FROM) / (1 - HEGEMON_FROM) : 1;
+      const bonus = (def === ctx.player ? PLAYER_TARGET_BONUS : 1) * (DETERRENCE[def] ?? 1) * hegemon;
       if (!rng.chance(INVADE_CHANCE * agg * bonus)) continue;
       const targets = frontOf(w, def);
       // 가까운 도시(같은 대륙)를 먼저, 수도는 마지막에, 원래 내 도시였던 곳(되찾기)을 더 노림
@@ -481,7 +485,7 @@ function invasions(ctx: Ctx) {
           allyHelp += nations[ally].troops * DEFEND_COMMIT * ALLY_DEFEND_SHARE;
         }
       }
-      const ap = power(ctx, att, commit, false, overseas);
+      const ap = power(ctx, att, commit, false, overseas) * hegemon;
       let dp = power(ctx, def, garrison + allyHelp, true, false);
       if (city.capital) dp *= CAPITAL_DEFENSE;
       dp *= instDefense(city.name) * (ctx.deployHelp[def] ?? 1);
