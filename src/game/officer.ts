@@ -1,6 +1,7 @@
 // 3단계: 장교의 성장(스탯·공훈·승급), 임무, 간이 훈련, 부관·장군, 라이벌, 불신임.
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
+import { WEEKLY_MULT, unitLevel, unitName } from '../battle3d/train3d';
 import { noteCapture } from './territory';
 import { originEff } from './origin';
 import { cabMission } from './cabinet';
@@ -216,6 +217,10 @@ export interface OfficerState {
   /** 훈련별 한 횟수(숙련) · 최고 별 */
   mastery?: Record<string, number>;
   best?: Record<string, number>;
+  /** 11-26 안 6: 3D 훈련에서 병과를 쓴 별 수(숙련 단계 → 본 3D 전투 +2%씩) · 안 2: 퍼즐 판별 최고 별 · 안 5: 주간 합동 훈련을 한 주 */
+  unitXp?: Record<string, number>;
+  puzzle3d?: Record<string, number>;
+  weekly3d?: number;
   /** 지도자 외교를 다시 할 수 있는 시각 */
   diploReadyMs?: number;
   /** 승리 조건을 처음 채운 때(계속 지키는 중). 못 채우면 null */
@@ -352,6 +357,9 @@ export type TrainResult =
       featured?: boolean;
       masteryUp?: number;
       record?: boolean;
+      /** 3D 훈련: 단계가 오른 병과 · 주간 합동 보상 받음 */
+      unitUp?: string[];
+      weekly?: boolean;
     };
 
 /** 다음 1점까지 모은 경험치 */
@@ -427,7 +435,10 @@ export function startTraining(s: GameState, name: string): GameState {
  * 훈련 결과 반영. auto(자동·즉시완료)면 별 최대 2개.
  * 별이 많을수록 스탯이 더 오르고, 져도 조금은 오름. 같은 훈련은 하루 3번째부터 절반.
  */
-export function finishTraining(s: GameState, outcome: { win: boolean; stars: number; auto: boolean }): { state: GameState; result: TrainResult } {
+export function finishTraining(
+  s: GameState,
+  outcome: { win: boolean; stars: number; auto: boolean; drill?: { kinds: string[]; puzzle?: { n: number; stars: number }; weekly?: number } },
+): { state: GameState; result: TrainResult } {
   const cur = s.officer.training;
   if (!cur) return { state: s, result: { ok: false, why: '하고 있는 훈련이 없어요' } };
   const name = cur.name;
@@ -452,7 +463,18 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
     const featured = featuredTraining(ns.worldMs, ns.player.rankIndex) === name;
     const record = stars > (best[name] ?? 0);
     if (record) best[name] = stars;
-    const mult = tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1) * (1 + facBonus(ns, '훈련소')) * (1 + originEff(ns, 'train'));
+    // 11-26: 3D 훈련 기록(병과 숙련 · 퍼즐 별 · 주간 합동은 주에 한 번 보상 ×3)
+    const dr = outcome.drill;
+    const unitUp: string[] = [];
+    let weekly = false;
+    if (dr) {
+      const ux = (o.unitXp ??= {});
+      if (stars > 0) for (const k of dr.kinds) { const b = unitLevel(ux[k] ?? 0); ux[k] = (ux[k] ?? 0) + stars; if (unitLevel(ux[k]) > b) unitUp.push(k); }
+      if (dr.puzzle) { const pz = (o.puzzle3d ??= {}); pz[dr.puzzle.n] = Math.max(pz[dr.puzzle.n] ?? 0, dr.puzzle.stars); }
+      if (dr.weekly !== undefined && o.weekly3d !== dr.weekly && stars > 0) { o.weekly3d = dr.weekly; weekly = true; }
+      for (const k of unitUp) note(ns, `${unitName(k)} 숙련 ${unitLevel(ux[k])}단계! 3D 전투에서 ${unitName(k)} +${unitLevel(ux[k]) * 2}%`);
+    }
+    const mult = (weekly ? WEEKLY_MULT : 1) * tired * (1 + 0.1 * (lvBefore - 1)) * (featured ? 2 : 1) * (1 + facBonus(ns, '훈련소')) * (1 + originEff(ns, 'train'));
     const gains: Partial<Record<StatId, number>> = {};
     const exp: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
@@ -476,7 +498,7 @@ export function finishTraining(s: GameState, outcome: { win: boolean; stars: num
       ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops + 500 * stars } };
     }
     if (lvAfter > lvBefore) note(ns, `${name} 훈련 숙련 ${MASTERY_NAME[lvAfter - 1]}(${lvAfter}단계)! 오르는 스탯 +${(lvAfter - 1) * 10}%`);
-    result = { ok: true, stars, gains, exp, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record };
+    result = { ok: true, stars, gains, exp, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record, unitUp: unitUp.length ? unitUp : undefined, weekly };
   });
   const got = (result as TrainResult).ok ? ((result as { stars?: number }).stars ?? 0) : 0;
   return { state: got ? eureka(state, { kind: 'train', name, stars: got }) : state, result };

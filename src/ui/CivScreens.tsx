@@ -756,7 +756,7 @@ function guBorders(tiles: Array<{ q: number; r: number; x: number; y: number; gu
 /** 효과에 몫(민심·점령)을 곱해 한 줄로 */
 const scaled = (e: CityEff, k: number): CityEff => Object.fromEntries(Object.entries(e).map(([key, v]) => [key, key === 'loyalty' ? v : (v as number) * k])) as CityEff;
 
-function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; onClose: () => void }) {
+function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: string; onClose: () => void }) {
   const city = cityById(id);
   const cc = C.cityCiv(state, id);
   const map = cityMap(id);
@@ -956,7 +956,7 @@ function CityModal({ state, actions, id, onClose }: ScreenProps & { id: string; 
           </span>
         ))}
       </div>
-      <AnnexBox state={state} id={id} apply={(f) => actions.apply(f)} />
+      <AnnexBox state={state} id={id} apply={(f) => actions.apply(f)} go={go} />
       {cc.loyalty < LOYALTY_OK && <p className="small warn">민심이 낮아 이 도시 생산 ×{r1(C.loyaltyMult(cc.loyalty))} (도시는 잃지 않아요)</p>}
       <div className="city-info">
         <button className="city-info-top" onClick={() => setOpen(!open)}>

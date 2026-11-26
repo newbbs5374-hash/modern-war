@@ -98,6 +98,8 @@ export const OCCUPIED_INCOME = 0.5;
 export const CIVIL_INCOME = 0.75;
 /** 편입 '민정' 단계 도시 반란 배율 */
 export const CIVIL_REBEL = 0.5;
+/** 꼭두각시 정부(11-26): 세금의 30%를 공물로 받음(자원·생산은 못 씀, 반란 없음) */
+export const PUPPET_INCOME = 0.3;
 
 /** 전령에 남기는 소식 수 */
 export const EVENT_LOG_MAX = 150;

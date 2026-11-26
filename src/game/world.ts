@@ -32,6 +32,7 @@ import {
   OCCUPIED_INCOME,
   CIVIL_INCOME,
   CIVIL_REBEL,
+  PUPPET_INCOME,
   OVERSEAS_PENALTY,
   PLAYER_TARGET_BONUS,
   TENSION_DECAY,
@@ -94,6 +95,8 @@ export interface WorldState {
   annex?: Record<string, AnnexCity>;
   /** 편입이 끝난 도시 → 새 주인 나라(이 나라 '우리 땅'으로 대접). 옛 저장은 없음 */
   annexed?: Record<string, string>;
+  /** 도시 → 바로 앞 주인(해방할 수 있는지 보려고, 11-26). 옛 저장은 없음 */
+  from?: Record<string, string>;
 }
 
 /** 편입 단계: 군정(점령 직후) → 민정(치안 확보 후) → 주민투표 → 편입 */
@@ -109,7 +112,23 @@ export interface AnnexCity {
   retryMs: number;
   /** 강화 조약으로 넘겨받은 도시(투표 없이 편입) */
   treaty?: boolean;
+  /** 처분(11-26): 없으면 편입 길. 'puppet' = 꼭두각시 정부(공물 30%, 반란 없음, 자원·생산 없음) */
+  mode?: 'puppet';
+  /** 전쟁 피해(%): 수입이 그만큼 줄고, 재건 임무·시간이 지나면 줄어듦 */
+  damage?: number;
+  /** 점령지 관리 임무(11-26): 잔당 소탕 효과 끝나는 시각 · 소탕 세기(별) · 선전 방송 찬성 보너스 · 임무별 다시 할 수 있는 시각 */
+  sweepUntil?: number;
+  sweepStars?: number;
+  propaganda?: number;
+  taskReady?: Record<string, number>;
+  /** 구호품 민심 보너스와 끝나는 시각 */
+  relief?: number;
+  reliefUntil?: number;
+  /** 하루마다 하는 일(피해 회복·꼭두각시 이탈 판정)을 마지막으로 한 시각 */
+  dayMs?: number;
 }
+/** 꼭두각시 정부를 세운 도시인가(내정 도시는 점령 도시를 따라감) */
+export const isPuppet = (w: WorldState, cityId: string) => w.annex?.[cityById(cityId).hub]?.mode === 'puppet';
 
 /** 그 도시를 '우리 땅'으로 여기는 나라: 편입했으면 편입한 나라, 아니면 처음 나라 */
 export function homeOf(w: WorldState, cityId: string): string {
@@ -216,7 +235,10 @@ export function incomeShare(w: WorldState, countryId: string): number {
   let v = 0;
   for (const c of CITIES) {
     if (w.owner[c.id] !== countryId) continue;
-    v += homeOf(w, c.id) === countryId ? c.value : c.value * (w.annex?.[c.hub]?.stage === '민정' ? CIVIL_INCOME : OCCUPIED_INCOME);
+    if (homeOf(w, c.id) === countryId) { v += c.value; continue; }
+    const a = w.annex?.[c.hub];
+    const k = a?.mode === 'puppet' ? PUPPET_INCOME : a?.stage === '민정' ? CIVIL_INCOME : OCCUPIED_INCOME;
+    v += c.value * k * (1 - Math.min(90, a?.damage ?? 0) / 100);
   }
   return v / homeValue(countryId);
 }
@@ -503,7 +525,10 @@ function rebellions(ctx: Ctx) {
     const occ = w.owner[c.id];
     if (occ === homeOf(w, c.id)) continue;
     const faithDiff = countryById(occ).faith !== countryById(c.home).faith;
-    const hold = occ === ctx.player ? ctx.playerHold.rebel * (w.annex?.[c.id]?.stage === '민정' ? CIVIL_REBEL : 1) : 1;
+    const an = w.annex?.[c.id];
+    if (occ === ctx.player && an?.mode === 'puppet') continue; // 꼭두각시 정부는 반란 대신 이탈(annex.ts)
+    const sweep = an?.sweepUntil && an.sweepUntil > ctx.t ? 1 - 0.25 * (an.sweepStars ?? 1) : 1;
+    const hold = occ === ctx.player ? ctx.playerHold.rebel * (an?.stage === '민정' ? CIVIL_REBEL : 1) * sweep : 1;
     if (!rng.chance(REBEL_CHANCE * (faithDiff ? REBEL_FAITH_MULT : 1) * hold)) continue;
     const revived = !isAlive(w, c.home);
     noteCapture(w, c.id, c.home);

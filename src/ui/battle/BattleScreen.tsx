@@ -2,6 +2,7 @@
 import { fieldRoster } from '../../game/economy';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
+import { applyOccTask, type OccTask } from '../../game/annex';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
 import { Card } from '../common';
@@ -21,11 +22,15 @@ import { RangeView } from './RangeView';
 import { FieldView } from './FieldView';
 import { MiniView } from './MiniView';
 import { Battle3DView } from './Battle3DView';
+import { Drill3DView } from './Drill3DView';
+import { unitBuffs, unitName, type DrillInfo } from '../../battle3d/train3d';
 
 export interface Outcome {
   win: boolean;
   stars: number;
   text: string;
+  /** 11-26 3D 훈련: 쓴 병과 · 퍼즐 별 · 주간 합동 */
+  drill?: DrillInfo;
 }
 
 export interface FrameProps {
@@ -35,6 +40,9 @@ export interface FrameProps {
   aides: Array<{ name: string; specialty: string; level: number; bond?: number }>;
   playerName: string;
   onEnd: (r: Outcome) => void;
+  /** 11-26 안 6: 병과 숙련 배수(3D 전투) · 배치 퍼즐 판별 별 */
+  usBuff?: Partial<Record<string, number>>;
+  puzzleStars?: Record<string, number>;
 }
 
 /** 자동전투·즉시완료를 썼는지(훈련은 별 최대 2개) */
@@ -86,7 +94,7 @@ export function BattleBar(props: {
   );
 }
 
-const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView, b3d: Battle3DView };
+const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView, b3d: Battle3DView, d3: Drill3DView };
 const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 export function BattleScreen({ state, actions, go }: ScreenProps) {
@@ -129,7 +137,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   const perks = perkBonus(o);
   const stats: Record<string, number> = { ...o.stats };
   for (const [k, v] of Object.entries(perks)) stats[k] = (stats[k] ?? 0) + v;
-  const props: FrameProps = { spec, stats, rank, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }) };
+  const props: FrameProps = { spec, stats, rank, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
@@ -137,7 +145,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
 
   const leave = () => {
     setPendingPlan(null);
-    go(plan.source === 'mission' ? 'ops' : 'training');
+    go(plan.source === 'mission' ? 'ops' : plan.source === 'occupy' ? 'home' : 'training');
   };
   const nextStage = () => {
     if (!current) return;
@@ -152,16 +160,23 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   };
   const claim = () => {
     if (!final) return;
-    if (plan.source === 'training') {
+    if (plan.source === 'occupy' && plan.occupy) {
+      const { city, task } = plan.occupy;
+      const text = actions.applyWith((s) => {
+        const r = applyOccTask(s, city, task as OccTask, final.win ? final.stars : 0);
+        return { state: r.state, out: r.text };
+      });
+      setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
+    } else if (plan.source === 'training') {
       const res = actions.applyWith((s) => {
-        const r = finishTraining(s, { win: final.win, stars: final.stars, auto: allAuto });
+        const r = finishTraining(s, { win: final.win, stars: final.stars, auto: allAuto, drill: results.find((x) => x.drill)?.drill });
         return { state: r.state, out: r.result };
       });
       if (res?.ok) {
         const gains = Object.entries(res.exp)
           .map(([k, v]) => `${k} 경험치 +${v}${res.gains[k as keyof typeof res.gains] ? ` (⬆️${state.officer.stats[k as keyof typeof state.officer.stats] + (res.gains[k as keyof typeof res.gains] ?? 0)})` : ''}`)
           .join(' · ');
-        setClaimed(`${plan.training} 훈련 ${starText(res.stars)} · ${gains}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}${res.perk ? ` · 특기 "${res.perk}"!` : ''}`);
+        setClaimed(`${plan.training} 훈련 ${starText(res.stars)} · ${gains}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}${res.perk ? ` · 특기 "${res.perk}"!` : ''}${res.weekly ? ' · 🎖️ 주간 합동 보상 ×3' : ''}${res.unitUp ? ` · 병과 숙련 ⬆️ ${res.unitUp.map(unitName).join('·')}` : ''}`);
       } else setClaimed(res && !res.ok ? res.why : '');
     } else {
       const text = actions.applyWith((s) => {
@@ -261,8 +276,8 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
                   결과 받기
                 </button>
               ) : (
-                <button className="primary" onClick={() => go(plan.source === 'training' ? 'training' : 'ops')}>
-                  {plan.source === 'training' ? '훈련 화면으로' : '작전 화면으로'}
+                <button className="primary" onClick={() => go(plan.source === 'training' ? 'training' : plan.source === 'occupy' ? 'home' : 'ops')}>
+                  {plan.source === 'training' ? '훈련 화면으로' : plan.source === 'occupy' ? '본부로' : '작전 화면으로'}
                 </button>
               )}
             </div>

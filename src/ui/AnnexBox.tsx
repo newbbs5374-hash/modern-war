@@ -2,8 +2,12 @@
 import type { GameState } from '../game/state';
 import { cityById } from '../data/cities';
 import { countryById } from '../data/world';
-import { ANNEX_LOYALTY, OK_HOURS, annexEntry, canVote, isAnnexed, milMs, startVote, voteYes } from '../game/annex';
-import { homeOf } from '../game/world';
+import {
+  ANNEX_LOYALTY, OK_HOURS, OCC_TASKS, PUPPET_FAVOR_HOME, LIBERATE_FAVOR, LIBERATE_FAME, annexEntry, canChoose, canLiberate, canOccTask, canVote, isAnnexed, liberate, liberateTo, makePuppet, milMs, startVote, voteYes, type OccTask,
+} from '../game/annex';
+import { occupyPlan, setPendingPlan } from '../battle/spec';
+import type { Screen } from './nav';
+import { ga, homeOf } from '../game/world';
 
 const H = 3600e3;
 const hrs = (ms: number) => {
@@ -20,11 +24,45 @@ export function annexTag(s: GameState, id: string): string {
   if (homeOf(s.world, id) === me) return '';
   const a = annexEntry(s, id);
   if (!a) return ' · 점령지';
+  if (a.mode === 'puppet') return ' · 🎎 꼭두각시';
   if (a.voteAt) return ' · 🗳️ 투표 중';
   return a.stage === '군정' ? ' · 🪖 군정' : a.treaty ? ' · 📜 조약 민정' : ' · 🏛️ 민정';
 }
 
-export function AnnexBox({ state, id, apply }: { state: GameState; id: string; apply: Apply }) {
+/** 점령지 관리 임무 버튼들(미니게임 한 판) */
+function OccTasks({ state, id, go }: { state: GameState; id: string; go?: (s: Screen) => void }) {
+  const c = cityById(id);
+  const a = annexEntry(state, id);
+  if (!a || !go || !c.front) return null;
+  const list = (Object.keys(OCC_TASKS) as OccTask[]).map((t) => ({ t, def: OCC_TASKS[t], why: canOccTask(state, id, t) }));
+  const shown = list.filter((x) => !x.why || /시간 뒤|국방예산|가득/.test(x.why));
+  if (!shown.length) return null;
+  return (
+    <div className="occ-tasks">
+      <b className="small">🧰 점령지 관리 임무 <small className="muted">미니게임 한 판 · 별이 많을수록 효과 큼</small></b>
+      {shown.map(({ t, def, why }) => {
+        const cost = def.cost(c.value);
+        return (
+          <button
+            key={t}
+            className="wide"
+            disabled={!!why}
+            title={why ?? ''}
+            onClick={() => {
+              setPendingPlan(occupyPlan(id, c.name, t, def.name, def.mini, (state.worldMs / 1000 + id.length * 97) >>> 0));
+              go('battle');
+            }}
+          >
+            {def.icon} {def.name}
+            <small>{why ?? `${def.desc}${cost ? ` · 💰${cost.toLocaleString('ko-KR')}` : ''}`}</small>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function AnnexBox({ state, id, apply, go }: { state: GameState; id: string; apply: Apply; go?: (s: Screen) => void }) {
   const c = cityById(id);
   const me = state.player.countryId;
   const now = state.worldMs;
@@ -38,6 +76,39 @@ export function AnnexBox({ state, id, apply }: { state: GameState; id: string; a
   }
   if (homeOf(state.world, id) === me || state.world.owner[id] !== me) return null;
   const a = annexEntry(state, id);
+  const dmg = a?.damage ? <p className="small warn">💥 전쟁 피해 {a.damage}% · 이 도시 수입 −{a.damage}% (하루 3%씩 회복, 재건 임무로 빨리)</p> : null;
+  if (a?.mode === 'puppet') {
+    return (
+      <div className="annex-box">
+        <b>🎎 꼭두각시 정부</b>
+        <p className="small">반란 없음 · 세금의 30%를 공물로 받아요 · 자원·생산은 못 써요. {ga(countryById(c.home).name)} 강해지면(원래 땅을 60% 넘게 지키면) 떨어져 나갈 수 있어요.</p>
+        {dmg}
+        <OccTasks state={state} id={id} go={go} />
+      </div>
+    );
+  }
+  const chooseWhy = canChoose(state, id);
+  const libTo = liberateTo(state, id);
+  const libWhy = canLiberate(state, id);
+  const choose = !chooseWhy && (
+    <div className="annex-choose">
+      <b className="small">이 도시를 어떻게 할까요? <small className="muted">군정 동안 고를 수 있어요 · 안 고르면 편입 길</small></b>
+      <div className="annex-choose-row">
+        <div className="annex-pick now">
+          <b>🗺️ 편입</b>
+          <small>군정 → 민정 → 주민투표. 오래 걸리지만 끝나면 우리 땅(100%). {countryById(c.home).name} 호감 크게 ↓</small>
+        </div>
+        <button className="annex-pick" onClick={() => apply((s) => makePuppet(s, id))}>
+          <b>🎎 꼭두각시 정부</b>
+          <small>바로 · 반란 없음 · 공물 30% · 자원·생산 없음 · 호감 {PUPPET_FAVOR_HOME} · 되돌릴 수 없음</small>
+        </button>
+        <button className="annex-pick" disabled={!!libWhy} title={libWhy ?? ''} onClick={() => apply((s) => liberate(s, id))}>
+          <b>🕊️ 해방</b>
+          <small>{libTo ? `${countryById(libTo).name}에 돌려줘요 · 호감 +${LIBERATE_FAVOR} · 명성 +${LIBERATE_FAME} · 연합(전쟁 중이면 휴전)` : libWhy}</small>
+        </button>
+      </div>
+    </div>
+  );
   const step = !a ? 0 : a.stage === '군정' ? 0 : a.voteAt ? 2 : 1;
   const steps = a?.treaty ? ['📜 조약', '🏛️ 민정', '🗺️ 편입'] : ['🪖 군정', '🏛️ 민정', '🗳️ 주민투표', '🗺️ 편입'];
   const shown = a?.treaty ? Math.min(step, 1) : step;
@@ -54,7 +125,7 @@ export function AnnexBox({ state, id, apply }: { state: GameState; id: string; a
   }
   return (
     <div className="annex-box">
-      <b>🗺️ 영토 편입</b>
+      <b>🏳️ 점령지 처분 · 영토 편입</b>
       <div className="annex-steps">
         {steps.map((t, i) => (
           <span key={t} className={i < shown ? 'done' : i === shown ? 'now' : ''}>
@@ -63,6 +134,9 @@ export function AnnexBox({ state, id, apply }: { state: GameState; id: string; a
         ))}
       </div>
       <p className="small">{line}</p>
+      {dmg}
+      {choose}
+      <OccTasks state={state} id={id} go={go} />
       {!a?.treaty && a?.stage === '민정' && !a.voteAt && (
         <>
           <p className="small muted">

@@ -1130,6 +1130,14 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .annex-box { margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: rgba(63, 184, 201, 0.1); border: 1px solid rgba(63, 184, 201, 0.55); }
 .annex-box.done { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.6); }
 .annex-box p { margin: 4px 0; }
+.annex-choose { margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
+.annex-choose-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.annex-pick { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; padding: 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.18); font-size: 12px; min-width: 0; }
+.annex-pick small { font-size: 10.5px; line-height: 1.35; opacity: 0.85; }
+.annex-pick.now { border-color: rgba(63, 184, 201, 0.8); background: rgba(63, 184, 201, 0.14); }
+.occ-tasks { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.occ-tasks button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1px; }
+.occ-tasks button small { font-size: 10.5px; opacity: 0.85; }
 .annex-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
 .annex-steps span { padding: 3px 4px; border-radius: 8px; text-align: center; font-size: 12px; background: rgba(0, 0, 0, 0.25); opacity: 0.6; }
 .annex-steps span.done { background: rgba(34, 197, 94, 0.25); opacity: 1; }
@@ -1338,3 +1346,29 @@ button.big { min-height: 64px; font-size: 18px; }
 .city3d-credit { position: absolute; right: 6px; bottom: 4px; font-size: 9px; color: rgba(255, 255, 255, 0.85); text-shadow: 0 0 3px #000; pointer-events: none; }
 .city3d-preview { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 2px; }
 .city3d-preview input { width: 100%; }
+
+/* ── 11-26 3D 훈련(안 1~6): 3D 미니게임 · 3D 실전 · 배치 퍼즐 · 주간 합동 ── */
+.mg-3d { background: #0b1112; }
+.mg-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+.mg-3d .mg-center { background: #0b1112cc; font-size: 13px; }
+.mg-credit { position: absolute; right: 4px; top: 2px; margin: 0; font-size: 8.5px; color: #ffffff88; pointer-events: none; text-shadow: 0 1px 1px #000; }
+.mg-3d-pad { display: flex; gap: 6px; justify-content: center; margin: 6px auto 0; max-width: 380px; }
+.mg-3d-pad button { flex: 1; min-height: 40px; font-size: 15px; }
+.mg-3d-pad button.on { border-color: #22d3ee; box-shadow: 0 0 0 2px #22d3ee55; }
+.mg-3d-label { position: absolute; transform: translate(-50%, -50%); font-size: 12px; font-weight: 700; color: #fde047; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.mg-sec { margin: 10px 0 2px; font-size: 12px; color: var(--muted); font-weight: 700; }
+.mg-pick button .mg-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; font-size: 10.5px; font-weight: 600; background: #22d3ee22; color: #67e8f9; font-style: normal; }
+.d3-pick { display: flex; flex-direction: column; gap: 8px; max-width: 420px; margin: 0 auto; }
+.d3-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.d3-grid button { min-height: 0; padding: 6px 0; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.d3-grid button b { font-size: 14px; }
+.d3-grid button small { font-size: 9px; color: #fde047; }
+.d3-grid button.done { border-color: #22c55e88; }
+.d3-grid button.on { border-color: #22d3ee; box-shadow: 0 0 0 2px #22d3ee55; }
+.d3-detail { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.d3-week { display: flex; gap: 10px; align-items: center; }
+.d3-week .d3-week-ico { font-size: 26px; }
+.d3-week .d3-week-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.d3-units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; font-size: 11px; }
+.d3-units span { padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; display: flex; justify-content: space-between; gap: 4px; }
+.d3-units span b { color: #67e8f9; }

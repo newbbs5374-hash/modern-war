@@ -14,11 +14,16 @@ import HTML from './battle3d.html?raw';
 
 const GLB_BASE = `${import.meta.env.BASE_URL}battle3d/glb/`;
 
-export interface Battle3DResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; carry?: unknown }
+export interface Battle3DResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; carry?: unknown; /** 11-26 훈련 점수 계산용 */ sim?: unknown }
 export interface Battle3DOptions {
   onEnd?(r: Battle3DResult): void; onQuit?(): void; endLabel?: string;
   /** 공성전: 이 막의 전장 · 넘어온 부대 · 예산 · 시작 지휘력 · 적 체력 배수 · 위에 보일 막 이름 */
   stage?: unknown; preset?: unknown[]; budget?: number; cp0?: number; foeHp?: number; actLabel?: string; naval?: number;
+  /** 11-26 훈련 전장: 배치 고정(카드 없이 바로 개시) · 병과 숙련 배수 · 전투 중 땅을 누르면(집중 사격·정찰) · 오른쪽 막대 · 끝 글 */
+  lockDeploy?: boolean; usBuff?: Record<string, number>;
+  onTap?(S: unknown, x: number, z: number, u: unknown): string | void;
+  bar?(S: unknown): { label: string; pct: number; txt: string };
+  endText?(S: unknown, win: boolean, timeout: boolean): string;
 }
 
 /** 3D 전투를 root 안에 띄움. 돌려주는 함수를 부르면 모두 정리함 */
@@ -655,9 +660,9 @@ const S=createSim({
       $("#endt").style.color=win?"var(--us)":"var(--foe)";
       const mine=S.units.filter(u=>u.side==="us"&&!u.d.missile&&u.kind!=="cvjet"), lost=mine.filter(u=>!u.alive).length;
       const winTxt=ST.id==="street"?"거점 4곳을 모두 차지했어요. ":ST.id==="core"?"지휘소를 부수고 최후 저항까지 막아 냈어요. ":"적 지휘소를 무너뜨렸어요. ";
-      $("#endp").textContent=(win?winTxt:timeout?`제한 시간 ${ST.timeLimit/60}분이 지났어요. `:"아군 부대가 모두 쓰러졌어요. ")+`걸린 시간 ${fmt(S.simT)} · 아군 손실 ${lost}/${mine.length}`;
+      if(opts.endText)$("#endp").textContent=opts.endText(S,win,timeout);else $("#endp").textContent=(win?winTxt:timeout?`제한 시간 ${ST.timeLimit/60}분이 지났어요. `:"아군 부대가 모두 쓰러졌어요. ")+`걸린 시간 ${fmt(S.simT)} · 아군 손실 ${lost}/${mine.length}`;
       $("#end").hidden=false;
-      lastResult={win,timeout,t:S.simT,lost,total:mine.length,carried:mine.filter(u=>u.carried).length,carry:carryFrom(S,opts.naval||0)};
+      lastResult={win,timeout,t:S.simT,lost,total:mine.length,carried:mine.filter(u=>u.carried).length,carry:carryFrom(S,opts.naval||0),sim:S};
     },win?1600:900);
   },
 });
@@ -807,6 +812,7 @@ function muzzlePos(u){
 function renderUnits(dt,time){
   for(const u of S.units){
     const r=u.root, p=u.parts, by=baseY(u);
+    if(u.hidden){r.visible=false;continue;}else if(r.visible===false&&u.alive)r.visible=true;
     const k=Math.min(1,dt*12);
     r.position.x+=(u.x-r.position.x)*k; r.position.z+=(u.z-r.position.z)*k;
     if(!u.alive){
@@ -923,7 +929,8 @@ function hud(){
   const us=S.units.filter(u=>u.side==="us"&&!u.d.missile&&u.kind!=="cvjet"), hq=S.units.find(u=>u.kind==="hq");
   const usHp=us.reduce((s,u)=>s+u.hp,0), usMax=us.reduce((s,u)=>s+u.max,0)||1;
   $("#usb").style.width=(usHp/usMax*100)+"%"; $("#usn").textContent=Math.round(usHp/usMax*100)+"%";
-  if(ST.id==="street"){const n=S.pts.filter(p=>p.own==="us").length;$("#foeLabel").textContent="차지한 거점";$("#hqb").style.width=(100-n/S.pts.length*100)+"%";$("#hqn").textContent=`${n}/${S.pts.length}`;}
+  if(opts.bar){const b=opts.bar(S);$("#foeLabel").textContent=b.label;$("#hqb").style.width=Math.max(0,Math.min(100,b.pct))+"%";$("#hqn").textContent=b.txt;}
+  else if(ST.id==="street"){const n=S.pts.filter(p=>p.own==="us").length;$("#foeLabel").textContent="차지한 거점";$("#hqb").style.width=(100-n/S.pts.length*100)+"%";$("#hqn").textContent=`${n}/${S.pts.length}`;}
   else if(hq&&hq.alive||!ST.waves){if(hq){$("#hqb").style.width=(hq.hp/hq.max*100)+"%";$("#hqn").textContent=Math.round(hq.hp/hq.max*100)+"%";}}
   else{const left=S.units.filter(u=>u.alive&&u.side==="foe").length;$("#foeLabel").textContent=`최후 저항 ${S.wave}/${ST.waves.length}차`;$("#hqb").style.width=Math.min(100,left*8)+"%";$("#hqn").textContent=`남은 적 ${left}`;}
   if(S.phase==="battle"||S.phase==="aim"){
@@ -949,12 +956,12 @@ function unitIcon(kind){
 }
 function buildTabs(){
   const t=$("#tabs");t.innerHTML="";
-  TABS.filter(tab=>!(URBAN&&tab.id==="sea")).forEach(tab=>{const b=document.createElement("button");b.type="button";b.className="b3-tab";b.setAttribute("role","tab");b.setAttribute("aria-selected",String(tab.id===selTab));b.dataset.t=tab.id;
-    b.textContent=tab.name;const n=document.createElement("b");n.id="cnt-"+tab.id;b.append(n);b.onclick=()=>{selTab=tab.id;selKind=tab.kinds[0];buildTabs();buildCards();refreshDeploy();};t.append(b);});
+  TABS.filter(tab=>!(URBAN&&tab.id==="sea")&&(!ST.kinds||tab.kinds.some(k=>ST.kinds.includes(k)))).forEach(tab=>{const b=document.createElement("button");b.type="button";b.className="b3-tab";b.setAttribute("role","tab");b.setAttribute("aria-selected",String(tab.id===selTab));b.dataset.t=tab.id;
+    b.textContent=tab.name;const n=document.createElement("b");n.id="cnt-"+tab.id;b.append(n);b.onclick=()=>{selTab=tab.id;selKind=tab.kinds.find(k=>!ST.kinds||ST.kinds.includes(k));buildTabs();buildCards();refreshDeploy();};t.append(b);});
 }
 function buildCards(){
   const wrap=$("#cards");wrap.innerHTML="";
-  const kinds=TABS.find(t=>t.id===selTab).kinds;
+  const kinds=TABS.find(t=>t.id===selTab).kinds.filter(k=>!ST.kinds||ST.kinds.includes(k));
   wrap.style.gridTemplateColumns=`repeat(${Math.max(6,kinds.length)},1fr)`;
   kinds.forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-card";b.id="card-"+k;b.setAttribute("aria-pressed",String(k===selKind));
     b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);
@@ -964,7 +971,7 @@ function buildCards(){
 }
 function buildCmds(){
   const w=$("#cmds");w.innerHTML="";
-  CMD_ORDER.forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-cmd";b.dataset.k=k;b.innerHTML=`${CMD[k].name}<small>지휘력 ${CMD[k].cost}</small><span class="b3-fill"></span>`;
+  CMD_ORDER.filter(k=>!ST.cmds||ST.cmds.includes(k)).forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-cmd";b.dataset.k=k;b.innerHTML=`${CMD[k].name}<small>지휘력 ${CMD[k].cost}</small><span class="b3-fill"></span>`;
     b.onclick=()=>{if(aiming===k){cancelAim();return;}if(aiming)cancelAim();startAim(k);};w.append(b);});
   const pp=$("#pips");pp.innerHTML="";for(let i=0;i<10;i++)pp.append(document.createElement("i"));
 }
@@ -978,6 +985,7 @@ function refreshDeploy(){
 }
 
 function placeAt(i){
+  if(opts.lockDeploy){$("#dhint").textContent="이 훈련은 부대가 정해져 있어요";return;}
   const t=depTiles[i]; const j=deploy.findIndex(d=>d.tile===i);
   if(j>=0&&deploy[j].carried){$("#dhint").textContent="앞 막에서 살아남은 부대예요(체력 그대로 이어서 싸워요)";return;}
   if(j>=0){scene.remove(deploy[j].u.root);S.units=S.units.filter(u=>u!==deploy[j].u);deploy.splice(j,1);refreshDeploy();return;}
@@ -987,11 +995,12 @@ function placeAt(i){
 }
 function setupDeploy(useDefault){
   clearUnits(); fx.splice(0).forEach(f=>scene.remove(f.o)); vq.length=0; lastResult=null;
-  const prev=useDefault?(opts.preset?(URBAN?fillReinf(opts.preset,BUDGET_NOW):opts.preset):defaultDeploy()):deploy.map(d=>({kind:d.kind,tile:d.tile,hp:d.hp,carried:d.carried}));
-  const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
+  const prev=useDefault?(opts.preset?(URBAN&&!opts.lockDeploy&&!ST.drill?fillReinf(opts.preset,BUDGET_NOW):opts.preset):defaultDeploy()):deploy.map(d=>({kind:d.kind,tile:d.tile,hp:d.hp,carried:d.carried}));
+  const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp,usBuff:opts.usBuff}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
   depTiles.forEach(t=>{t.m.visible=t.e.visible=true;});
   $("#deployUI").hidden=false;$("#battleUI").hidden=true;$("#end").hidden=true;$("#aim").hidden=true;
-  $("#goal").textContent=opts.preset?"살아남은 부대가 이어서 싸워요 · 보충 부대를 더하세요":"부대를 배치하세요";$("#log").innerHTML="";
+  if(opts.lockDeploy){$("#tabs").hidden=true;$("#cards").hidden=true;$("#clear").hidden=true;$("#dhint").textContent="부대가 정해진 훈련이에요 · 시점을 보고 '작전 개시'";}
+  $("#goal").textContent=ST.drill?ST.goal:opts.preset?"살아남은 부대가 이어서 싸워요 · 보충 부대를 더하세요":"부대를 배치하세요";$("#log").innerHTML="";
   refreshDeploy(); hud();
 }
 function startBattle(){
@@ -1009,7 +1018,7 @@ let aimMark=null;
 function pick(ev){const r=cvs.getBoundingClientRect();ndc.set((ev.clientX-r.left)/r.width*2-1,-(ev.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera);}
 function groundPoint(ev){pick(ev);const p=new THREE.Vector3();return ray.ray.intersectPlane(ground,p)?p:null;}
 /* 시점: 한 손가락 끌기 = 이동 · 두 손가락 = 확대/축소 + 회전 + 기울이기 · 마우스 휠 = 확대 · 오른쪽 끌기 = 회전 */
-const CAM0={tx:0,tz:2.6,dist:34.1,yaw:0,pitch:.912};
+const CAM0=Object.assign({tx:0,tz:2.6,dist:34.1,yaw:0,pitch:.912},ST.cam||{});
 const cam=Object.assign({},CAM0);
 function clampCam(){cam.dist=Math.max(11,Math.min(46,cam.dist));cam.pitch=Math.max(.45,Math.min(1.4,cam.pitch));cam.tx=Math.max(-11,Math.min(11,cam.tx));cam.tz=Math.max(-15,Math.min(15,cam.tz));}
 function panBy(dx,dy){ // 손가락을 따라 땅이 움직이게
@@ -1044,6 +1053,7 @@ function endPtr(ev){
   if(ptrs.size>0){gest=null;drag=null;return;}
   const d=drag; drag=null; gest=null;
   if(!d||multi||d.btn===2||d.shift){multi=false;return;}
+  if(S.phase==="battle"&&!d.moved&&opts.onTap){const p=groundPoint(ev);if(p){let best=null,bd=1.3;for(const u of S.units){if(!u.alive||u.side!=="foe"||u.hidden)continue;const q=Math.hypot(u.x-p.x,u.z-p.z);if(q<bd){bd=q;best=u;}}const msg=opts.onTap(S,p.x,p.z,best);if(msg)log(msg,"c");if(best&&S.focus===best.id)flash(new THREE.Vector3(best.x,unitY(best)+.4,best.z),.5);}return;}
   if(S.phase==="deploy"&&!d.moved){pick(ev);const hit=ray.intersectObjects(depTiles.map(t=>t.m))[0];if(hit)placeAt(hit.object.userData.i);return;}
   if(S.phase==="aim"&&aimMark&&aimMark.visible){const p=aimMark.position.clone();const k=aiming;
     if(k==="para"&&isSea(p.x,p.z,-.3)){$("#aimtxt").textContent="공수 투입은 땅에만 할 수 있어요";return;}
@@ -1083,7 +1093,7 @@ function resize(){
 window.addEventListener("resize",resize);
 $("#again").textContent=opts.endLabel||"다시 배치";
 $("#opname").textContent=ST.op; $("#optag").textContent=opts.actLabel||(URBAN?ST.name:"육해공 시험판");
-$("#budmax").textContent=BUDGET_NOW; if(opts.preset)$("#budname").textContent="보충 예산";
+$("#budmax").textContent=BUDGET_NOW; if(opts.preset&&!ST.drill)$("#budname").textContent="보충 예산"; if(opts.lockDeploy)$(".b3-budget").hidden=true;
 if(URBAN)$("#dhint").textContent="카드를 고르고 칸을 누르면 배치 · 시가지라 해군은 못 들어와요(살아남은 배는 지휘력으로 도와요)";
 if(opts.onQuit){$("#quit").hidden=false;$("#quit").onclick=()=>opts.onQuit();}
 $("#again").onclick=()=>{if(opts.onEnd&&lastResult)opts.onEnd(lastResult);else setupDeploy(false);};

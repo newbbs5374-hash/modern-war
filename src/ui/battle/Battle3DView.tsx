@@ -16,7 +16,7 @@ const NEXT_TEXT = [
   '도심 한가운데 광장에 적 지휘소가 있어요. 지휘소를 부수면 끝이 아니에요. 최후 저항 부대가 양옆과 뒤에서 두 번 몰려와요. 모두 막아 내면 도시를 차지해요.',
 ];
 
-export function Battle3DView({ spec, onEnd }: FrameProps) {
+export function Battle3DView({ spec, onEnd, usBuff }: FrameProps) {
   const siege = spec.variant === 'siege';
   const ref = useRef<HTMLDivElement>(null);
   const endRef = useRef(onEnd);
@@ -40,6 +40,8 @@ export function Battle3DView({ spec, onEnd }: FrameProps) {
       off = mountBattle3D(ref.current, {
         stage,
         foeHp,
+        // 11-26 안 6: 3D 훈련으로 쌓은 병과 숙련(최대 +10%)
+        usBuff: usBuff as Record<string, number> | undefined,
         budget: siege ? budgetOf(act) : undefined,
         preset: siege && act > 0 && c ? placeCarried(c) : undefined,
         cp0: siege && act > 0 && c ? navalCp(c) : undefined,
