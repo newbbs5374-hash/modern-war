@@ -9,6 +9,9 @@ import { createSideBattle, finishSide, type SideGoal } from './side';
 import type { BattleSpec } from './spec';
 import { createField, finishField } from './field';
 import { autoMini } from './minigames';
+import { fieldById } from '../battle3d/fields';
+import { endOf, outcomeOf } from '../battle3d/outcome';
+import { createSim, defaultPicks, runToEnd } from '../battle3d/sim';
 
 export interface AutoInput {
   spec: BattleSpec;
@@ -29,6 +32,13 @@ export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: bool
   const d = spec.difficulty;
   const seed = spec.seed;
   switch (spec.frame) {
+    case 'b3d': {
+      // 3D 메인 전투: 기본 배치로 명령 없이 끝까지
+      const f = fieldById(spec.variant);
+      const sim = createSim(f, defaultPicks(f));
+      runToEnd(sim);
+      return outcomeOf(endOf(sim));
+    }
     case 'grid':
       return finishGrid(createGridBattle({ goal: spec.variant as Goal, difficulty: d, rank, stats, aides, seed, squadSize: spec.squadSize, weather: spec.weather, enemy: spec.enemy })).result!;
     case 'side':

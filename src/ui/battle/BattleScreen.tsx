@@ -1,6 +1,6 @@
 // 전투 화면: 훈련·임무·작전(여러 판)·대전투·승급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
 import { fieldRoster } from '../../game/economy';
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Suspense, createContext, lazy, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
@@ -85,7 +85,17 @@ export function BattleBar(props: {
   );
 }
 
-const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView };
+/** 3D 메인 전투(three.js라 무거워서 열 때만 불러옴) */
+const Battle3D = lazy(() => import('./Battle3D'));
+function Battle3DView(props: FrameProps) {
+  return (
+    <Suspense fallback={<div className="b3d-host b3d-wait">3D 전장 불러오는 중…</div>}>
+      <Battle3D {...props} />
+    </Suspense>
+  );
+}
+
+const VIEWS = { b3d: Battle3DView, grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView };
 const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 export function BattleScreen({ state, actions, go }: ScreenProps) {
