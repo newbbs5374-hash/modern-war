@@ -16,6 +16,7 @@ import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { deployOf } from '../game/deploy';
+import { TRIBUTE, acceptSurrender, canAccept, canDemand, canSurrender, demandChance, doDemand, doSurrender, lordOf } from '../game/surrender';
 import { MY_TARIFF_HOURS, MY_TARIFF_RATE, canDeal, canTariff, dealCost, doDeal, doTariff, tariffBetween } from '../game/pressure';
 import { scoutView } from '../game/spy';
 import { landOwners, provincesOf } from '../game/territory';
@@ -237,11 +238,49 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                           );
                         }}
                       >
-                        {act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : act === '연합 깨기' ? '💔' : '🤝'} {act}
+                        {act === '선전포고' && lordOf(state, me) === id ? '🗽 독립 전쟁' : <>{act === '선전포고' ? '⚔️' : act === '휴전 제안' ? '🕊️' : act === '연합 깨기' ? '💔' : '🤝'} {act}</>}
                         <small>{why ?? (act === '선전포고' ? '' : act === '연합 깨기' ? '언제든' : `성공 ${Math.round(diploChance(state, id, act) * 100)}%`)}</small>
                       </button>
                     );
                   })}
+                </div>
+              )}
+              {id !== me && (lordOf(state, me) === id || lordOf(state, id) === me || relationOf(w, me, id) === '전쟁') && (
+                <div className="cede-row">
+                  <small className="muted" style={{ flexBasis: '100%' }}>
+                    🏳️ 항복 ·{' '}
+                    {lordOf(state, me) === id
+                      ? `우리는 ${c.name}의 속국(공물 ${Math.round(TRIBUTE * 100)}%) · 선전포고하면 독립 전쟁`
+                      : lordOf(state, id) === me
+                        ? `${c.name}는 우리 속국(공물 ${Math.round(TRIBUTE * 100)}% 받음)`
+                        : '크게 이기면 속국으로 받고, 지면 항복해 판을 이어 가요'}
+                  </small>
+                  {!canAccept(state, id) && (
+                    <button className="primary" onClick={() => setMsg(actions.applyWith((s) => { const r = acceptSurrender(s, id); return { state: r.state, out: r.text }; }) ?? '')}>
+                      🏳️ 항복 받기
+                      <small>{c.name}가 항복을 제안했어요</small>
+                    </button>
+                  )}
+                  {relationOf(w, me, id) === '전쟁' && (
+                    <button className="primary" disabled={!!canDemand(state, id)} title={canDemand(state, id) ?? ''} onClick={() => setMsg(actions.applyWith((s) => { const r = doDemand(s, id); return { state: r.state, out: r.text }; }) ?? '')}>
+                      📜 항복 요구
+                      <small>{canDemand(state, id) ?? `성공 ${Math.round(demandChance(state, id) * 100)}%`}</small>
+                    </button>
+                  )}
+                  {relationOf(w, me, id) === '전쟁' && (
+                    <button
+                      className="danger"
+                      disabled={!!canSurrender(state, id)}
+                      title={canSurrender(state, id) ?? ''}
+                      onClick={() => {
+                        if (!window.confirm(`${c.name}에 항복할까요?\n전쟁이 끝나고 속국이 돼요. 국방예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요(신뢰 −10 · 명성 −20).\n나중에 선전포고로 독립 전쟁을 할 수 있어요.`)) return;
+                        setMsg(actions.applyWith((s) => { const r = doSurrender(s, id); return { state: r.state, out: r.text }; }) ?? '');
+                      }}
+                    >
+                      🏳️ 항복하기
+                      <small>{canSurrender(state, id) ?? '속국이 돼요'}</small>
+                    </button>
+                  )}
                 </div>
               )}
               {id !== me && (
