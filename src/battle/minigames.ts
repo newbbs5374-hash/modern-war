@@ -79,18 +79,18 @@ export const MINIGAMES: MiniDef[] = [
 
 export const miniById = (id: string): MiniDef | undefined => MINIGAMES.find((m) => m.id === id);
 
-/** 이 훈련에서 나오는 미니게임(켜진 것). 모두 꺼져 있으면 전부 */
+/** 이 훈련에서 나오는 미니게임(켜진 것).
+ *  11-26 대장 지시: 훈련에서 2D 미니게임은 모두 뺌 → 훈련에는 3D 미니게임(three)만 나옴.
+ *  2D 미니게임 목록은 점령지 관리 임무가 아직 쓰므로 남겨 둠. */
 export function minisFor(training: string): MiniDef[] {
-  const all = MINIGAMES.filter((m) => m.training === training);
-  const on = all.filter((m) => m.on);
-  return on.length ? on : all;
+  return MINIGAMES.filter((m) => m.training === training && m.on && m.three);
 }
 
-/** 고르지 않았으면 씨앗으로 하나 */
-export function pickMini(training: string, seed: number, want?: string): MiniDef {
+/** 고른 미니게임(3D만). 없으면 undefined → 훈련은 3D 실전으로 */
+export function pickMini(training: string, seed: number, want?: string): MiniDef | undefined {
   const list = minisFor(training);
-  const flat = list.filter((m) => !m.three);
-  return list.find((m) => m.id === want) ?? (flat.length ? flat : list)[Math.abs(seed) % (flat.length || list.length)];
+  if (!list.length) return undefined;
+  return list.find((m) => m.id === want) ?? list[Math.abs(seed) % list.length];
 }
 
 /** 계급이 오르면 조금씩 어려워짐(1 ~ 2) */

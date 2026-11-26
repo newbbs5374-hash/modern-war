@@ -776,7 +776,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
             <Chip icon="🔥" value={featured} label="오늘 2배" />
           </div>
           <Help title="훈련">
-            <p>훈련 일정은 실제 4시간마다 1개씩 차요(최대 {DRILL_MAX}개). 훈련은 직접 하는 미니게임이에요.</p>
+            <p>훈련 일정은 실제 4시간마다 1개씩 차요(최대 {DRILL_MAX}개). 훈련은 직접 하는 3D 훈련이에요(3D 실전·사격장·3D 미니게임·배치 퍼즐).</p>
             <ul>
               <li>훈련하면 스탯 경험치를 받아요. 별이 많을수록 많이 받고, 져도 조금 받아요. 경험치가 차면 스탯 +1.</li>
               <li>🤖 자동·⏩ 즉시완료를 쓰면 별은 최대 2개.</li>
@@ -910,7 +910,7 @@ function WeeklyCard({ state, onStart }: { state: ScreenProps['state']; onStart: 
 function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
   const minis = minisFor(name);
   const three = threeFor(name);
-  const [mini, setMini] = useState(minis[0]?.id);
+  const [mini, setMini] = useState((three[0] ?? minis[0])?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;
   const t = TRAININGS.find((x) => x.name === name)!;
@@ -934,13 +934,12 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       }
     >
       <p>
-        🎮 미니게임·🪖 3D 훈련 {minis.length + three.length}개 중 고르기 · 계급이 오를수록 빨라지고 어려워져요
+        🪖 3D 훈련 {minis.length + three.length}개 중 고르기 · 계급이 오를수록 빨라지고 어려워져요
         {featured ? ' · 🔥 오늘 2배' : ''}
       </p>
       {(
         [
-          ['🎮 미니게임', minis.filter((m) => !m.three).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '' }))],
-          ['🧊 3D 미니게임', minis.filter((m) => m.three).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
+          ['🧊 3D 미니게임', minis.map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
           ['🪖 3D 실전 훈련', three.map((m) => ({ id: m.id, name: m.name, how: m.how, tag: m.tag }))],
         ] as const
       )

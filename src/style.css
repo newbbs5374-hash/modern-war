@@ -1338,6 +1338,14 @@ button.big { min-height: 64px; font-size: 18px; }
 .fp-card small { font-size: 10px; opacity: 0.75; }
 .fp-check { position: absolute; top: 4px; right: 6px; font-style: normal; color: #3cc2bf; font-weight: 700; }
 .fp-count .bad { color: #f0954a; }
+/* 3D 도시(11/26 서울 시험) */
+.city3d { position: relative; width: 100%; height: 420px; border-radius: 10px; overflow: hidden; background: #1b2430; }
+.city3d-canvas { position: absolute; inset: 0; touch-action: none; }
+.city3d-canvas canvas { width: 100% !important; height: 100% !important; display: block; }
+.city3d-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; color: #f1f5f9; font-size: 13px; }
+.city3d-credit { position: absolute; right: 6px; bottom: 4px; font-size: 9px; color: rgba(255, 255, 255, 0.85); text-shadow: 0 0 3px #000; pointer-events: none; }
+.city3d-preview { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 2px; }
+.city3d-preview input { width: 100%; }
 
 /* ── 11-26 3D 훈련(안 1~6): 3D 미니게임 · 3D 실전 · 배치 퍼즐 · 주간 합동 ── */
 .mg-3d { background: #0b1112; }
