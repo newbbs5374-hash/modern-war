@@ -150,6 +150,8 @@ const UNIT_SIZE: Record<string, number> = {
   항공모함: 21, 강습상륙함: 18, 구축함: 16, "레이저 방공함": 16, 잠수함: 15, "원자력 잠수함": 16,
   폭격기: 16, 전투기: 14, 무인드론: 12, 공격헬기: 13,
   전차: 12, 기갑병: 12, 포병: 12, 미사일: 13, 방공부대: 12, 보병: 11, 특수부대: 11,
+  탄도미사일: 13, 다연장로켓: 12, "장거리 방공": 12, "해안 미사일": 12, 상륙장갑차: 12, "바다 드론": 11,
+  "정찰 무인기": 12, "스텔스 전투기": 14, 조기경보기: 16, "지상 공격기": 15,
 };
 
 /** 옛 코드 그림(실제 그림 파일이 없을 때만) */
@@ -164,17 +166,26 @@ function CodeUnit({ name, s, color }: { name: string; s: number; color: string }
       return <Sub s={0.7 * s} color={color} />;
     case "구축함":
     case "레이저 방공함":
+    case "바다 드론":
       return <Escort s={0.8 * s} color={color} />;
     case "폭격기":
+    case "조기경보기":
+    case "지상 공격기":
       return <Bomber s={0.6 * s} color={color} />;
     case "무인드론":
+    case "정찰 무인기":
       return <Drone s={0.7 * s} color={color} />;
     case "공격헬기":
       return <Heli s={0.8 * s} color={color} />;
     case "전투기":
+    case "스텔스 전투기":
       return <Jet s={0.65 * s} color={color} />;
     case "미사일":
     case "방공부대":
+    case "탄도미사일":
+    case "다연장로켓":
+    case "장거리 방공":
+    case "해안 미사일":
       return <Truck s={0.7 * s} color={color} missile />;
     case "보병":
     case "특수부대":

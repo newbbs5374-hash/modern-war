@@ -71,12 +71,12 @@ export function trainingScale(name: string, rank: number): string {
 /** 훈련 = 3D 훈련 1판(11-26: 2D 미니게임은 훈련에서 뺌). mini = 고른 훈련 id(없으면 그 훈련의 3D 실전) */
 export function trainingPlan(name: string, rank: number, seed: number, mini?: string): BattlePlan {
   void rank;
-  const m = mini && !/^(d3-|c3-|p3|w3)/.test(mini) ? pickMini(name, seed, mini) : undefined;
+  const m = mini && !/^(d3-|c3-|n3-|p3|w3)/.test(mini) ? pickMini(name, seed, mini) : undefined;
   if (m && m.id === mini) {
     return { title: `${name} 훈련 · ${m.name}`, source: 'training', training: name, mainIdx: 0, stages: [{ frame: 'mini', variant: m.id, title: `${name} 훈련`, difficulty: 1, seed }] };
   }
   // 3D 훈련(실전 d3-* · 사격장 c3-* · 배치 퍼즐 p3 · 주간 합동 w3). 고르지 않았으면 그 훈련의 3D 실전
-  const id = mini && /^(d3-|c3-|p3|w3)/.test(mini) ? mini : (threeFor(name).find((x) => x.tag === '3D 실전') ?? threeFor(name)[0])?.id ?? 'd3-tac';
+  const id = mini && /^(d3-|c3-|n3-|p3|w3)/.test(mini) ? mini : (threeFor(name).find((x) => x.tag === '3D 실전') ?? threeFor(name)[0])?.id ?? 'd3-tac';
   const t3 = threeName(id);
   return { title: `${name} 훈련 · ${t3}`, source: 'training', training: name, mainIdx: 0, stages: [{ frame: 'd3', variant: id, title: `${name} 훈련`, difficulty: 1, seed }] };
 }

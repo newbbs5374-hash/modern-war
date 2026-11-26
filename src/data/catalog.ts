@@ -49,6 +49,17 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
   { name: '잠수함', domain: '해', role: '숨어서 기습', rank: 7 },
   { name: '미사일', domain: '공', role: '한 번 쓰고 사라짐, 아주 멀리', rank: 8 },
   { name: '항공모함', domain: '해', role: '바다 위 비행장, 함재기 출격', rank: 9 },
+  // 새 병과 10개(11-26)
+  { name: '상륙장갑차', domain: '육', role: '바다를 헤엄쳐 건너 땅에 바로 올라감', rank: 3 },
+  { name: '다연장로켓', domain: '육', role: '로켓 12발을 한꺼번에 넓게 뿌림', rank: 4 },
+  { name: '해안 미사일', domain: '육', role: '바닷가에서 적 군함을 멀리서 잡음', rank: 5 },
+  { name: '장거리 방공', domain: '육', role: '멀리서 오는 미사일·폭격기를 떨어뜨림', rank: 6 },
+  { name: '탄도미사일', domain: '육', role: '아주 멀리 쏘는 큰 미사일, 요격당할 수 있음', rank: 8 },
+  { name: '정찰 무인기', domain: '공', role: '숨은 적을 찾아 포격이 더 잘 맞게 함', rank: 2 },
+  { name: '조기경보기', domain: '공', role: '하늘의 눈, 둘레 공군 사거리·요격 ↑', rank: 6 },
+  { name: '지상 공격기', domain: '공', role: '하늘에서 맴돌며 땅을 계속 때림', rank: 6 },
+  { name: '스텔스 전투기', domain: '공', role: '레이더에 잘 안 잡힘, 들키기 전엔 먼저 때림', rank: 8 },
+  { name: '바다 드론', domain: '해', role: '싸고 빠른 자폭 보트, 큰 배 사냥', rank: 3 },
   // 독점 병과(몇 나라만, data/specials.ts EXCLUSIVES)
   { name: '강습상륙함', domain: '해', role: '보병을 싣고 섬에 바로 상륙, 바다 위 보급 기지', rank: 6 },
   { name: '원자력 잠수함', domain: '해', role: '우라늄 원자로라 멀리 가도 지치지 않음, 더 깊이 숨음', rank: 8 },
@@ -86,9 +97,10 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     name: '육군',
     icon: '🪖',
     groups: [
-      { name: '보병', icon: '🪖', units: ['보병', '기갑병'] },
+      { name: '보병', icon: '🪖', units: ['보병', '기갑병', '상륙장갑차'] },
       { name: '특수전', icon: '🥷', units: ['특수부대', '해킹부대'] },
       { name: '기갑·화력', icon: '🛡️', units: ['전차', '포병', '방공부대'] },
+      { name: '미사일·방공', icon: '🚀', units: ['다연장로켓', '탄도미사일', '해안 미사일', '장거리 방공'] },
     ],
   },
   {
@@ -98,6 +110,7 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     groups: [
       { name: '수상함', icon: '🚢', units: ['구축함', '항공모함'] },
       { name: '잠수함', icon: '🫧', units: ['잠수함'] },
+      { name: '무인정', icon: '🚤', units: ['바다 드론'] },
       { name: '독점 병과', icon: '👑', units: ['강습상륙함', '원자력 잠수함', '레이저 방공함'] },
     ],
   },
@@ -106,8 +119,9 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     name: '공군',
     icon: '✈️',
     groups: [
-      { name: '무인기', icon: '🛸', units: ['무인드론'] },
+      { name: '무인기', icon: '🛸', units: ['무인드론', '정찰 무인기'] },
       { name: '항공기', icon: '✈️', units: ['공격헬기', '전투기', '폭격기'] },
+      { name: '첨단 항공기', icon: '🛩️', units: ['스텔스 전투기', '조기경보기', '지상 공격기'] },
       { name: '미사일', icon: '🚀', units: ['미사일'] },
     ],
   },

@@ -1336,7 +1336,7 @@ export function unitTechLock(s: GameState, unit: string, variant?: unknown): str
   if (t && !hasTech(s, t.id)) return `${t.name} 연구 필요`;
   const dom = UNITS.find((u) => u.name === unit)?.domain;
   if (dom === '해' && !hasDistrict(s, 'harbor')) return '바닷가 도시에 항만 구역이 필요해요(사회 › 도시)';
-  if (['공격헬기', '전투기', '폭격기'].includes(unit) && !hasDistrict(s, 'airfield')) return '도시에 비행장 구역이 필요해요(사회 › 도시)';
+  if (['공격헬기', '전투기', '폭격기', '스텔스 전투기', '조기경보기', '지상 공격기'].includes(unit) && !hasDistrict(s, 'airfield')) return '도시에 비행장 구역이 필요해요(사회 › 도시)';
   return null;
 }
 

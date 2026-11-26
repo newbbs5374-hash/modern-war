@@ -74,6 +74,8 @@ export const FIELD_KIND_OF: Record<string, FKind> = {
   전차: 'tank', 포병: 'artillery', 미사일: 'artillery', 방공부대: 'aa', 무인드론: 'drone',
   공격헬기: 'fighter', 전투기: 'fighter', 폭격기: 'fighter',
   구축함: 'destroyer', 잠수함: 'submarine', 항공모함: 'carrier',
+  탄도미사일: 'artillery', 다연장로켓: 'artillery', '해안 미사일': 'artillery', '장거리 방공': 'aa', 상륙장갑차: 'infantry',
+  '정찰 무인기': 'drone', '바다 드론': 'drone', '스텔스 전투기': 'fighter', 조기경보기: 'fighter', '지상 공격기': 'fighter',
 };
 
 const S = (d: SpecialDef) => d;
