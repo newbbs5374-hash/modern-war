@@ -5,11 +5,11 @@
   <svg id="reticle" viewBox="0 0 120 120" fill="none" stroke="#fff" stroke-width="1.5"><path d="M10 30V10h20M90 10h20v20M110 90v20H90M30 110H10V90"/><path d="M60 48v-14M60 72v14M48 60H34M72 60h14"/><circle cx="60" cy="60" r="2" fill="#fff"/></svg>
 
   <div class="b3-hud" id="top">
-    <div class="b3-row"><span class="b3-op">OP <b>COASTLINE-05</b> · 육해공 시험판</span><span class="b3-clock" id="clock">T+00:00</span></div>
+    <div class="b3-row"><span class="b3-op">OP <b id="opname">COASTLINE-05</b> · <span id="optag">육해공 시험판</span></span><span class="b3-clock" id="clock">T+00:00</span></div>
     <div class="b3-row"><span class="b3-title" id="goal">부대를 배치하세요</span></div>
     <div class="b3-bars">
       <div class="b3-bar b3-us"><span>아군 전력 <span id="usn"></span></span><i><u id="usb"></u></i></div>
-      <div class="b3-bar b3-foe"><span>적 지휘소 <span id="hqn"></span></span><i><u id="hqb"></u></i></div>
+      <div class="b3-bar b3-foe"><span><span id="foeLabel">적 지휘소</span> <span id="hqn"></span></span><i><u id="hqb"></u></i></div>
     </div>
   </div>
   <div id="log"></div>
@@ -23,7 +23,7 @@
       <div class="b3-tabs" role="tablist" id="tabs"></div>
       <div class="b3-cards" id="cards" style="margin-top:6px"></div>
       <div class="b3-actions" style="margin-top:8px">
-        <span class="b3-budget">예산 <b id="budget">0</b> / 460</span>
+        <span class="b3-budget"><span id="budname">예산</span> <b id="budget">0</b> / <span id="budmax">460</span></span>
         <button class="b3-btn b3-ghost" id="clear" type="button">비우기</button>
         <button class="b3-btn" id="go" type="button">작전 개시</button>
       </div>

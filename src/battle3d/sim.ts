@@ -55,7 +55,7 @@ export const CMD: Record<CmdKey, { cost: number; r: number; name: string }> = {
 };
 export const CMD_ORDER: CmdKey[] = ['arty', 'smoke', 'air', 'cruise', 'emp', 'repair', 'para'];
 export const FIELD = { xMin: -10, xMax: 10, zTop: -15, zBot: 14 };
-type Place = [Kind, number, number];
+export type Place = [Kind, number, number];
 export const ENEMY: Place[] = [['hq', 5, -13],
   ['tank', 2.2, -8.8], ['tank', 4.6, -8.6], ['tank', 7, -8.8], ['inf', 1, -7.6], ['inf', 3.4, -7.4], ['inf', 6, -7.6], ['sf', 8.4, -7.8], ['ifv', 3.4, -9.8], ['ifv', 6.2, -10],
   ['hack', 8.2, -11], ['spg', 2.6, -12], ['spg', 7.2, -12.2], ['aa', 3.6, -11.4], ['aa', 6.4, -11.6],
@@ -65,36 +65,70 @@ export const DEFAULT: Place[] = [['tank', 1.6, 9.8], ['tank', 4.4, 9.8], ['tank'
   ['dd', -5.6, 9.6], ['dd', -8.6, 9.6], ['sub', -7.1, 9.6], ['cv', -7.1, 12.6], ['laser', -5.6, 11.1], ['lha', -8.6, 11.1],
   ['jet', 4.4, 11.2], ['heli', 1.6, 11.2], ['bomber', -4.1, 12.6], ['drone', .2, 11.2], ['drone', 8.6, 12.6], ['missile', .2, 12.6]];
 
-/* ───────── 땅 · 바다 모양 ───────── */
-export function coastX(z: number) { return -3.2 + Math.sin(z * .22) * 1.1 + Math.sin(z * .61 + 1) * .35; }
-export function riverZ(x: number) { return 0.6 + Math.sin(x * .5) * .8; }
-export const BRIDGES = [1.6, 6.2];
-export function isSea(x: number, z: number, m?: number) { return x < coastX(z) - (m || 0); }
-export const WATER_Y = -.12;
-export function hAt(x: number, z: number) {
+/* ───────── 전장(막마다 바뀜) ───────── */
+/** 건물 덩어리(위에서 본 네모). 땅 부대는 못 지나가고, 붙어 있으면 덜 맞음 */
+export interface Block { x0: number; x1: number; z0: number; z1: number; h?: number }
+/** 거점: 원 안에 우리 땅 부대만 있으면 조금씩 차지함 */
+export interface PointDef { name: string; x: number; z: number; r: number }
+export interface Stage {
+  id: 'coast' | 'street' | 'core';
+  name: string; op: string; goal: string;
+  coastX(z: number): number; riverZ(x: number): number; bridges: number[];
+  hAt(x: number, z: number): number;
+  enemy: Place[]; timeLimit: number;
+  /** 칠 대상이 없을 때 우리 땅 부대가 가는 곳 */
+  usGoal: { x: number; z: number };
+  urban?: boolean; blocks?: Block[]; points?: PointDef[];
+  /** 지휘소가 무너지면 몰려오는 최후 저항 */
+  waves?: Place[][];
+  /** 적이 거점을 하나라도 쥐고 있으면 every초마다 증원(최대 max번) */
+  reinf?: { every: number; max: number; list: Place[] };
+}
+
+function coastXC(z: number) { return -3.2 + Math.sin(z * .22) * 1.1 + Math.sin(z * .61 + 1) * .35; }
+function riverZC(x: number) { return 0.6 + Math.sin(x * .5) * .8; }
+function hAtC(x: number, z: number) {
   let h = .24 + Math.sin(x * .45 + z * .2) * .17 + Math.sin(z * .37 - x * .18) * .15 + Math.sin(x * 1.3) * Math.cos(z * 1.1) * .06;
   const edge = Math.max(0, x - 8.6); h += edge * edge * .2;
   if (z < -10.5 && x > 1 && x < 9) h *= .25; // 적 기지 평탄
-  const d = x - coastX(z); // 해안까지 거리(+땅, -바다)
+  const d = x - coastXC(z); // 해안까지 거리(+땅, -바다)
   if (d < 1.2) { const k = Math.max(0, d) / 1.2; h = h * k + .06 * (1 - k); } // 해변
   if (d < 0) h = .06 + d * .75; // 바닷속으로 내려감
-  if (d > 0) { const riv = Math.abs(z - riverZ(x)); if (riv < .9) h = Math.min(h, -.28 + riv * .4); }
+  if (d > 0) { const riv = Math.abs(z - riverZC(x)); if (riv < .9) h = Math.min(h, -.28 + riv * .4); }
   return Math.max(h, -1.8);
 }
+/** 1막 외곽: 시험판 해안 전장 그대로 */
+export const COAST: Stage = {
+  id: 'coast', name: '1막 · 외곽', op: 'COASTLINE-05', goal: '목표: 외곽 지휘소 파괴',
+  coastX: coastXC, riverZ: riverZC, bridges: [1.6, 6.2], hAt: hAtC, enemy: ENEMY, timeLimit: TIME_LIMIT, usGoal: { x: 5, z: -12 },
+};
+/** 지금 쓰는 전장(배치할 때 정함) */
+export let ST: Stage = COAST;
+export let BRIDGES = ST.bridges;
+export function coastX(z: number) { return ST.coastX(z); }
+export function riverZ(x: number) { return ST.riverZ(x); }
+export function isSea(x: number, z: number, m?: number) { return x < coastX(z) - (m || 0); }
+export const WATER_Y = -.12;
+export function hAt(x: number, z: number) { return ST.hAt(x, z); }
 export function groundY(x: number, z: number) { return Math.max(hAt(x, z), WATER_Y); }
 export function angDiff(b: number, a: number) { return ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; }
+export function inBlock(x: number, z: number, m = 0) { return (ST.blocks ?? []).find((b) => x > b.x0 - m && x < b.x1 + m && z > b.z0 - m && z < b.z1 + m); }
 
 /* ───────── 배치 칸 (땅 칸 · 바다 칸) ───────── */
 export interface Tile { x: number; z: number; dom: 'land' | 'sea' }
-export const TILES: Tile[] = (() => {
+function makeTiles(): Tile[] {
   const out: Tile[] = [];
   for (let r = 0; r < 3; r++) for (let c = 0; c < 13; c++) {
     const x = -8.6 + c * 1.5, z = 9.8 + r * 1.4, cx = coastX(z);
     const dom = x < cx - .75 ? 'sea' : x > cx + .65 ? 'land' : null; if (!dom) continue;
+    if (inBlock(x, z, .3)) continue;
     out.push({ x, z, dom });
   }
   return out;
-})();
+}
+export let TILES: Tile[] = makeTiles();
+/** 전장 바꾸기(배치 전에 부름) */
+export function useStage(st: Stage) { ST = st; BRIDGES = st.bridges; TILES = makeTiles(); }
 export function tileOk(t: Tile, kind: Kind) { const dm = DEF[kind].dom; return dm === 'air' || (dm === 'sub' ? 'sea' : dm) === t.dom; }
 
 /* ───────── 전투 상태 ───────── */
@@ -103,6 +137,10 @@ export interface Unit {
   cd: number; cd2: number; spawnCd: number; tgt: Unit | null; alive: boolean; deadT: number; jam: number; kids: number;
   hd: number; launchAt?: number; waitT?: number; mom?: Unit; aim?: number; moving?: boolean; moveFace?: number; flying?: boolean; bank?: number;
   hitT?: number; healT?: number;
+  /** 시가전·도심: 지키는 자리(적) · 끝까지 쫓아가는 부대(최후 저항) */
+  home?: { x: number; z: number }; aggr?: boolean;
+  /** 앞 막에서 넘어온 부대 */
+  carried?: boolean;
   /** 화면 연출용(계산에는 안 씀): 마지막 사격 · 순항 미사일 */
   visFire?: VisFire | null; visCruise?: { x: number; z: number } | null;
   /** 화면이 붙이는 모형(계산에는 안 씀) */
@@ -120,7 +158,10 @@ export type SimEvent =
   | { type: 'cruise'; x: number; z: number }
   | { type: 'emp'; x: number; z: number; r: number }
   | { type: 'repair'; x: number; z: number; r: number }
-  | { type: 'para'; x: number; z: number };
+  | { type: 'para'; x: number; z: number }
+  | { type: 'point'; name: string; own: Side; x: number; z: number }
+  | { type: 'reinf'; n: number }
+  | { type: 'wave'; n: number; of: number };
 export interface SimHooks {
   spawn?(u: Unit): void;
   death?(u: Unit, src?: Unit | null): void;
@@ -133,10 +174,16 @@ export interface Sim {
   pending: Array<{ at: number; fn: () => void }>; smokes: Array<{ x: number; z: number; r: number; end: number }>;
   result: { win: boolean; timeout: boolean; t: number } | null;
   hooks: SimHooks;
+  /** 거점(own=지금 주인, prog=우리 쪽으로 차지한 정도 0~1) */
+  pts: Array<PointDef & { own: Side; prog: number }>;
+  /** 최후 저항: 나온 파도 수 · 마지막 파도 시각 · 증원 횟수 */
+  wave: number; waveT: number; reinfN: number; reinfT: number;
+  /** 적 체력 배수(난이도) */
+  foeHp: number;
 }
 
 export function createSim(hooks: SimHooks = {}): Sim {
-  return { units: [], phase: 'deploy', simT: 0, cp: 3, nid: 1, seed: 1, pending: [], smokes: [], result: null, hooks };
+  return { units: [], phase: 'deploy', simT: 0, cp: 3, nid: 1, seed: 1, pending: [], smokes: [], result: null, hooks, pts: [], wave: 0, waveT: 0, reinfN: 0, reinfT: 0, foeHp: 1 };
 }
 export function rnd(S: Sim) { S.seed = (S.seed * 1664525 + 1013904223) >>> 0; return S.seed / 4294967296; }
 const SURF: Dom[] = ['land', 'sea'];
@@ -160,6 +207,7 @@ export function damage(S: Sim, t: Unit, amt: number, src: Unit | null) {
   let a = amt * 100 / (100 + t.d.def) * (src && src.side === 'foe' ? FOE_MUL : 1);
   if (inSmoke(S, t)) a *= .4;
   if (S.units.some((o) => o.alive && o.d.aura && o.side === t.side && o !== t && dist(o, t) < 2.4)) a *= .7; // 레이저 방공함 보호막
+  if (ST.blocks && t.d.dom === 'land' && inBlock(t.x, t.z, t.d.r * .6 + .55)) a *= .75; // 건물에 붙으면 엄폐
   t.hp -= a; t.hitT = S.simT;
   if (t.hp <= 0) { t.hp = 0; t.alive = false; t.deadT = 0; onDeath(S, t, src); }
 }
@@ -173,7 +221,21 @@ function onDeath(S: Sim, t: Unit, src?: Unit | null) {
   }
   S.hooks.death?.(t, src);
 }
-function goalFor(u: Unit) { // 칠 대상이 없을 때 향할 곳
+function goalFor(S: Sim, u: Unit) { // 칠 대상이 없을 때 향할 곳
+  if (ST.id !== 'coast') {
+    if (u.side === 'foe') {
+      // 빼앗긴 거점이 가까우면 되찾으러 감, 아니면 제자리 지킴
+      if (!u.aggr) for (const p of S.pts) if (p.own === 'us' && dist(u, p) < 7) return { x: p.x, z: p.z };
+      return u.aggr || !u.home ? { x: 0, z: 11 } : u.home;
+    }
+    const open = S.pts.filter((p) => p.own === 'foe');
+    if (open.length) { let b = open[0]; for (const p of open) if (dist(u, p) < dist(u, b)) b = p; return { x: b.x, z: b.z }; }
+    const hq = S.units.find((o) => o.kind === 'hq' && o.alive);
+    if (hq) return { x: hq.x, z: hq.z + 1.6 };
+    let best: Unit | null = null;
+    for (const o of S.units) if (o.alive && o.side === 'foe' && (!best || dist(u, o) < dist(u, best))) best = o;
+    return best ? { x: best.x, z: best.z } : ST.usGoal;
+  }
   if (u.side === 'us') return u.d.dom === 'sea' || u.d.dom === 'sub' ? { x: Math.min(u.x, coastX(-10) - 1.5), z: -10 } : { x: 5, z: -12 };
   return u.d.dom === 'sea' || u.d.dom === 'sub' ? { x: Math.min(u.x, coastX(10) - 1.5), z: 10 } : { x: 4, z: 11 };
 }
@@ -181,14 +243,44 @@ function clampDomain(u: Unit) {
   u.x = Math.max(FIELD.xMin + .4, Math.min(FIELD.xMax - .4, u.x)); u.z = Math.max(FIELD.zTop + .3, Math.min(FIELD.zBot - .3, u.z));
   if (u.d.dom === 'land') { const m = coastX(u.z) + .35; if (u.x < m) u.x = m; }
   else if (u.d.dom === 'sea' || u.d.dom === 'sub') { const m = coastX(u.z) - (u.d.r * .55 + .35); if (u.x > m) u.x = m; }
+  if (ST.blocks && u.d.dom === 'land') {
+    const m = u.d.r * .55; const b = inBlock(u.x, u.z, m);
+    if (b) { // 가장 가까운 벽 밖으로 밀어냄
+      const dx0 = u.x - (b.x0 - m), dx1 = b.x1 + m - u.x, dz0 = u.z - (b.z0 - m), dz1 = b.z1 + m - u.z, k = Math.min(dx0, dx1, dz0, dz1);
+      if (k === dx0) u.x = b.x0 - m; else if (k === dx1) u.x = b.x1 + m; else if (k === dz0) u.z = b.z0 - m; else u.z = b.z1 + m;
+    }
+  }
+}
+/** 건물 앞에서 벽을 따라 돌아가기: 막히는 쪽 힘을 빼고, 목표에 가까운 모서리 쪽으로 */
+function steer(u: Unit, vx: number, vz: number, gx: number, gz: number): [number, number] {
+  if (!ST.blocks || u.d.dom !== 'land') return [vx, vz];
+  const m = u.d.r * .55 + .05, L = Math.hypot(vx, vz) || 1;
+  const nx = u.x + vx / L * .7, nz = u.z + vz / L * .7;
+  const b = inBlock(nx, nz, m); if (!b) return [vx, vz];
+  const x0 = b.x0 - m, x1 = b.x1 + m, z0 = b.z0 - m, z1 = b.z1 + m;
+  const around = (p: number, lo: number, hi: number, g: number) => (Math.abs(p - lo) + Math.abs(g - lo) <= Math.abs(p - hi) + Math.abs(g - hi) ? -1 : 1);
+  if (u.x <= x0 + .02 || u.x >= x1 - .02) { vx = 0; vz = Math.abs(vz) < .35 * L ? around(u.z, z0, z1, gz) * L : vz; }
+  else { vz = 0; vx = Math.abs(vx) < .35 * L ? around(u.x, x0, x1, gx) * L : vx; }
+  return [vx, vz];
 }
 
 /** 배치 화면 준비: 적을 놓고(같은 순서·같은 난수), 우리 배치 목록을 다시 놓음 */
-export function setupDeploy(S: Sim, mine: Array<{ kind: Kind; tile: number }>): Unit[] {
+export interface DeployOpt { cp0?: number; foeHp?: number }
+/** 우리 배치 한 칸. hp = 앞 막에서 남은 체력 비율, carried = 앞 막에서 넘어온 부대 */
+export interface Pick3 { kind: Kind; tile: number; hp?: number; carried?: boolean }
+export function setupDeploy(S: Sim, mine: Pick3[], opt: DeployOpt = {}): Unit[] {
   S.units = []; S.pending = []; S.smokes = []; S.result = null;
-  S.seed = 7; S.nid = 1; S.simT = 0; S.cp = 3; S.phase = 'deploy';
-  ENEMY.forEach(([k, x, z]) => { const d = DEF[k]; if (d.dom === 'sea' || d.dom === 'sub') x = Math.min(x, coastX(z) - d.r * .55 - .5); if (d.dom === 'land') x = Math.max(x, coastX(z) + .6); makeUnit(S, k, 'foe', x, z); });
-  return mine.map((d) => { const t = TILES[d.tile]; return makeUnit(S, d.kind, 'us', t.x, t.z); });
+  S.seed = 7; S.nid = 1; S.simT = 0; S.cp = Math.min(10, opt.cp0 ?? 3); S.phase = 'deploy';
+  S.foeHp = opt.foeHp ?? 1; S.wave = 0; S.waveT = 0; S.reinfN = 0; S.reinfT = 0;
+  S.pts = (ST.points ?? []).map((p) => ({ ...p, own: 'foe' as Side, prog: 0 }));
+  ST.enemy.forEach(([k, x, z]) => { const d = DEF[k]; if (d.dom === 'sea' || d.dom === 'sub') x = Math.min(x, coastX(z) - d.r * .55 - .5); if (d.dom === 'land') x = Math.max(x, coastX(z) + .6); spawnFoe(S, k, x, z, false); });
+  return mine.map((d) => { const t = TILES[d.tile]; const u = makeUnit(S, d.kind, 'us', t.x, t.z); if (d.hp != null && d.hp < 1) u.hp = Math.max(1, Math.round(u.max * d.hp)); if (d.carried) u.carried = true; return u; });
+}
+function spawnFoe(S: Sim, k: Kind, x: number, z: number, aggr: boolean) {
+  const u = makeUnit(S, k, 'foe', x, z);
+  if (S.foeHp !== 1) { u.max = Math.round(u.max * S.foeHp); u.hp = u.max; }
+  if (ST.id !== 'coast') { u.home = { x, z }; if (aggr) u.aggr = true; }
+  return u;
 }
 /** 기본 배치(예산 안에서 가까운 칸) */
 export function defaultDeploy(): Array<{ kind: Kind; tile: number }> {
@@ -225,8 +317,10 @@ export function step(S: Sim) {
     // 목표 고르기(1초마다)
     if (!u.tgt || !u.tgt.alive || ((S.simT * 20 | 0) % 20 === u.id % 20)) {
       let best: Unit | null = null, bd = 1e9;
+      const leash = leashOf(S, u);
       for (const t of S.units) {
         if (!t.alive || t.side === u.side) continue; if (!hitMul(u, t)) continue;
+        if (leash && dist(u, t) > leash) continue;
         let dd = dist(u, t); if (t.kind === 'hq') dd += 6; if (t.d.stealth) dd += 3; if (u.kind === 'spg' && dd < u.d.minR!) dd += 20; if (u.kind === 'aa' && t.d.dom === 'air') dd -= 4; if (u.d.aura && t.d.missile) dd -= 8;
         if (u.d.missile) dd = -t.max + dd * 20;
         if (dd < bd) { bd = dd; best = t; }
@@ -246,7 +340,7 @@ export function step(S: Sim) {
       }
     }
     let gx: number, gz: number;
-    if (t) { gx = t.x; gz = t.z; } else { const g = goalFor(u); gx = g.x; gz = g.z; }
+    if (t) { gx = t.x; gz = t.z; } else { const g = goalFor(S, u); gx = g.x; gz = g.z; }
     const dd = Math.hypot(gx - u.x, gz - u.z), want = Math.atan2(gx - u.x, gz - u.z); u.aim = want;
     const sp = u.d.spd * (jam ? .5 : 1);
     // 미사일: 발사대에서 기다렸다가 곧장 날아감
@@ -282,6 +376,7 @@ export function step(S: Sim) {
         if (o === u || !o.alive || o.d.jet || o.d.missile) continue; const og = o.d.dom === 'air' ? 'air' : o.d.dom === 'land' ? 'land' : 'sea'; if (og !== grp) continue;
         const ox = u.x - o.x, oz = u.z - o.z, od = Math.hypot(ox, oz), R = (u.d.r + o.d.r) * .95; if (od < R && od > 0.001) { vx += ox / od * (R - od) * 1.6; vz += oz / od * (R - od) * 1.6; }
       }
+      [vx, vz] = steer(u, vx, vz, gx, gz);
       const L = Math.hypot(vx, vz) || 1; let s2 = sp;
       if (u.d.dom === 'land' && Math.abs(u.z - riverZ(u.x)) < .9 && !BRIDGES.some((bx) => Math.abs(u.x - bx) < .7)) s2 *= .45;
       // 바다 쪽 유닛은 해안에 막히면 해안을 따라 미끄러짐
@@ -291,11 +386,53 @@ export function step(S: Sim) {
     u.cd -= TICK;
     if (t && !jam && dd <= u.d.range && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
   }
-  const hq = S.units.find((u) => u.kind === 'hq')!;
   const usLeft = S.units.some((u) => u.alive && u.side === 'us' && !u.d.missile);
-  if (!hq.alive) endBattle(S, true, false);
+  const won = ST.id === 'coast' ? !S.units.find((u) => u.kind === 'hq')!.alive : stageRules(S);
+  if (won) endBattle(S, true, false);
   else if (!usLeft && !S.pending.length) endBattle(S, false, false);
-  else if (S.simT >= TIME_LIMIT) endBattle(S, false, true);
+  else if (S.simT >= ST.timeLimit) endBattle(S, false, true);
+}
+/** 시가전·도심: 이만큼 안의 적만 노림(먼 적은 무시하고 거점·지휘소로 감) */
+function leashOf(S: Sim, u: Unit): number {
+  if (ST.id === 'coast' || u.d.dom !== 'land' || u.aggr) return 0;
+  if (u.side === 'foe') return u.d.range + 4;
+  const busy = S.pts.some((p) => p.own === 'foe') || S.units.some((o) => o.kind === 'hq' && o.alive);
+  return busy ? u.d.range + 2.5 : 0;
+}
+const landIn = (S: Sim, side: Side, p: { x: number; z: number; r: number }) => S.units.filter((u) => u.alive && u.side === side && u.d.dom === 'land' && u.kind !== 'hq' && (!u.waitT || S.simT >= u.waitT) && dist(u, p) < p.r).length;
+/** 거점 차지 · 증원 · 최후 저항. 이겼으면 true */
+function stageRules(S: Sim): boolean {
+  // 거점: 우리만 있으면 6초에 걸쳐 차지, 적만 있으면 되돌림
+  for (const p of S.pts) {
+    const us = landIn(S, 'us', p), foe = landIn(S, 'foe', p);
+    if (us && !foe) p.prog = Math.min(1, p.prog + TICK / 6 * Math.min(2, .8 + us * .2));
+    else if (foe && !us) p.prog = Math.max(0, p.prog - TICK / 6);
+    if (p.own === 'foe' && p.prog >= 1) { p.own = 'us'; S.cp = Math.min(10, S.cp + 2); S.hooks.log?.(`거점 「${p.name}」 확보 · 지휘력 +2`, 'k'); S.hooks.event?.({ type: 'point', name: p.name, own: 'us', x: p.x, z: p.z }); }
+    else if (p.own === 'us' && p.prog <= 0) { p.own = 'foe'; S.hooks.log?.(`거점 「${p.name}」을 빼앗겼어요`, 'x'); S.hooks.event?.({ type: 'point', name: p.name, own: 'foe', x: p.x, z: p.z }); }
+  }
+  // 증원: 적이 거점을 쥐고 있는 동안
+  const R = ST.reinf;
+  if (R && S.reinfN < R.max && S.pts.some((p) => p.own === 'foe')) {
+    S.reinfT += TICK;
+    if (S.reinfT >= R.every) { S.reinfT = 0; S.reinfN++; R.list.forEach(([k, x, z]) => { const u = spawnFoe(S, k, x, z, false); const tgt = S.pts.find((p) => p.own === 'foe') ?? S.pts[0]; if (tgt) u.home = { x: tgt.x + (rnd(S) - .5) * 1.4, z: tgt.z + (rnd(S) - .5) * 1.4 }; }); S.hooks.log?.(`적 증원 부대 도착(${S.reinfN}/${R.max})`, 'x'); S.hooks.event?.({ type: 'reinf', n: S.reinfN }); }
+  }
+  const foeAlive = S.units.some((u) => u.alive && u.side === 'foe' && u.kind !== 'hq');
+  if (ST.id === 'street') return S.pts.length > 0 && S.pts.every((p) => p.own === 'us');
+  // 도심: 지휘소 → 최후 저항 파도들 → 남은 적 모두
+  const hq = S.units.find((u) => u.kind === 'hq');
+  if (hq?.alive) return false;
+  const W = ST.waves ?? [];
+  if (S.wave < W.length) {
+    const prevLeft = S.units.some((u) => u.alive && u.side === 'foe' && u.aggr);
+    if (S.wave === 0 || !prevLeft || S.simT - S.waveT > 35) {
+      W[S.wave].forEach(([k, x, z]) => spawnFoe(S, k, x, z, true));
+      S.wave++; S.waveT = S.simT;
+      S.hooks.log?.(S.wave === 1 ? '지휘소 붕괴! 최후 저항 부대가 몰려와요' : `최후 저항 ${S.wave}차 공격`, 'x');
+      S.hooks.event?.({ type: 'wave', n: S.wave, of: W.length });
+    }
+    return false;
+  }
+  return !foeAlive;
 }
 function fire(S: Sim, u: Unit, t: Unit) {
   const mul = hitMul(u, t);
@@ -368,7 +505,7 @@ export function runHeadless(mine = defaultDeploy(), maxSteps = 4000): Sim {
 /** 전투 결과 → 별·글(임무 결과로 씀). 손실 1/4 이하 + 시간 60% 안 = ★3, 손실 절반 이하 = ★2 */
 export function outcome(r: { win: boolean; timeout: boolean; t: number; lost: number; total: number }): { win: boolean; stars: number; text: string } {
   const loss = r.total ? r.lost / r.total : 1;
-  const stars = r.win ? (loss <= 0.25 && r.t <= TIME_LIMIT * 0.6 ? 3 : loss <= 0.5 ? 2 : 1) : 0;
+  const stars = r.win ? (loss <= 0.25 && r.t <= ST.timeLimit * 0.6 ? 3 : loss <= 0.5 ? 2 : 1) : 0;
   const m = Math.floor(r.t / 60), s = Math.floor(r.t % 60);
   const head = r.win ? '적 지휘소를 무너뜨렸어요.' : r.timeout ? `제한 시간 ${TIME_LIMIT / 60}분 안에 지휘소를 부수지 못했어요.` : '아군 부대가 모두 쓰러졌어요.';
   return { win: r.win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${r.lost}/${r.total}` };

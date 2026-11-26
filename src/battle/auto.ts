@@ -10,6 +10,8 @@ import type { BattleSpec } from './spec';
 import { createField, finishField } from './field';
 import { autoMini } from './minigames';
 import { headlessOutcome, runHeadless } from '../battle3d/sim';
+import { runSiegeHeadless } from '../battle3d/siege';
+import { foeHpOf } from '../battle3d/foeHp';
 
 export interface AutoInput {
   spec: BattleSpec;
@@ -47,7 +49,7 @@ export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: bool
     case 'mini':
       return autoMini(spec.variant, stats, rank, seed);
     case 'b3d':
-      return headlessOutcome(runHeadless());
+      return spec.variant === 'siege' ? runSiegeHeadless(foeHpOf(d)).outcome : headlessOutcome(runHeadless());
     case 'field':
       return finishField(createField({ city: spec.city, difficulty: d, rank, stats, seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) })).result!;
   }
