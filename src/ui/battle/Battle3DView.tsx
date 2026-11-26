@@ -12,7 +12,20 @@ import { stageFor } from '../../battle3d/pick';
 import { isCoastalCity } from '../../data/cities';
 import css from '../../battle3d/battle3d.css?raw';
 
-export function Battle3DView({ spec, onEnd, usBuff, onCancel }: FrameProps) {
+import { DEF, type Kind } from '../../battle3d/sim';
+
+/** 병과 이름별 → 3D 병과별 수(이름이 같은 것만) */
+function capsOf(owned: Record<string, number> | undefined, dead: Record<string, number>, carried: Kind[]): Record<string, number> | undefined {
+  if (!owned) return undefined;
+  const out: Record<string, number> = {};
+  for (const [k, d] of Object.entries(DEF)) {
+    const n = (owned[d.name] ?? 0) - (dead[d.name] ?? 0) - carried.filter((c) => c === k).length;
+    if (n > 0) out[k] = n;
+  }
+  return out;
+}
+
+export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned }: FrameProps) {
   const siege = spec.variant === 'siege';
   const acts = useMemo(() => (siege ? actsFor(spec.seed, spec.city ? isCoastalCity(spec.city) : undefined) : []), [siege, spec.seed, spec.city]);
   // 11-26 고침: spec은 화면이 다시 그려질 때마다 새로 만들어짐. 파병 전투(병과·예산 덮어쓰기)는 stageFor가 매번 새 전장을 돌려줘서
@@ -45,8 +58,12 @@ export function Battle3DView({ spec, onEnd, usBuff, onCancel }: FrameProps) {
       const stage = siege ? acts[act] : one;
       if (stage) useStage(stage);
       const c = carry.current;
+      // 앞 막에서 쓰러진 부대 · 넘어온 부대는 새로 못 냄
+      const prevDead: Record<string, number> = {};
+      for (const r of results.current.slice(0, act)) for (const [k, v] of Object.entries(r.dead ?? {})) prevDead[k] = (prevDead[k] ?? 0) + v;
       off = mountBattle3D(ref.current, {
         stage,
+        owned: capsOf(owned, prevDead, siege && act > 0 && c ? c.units.map((u) => u.kind) : []),
         foeHp,
         // 11-26 안 6: 3D 훈련으로 쌓은 병과 숙련(최대 +10%)
         usBuff: usBuff as Record<string, number> | undefined,
