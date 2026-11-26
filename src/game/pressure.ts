@@ -51,6 +51,7 @@ export const TARIFF_DEAL_COST = 300;
 export const ARCH_TARIFF_CHANCE = 0.04;
 export const ARCH_TARIFF_RATE: [number, number] = [0.3, 0.6];
 export const ARCH_TARIFF_HOURS: [number, number] = [48, 96];
+export const ARCH_TARIFF_ME = 0.4;
 
 /** 분쟁 지역을 남이 쥐고 있을 때 판단마다 오르는 긴장(× 공격성) */
 export const ISLAND_WAR_TENSION = 1.2;
@@ -143,7 +144,10 @@ export function pressureTick(s: GameState): GameState {
   for (const a of ais) {
     for (const b of archRivalsOf(a)) {
       if (!alive.includes(b) || tariffs.some((x) => x.from === a && x.to === b && x.untilMs > t)) continue;
-      if (!rng.chance(ARCH_TARIFF_CHANCE * per(w, a).tension)) continue;
+      // 연합(동맹)이면 관세를 걸지 않고, 전쟁 중이면 이미 교역이 끊김. 내 나라엔 조금 덜 자주(ARCH_TARIFF_ME)
+      const rel = relationOf(w, a, b);
+      if (rel === '연합' || rel === '전쟁') continue;
+      if (!rng.chance(ARCH_TARIFF_CHANCE * per(w, a).tension * (b === me ? ARCH_TARIFF_ME : 1))) continue;
       const rate = Math.round(rng.range(...ARCH_TARIFF_RATE) * 100) / 100;
       putTariff(tariffs, { from: a, to: b, rate, untilMs: t + rng.range(...ARCH_TARIFF_HOURS) * H });
       addTension(w, a, b, TARIFF_TENSION / 2);

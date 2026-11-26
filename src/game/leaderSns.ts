@@ -1,5 +1,5 @@
 // 정상 SNS(11-26 대장 지시: "각 정상들이 발언하는 횟수도 늘리고, 홈 화면 핸드폰 아이콘 → SNS 화면").
-// 실제 10~20분마다 외국 정상 한 명이 SNS에 글을 올려요. 가장 자주 하는 말은 숙적 헐뜯기(data/archRivals.ts).
+// 실제 15~30분마다(AI 판단 15분마다 확인) 외국 정상 한 명이 SNS에 글을 올려요. 가장 자주 하는 말은 숙적 헐뜯기(data/archRivals.ts).
 // 헐뜯긴 나라 정상은 절반쯤 바로 맞받아쳐요. 우리 나라를 헐뜯으면 내가 '맞받아치기'(명성 +3·긴장 +4)나 '무시'를 골라요.
 // 효과는 작아요: 헐뜯기 = 두 나라 긴장 +2(전쟁 중이면 없음), 맞받아치기 = 긴장 +1.
 import { archRivalsOf, archWhy, isArchRival } from '../data/archRivals';
@@ -83,7 +83,7 @@ const DISS = [
   '"오늘도 {B:이} 우리를 흉내 냈네요. 따라 하려면 제대로 하세요."',
   '"{B}의 무기는 전시용입니다. 진짜 싸움은 못 해요."',
   '"{B} 지도부는 겁쟁이들입니다. 큰소리만 치고 뒤로 숨죠."',
-  '"{W} 문제에서 우리는 한 발짝도 물러서지 않습니다. {B}, 똑똑히 들으세요."',
+  '"{W}, 이 일에서 우리는 한 발짝도 물러서지 않습니다. {B}, 똑똑히 들으세요."',
   '"{BL}의 연설, 졸려서 끝까지 못 들었습니다."',
   '"{B}에 투자하는 건 돈을 바다에 버리는 일입니다."',
   '"{B:과} 대화요? 먼저 사과부터 하라고 하세요."',
@@ -163,7 +163,7 @@ export function pickPost(s: GameState, rng: Rng): Omit<SnsPost, 'id' | 't'> | nu
   for (const a of ais) {
     const per = w.personalities?.[a];
     const loud = per === '공격형' ? 1.5 : per === '기회주의' ? 1.2 : 1;
-    for (const b of archRivalsOf(a).filter((x) => alive.includes(x))) opts.push({ from: a, to: b, kind: 'diss', wt: 5 * loud * (b === me ? 1.6 : 1) * (relationOf(w, a, b) === '연합' ? 0.4 : 1) });
+    for (const b of archRivalsOf(a).filter((x) => alive.includes(x))) opts.push({ from: a, to: b, kind: 'diss', wt: 5 * loud * (b === me ? 2.5 : 1) * (relationOf(w, a, b) === '연합' ? 0.4 : 1) });
     for (const b of alive) {
       if (b === a) continue;
       const rel = relationOf(w, a, b);

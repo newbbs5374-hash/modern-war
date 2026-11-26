@@ -352,7 +352,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))));
     world = cur.world;
   }
-  return syncTitle(snsTick(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left))))))));
+  return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));
 }
 
 /** 실제 시각까지 따라잡기. 시계가 거꾸로 가면(기기 시간 변경) 아무것도 하지 않는다. */

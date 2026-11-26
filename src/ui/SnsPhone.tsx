@@ -111,7 +111,7 @@ export function SnsPhone({ state, actions, onClose }: { state: GameState; action
       <div className="sns-phone">
         <div className="sns-bar">
           <b>🌐 World Leaders</b>
-          <small className="muted">정상들이 10~20분마다 글을 올려요</small>
+          <small className="muted">정상들이 15~30분마다 글을 올려요</small>
         </div>
         <div className="sns-tabs">
           {TABS.map(([k, label]) => (
