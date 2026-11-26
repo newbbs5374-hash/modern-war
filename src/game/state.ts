@@ -4,6 +4,8 @@ import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
+import { pressureTick, tariffMult, type PressureState } from './pressure';
+import { surrenderTick, vassalMult, type VassalState } from './surrender';
 import { applyOrigin, type OriginId } from './origin';
 import type { LeaderLook } from '../data/looks';
 import { START_SANCTIONS } from '../data/conflicts';
@@ -48,6 +50,9 @@ import {
   START_TROOPS_PER_POINT,
   TROOPS_PER_DAY_PER_POINT,
   TROOP_ATTRITION_PER_DAY,
+  PLAYER_START_TREASURY_MULT,
+  PLAYER_START_TROOPS_MULT,
+  aiStrength,
 } from './balance';
 
 export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개), 7: 현실 나라·도시 이름(11-23) — 예전 저장은 새 판으로
@@ -138,6 +143,10 @@ export interface GameState {
   deploy?: DeployState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
+  /** 관세(11-26 난이도). 없으면 관세 없음 */
+  pressure?: PressureState;
+  /** 속국 항복(11-26). 없으면 속국 없음 */
+  vassal?: VassalState;
 }
 
 export interface NewGameOptions {
@@ -158,9 +167,12 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
   applyNation(countryId); // 11-25 부처·참모·시설 이름을 그 나라 것으로
   const nations: Record<string, NationState> = {};
   for (const c of COUNTRIES) {
+    // 11-26 난이도: 내 나라는 적게, 한국을 뺀 AI 나라는 힘 배율만큼 많이
+    const k = aiStrength(c.id, countryId);
+    const mine = c.id === countryId;
     nations[c.id] = {
-      treasury: c.budget * START_TREASURY_PER_POINT,
-      troops: c.military * START_TROOPS_PER_POINT,
+      treasury: c.budget * START_TREASURY_PER_POINT * k * (mine ? PLAYER_START_TREASURY_MULT : 1),
+      troops: c.military * START_TROOPS_PER_POINT * k * (mine ? PLAYER_START_TROOPS_MULT : 1),
     };
   }
   const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
@@ -173,7 +185,8 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     nations,
     debugSkippedMs: 0,
     world,
-    officer: newOfficer(((opt.seed ?? now) * 7 + 13) >>> 0),
+    // 11-26 난이도: 시험판 자원 넉넉히(testgrant.ts)는 새 판에선 안 줌 → 이미 받은 것으로 표시(TEST_GRANT_NOW)
+    officer: { ...newOfficer(((opt.seed ?? now) * 7 + 13) >>> 0), testGrant: 4 },
     economy: newEconomy(),
     ending: null,
     civ: newCiv({ world, worldMs: 0 }),
@@ -199,7 +212,7 @@ export function pendingCap(s: GameState): number {
 /** 하루 국방예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) : sanctionMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -209,7 +222,7 @@ export function troopsPerDay(s: GameState, countryId: string): number {
     TROOPS_PER_DAY_PER_POINT *
     (TROOP_BONUS[countryId] ?? 1) *
     incomeShare(s.world, countryId) *
-    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) * (1 + lawEff(s, 'troop')) : 1)
+    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) * (1 + lawEff(s, 'troop')) : aiStrength(countryId, s.player.countryId))
   );
 }
 
@@ -230,6 +243,8 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
     [`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, x(taxBudget(s))],
     ['💰 기획재정부', x(cabBudget(s))],
     ['📜 법', x(1 + lawEff(s, 'budget'))],
+    ['📦 관세(맞은 것·매긴 것)', x(tariffMult(s, me))],
+    ['🏳️ 속국 공물(바침·받음)', x(vassalMult(s, me))],
     ...(ordersBudget(s) !== 1 ? [['🛡️ 방어 태세(미리 명령)', x(ordersBudget(s))] as [string, string]] : []),
     ['무역 계약(시간당)', `${Math.round(contractMoneyPerHour(s)).toLocaleString('ko-KR')}`],
   ];
@@ -295,7 +310,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = annexTick(deployTick(civTick(cur, pairsBefore)));
+    cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
     cur = propTick(domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))));
     world = cur.world;
   }

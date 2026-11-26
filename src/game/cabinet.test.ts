@@ -114,7 +114,7 @@ describe('청문회 가속권(11-24)', () => {
     const C = await import('./cabinet');
     const B = await import('./boost');
     let s = newGame('t', 'kr', 0, { seed: 2 });
-    s = { ...s, officer: { ...s.officer, boosts: 3 } };
+    s = { ...s, officer: { ...s.officer, boosts: 3 }, player: { ...s.player, salary: 1e6 }, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } };
     const p = C.cabinetOf(s).people.find((x) => x.group === '인재')!;
     s = C.appointMinister(C.recruit(s, p.id), p.id, 'mnd');
     expect(C.cabinetOf(s).hearing).not.toBeNull();

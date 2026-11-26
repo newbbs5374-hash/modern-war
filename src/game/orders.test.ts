@@ -21,11 +21,11 @@ describe('미리 명령 · 자리 비운 동안', () => {
 
   it('자원 자동 수입: 강철이 모자라면 사 옴', () => {
     let s = setRank(newGame('t', 'kr', 0, { seed: 1 }), 5);
-    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 0 } } };
+    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 강철: 0 } }, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } }; // 11-26: 새 판은 금고가 적음
     s = setOrder(s, 'autoImport', true);
     s = advance(s, 0.3 * H);
     expect(s.economy.stock['강철']).toBeGreaterThanOrEqual(IMPORT_BELOW);
-    expect(ordersOf(s).log[0]).toContain('강철');
+    expect(ordersOf(s).log.some((l) => l.includes('강철'))).toBe(true); // 11-26: 새 판은 자원이 0이라 다른 자원도 함께 사 옴
   });
 
   it('돌발 사건 부관에게 맡기기: 바로 처리', () => {

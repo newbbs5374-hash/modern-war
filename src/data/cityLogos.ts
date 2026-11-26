@@ -146,4 +146,17 @@ export const CITY_LOGO: Record<string, CityLogoSrc> = {
   청진: { key: 'chongjin' },
   개성: { key: 'kaesong' },
   나선: { key: 'rason', file: 'Flag of Rason.png', lic: 'PD', kind: '시기' },
+  // 11-26 난이도: 새 도시 12곳(방패 표지)
+  마이애미: { key: 'miami' },
+  댈러스: { key: 'dallas' },
+  샌디에이고: { key: 'sandiego' },
+  필라델피아: { key: 'philadelphia' },
+  디트로이트: { key: 'detroit' },
+  노퍽: { key: 'norfolk' },
+  샌안토니오: { key: 'sanantonio' },
+  난징: { key: 'nanjing' },
+  항저우: { key: 'hangzhou' },
+  다롄: { key: 'dalian' },
+  볼고그라드: { key: 'volgograd' },
+  하바롭스크: { key: 'khabarovsk' },
 };

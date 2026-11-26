@@ -104,3 +104,30 @@ export const EVENT_LOG_MAX = 150;
 
 /** 11-25 대장 요청: 시험하는 동안 훈련 일정 제한 없음(훈련을 몇 번이든 바로 시작). 다시 켜려면 false */
 export const TEST_MODE = { freeTraining: true };
+
+// ── 11-26 난이도 올리기(대장 요청) ──
+
+/** 한국을 뺀 AI 나라 힘 배율(예산·모병·시작 금고·병력). 미국 > 중국 > 러시아 > 나머지 */
+export const AI_STRENGTH: Record<string, number> = { us: 1.8, cn: 1.7, ru: 1.4 };
+export const AI_STRENGTH_DEFAULT = 1.25;
+/** 힘 배율 중 전투 질(병력 한 명의 힘)로 붙는 몫(1.8이면 전투 힘 +20%) */
+export const AI_QUALITY_SHARE = 0.25;
+/** 그 나라 힘 배율: 내 나라·한국은 1 */
+export function aiStrength(id: string, player: string): number {
+  if (id === player || id === 'kr') return 1;
+  return AI_STRENGTH[id] ?? AI_STRENGTH_DEFAULT;
+}
+/** 시작할 때 내 나라 금고·병력(예전의 몇 배). 시험판 자원 넉넉히 지급도 새 판에선 안 함 */
+export const PLAYER_START_TREASURY_MULT = 0.3;
+export const PLAYER_START_TROOPS_MULT = 0.7;
+
+/** 11-26 보상 늘리기: 임무·작전·대전투에 이기면 받는 작전 수당(× 임무 종류 배율 × 난이도) */
+export const MISSION_PAY_TREASURY = 120;
+export const MISSION_PAY_SALARY = 60;
+/** 훈련 별 하나당 봉급 */
+export const TRAIN_PAY_PER_STAR = 80;
+/** 도시를 차지하면 전리품: 도시 값어치 × 이 값 + 빼앗긴 나라 금고의 몇 % */
+export const SPOILS_PER_VALUE = 1500;
+export const SPOILS_TREASURY_SHARE = 0.06;
+/** 적 침공을 막아 내면 노획: 쳐들어온 병력 × 이 값(국방예산) */
+export const DEFEND_BOUNTY = 0.012;
