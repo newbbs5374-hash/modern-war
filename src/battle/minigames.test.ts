@@ -14,7 +14,7 @@ test('훈련 12개마다 미니게임 3개, 모두 화면이 있음', () => {
     for (const m of minisFor(t.name)) expect(m.three).toBe(true);
   }
   // 11-26: 3D 화면 8개 더함
-  expect(MINIGAMES.length).toBe(50);
+  expect(MINIGAMES.filter((m) => !m.fresh).length).toBe(44);
   expect(MINIGAMES.filter((m) => m.three && !m.fresh).length).toBe(8);
   for (const m of MINIGAMES) expect(MINI_VIEWS[m.id]).toBeTruthy();
   expect(new Set(MINIGAMES.map((m) => m.id)).size).toBe(MINIGAMES.length);
