@@ -10,16 +10,21 @@ import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } f
 const HOUR = 60 * 60 * 1000;
 
 describe('세계 데이터', () => {
-  it('나라 13개, 내정 도시 8~13개·점령 도시 5~6개(11-25), 대륙 5개 안', () => {
+  it('나라 13개, 도시 8~13개·점령 도시 5~6개(11-25, 11-26 미국·중국·러시아는 더 많음), 대륙 5개 안', () => {
     expect(COUNTRIES).toHaveLength(13);
+    const big: Record<string, [number, number]> = { us: [20, 8], cn: [16, 7], ru: [15, 6] };
     for (const c of COUNTRIES) {
+      const front = CITIES.filter((x) => x.home === c.id && x.front).length;
+      if (big[c.id]) {
+        expect(c.cities.length, c.id).toBe(big[c.id][0]);
+        expect(front, c.id).toBe(big[c.id][1]);
+        continue;
+      }
       expect(c.cities.length).toBeGreaterThanOrEqual(8);
       expect(c.cities.length).toBeLessThanOrEqual(13);
-      const front = CITIES.filter((x) => x.home === c.id && x.front).length;
       expect(front, c.id).toBeGreaterThanOrEqual(5);
       expect(front, c.id).toBeLessThanOrEqual(6);
     }
-    expect(COUNTRIES.find((c) => c.id === 'ru')!.cities).toHaveLength(13);
     expect(CITIES.filter((c) => c.home === 'kr' && c.front).map((c) => c.name)).toEqual(['서울', '부산', '대전', '전주', '강릉', '여수']);
     expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(5);
   });
