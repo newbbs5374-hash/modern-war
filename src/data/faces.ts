@@ -319,3 +319,30 @@ export function youngSheets(): FaceSheet[] {
 export function secretarySheets(): FaceSheet[] {
   return SHEET_COUNTRIES.map((c) => ({ sheet: `secretary-${c}`, country: c, grid: 1 as const, cells: [{ file: `secretary-${c}`, tag: c === 'us' ? 'us-we' : c, sex: 'f' as const, band: '20' as const }] }));
 }
+
+/* ───────── 11-26 새 나라 5개(대만·폴란드·필리핀·파키스탄·사우디) 얼굴 그림 ───────── */
+// 기존 나라와 같은 수: 장관급 142명(남 50대 48 · 60대 41 · 여 50대 33 · 60대 20) + 젊은 부관 32명(남 20 · 여 12) + 수행비서 1명.
+// 4×4(16명) 한 장씩: 장관급 9장(144칸, 끝 2칸은 남는 얼굴) · 젊은 부관 2장. 번호는 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2 차례 그대로라
+// 그림이 들어오면 그 나라를 FACE_PLAN(STD)·FACE_EXTRA(STD2)·FACE_EXTRA2(STD3)·EXTRA2_READY·YOUNG_READY에 넣고 FACE_BORROW에서 지우면 돼요.
+export const NEW_FACE_COUNTRIES = ['tw', 'pl', 'ph', 'pk', 'sa'];
+export function newNationSheets(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  const total = { m50: STD.m50 + STD2.m50 + STD3.m50, m60: STD.m60 + STD2.m60 + STD3.m60, f50: STD.f50 + STD2.f50 + STD3.f50, f60: STD.f60 + STD2.f60 + STD3.f60 };
+  for (const c of NEW_FACE_COUNTRIES) {
+    out.push({ sheet: `secretary-${c}`, country: c, grid: 1, cells: [{ file: `secretary-${c}`, tag: c, sex: 'f', band: '20' }] });
+    const cells: FaceSheet['cells'] = [];
+    const add = (sex: 'm' | 'f', band: FaceBand, n: number) => {
+      for (let i = 1; i <= n; i++) cells.push({ file: `face-${c}-${sex}-${band}-${pad2(i)}`, tag: c, sex, band });
+    };
+    // 남는 2칸(16의 배수 맞추기)은 남 50대·여 50대 한 장씩 더
+    add('m', '50', total.m50 + 1);
+    add('m', '60', total.m60);
+    add('f', '50', total.f50 + 1);
+    add('f', '60', total.f60);
+    out.push(...cut16(c, cells, 1));
+    const young: FaceSheet['cells'] = [];
+    for (const sex of ['m', 'f'] as const) for (let i = 0; i < YOUNG_PLAN.kp[sex]; i++) young.push({ file: youngFile(c, sex, i), tag: c, sex, band: '30' });
+    out.push(...cut16(c, young, 1, 'y'));
+  }
+  return out;
+}
