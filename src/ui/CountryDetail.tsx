@@ -27,7 +27,8 @@ import { FavorBox } from './CivScreens';
 import { CountryInfo, RelTag, fmt } from './common';
 import { FLAG } from './flag';
 import { ResIcon, iconArt } from './iconArt';
-import { Modal } from './kit';
+import { Meter, Modal } from './kit';
+import { GROW_INFO, GROW_MAX, GROW_TRACKS, NATION_FOCUS, PLAN_BY_PERS } from '../game/aiGrowth';
 import { PersonFace } from './People';
 import type { ScreenProps } from './screens';
 import { COUNTRY_COLORS, REL_COLORS } from './WorldMap';
@@ -216,6 +217,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                 <span>⚖️ 난이도 <b>{c.difficulty}</b></span>
               </div>
               <p className="small muted">📌 {f.note}</p>
+              {id !== me && <AiGrowBox state={state} id={id} />}
               {top && id !== me && (
                 <div className="buttons">
                   {(['선전포고', '휴전 제안', relationOf(w, me, id) === '연합' ? '연합 깨기' : '연합 제안'] as DiploAct[]).map((act) => {
@@ -517,5 +519,37 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
       </div>
       {pid !== null && <PersonModal state={state} actions={actions} pid={pid} onClose={() => setPid(null)} />}
     </Modal>
+  );
+}
+
+/** AI 나라 성장(11-26): 지금 전략과 갈래 5개 단계 */
+function AiGrowBox({ state, id }: { state: GameState; id: string }) {
+  const w = state.world;
+  const g = w.grow?.[id];
+  const pers = w.personalities[id];
+  const base = PLAN_BY_PERS[pers];
+  const focus = NATION_FOCUS[id];
+  return (
+    <div className="ai-grow">
+      <small className="stat-group-name">📈 나라 키우기(AI 지도자 전략)</small>
+      <p className="small">
+        🧭 <b>{g?.plan || base?.name}</b> — {base?.text}
+        {focus && <> · 잘하는 갈래 {GROW_INFO[focus].icon}{GROW_INFO[focus].name}(15% 싸게)</>}
+      </p>
+      <div className="pw-bars">
+        {GROW_TRACKS.map((t) => {
+          const lv = g?.lv[t] ?? 0;
+          const info = GROW_INFO[t];
+          return (
+            <div className="pw-bar" key={t} title={`${info.eff} +${Math.round(lv * info.per * 100)}%`}>
+              <small>{info.icon} {info.name}</small>
+              <Meter value={lv} max={GROW_MAX} tone={t === 'eco' ? 'gold' : t === 'army' ? 'red' : t === 'tech' ? 'blue' : 'green'} />
+              <b>{lv}단계</b>
+            </div>
+          );
+        })}
+      </div>
+      <p className="small muted">남는 나라 예산을 성향대로 써서 단계를 올려요. 전쟁 중엔 군비·요새, 땅을 잃으면 되찾기에 힘을 몰아요.</p>
+    </div>
   );
 }
