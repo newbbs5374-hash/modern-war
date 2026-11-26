@@ -8,8 +8,9 @@ import { budgetTick } from './budgetSeason';
 import './zones';
 import './projects';
 import './chains';
+import { polityTick } from './polityTick';
 
 export function domTick(s: GameState): GameState {
   const ns = s.dom ? s : { ...s, dom: newDom(s) };
-  return budgetTick(codesTick(groupsTick(agendaTick(ns))));
+  return polityTick(budgetTick(codesTick(groupsTick(agendaTick(ns)))));
 }

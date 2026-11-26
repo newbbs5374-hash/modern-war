@@ -11,6 +11,7 @@ import { BRANCH_KINDS } from '../data/deployOps';
 import { fieldById } from '../battle3d/pick';
 import type { BattlePlan } from '../battle/spec';
 import { addFavorNote, favorOf } from './civ';
+import { subtractDead, takenText } from './losses';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { addDef } from './defFund';
@@ -20,8 +21,8 @@ const HOUR = 3600e3;
 export const DEPLOY_MAX = 5;
 /** 연합이 아니면 이만큼 호감이 있어야 받아 줌 */
 export const DEPLOY_FAVOR = 30;
-/** AI 판단(15분)마다 유지비: 부대 값의 0.4% */
-const UPKEEP = 0.004;
+/** AI 판단(15분)마다 유지비: 부대 값의 0.04%(11-26 대장 "1/10로") */
+const UPKEEP = 0.0004;
 /** 전쟁 중인 나라에 있으면 판단마다 부대 하나를 잃을 확률 */
 const LOSS_CHANCE = 0.08;
 
@@ -215,7 +216,8 @@ export const clashModeName = (dep: Deployment) => {
 };
 
 /** 교전 결과(직접 싸움 · 맡김 · 시간 지남) → 보상·손실 */
-export function settleClash(s: GameState, depId: number, win: boolean, stars: number, how: '직접' | '맡김' | '현지'): { state: GameState; text: string } {
+/** dead = 직접 싸운 3D 전투에서 쓰러진 부대(있으면 그만큼 파병 부대에서 빠짐, 없으면 지면 1~2개) */
+export function settleClash(s: GameState, depId: number, win: boolean, stars: number, how: '직접' | '맡김' | '현지', dead?: Record<string, number>): { state: GameState; text: string } {
   const d = deployOf(s);
   const dep = d.list.find((x) => x.id === depId);
   const c = dep?.clash && clashById(dep.clash.id);
@@ -223,8 +225,15 @@ export function settleClash(s: GameState, depId: number, win: boolean, stars: nu
   const me = s.player.countryId;
   let ns = s;
   let text: string;
-  const units = { ...dep.units };
+  let units = { ...dep.units };
   let lost = 0;
+  let deadText = '';
+  if (dead) {
+    const r = subtractDead(units, dead);
+    units = r.units;
+    lost = Object.values(r.taken).reduce((a, b) => a + b, 0);
+    if (lost) deadText = ` 🪦 잃은 부대: ${takenText(r.taken)}`;
+  }
   if (win) {
     const money = c.money * Math.max(1, stars);
     const fame = c.fame + (stars >= 3 ? 2 : 0);
@@ -232,6 +241,8 @@ export function settleClash(s: GameState, depId: number, win: boolean, stars: nu
     const friend = isRegion(dep.to) ? regionById(dep.to)?.friend : dep.to;
     if (friend) ns = addFavorNote(ns, friend, `${placeName(dep.to)}에서 ${c.title}을(를) 막아 줌`, 5 + stars);
     text = `⚔️ ${placeName(dep.to)} ${c.title}: 승리! 나라 예산 +${money.toLocaleString('ko-KR')} · 명성 +${fame}${friend ? ' · 호감↑' : ''}`;
+  } else if (dead) {
+    text = `⚔️ ${placeName(dep.to)} ${c.title}: 패배…`;
   } else {
     // 지면 파병 부대 하나(현지에서 알아서 싸워 지면 둘)를 잃음
     const n = how === '현지' ? 2 : 1;
@@ -246,6 +257,7 @@ export function settleClash(s: GameState, depId: number, win: boolean, stars: nu
     text = `⚔️ ${placeName(dep.to)} ${c.title}: 패배… 부대 ${lost}개를 잃었어요.`;
   }
   if (how === '현지') text = `${text} (결정이 늦어 현지 부대가 알아서 싸웠어요)`;
+  text += deadText;
   const left = unitsCount(units);
   const list = d.list
     .map((x) => (x.id === depId ? { ...x, units, lost: x.lost + lost, clash: undefined, wins: (x.wins ?? 0) + (win ? 1 : 0) } : x))

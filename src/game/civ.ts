@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 지역 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { archWhy, isArchRival } from '../data/archRivals';
 import { growReach } from './aiGrowth';
 import { CLAIM_INFLUENCE, CLAIM_TENSION, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { instSum } from './institutions';
@@ -462,7 +463,8 @@ export function favorReasons(s: GameState, id: string): Array<[string, number]> 
   const relV = { 연합: 25, 휴전: -10, 전쟁: -50, 중립: 0 }[rel];
   if (relV) rows.push([rel === '연합' ? '연합국' : rel === '전쟁' ? '전쟁 중' : '휴전 중', relV]);
   if (sameBloc(me, id)) rows.push(['같은 협약', 8]);
-  if (isRival(me, id)) rows.push(['맞수', -10]);
+  if (isArchRival(me, id)) rows.push([`숙적(${archWhy(me, id)})`, -15]);
+  else if (isRival(me, id)) rows.push(['맞수', -10]);
   if (countryById(me).faith === countryById(id).faith) rows.push(['같은 신앙', 5]);
   if (c.gov) {
     if (c.aiGov[id] === c.gov) rows.push([`같은 체제(${govById(c.gov).name})`, 5]);

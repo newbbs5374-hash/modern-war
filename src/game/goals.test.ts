@@ -118,3 +118,23 @@ describe('매일 할 일 · 업적 · 루비 상점', () => {
     expect(claimAll(t).officer.boosts ?? 0).toBeGreaterThanOrEqual(b0 + 1);
   });
 });
+
+describe('모든 콘텐츠에서 전과(11-26)', () => {
+  it('훈련·모집·스탯·장군·부처 업무가 전과로 쌓이고 작은 전과는 하루 상한', () => {
+    const s = advance(newGame('t', 'kr', 0, { seed: 1 }), 2 * H);
+    const a: GameState = {
+      ...s,
+      officer: { ...s.officer, mastery: { ...s.officer.mastery, 사격: (s.officer.mastery?.사격 ?? 0) + 2 }, stats: { ...s.officer.stats, 체력: s.officer.stats.체력 + 1 } },
+      economy: { ...s.economy, army: { ...s.economy.army, 보병: (s.economy.army.보병 ?? 0) + 1 } },
+    };
+    const sp = goalsOf(trackGoals(s, a)).spoils ?? [];
+    for (const k of ['train', 'recruit', 'stat'] as const) expect(sp.some((x) => x.k === k && x.ruby > 0)).toBe(true);
+    // 상한
+    const big: GameState = { ...a, officer: { ...a.officer, stats: { ...a.officer.stats, 체력: a.officer.stats.체력 + 500 } } };
+    const sp2 = goalsOf(trackGoals(s, big)).spoils ?? [];
+    expect(sp2.filter((x) => SPOILS[x.k].small).reduce((n, x) => n + x.ruby, 0)).toBeLessThanOrEqual(SPOIL_SMALL_CAP);
+  });
+  it('모든 탭(본부·개인·국방·외교·사회·경제·문화)에 받는 곳이 있음', () => {
+    for (const w of ['본부', '개인', '국방', '외교', '사회', '경제', '문화']) expect(Object.values(SPOILS).some((x) => x.where === w && x.ruby > 0)).toBe(true);
+  });
+});

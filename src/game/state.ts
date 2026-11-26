@@ -24,6 +24,7 @@ import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { remarksTick, type RemarkState } from './remarks';
+import { snsTick, type SnsState } from './leaderSns';
 import { ensureRivalRoster } from './rivals';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
@@ -39,6 +40,7 @@ import { lawEff, type AssemblyState } from './laws';
 import { assemblyTick } from './assembly';
 import { mediaTick, type MediaState } from './media';
 import { domTick } from './domesticTick';
+import type { PolityState } from './polity';
 import type { DomState } from './domestic';
 import { approvalBudgetMult, approvalTroopMult, presTick, type PresState } from './approval';
 import { civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
@@ -151,10 +153,14 @@ export interface GameState {
   deploy?: DeployState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
+  /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
+  sns?: SnsState;
   /** 관세(11-26 난이도). 없으면 관세 없음 */
   pressure?: PressureState;
   /** 속국 항복(11-26). 없으면 속국 없음 */
   vassal?: VassalState;
+  /** 내정 새 콘텐츠 8가지(11-26: 선거·경제 지표·재난·감사·지사·인구·개헌·연설). 없으면 처음 쓸 때 채움 */
+  polity?: PolityState;
 }
 
 export interface NewGameOptions {
@@ -214,7 +220,9 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
-export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4 };
+export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4, pl: 1.1 };
+/** 나라 특수 능력 중 나라 예산에 붙는 배율(11-26 사우디 오일 머니) */
+export const BUDGET_BONUS: Record<string, number> = { sa: 1.2 };
 
 export function salaryPerDay(s: GameState): number {
   return RANKS[s.player.rankIndex].salaryPerDay;
@@ -237,7 +245,7 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
   const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
-  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
+  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind * (BUDGET_BONUS[countryId] ?? 1);
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
 export function troopsPerDay(s: GameState, countryId: string): number {
@@ -259,6 +267,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
   return [
     ['기본(나라 예산 점수)', `${Math.round(countryById(me).budget * BUDGET_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
     [`지도자 성향(${p})`, x(PERSONALITIES[p].budget)],
+    ...(BUDGET_BONUS[me] ? [['나라 특수 능력', x(BUDGET_BONUS[me])] as [string, string]] : []),
     ['가진 도시(점령지는 절반)', x(share)],
     ['🏭 군수공장', x(budgetMult(s))],
     ['🏛️ 체제·카드·도시 민심·인구', x(civBudgetMult(s))],
@@ -340,7 +349,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
-    cur = propTick(domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))));
+    cur = propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

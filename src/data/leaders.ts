@@ -40,6 +40,12 @@ export const LEADERS: Record<string, { name: string; title: string; personality:
   ir: { name: '하산 모라디', title: '최고지도자', personality: '공격형' },
   ua: { name: '올레나 코발렌코', title: '대통령', personality: '방어형' },
   kp: { name: '리철준', title: '국무위원장', personality: '공격형' },
+  // 11-26 새 나라
+  tw: { name: '린쥔훙', title: '총통', personality: '방어형' },
+  pl: { name: '토마시 코발치크', title: '대통령', personality: '방어형' },
+  ph: { name: '마리셀 산토스', title: '대통령', personality: '기회주의' },
+  pk: { name: '타리크 잔주아', title: '총리', personality: '공격형' },
+  sa: { name: '파이살 알라시드', title: '국왕', personality: '경제형' },
 };
 
 export const PERSONALITY_LIST = Object.keys(PERSONALITIES) as Personality[];

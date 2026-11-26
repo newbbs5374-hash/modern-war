@@ -1,11 +1,11 @@
-# 13개국 도(주·성·현) 경계 만들기. 원본: Natural Earth 10m admin-1(공개 자료) + johan/world.geo.json(세계지도 나라 모양).
+# 18개국 도(주·성·현) 경계 만들기. 원본: Natural Earth 10m admin-1(공개 자료) + johan/world.geo.json(세계지도 나라 모양).
 # 쓰는 법: python3 scripts/gen_prov.py ne_10m_admin_1_states_provinces.geojson countries.geo.json src/data/provinces.ts
 # 대한민국은 krProvinces.ts(gen_kr.py)를 그대로 씀. 나라 모양 안을 빈틈없이 나누고(빈 곳은 가까운 도로), 나라 모양 밖은 자름.
 import json, sys
 from shapely.geometry import shape, MultiPolygon, Polygon
 from shapely.ops import unary_union, transform
 L0, B1, PX = -15, 80, 6
-GAME = {'us':'USA','cn':'CHN','ru':'RUS','de':'DEU','jp':'JPN','uk':'GBR','in':'IND','tr':'TUR','il':'ISR','ir':'IRN','ua':'UKR','kp':'PRK'}
+GAME = {'us':'USA','cn':'CHN','ru':'RUS','de':'DEU','jp':'JPN','uk':'GBR','in':'IND','tr':'TUR','il':'ISR','ir':'IRN','ua':'UKR','kp':'PRK','tw':'TWN','pl':'POL','ph':'PHL','pk':'PAK','sa':'SAU'}
 A3 = {v:k for k,v in GAME.items()}
 def proj(g):
     return transform(lambda x, y, z=None: (((x + 360 if x < L0 else x) - L0) * PX, (B1 - y) * PX), g)

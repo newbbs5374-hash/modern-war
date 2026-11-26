@@ -61,6 +61,8 @@ export const SIZE_TILES: Record<CitySize, number> = { 2: 37, 3: 61, 4: 91 };
 
 /** 11-25 전 나라별 도시 수(그 뒤 새 도시는 뒤에 붙음 → 도시 id가 그대로) */
 const OLD_CITY_N: Record<string, number> = { us: 8, cn: 8, ru: 10, de: 2, jp: 2, uk: 2, in: 5, kr: 11, tr: 3, il: 2, ir: 4, ua: 3, kp: 2 };
+/** 11-26 새 나라 5개(대만·폴란드·필리핀·파키스탄·사우디): 원래 땅·분쟁 지역을 모두 놓은 뒤 맨 나중에 놓음 → 옛 나라 칸이 그대로 */
+const LATE = new Set(['tw', 'pl', 'ph', 'pk', 'sa']);
 export function citySizesOf(countryId: string, n: number): CitySize[] {
   // 11-24: 대장 고향 여수·순천·익산은 중도시(칸 271)
   // 11-25: 점령 도시·내정 도시 나누며 도시 67곳 추가. 원래 도시 크기는 그대로, 새 도시는 뒤에 붙음
@@ -263,14 +265,17 @@ function build() {
     }
     return blob;
   };
-  for (const j of jobs) {
+  const placeJob = (j: Job) => {
     const id = `${j.country.id}-${j.idx}`;
     const n = SIZE_TILES[j.size];
     const ok = (h: Hex) => free([h], landGroup(j.country));
     let done: { c: Hex; tiles: Hex[] } | null = null;
     // 목표 자리에서 가까운 순서로, 자기 나라 땅 가까이(둘째 도시부터) 자리를 찾아 키워 봄
+    const late = LATE.has(j.country.id); // 11-26 새 나라: 빈 바다가 좁아 더 멀리까지 찾아봄
+    // 11-26 새 나라의 둘째 도시부터는 새 도시처럼 자기 땅 바로 옆에만(한 덩어리)
+    const attach = j.fresh || (late && j.idx > 0);
     const cands: Array<{ c: Hex; score: number }> = [];
-    if (j.fresh) {
+    if (attach) {
       // 11-25 새 도시: 자기 나라 땅 바로 옆 빈칸에서만 시작(한 덩어리), 목표 자리에 가까운 순
       const seen = new Set<string>();
       for (const [k, v] of owner) {
@@ -285,7 +290,7 @@ function build() {
         }
       }
     }
-    for (let rad = 0; rad <= (j.fresh ? -1 : 30); rad++)
+    for (let rad = 0; rad <= (attach ? -1 : late ? 70 : 30); rad++)
       for (const c of rad === 0 ? [j.target] : ring(j.target, rad)) {
         if (!ok(c)) continue;
         let near = j.idx === 0;
@@ -298,16 +303,16 @@ function build() {
         cands.push({ c, score: rad + (near ? 0 : 6) });
       }
     cands.sort((a, b) => a.score - b.score);
-    for (const { c } of cands.slice(0, j.fresh ? 5000 : 60)) {
+    for (const { c } of cands.slice(0, attach ? 5000 : late ? 3000 : 60)) {
       const tiles = grow(c, n, ok, j.country.id, landGroup(j.country));
       // 11-25 새 도시는 자기 나라 땅에 꼭 붙어야 함(한 덩어리)
-      if (tiles && j.fresh && !tiles.some((t) => HEX_DIRS.some((d) => owner.get(hexKey(t.q + d.q, t.r + d.r))?.home === j.country.id))) continue;
+      if (tiles && attach && !tiles.some((t) => HEX_DIRS.some((d) => owner.get(hexKey(t.q + d.q, t.r + d.r))?.home === j.country.id))) continue;
       if (tiles) {
         done = { c, tiles };
         break;
       }
     }
-    if (!done && j.fresh) {
+    if (!done && attach) {
       // 둘러싸인 나라(중국 등): 다른 대륙 간격 규칙만 풀고, 빈칸이면 자기 땅 옆에 붙임
       const loose = (h: Hex) => !owner.has(hexKey(h.q, h.r));
       const near: Hex[] = [];
@@ -329,7 +334,8 @@ function build() {
     const best = done.c;
     centers[id] = { ...best, size: j.size };
     for (const t of done.tiles) put(t, { home: j.country.id, place: id, kind: 'city', center: t.q === best.q && t.r === best.r, continent: landGroup(j.country) });
-  }
+  };
+  for (const j of jobs) if (!LATE.has(j.country.id)) placeJob(j);
   // 섬: 다른 땅에서 2칸 떨어진 곳에서 자연스럽게 키움
   const seaOk = (h: Hex) => disk(h, 2).every((x) => !owner.has(hexKey(x.q, x.r)));
   const placeIsland = (at: [number, number], n: number): { c: Hex; tiles: Hex[] } => {
@@ -350,6 +356,7 @@ function build() {
     for (const t of tiles) put(t, { home: '', place: p.id, kind: 'island', center: t.q === c.q && t.r === c.r, continent: '' });
     pioneers.push({ id: p.id, name: p.name, res: p.res, q: c.q, r: c.r, ...islandXY(p.id) });
   }
+  for (const j of jobs) if (LATE.has(j.country.id)) placeJob(j);
   const tiles: Tile[] = [...owner.entries()].map(([k, v]) => {
     const [q, r] = k.split(',').map(Number);
     return { q, r, ...hexToPixel(q, r), kind: v.kind, home: v.home, place: v.place, center: v.center };

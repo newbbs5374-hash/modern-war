@@ -3,6 +3,8 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
 import { settleClash } from '../../game/deploy';
+import { loseUnits, ownedByBase } from '../../game/losses';
+import { deployOf } from '../../game/deploy';
 import { routeTo } from '../nav';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
@@ -23,6 +25,8 @@ export interface Outcome {
   text: string;
   /** 11-26 3D 훈련: 쓴 병과 · 퍼즐 별 · 주간 합동 */
   drill?: DrillInfo;
+  /** 11-26 3D 전투에서 쓰러진 우리 부대(병과 이름별) → 가진 부대에서 실제로 빠짐 */
+  dead?: Record<string, number>;
 }
 
 export interface FrameProps {
@@ -35,6 +39,10 @@ export interface FrameProps {
   /** 11-26 안 6: 병과 숙련 배수(3D 전투) · 배치 퍼즐 판별 별 */
   usBuff?: Partial<Record<string, number>>;
   puzzleStars?: Record<string, number>;
+  /** 11-26 대장 "가진 부대만": 3D 전투에 낼 수 있는 부대(병과 이름별). 없으면 제한 없음(훈련·연습) */
+  owned?: Record<string, number>;
+  /** 11-26: 싸우기 전에 나가거나 화면 오류로 나가면 결과 없이 돌아감(패배 아님) */
+  onCancel?: () => void;
 }
 
 /** 자동전투·즉시완료를 썼는지(훈련은 별 최대 2개) */
@@ -127,7 +135,12 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   const perks = perkBonus(o);
   const stats: Record<string, number> = { ...o.stats };
   for (const [k, v] of Object.entries(perks)) stats[k] = (stats[k] ?? 0) + v;
-  const props: FrameProps = { spec, stats, rank, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d };
+  // 11-26 가진 부대만 냄: 앞 판에서 쓰러진 만큼은 빼고(작전·대전투는 여러 판)
+  const deadSoFar: Record<string, number> = {};
+  for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) deadSoFar[k] = (deadSoFar[k] ?? 0) + v;
+  const ownSrc = plan.source === 'deploy' && plan.deploy ? deployOf(state).list.find((x) => x.id === plan.deploy!.dep)?.units ?? {} : plan.source === 'training' || plan.source === 'practice' ? null : state.economy.army;
+  const owned = ownSrc ? ownedByBase(ownSrc, deadSoFar) : undefined;
+  const props: FrameProps = { spec, stats, rank, owned, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
@@ -150,17 +163,26 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   };
   const claim = () => {
     if (!final) return;
+    // 11-26 3D 전투에서 쓰러진 우리 부대(모든 판 합). 훈련·연습은 모의전이라 안 빠짐
+    const dead: Record<string, number> = {};
+    for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) dead[k] = (dead[k] ?? 0) + v;
+    const hasDead = results.some((r) => r.dead);
+    const lose = (t: string | null | undefined) => {
+      if (plan.source === 'training' || plan.source === 'practice' || plan.source === 'deploy') return t ?? '';
+      const lt = actions.applyWith((s) => { const r = loseUnits(s, dead); return { state: r.state, out: r.text }; });
+      return [t, lt].filter(Boolean).join(' · ');
+    };
     if (plan.source === 'occupy' && plan.occupy) {
       const { city, task } = plan.occupy;
       const text = actions.applyWith((s) => {
         const r = applyOccTask(s, city, task as OccTask, final.win ? final.stars : 0);
         return { state: r.state, out: r.text };
       });
-      setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
+      setClaimed(`${lose(text)}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
     } else if (plan.source === 'deploy' && plan.deploy) {
       const dep = plan.deploy.dep;
       const text = actions.applyWith((s) => {
-        const r = settleClash(s, dep, final.win, allAuto ? Math.min(2, final.stars) : final.stars, '직접');
+        const r = settleClash(s, dep, final.win, allAuto ? Math.min(2, final.stars) : final.stars, '직접', hasDead ? dead : undefined);
         return { state: r.state, out: r.text };
       });
       setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
@@ -180,7 +202,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
         const r = claimMission(s, final);
         return { state: r.state, out: r.text ?? '' };
       });
-      setClaimed(text ?? '');
+      setClaimed(lose(text));
     }
     setPendingPlan(null);
   };

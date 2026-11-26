@@ -42,6 +42,8 @@ import { DefenseScreen, EconomyScreen, PersonalScreen, SocietyScreen } from './M
 import { routeTo } from './nav';
 import { SettingsScreen } from './SettingsScreen';
 import { UiIcon } from './uiIcon';
+import { SnsPhone } from './SnsPhone';
+import { snsUnread } from '../game/leaderSns';
 
 export interface GameActions {
   claim: () => void;
@@ -94,6 +96,7 @@ export function HomeScreen(props: ScreenProps) {
   const [talkOpen, setTalkOpen] = useState(false);
   const [crisisOpen, setCrisisOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
+  const [snsOpen, setSnsOpen] = useState(false);
   const crisis = crisisOf(state).open;
   const gstep = guideStep(state);
   const gready = !!gstep && gstep.done(state);
@@ -124,6 +127,7 @@ export function HomeScreen(props: ScreenProps) {
   const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
     [
       { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
+      { icon: '📱', label: '정상 SNS', x: 90, y: 28, on: () => setSnsOpen(true), badge: snsUnread(state) || null },
       { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
       { icon: '📋', label: '명령', x: 90, y: 52, on: () => setOrdersOpen(true), badge: ORDER_INFO.filter((x) => ordersOf(state)[x.key]).length || null },
       { icon: '🛒', label: '상점', x: 90, y: 68, on: () => go('shop'), badge: goalsReady(state) || null },
@@ -140,6 +144,7 @@ export function HomeScreen(props: ScreenProps) {
       <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} cityGrowth={cityGrowthMap(state, me.id)} cityTags={cityTagMap(state)} />
       {talkOpen && <TalkModal state={state} actions={actions} onClose={() => setTalkOpen(false)} />}
       {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
+      {snsOpen && <SnsPhone state={state} actions={actions} onClose={() => setSnsOpen(false)} />}
       {ordersOpen && <OrdersModal state={state} apply={actions.apply} onClose={() => setOrdersOpen(false)} />}
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
       {brfOpen && <BriefingModal state={state} onClose={() => setBrfOpen(false)} goTab={goTab} />}

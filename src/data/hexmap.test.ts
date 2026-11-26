@@ -13,7 +13,7 @@ describe('육각 타일 지도', () => {
   it('나라 타일 수 = 도시 묶음 합(겹침 없음), 표와 같음', () => {
     // 11-25: 도시 67곳 추가(원래 도시 칸은 그대로)
     // 11-26: 미국 7곳·중국 3곳·러시아 2곳 더(소도시)
-    const want: Record<string, number> = { us: 890, cn: 742, ru: 705, de: 368, jp: 368, uk: 368, in: 607, kr: 751, tr: 368, il: 368, ir: 422, ua: 368, kp: 368 };
+    const want: Record<string, number> = { us: 890, cn: 742, ru: 705, de: 368, jp: 368, uk: 368, in: 607, kr: 751, tr: 368, il: 368, ir: 422, ua: 368, kp: 368, tw: 398, pl: 435, ph: 435, pk: 435, sa: 472 };
     for (const c of COUNTRIES) {
       const n = TILES.filter((t) => t.home === c.id).length;
       expect(n).toBe(want[c.id]);

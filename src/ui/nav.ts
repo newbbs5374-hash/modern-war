@@ -58,8 +58,8 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
 export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'plan' | 'agenda' | 'album';
 export type DefenseTab = 'ops' | 'train' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
 export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
-export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'press' | 'opinion';
-export type EconomyTab = 'vault' | 'res' | 'ind' | 'trade' | 'tax' | 'facall' | 'proj';
+export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'nation' | 'press' | 'opinion';
+export type EconomyTab = 'vault' | 'macro' | 'res' | 'ind' | 'trade' | 'tax' | 'facall' | 'proj';
 
 function remember(key: string, tab: string) {
   try {

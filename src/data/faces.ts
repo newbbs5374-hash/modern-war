@@ -31,7 +31,13 @@ export const US_ETH_NAME: Record<UsEth, string> = { we: '백인', bl: '흑인', 
 export const US_ETH_WEIGHT: Record<UsEth, number> = { we: 0.5, bl: 0.2, hi: 0.2, as: 0.1 };
 
 /** 사람의 얼굴 묶음 이름 */
-export const faceTag = (country: string, eth?: string) => (country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : 'us-we');
+export const faceTag = (country: string, eth?: string): string =>
+  country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : FACE_BORROW[country] ? faceTag(FACE_BORROW[country]) : 'us-we';
+/**
+ * 11-26 새 나라 5개: 얼굴 그림이 오기 전까지 가까운 나라 얼굴을 빌려 씀(이름은 그 나라 이름표에서 뽑음).
+ * 그림이 들어오면 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2·YOUNG_READY에 그 나라를 넣고 여기서 지우면 돼요.
+ */
+export const FACE_BORROW: Record<string, string> = { tw: 'cn', pl: 'ua', ph: 'jp', pk: 'in', sa: 'ir' };
 
 /**
  * 추가 얼굴(11-24 대장 결정 "나라별 더"): 나라마다 22장(남 13 · 여 9) → 모두 62장.
@@ -155,7 +161,7 @@ export const youngFile = (tag: string, sex: 'm' | 'f', i: number) => `face-${tag
 export const isYoungFace = (key?: string) => !!key && /^face-.+-[mf]-30-\d+$/.test(key);
 /** 그 나라에 젊은 얼굴이 (한 성별이라도) 들어 있나 */
 export const youngReady = (country: string) => {
-  const tags = country === 'us' ? US_ETH.map((e) => `us-${e}`) : [country];
+  const tags = country === 'us' ? US_ETH.map((e) => `us-${e}`) : [faceTag(country)];
   return tags.some((t) => youngSize(t, 'm') + youngSize(t, 'f') > 0);
 };
 /** 모든 젊은 얼굴 파일(계획 전체) */
@@ -312,4 +318,31 @@ export function youngSheets(): FaceSheet[] {
 /** 수행비서 13명: 한 사람씩 한 장(secretary-kr…) */
 export function secretarySheets(): FaceSheet[] {
   return SHEET_COUNTRIES.map((c) => ({ sheet: `secretary-${c}`, country: c, grid: 1 as const, cells: [{ file: `secretary-${c}`, tag: c === 'us' ? 'us-we' : c, sex: 'f' as const, band: '20' as const }] }));
+}
+
+/* ───────── 11-26 새 나라 5개(대만·폴란드·필리핀·파키스탄·사우디) 얼굴 그림 ───────── */
+// 기존 나라와 같은 수: 장관급 142명(남 50대 48 · 60대 41 · 여 50대 33 · 60대 20) + 젊은 부관 32명(남 20 · 여 12) + 수행비서 1명.
+// 4×4(16명) 한 장씩: 장관급 9장(144칸, 끝 2칸은 남는 얼굴) · 젊은 부관 2장. 번호는 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2 차례 그대로라
+// 그림이 들어오면 그 나라를 FACE_PLAN(STD)·FACE_EXTRA(STD2)·FACE_EXTRA2(STD3)·EXTRA2_READY·YOUNG_READY에 넣고 FACE_BORROW에서 지우면 돼요.
+export const NEW_FACE_COUNTRIES = ['tw', 'pl', 'ph', 'pk', 'sa'];
+export function newNationSheets(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  const total = { m50: STD.m50 + STD2.m50 + STD3.m50, m60: STD.m60 + STD2.m60 + STD3.m60, f50: STD.f50 + STD2.f50 + STD3.f50, f60: STD.f60 + STD2.f60 + STD3.f60 };
+  for (const c of NEW_FACE_COUNTRIES) {
+    out.push({ sheet: `secretary-${c}`, country: c, grid: 1, cells: [{ file: `secretary-${c}`, tag: c, sex: 'f', band: '20' }] });
+    const cells: FaceSheet['cells'] = [];
+    const add = (sex: 'm' | 'f', band: FaceBand, n: number) => {
+      for (let i = 1; i <= n; i++) cells.push({ file: `face-${c}-${sex}-${band}-${pad2(i)}`, tag: c, sex, band });
+    };
+    // 남는 2칸(16의 배수 맞추기)은 남 50대·여 50대 한 장씩 더
+    add('m', '50', total.m50 + 1);
+    add('m', '60', total.m60);
+    add('f', '50', total.f50 + 1);
+    add('f', '60', total.f60);
+    out.push(...cut16(c, cells, 1));
+    const young: FaceSheet['cells'] = [];
+    for (const sex of ['m', 'f'] as const) for (let i = 0; i < YOUNG_PLAN.kp[sex]; i++) young.push({ file: youngFile(c, sex, i), tag: c, sex, band: '30' });
+    out.push(...cut16(c, young, 1, 'y'));
+  }
+  return out;
 }

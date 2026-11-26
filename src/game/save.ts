@@ -14,7 +14,11 @@ import { TEST_BOOSTS } from './boost';
 import { SAVE_VERSION, type GameState } from './state';
 import { newBuildings, newEconomy } from './economy';
 import { BUILDING_IDS, FACILITIES, RESOURCES } from '../data/economy';
-import { newWorld, syncFollowers } from './world';
+import { isRival, newWorld, pairKey, syncFollowers } from './world';
+import { START_TREASURY_PER_POINT, START_TROOPS_PER_POINT, aiStrength } from './balance';
+import { LEADERS } from '../data/leaders';
+import { startingRelation } from '../data/world';
+import { NOW_CONFLICTS } from '../data/conflicts';
 import { newOfficer } from './officer';
 import { migrateCityTiles, newCiv } from './civ';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
@@ -69,6 +73,7 @@ export function parseSave(text: string): GameState | null {
     const w = s.world;
     if (!w || typeof w.seed !== 'number' || typeof w.nextTickMs !== 'number' || !Array.isArray(w.events)) return null;
     if (!w.pairs || !w.personalities || !w.owner || !w.defense) return null;
+    addNewNations(s); // 11-26 새 나라 5개: 옛 저장에도 넣어 줌
     // 11/24 새 도시(대한민국 10개 도시): 옛 저장엔 없으므로 그 나라 수도 주인에게(수도가 없으면 처음 나라)
     for (const c of CITIES) {
       if (typeof w.owner[c.id] !== 'string') w.owner[c.id] = w.owner[`${c.home}-0`] ?? c.home;
@@ -134,6 +139,34 @@ export function parseSave(text: string): GameState | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * 11-26 나라 13→18개(대만·폴란드·필리핀·파키스탄·사우디): 옛 저장엔 그 나라 자리가 없으므로
+ * 새 판을 시작할 때와 같은 값(지도자 성향·관계·금고·병력)으로 채워요. 도시는 아래에서 처음 주인에게 갑니다.
+ */
+function addNewNations(s: GameState): void {
+  const w = s.world;
+  if (!s.nations) return;
+  const add = COUNTRIES.filter((c) => !s.nations[c.id]);
+  if (!add.length) return;
+  for (const c of add) {
+    const k = aiStrength(c.id, s.player.countryId);
+    s.nations[c.id] = { treasury: c.budget * START_TREASURY_PER_POINT * k, troops: c.military * START_TROOPS_PER_POINT * k };
+    if (!w.personalities[c.id]) w.personalities[c.id] = LEADERS[c.id].personality;
+  }
+  for (const a of COUNTRIES)
+    for (const b of COUNTRIES) {
+      if (a.id >= b.id) continue;
+      const key = pairKey(a.id, b.id);
+      if (w.pairs[key]) continue;
+      const rel = startingRelation(a.id, b.id);
+      const now = s.player.realWorld ? NOW_CONFLICTS.find((x) => pairKey(x.a, x.b) === key) : undefined;
+      w.pairs[key] = now
+        ? { rel: now.rel, tension: now.tension, weariness: now.weariness }
+        : { rel, tension: rel === '중립' ? (isRival(a.id, b.id) ? 25 : 5) : 0, weariness: 0 };
+    }
+  w.events.unshift({ t: s.worldMs, kind: '외교', text: '🌏 새 나라 5개(대만·폴란드·필리핀·파키스탄·사우디아라비아)가 세계 무대에 나왔어요.', mine: false });
 }
 
 export function saveGame(s: GameState, st: Storage | null = storage()): boolean {

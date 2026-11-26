@@ -95,6 +95,12 @@ const SECOND: SpecialDef[] = [
   S({ id: 'ir-2', country: 'ir', slot: 2, name: '사막 탄도 여단', base: '미사일', effect: '값 −40% · 사거리 +1 · 대신 정확도 −15%', cost: { money: 0.6, power: 1.1 }, field: { kind: 'artillery', range: 1, atk: 0.85 }, art: 'A desert-camouflage truck launcher carrying one big ballistic missile raised at an angle.' }),
   S({ id: 'ua-2', country: 'ua', slot: 2, name: '국토 방위대', base: '보병', effect: '우리 땅을 지킬 때 +40% · 받는 피해 −15%', field: { kind: 'infantry', homeDef: 0.4, taken: 0.85 }, art: 'A squad of soldiers in trenches with sandbags among wheat stalks, one with a shoulder-launched rocket.' }),
   S({ id: 'kp-2', country: 'kp', slot: 2, name: '갱도 포병', base: '포병', effect: '땅굴에 숨어 받는 피해 −50% · 대신 느림', field: { kind: 'artillery', taken: 0.5, move: 1.3 }, art: 'A heavy artillery gun poking out of a rocky cave mouth with camouflage netting.' }),
+  // 11-26 새 나라 5개
+  S({ id: 'tw-2', country: 'tw', slot: 2, name: '고슴도치 방공대', base: '방공부대', effect: '휴대 미사일로 상륙 막기 · 우리 땅 지킬 때 +30% · 받는 피해 −20%', field: { kind: 'aa', homeDef: 0.3, taken: 0.8, vs: { kinds: ['fighter', 'drone'], v: 1.2 } }, art: 'A small team of soldiers with shoulder-fired anti-air missiles hiding among coastal rocks and palm trees, a light truck behind them.' }),
+  S({ id: 'pl-2', country: 'pl', slot: 2, name: '천둥 로켓 포병단', base: '다연장로켓', effect: '한국산 로켓 · 값 −15% · 사거리 +1 · 공격 +10%', cost: { money: 0.85 }, field: { kind: 'artillery', range: 1, atk: 1.1 }, art: 'A modern eight-wheeled multiple rocket launcher truck with two large rocket pods raised, snowy plain behind.' }),
+  S({ id: 'ph-2', country: 'ph', slot: 2, name: '정글 수색대', base: '특수부대', effect: '숲·산에서 공격 +30% · 숨어서 하는 첫 공격 +50%', field: { kind: 'infantry', terrain: { at: ['숲', '산'], atk: 1.3 }, ambush: 1.5 }, art: 'A squad of jungle scouts in leaf-pattern camouflage moving through dense tropical forest with rifles.' }),
+  S({ id: 'pk-2', country: 'pk', slot: 2, name: '전략 억지 여단', base: '탄도미사일', effect: '사거리 +2 · 공격 +20% · 대신 값 +35%', cost: { money: 1.35, power: 1.35 }, field: { kind: 'artillery', range: 2, atk: 1.2 }, art: 'A large road-mobile ballistic missile launcher truck with a long missile raised, mountains in the background.' }),
+  S({ id: 'sa-2', country: 'sa', slot: 2, name: '사막 방공 방패', base: '장거리 방공', effect: '석유 시설 지키기 · 미사일·드론 요격 +40% · 사거리 +1', field: { kind: 'aa', vs: { kinds: ['fighter', 'drone'], v: 1.4 }, range: 1 }, art: 'A long-range air defense battery with four tall missile launcher boxes and a big radar truck in the desert near oil towers.' }),
 ];
 
 /** ① 지금 특별 병과(world.ts specialUnit)를 지도 위 전투 능력으로 */
@@ -112,6 +118,11 @@ const FIRST_FIELD: Record<string, { field: FieldMod; art: string; cost?: Special
   ir: { field: { kind: 'destroyer', vs: { kinds: ['destroyer', 'cruiser', 'carrier'], v: 1.3 }, move: 0.7, hp: 0.8 }, cost: { money: 0.8 }, art: 'A swarm of three small fast attack boats with machine guns, white wakes behind them.' },
   ua: { field: { kind: 'drone', vs: { kinds: ['destroyer', 'cruiser', 'carrier', 'submarine'], v: 1.8 } }, art: 'A small black explosive sea drone boat skimming the waves with a camera mast.' },
   kp: { field: { kind: 'infantry', ambush: 1.5, terrain: { at: ['산'], atk: 1.2 } }, art: 'A squad of commandos emerging from a tunnel hatch in the ground at night.' },
+  tw: { field: { kind: 'artillery', seaStrike: 2, vs: { kinds: ['destroyer', 'cruiser', 'carrier'], v: 1.5 } }, art: 'A truck-mounted anti-ship missile launcher with four box canisters raised toward the sea on a rocky coast.' },
+  pl: { field: { kind: 'tank', def: 1.2, homeDef: 0.25 }, art: 'A modern main battle tank with a white eagle emblem on the turret side, grey-green camouflage, on a flat field.' },
+  ph: { field: { kind: 'destroyer', move: 0.8, sight: 1, hp: 0.9 }, cost: { money: 0.7, power: 1.1 }, art: 'A white coast guard patrol ship with a blue stripe on the hull and a small gun on the bow, fast wake behind.' },
+  pk: { field: { kind: 'infantry', terrain: { at: ['산'], atk: 1.25 }, taken: 0.9 }, art: 'A squad of mountain infantry in grey-green uniforms climbing a snowy rocky ridge with ropes.' },
+  sa: { field: { kind: 'fighter', atk: 1.2, hp: 1.2 }, cost: { money: 1.5, power: 1.4 }, art: 'A pair of twin-engine multirole fighter jets in desert-sand camouflage flying low over dunes.' },
 };
 
 export const SPECIALS: SpecialDef[] = [
