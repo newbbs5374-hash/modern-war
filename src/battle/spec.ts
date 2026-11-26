@@ -42,8 +42,8 @@ export interface BattlePlan {
   intro?: string;
   /** 점령지 관리 임무(11-26): 도시 · 임무 */
   occupy?: { city: string; task: string };
-  /** 파병 교전(11-26): 파병 번호 · 교전 번호 */
-  deploy?: { dep: number; ev: number };
+  /** 파병 교전(11-26): 파병 번호 · 교전 id */
+  deploy?: { dep: number; clash: string };
 }
 
 /** 점령지 관리 임무 = 미니게임 한 판 */

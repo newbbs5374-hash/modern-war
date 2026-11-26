@@ -28,6 +28,8 @@ import { GRAND_RANK, OPERATION_RANK } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { TalkModal } from './TalkModal';
 import { CrisisModal } from './CrisisModal';
+import { clashes, openRequests, placeName } from '../game/deploy';
+import { clashById } from '../data/deployOps';
 import { OrdersModal } from './OrdersModal';
 import { FleetWatchCard } from './FleetWatch';
 import { ORDER_INFO, ordersOf } from '../game/orders';
@@ -181,6 +183,27 @@ export function HomeScreen(props: ScreenProps) {
               <span className="hq-main">
                 <b>⚡ {crisisById(crisis.def).title}</b>
                 <small>결정을 기다려요 · {timeLeft(crisis.untilMs - state.worldMs)}</small>
+              </span>
+            </button>
+          )}
+          {clashes(state).slice(0, 1).map((x) => (
+            <button key={x.id} className="hq hot crisis-hq" onClick={() => goTab('diplo', 'diplo', 'deploy')}>
+              <span>{clashById(x.clash!.id)?.icon ?? '⚔️'}</span>
+              <span className="hq-main">
+                <b>
+                  ⚔️ {placeName(x.to)} · {clashById(x.clash!.id)?.title}
+                  {clashes(state).length > 1 ? ` 외 ${clashes(state).length - 1}` : ''}
+                </b>
+                <small>파병 부대 교전 · {timeLeft(x.clash!.untilMs - state.worldMs)}</small>
+              </span>
+            </button>
+          ))}
+          {openRequests(state).length > 0 && (
+            <button className="hq" onClick={() => goTab('diplo', 'diplo', 'deploy')}>
+              <span>📨</span>
+              <span className="hq-main">
+                <b>파병 요청 {openRequests(state).length}건</b>
+                <small>{openRequests(state).map((r) => placeName(r.region)).join(' · ')}</small>
               </span>
             </button>
           )}

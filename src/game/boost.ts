@@ -191,7 +191,7 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
   if (t.kind === 'swap' && s.civ) ns = { ...ns, civ: { ...s.civ, lastSwapMs: minus(s.civ.lastSwapMs) } };
   if (t.kind === 'vote' && s.assembly?.vote) ns = { ...ns, assembly: { ...s.assembly, vote: { ...s.assembly.vote, endMs: minus(s.assembly.vote.endMs) } } };
   if (t.kind === 'deploy' && s.deploy)
-    ns = { ...ns, deploy: { ...s.deploy, list: s.deploy.list.map((x) => (x.id !== t.id ? x : x.returnMs ? { ...x, returnMs: minus(x.returnMs) } : { ...x, arriveMs: minus(x.arriveMs) })) } };
+    ns = { ...ns, deploy: { ...s.deploy, list: s.deploy.list.map((x) => (x.id !== t.id ? x : x.returnMs ? { ...x, returnMs: minus(x.returnMs) } : { ...x, arriveMs: minus(x.arriveMs), ...(x.req ? { req: { ...x.req, endMs: minus(x.req.endMs) } } : {}) })) } };
   return ns;
 }
 
