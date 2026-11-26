@@ -1,5 +1,4 @@
 // 전투 화면: 훈련·임무·작전(여러 판)·대전투·승급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
-import { fieldRoster } from '../../game/economy';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
@@ -10,16 +9,7 @@ import { Tile } from '../kit';
 import { FRAME_ICON } from '../icons';
 import { COUNTRIES, countryById } from '../../data/world';
 import { relationOf } from '../../game/world';
-import { WEATHER_ICON, WEATHER_TEXT } from '../../battle/grid';
 import type { ScreenProps } from '../screens';
-import { GridView } from './GridView';
-import { SideView } from './SideView';
-import { ArtyView } from './ArtyView';
-import { ShooterView } from './ShooterView';
-import { PuzzleView } from './PuzzleView';
-import { CourseView } from './CourseView';
-import { RangeView } from './RangeView';
-import { FieldView } from './FieldView';
 import { MiniView } from './MiniView';
 import { Battle3DView } from './Battle3DView';
 import { Drill3DView } from './Drill3DView';
@@ -94,7 +84,8 @@ export function BattleBar(props: {
   );
 }
 
-const VIEWS = { grid: GridView, side: SideView, arty: ArtyView, shooter: ShooterView, puzzle: PuzzleView, course: CourseView, range: RangeView, field: FieldView, mini: MiniView, b3d: Battle3DView, d3: Drill3DView };
+// 11-26: 전투는 3D 전투만(훈련 미니게임 · 3D 훈련 · 3D 전투)
+const VIEWS = { mini: MiniView, b3d: Battle3DView, d3: Drill3DView };
 const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 export function BattleScreen({ state, actions, go }: ScreenProps) {
@@ -110,10 +101,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     const me = state.player.countryId;
     const owner = state.world.owner[a.city];
     const foeId = owner !== me ? owner : COUNTRIES.find((c) => c.id !== me && relationOf(state.world, me, c.id) === '전쟁')?.id;
-    const p = planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined, state.world.defense[a.city]);
-    // 지도 위 전투: 우리 특화 유닛·독점 병과, 적 나라 특화 유닛, 출발 연료·탄약
-    const army = { roster: fieldRoster(state), enemyId: foeId, fuel: a.fuel, ammo: a.ammo };
-    return { ...p, stages: p.stages.map((st) => (st.frame === 'field' ? { ...st, army } : st)) };
+    return planForMission(a, rank, o.seed, foeId ? `${countryById(foeId).name}군` : undefined, state.world.defense[a.city]);
   });
   const [results, setResults] = useState<Array<Outcome & { auto: boolean }>>([]);
   const [current, setCurrent] = useState<(Outcome & { auto: boolean }) | null>(null);
@@ -197,7 +185,6 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
             {multi ? `${Math.min(stageIdx + 1, plan.stages.length)} / ${plan.stages.length}판 · ` : ''}
             {FRAME_NAMES[spec.frame]}
             {plan.source === 'practice' ? ' · 연습(보상 없음)' : ''}
-            {spec.weather && spec.weather !== '맑음' ? ` · ${WEATHER_ICON[spec.weather]} ${spec.weather}(${WEATHER_TEXT[spec.weather]})` : ''}
             {spec.enemy ? ` · 상대 ${spec.enemy}` : ''}
           </small>
           {!done && !current && (

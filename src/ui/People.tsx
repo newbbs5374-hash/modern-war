@@ -2,7 +2,7 @@
 // 용흔의 서약자 정보창처럼 위에 큰 사진·이름·등급, 아래 탭. 사진 칸은 Portrait.tsx 의 Face를 그대로 씀.
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { playerKeys } from '../data/looks';
-import { AIDE_EFFECT } from '../battle/grid';
+import { AIDE_EFFECT } from '../data/aideEffect';
 import { LEADERS, PERSONALITIES } from '../data/leaders';
 import { STAT_IDS, statCap, statExpNeed } from '../data/officers';
 import { TITLES } from '../data/ranks';
