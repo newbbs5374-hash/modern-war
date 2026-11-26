@@ -23,12 +23,25 @@ export const FLAG_DEF: Record<string, FlagDef> = {
   ir: { bands: ['#239f40', '#f8fafc', '#da0000'], color: '#239f40' },
   ua: { bands: ['#0057b7', '#ffd700'], color: '#0057b7' },
   kp: { bands: ['#024fa2', '#ed1c27', '#024fa2'], color: '#ed1c27' },
+  tw: { bands: ['#000095', '#fe0000', '#fe0000'], color: '#fe0000' },
+  pl: { bands: ['#f8fafc', '#dc143c'], color: '#dc143c' },
+  ph: { bands: ['#0038a8', '#f8fafc', '#ce1126'], color: '#0038a8' },
+  pk: { bands: ['#f8fafc', '#01411c', '#01411c'], color: '#01411c' },
+  sa: { bands: ['#006c35', '#006c35'], color: '#006c35' },
 };
 
 const star = (cx: number, cy: number, r: number, rot = 0) =>
   Array.from({ length: 10 }, (_, i) => {
     const a = ((i * 36 + rot - 90) * Math.PI) / 180;
     const rr = i % 2 ? r * 0.4 : r;
+    return `${(cx + rr * Math.cos(a)).toFixed(2)},${(cy + rr * Math.sin(a)).toFixed(2)}`;
+  }).join(' ');
+
+/** 해 모양(뾰족한 빛 n개) */
+const sun = (cx: number, cy: number, r: number, r2: number, n: number) =>
+  Array.from({ length: n * 2 }, (_, i) => {
+    const a = ((i * 180) / n - 90) * (Math.PI / 180);
+    const rr = i % 2 ? r2 : r;
     return `${(cx + rr * Math.cos(a)).toFixed(2)},${(cy + rr * Math.sin(a)).toFixed(2)}`;
   }).join(' ');
 
@@ -130,6 +143,44 @@ const DRAW: Record<string, () => ReactNode> = {
       <rect x="0" y="4" width="30" height="12" fill="#ed1c27" />
       <circle cx="10" cy="10" r="4" fill="#f8fafc" />
       <polygon points={star(10, 10, 3.8)} fill="#ed1c27" />
+    </>
+  ),
+  // 11-26 새 나라
+  tw: () => (
+    <>
+      <rect width="30" height="20" fill="#fe0000" />
+      <rect width="15" height="10" fill="#000095" />
+      <polygon points={sun(7.5, 5, 3.6, 1.9, 12)} fill="#f8fafc" />
+      <circle cx="7.5" cy="5" r="1.9" fill="#000095" />
+      <circle cx="7.5" cy="5" r="1.55" fill="#f8fafc" />
+    </>
+  ),
+  pl: () => H3(['#f8fafc', '#dc143c']),
+  ph: () => (
+    <>
+      {H3(['#0038a8', '#ce1126'])}
+      <polygon points="0,0 17.3,10 0,20" fill="#f8fafc" />
+      <polygon points={sun(5.8, 10, 2.6, 1.3, 8)} fill="#fcd116" />
+      <circle cx="5.8" cy="10" r="1.3" fill="#fcd116" />
+      {[[1.6, 2.6], [1.6, 17.4], [14.6, 10]].map(([x, y], i) => (
+        <polygon key={i} points={star(x, y, 1)} fill="#fcd116" />
+      ))}
+    </>
+  ),
+  pk: () => (
+    <>
+      <rect width="30" height="20" fill="#01411c" />
+      <rect width="7.5" height="20" fill="#f8fafc" />
+      <circle cx="19" cy="10" r="5.2" fill="#f8fafc" />
+      <circle cx="20.6" cy="8.8" r="4.5" fill="#01411c" />
+      <polygon points={star(22.6, 7.6, 1.6, 12)} fill="#f8fafc" />
+    </>
+  ),
+  sa: () => (
+    <>
+      <rect width="30" height="20" fill="#006c35" />
+      <path d="M7,6.5 Q9,4.5 11,6.5 T15,6.5 T19,6.5 T23,6.5 M8,9.5 Q10.5,7.8 13,9.5 T18,9.5 T22,9.5" stroke="#f8fafc" strokeWidth="0.8" fill="none" />
+      <path d="M7.5,14 H22 M20.5,13 L22.8,14 L20.5,15" stroke="#f8fafc" strokeWidth="0.9" fill="none" />
     </>
   ),
 };

@@ -325,6 +325,76 @@ export const PRESSURES: PressureDef[] = [
       { label: '거절해요', fx: [{ k: 'favor', who: 'target', v: -8 }, { k: 'trust', v: 1 }], say: '{X}이(가) 실망했습니다.' },
     ],
   }),
+  // ── 11-26 새 나라 5개 ──
+  P({
+    id: 'p-tw-fab',
+    actor: 'tw',
+    icon: '💾',
+    title: '대만 반도체 공장 유치',
+    text: '{L}이(가) "최첨단 반도체 공장을 당신 나라에 짓겠다. 대신 해협이 위험해지면 우리 편에 서 달라"고 제안했어요.',
+    notFor: ['cn'],
+    auto: 0,
+    options: [
+      { label: '공장을 받고 편을 들어요', fx: [{ k: 'res', r: '반도체', v: 12 }, { k: 'favor', who: 'target', v: 12 }, { k: 'research', v: 2 }], say: '공장 기공식이 열렸습니다. 중국 대사관이 항의 성명을 냈어요.' },
+      { label: '공장만 받고 말을 아껴요', fx: [{ k: 'money', v: -1500 }, { k: 'res', r: '반도체', v: 6 }, { k: 'favor', who: 'target', v: 3 }], say: '돈을 더 들여 공장만 가져왔습니다.' },
+      { label: '거절해요', fx: [{ k: 'favor', who: 'target', v: -8 }], say: '{X}이(가) 다른 나라로 공장을 옮긴다고 합니다.' },
+    ],
+  }),
+  P({
+    id: 'p-pl-tanks',
+    actor: 'pl',
+    icon: '🛡️',
+    title: '폴란드의 전차 대량 주문',
+    text: '{L}이(가) "러시아를 막으려면 전차 1천 대가 필요하다. 빨리, 그리고 우리 공장에서도 만들게 해 달라"고 해요.',
+    onlyFor: ['kr', 'us', 'de'],
+    auto: 1,
+    options: [
+      { label: '기술까지 넘기고 팔아요', fx: [{ k: 'money', v: 4000 }, { k: 'favor', who: 'target', v: 15 }, { k: 'trust', v: -2 }], say: '역대 최대 무기 수출 계약입니다! 다만 기술 유출 걱정이 나와요.' },
+      { label: '완제품만 팔아요', fx: [{ k: 'money', v: 2500 }, { k: 'favor', who: 'target', v: 6 }], say: '전차를 실은 배가 그단스크로 떠났습니다.' },
+      { label: '거절해요', fx: [{ k: 'favor', who: 'target', v: -10 }], say: '{X}이(가) 다른 나라 전차를 알아보고 있습니다.' },
+    ],
+  }),
+  P({
+    id: 'p-ph-reef',
+    actor: 'ph',
+    icon: '🪸',
+    title: '필리핀 암초 보급 호위 요청',
+    text: '{L}이(가) "중국 해경이 물대포로 우리 보급선을 막는다. 호위함을 함께 보내 달라"고 요청했어요.',
+    notFor: ['cn'],
+    auto: 1,
+    options: [
+      { label: '호위함을 보내요', fx: [{ k: 'troops', v: -0.01 }, { k: 'favor', who: 'target', v: 14 }, { k: 'fame', v: 5 }], say: '보급선이 무사히 암초에 닿았습니다. 중국이 강하게 반발해요.' },
+      { label: '정찰기만 보내요', fx: [{ k: 'money', v: -800 }, { k: 'favor', who: 'target', v: 6 }, { k: 'intel', v: 2 }], say: '하늘에서 지켜보며 사진을 찍어 세계에 알렸습니다.' },
+      { label: '끼어들지 않아요', fx: [{ k: 'favor', who: 'target', v: -8 }], say: '{X}이(가) 실망했습니다.' },
+    ],
+  }),
+  P({
+    id: 'p-pk-kashmir',
+    actor: 'pk',
+    icon: '🏔️',
+    title: '카슈미르 편들기',
+    text: '{L}이(가) "카슈미르 문제를 국제 회의에 올릴 테니 찬성표를 던져 달라"고 요청했어요.',
+    notFor: ['in'],
+    auto: 1,
+    options: [
+      { label: '찬성해요', fx: [{ k: 'favor', who: 'target', v: 12 }, { k: 'trust', v: -2 }], say: '{X}이(가) 고마워합니다. 인도 대사가 항의하러 왔어요.' },
+      { label: '대화로 풀라고 해요', fx: [{ k: 'favor', who: 'target', v: 2 }, { k: 'fame', v: 3 }], say: '중재자다운 발언이라는 평을 들었습니다.' },
+      { label: '거절해요', fx: [{ k: 'favor', who: 'target', v: -10 }], say: '{X}이(가) 서운해합니다.' },
+    ],
+  }),
+  P({
+    id: 'p-sa-oil',
+    actor: 'sa',
+    icon: '🛢️',
+    title: '사우디 석유 장기 계약',
+    text: '{L}이(가) "석유를 싸게 10년 동안 주겠다. 대신 우리 미래 도시 공사를 맡아 달라"고 제안했어요.',
+    auto: 0,
+    options: [
+      { label: '계약하고 공사도 맡아요', fx: [{ k: 'res', r: '석유', v: 20 }, { k: 'money', v: 2000 }, { k: 'favor', who: 'target', v: 12 }], say: '사막 위 미래 도시 공사에 우리 기업이 들어갑니다!' },
+      { label: '석유만 사요', fx: [{ k: 'money', v: -1000 }, { k: 'res', r: '석유', v: 15 }, { k: 'favor', who: 'target', v: 4 }], say: '석유 걱정을 덜었습니다.' },
+      { label: '거절해요', fx: [{ k: 'favor', who: 'target', v: -6 }], say: '{X}이(가) 다른 나라에 공사를 맡긴다고 합니다.' },
+    ],
+  }),
 ];
 export const pressureById = (id: string) => PRESSURES.find((p) => p.id === id);
 
@@ -358,4 +428,15 @@ export const WORLD_MOVES: WorldMove[] = [
   { actor: 'de', to: 'ru', icon: '🧾', text: '{L}이(가) 러시아 동결 자산으로 우크라이나를 돕자고 제안했어요.', tension: 5 },
   { actor: 'uk', to: 'ru', icon: '🚀', text: '{L}이(가) 우크라이나에 장거리 미사일을 보냈어요.', tension: 6 },
   { actor: 'ua', to: 'ru', icon: '🛩️', text: '우크라이나 드론이 러시아 정유 시설을 불태웠어요.', tension: 8 },
+  // 11-26 새 나라 5개
+  { actor: 'cn', to: 'tw', icon: '🚢', text: '중국 함대가 대만 섬을 빙 둘러싸고 "봉쇄 훈련"을 했어요.', tension: 12 },
+  { actor: 'tw', to: 'cn', icon: '💾', text: '{L}이(가) 최첨단 반도체 기술의 중국 수출을 막았어요.', tension: 5 },
+  { actor: 'ru', to: 'pl', icon: '🛸', text: '러시아 드론 여러 대가 폴란드 하늘로 넘어와 전투기가 출격했어요.', tension: 8 },
+  { actor: 'pl', to: 'ru', icon: '🧱', text: '{L}이(가) 러시아·벨라루스 국경에 철벽 장벽을 더 세웠어요.', tension: 4 },
+  { actor: 'cn', to: 'ph', icon: '💦', text: '중국 해경선이 필리핀 보급선에 물대포를 쏘았어요.', tension: 8 },
+  { actor: 'ph', to: 'cn', icon: '⛵', text: '필리핀이 작은 배로 암초 기지에 몰래 물자를 날랐어요.', tension: 4 },
+  { actor: 'in', to: 'pk', icon: '🌊', text: '{L}이(가) 강물을 나누는 조약을 멈추겠다고 했어요.', tension: 9 },
+  { actor: 'pk', to: 'in', icon: '💥', text: '카슈미르 통제선에서 파키스탄군과 인도군이 포격을 주고받았어요.', tension: 10 },
+  { actor: 'ir', to: 'sa', icon: '🛩️', text: '드론 떼가 사우디 석유 시설을 때려 불길이 치솟았어요.', tension: 10 },
+  { actor: 'sa', to: 'ir', icon: '🛢️', text: '{L}이(가) 석유를 마구 퍼 올려 이란 석유 값을 떨어뜨렸어요.', tension: 5 },
 ];

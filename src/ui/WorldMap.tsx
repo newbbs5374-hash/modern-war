@@ -48,6 +48,11 @@ export const COUNTRY_COLORS: Record<string, string> = {
   ir: "#a16207",
   ua: "#84cc16",
   kp: "#06b6d4",
+  tw: "#6366f1",
+  pl: "#f43f5e",
+  ph: "#d946ef",
+  pk: "#15803d",
+  sa: "#c2410c",
 };
 
 export const REL_COLORS: Record<Relation | "나", string> = {
