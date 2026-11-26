@@ -38,6 +38,27 @@ export const NOW_CONFLICTS: NowConflict[] = [
     a: 'cn', b: 'us', rel: '중립', tension: 35, weariness: 0, icon: '🌊', name: '미·중 패권 경쟁',
     text: '무역·반도체·바닷길을 두고 다투고 있어요.',
   },
+  // 11-26 새 나라 5개
+  {
+    a: 'cn', b: 'tw', rel: '중립', tension: 70, weariness: 0, icon: '🌊', name: '대만 해협 위기',
+    text: '중국이 대만을 둘러싸고 해상 훈련을 거듭해요. 해협에 군함이 가득해요.',
+  },
+  {
+    a: 'ru', b: 'pl', rel: '중립', tension: 45, weariness: 0, icon: '🛡️', name: '폴란드 동쪽 국경 긴장',
+    text: '폴란드가 국경에 장벽과 군대를 세웠어요. 러시아 칼리닌그라드와 마주 보고 있어요.',
+  },
+  {
+    a: 'cn', b: 'ph', rel: '중립', tension: 50, weariness: 0, icon: '🪸', name: '남중국해 암초 충돌',
+    text: '중국 해경이 필리핀 보급선에 물대포를 쏘는 일이 이어지고 있어요.',
+  },
+  {
+    a: 'in', b: 'pk', rel: '휴전', tension: 50, weariness: 0, icon: '🏔️', name: '카슈미르 대치',
+    text: '두 핵 보유국이 카슈미르 통제선을 사이에 두고 포격을 주고받은 뒤 휴전 중이에요.',
+  },
+  {
+    a: 'ir', b: 'sa', rel: '중립', tension: 50, weariness: 0, icon: '🛢️', name: '걸프만 맞수',
+    text: '걸프만을 사이에 두고 이란과 사우디가 오래 맞서 왔어요. 석유 시설이 공격받은 적도 있어요.',
+  },
 ];
 
 /** 전쟁 중인 전선 도시 → 시작 방어도(최대 100) */

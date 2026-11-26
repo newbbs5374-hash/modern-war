@@ -28,7 +28,7 @@ describe('세계 움직이기', () => {
     const a = advance(newGame('t', 'kr', 0, { seed: 3 }), 3 * DAY);
     const b = advance(newGame('t', 'kr', 0, { seed: 3 }), 3 * DAY);
     expect(a.world).toEqual(b.world);
-  });
+  }, 20000); // 11-26 나라 18개: 조금 더 걸림
   it('2주 동안 외교가 바뀌고 침공 소식이 생기며, 내 나라는 버틴다', () => {
     for (const seed of [1, 2, 3]) {
       const s = advance(newGame('t', 'kr', 0, { seed }), 14 * DAY);

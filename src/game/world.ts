@@ -276,6 +276,7 @@ export function isRival(a: string, b: string): boolean {
   if ((a === 'ru' && bb === 'europe') || (b === 'ru' && ba === 'europe')) return true;
   const ab = [a, b].sort().join('-');
   if (ab === 'cn-in') return true;
+  if (ab === 'cn-tw' || ab === 'in-pk' || ab === 'ir-sa') return true; // 11-26 새 나라 맞수
   if (isArchRival(a, b)) return true; // 11-26 나라마다 정한 숙적(data/archRivals.ts)
   return faithClash(a, b);
 }
@@ -409,6 +410,11 @@ function diplomacy(ctx: Ctx) {
   }
 }
 
+/** 11-26 새 나라 특수 능력: 자기 땅 방어 때 힘 배율 */
+export const HOME_GUARD: Record<string, number> = { tw: 1.25, pl: 1.15, ph: 1.2 };
+/** 11-26 파키스탄 핵 억지: 다른 나라가 이 나라에 침공을 걸 확률 배율 */
+export const DETERRENCE: Record<string, number> = { pk: 0.7 };
+
 function power(ctx: Ctx, country: string, troops: number, defending: boolean, overseas: boolean): number {
   const c = countryById(country);
   // 11-26 난이도: 한국을 뺀 AI 나라는 병사 한 명의 힘도 조금 셈(미국 > 중국 > 러시아)
@@ -417,6 +423,7 @@ function power(ctx: Ctx, country: string, troops: number, defending: boolean, ov
   if (defending) {
     if (country === 'ru') pw *= 1.25; // 혹한 요새
     if (country === 'ua') pw *= 1.2; // 국토 방위 의지
+    pw *= HOME_GUARD[country] ?? 1; // 11-26 새 나라: 호저 전략·동쪽 방패·섬 7천 개
     pw *= growFort(ctx.w, country); // 11-26 AI 성장: 요새
   } else if (overseas) {
     const pen = country === 'us' ? US_OVERSEAS : OVERSEAS_PENALTY;
@@ -443,7 +450,7 @@ function invasions(ctx: Ctx) {
       (b) => b !== att && isAlive(w, b) && relationOf(w, att, b) === '전쟁',
     );
     for (const def of enemies) {
-      const bonus = def === ctx.player ? PLAYER_TARGET_BONUS : 1;
+      const bonus = (def === ctx.player ? PLAYER_TARGET_BONUS : 1) * (DETERRENCE[def] ?? 1);
       if (!rng.chance(INVADE_CHANCE * agg * bonus)) continue;
       const targets = frontOf(w, def);
       // 가까운 도시(같은 대륙)를 먼저, 수도는 마지막에, 원래 내 도시였던 곳(되찾기)을 더 노림

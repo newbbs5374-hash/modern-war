@@ -220,7 +220,9 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
-export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4 };
+export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4, pl: 1.1 };
+/** 나라 특수 능력 중 나라 예산에 붙는 배율(11-26 사우디 오일 머니) */
+export const BUDGET_BONUS: Record<string, number> = { sa: 1.2 };
 
 export function salaryPerDay(s: GameState): number {
   return RANKS[s.player.rankIndex].salaryPerDay;
@@ -243,7 +245,7 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
   const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
-  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind;
+  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind * (BUDGET_BONUS[countryId] ?? 1);
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
 export function troopsPerDay(s: GameState, countryId: string): number {
@@ -265,6 +267,7 @@ export function budgetBreakdown(s: GameState): Array<[string, string]> {
   return [
     ['기본(나라 예산 점수)', `${Math.round(countryById(me).budget * BUDGET_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
     [`지도자 성향(${p})`, x(PERSONALITIES[p].budget)],
+    ...(BUDGET_BONUS[me] ? [['나라 특수 능력', x(BUDGET_BONUS[me])] as [string, string]] : []),
     ['가진 도시(점령지는 절반)', x(share)],
     ['🏭 군수공장', x(budgetMult(s))],
     ['🏛️ 체제·카드·도시 민심·인구', x(civBudgetMult(s))],
