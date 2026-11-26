@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { advance, newGame, type GameState } from './state';
 import { polityOf } from './polity';
-import { MAJORITY, SEATS, campaignOpen, canRally, electionOf, generalResult, rally, voteShare } from './seats';
+import { MAJORITY, SEATS, campaignOpen, canRally, electionOf, generalResult, rally, voteRows, voteShare } from './seats';
 import { canSetRate, econOf, econTargets, setRate } from './econ';
 import { DISASTERS, canRespond, disasterOf, respond, responseChance } from './disaster';
 import { answerAudit, answerScandal, auditOf, canProbeRival, probeRival, scandalOf } from './probe';
@@ -63,10 +63,13 @@ describe('내정 새 콘텐츠 8가지', () => {
     expect(canRally(s, c)).toBeTruthy();
     s = advance(s, electionOf(s).atMs - s.worldMs - DAY);
     expect(campaignOpen(s)).toBe(true);
-    const before = voteShare(s);
+    // 득표는 10~90%로 잘리므로(지지도가 바닥인 판도 있음) 자르기 전 합으로 봄
+    const raw = (x: GameState) => voteRows(x).reduce((a, [, v]) => a + v, 0);
+    const before = raw(s);
     s = rally(rally(s, c), c);
     expect(canRally(s, c)).toContain('하루');
-    expect(voteShare(s)).toBeGreaterThan(before);
+    expect(raw(s)).toBeGreaterThan(before);
+    expect(voteShare(s)).toBeGreaterThanOrEqual(10);
   });
   test('금리: 6시간마다, 올리면 물가 목표가 내려감', () => {
     let s = fresh();

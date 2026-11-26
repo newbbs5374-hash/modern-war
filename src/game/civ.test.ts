@@ -300,3 +300,21 @@ describe('실제 분쟁 지역(11-24)', () => {
     expect(C.influenceMult(s, 'p-flame')).toBeCloseTo(C.influenceMult(s));
   });
 });
+
+describe('연구 늘리기(11-26): 군사 100 · 사회 70', () => {
+  it('개수와 선행·병과 연결이 맞음', async () => {
+    const { MIL_TECHS, SOC_TECHS, TECHS, techById, techForUnit } = await import('../data/civ');
+    const { UNITS } = await import('../data/catalog');
+    expect(MIL_TECHS.length).toBe(100);
+    expect(SOC_TECHS.length).toBe(70);
+    expect(new Set(TECHS.map((t) => t.id)).size).toBe(TECHS.length);
+    for (const t of TECHS) for (const n of t.needs) {
+      expect(techById(n)?.line).toBe(t.line);
+      expect(techById(n)!.era).toBeLessThanOrEqual(t.era);
+    }
+    // 처음부터 열린 보병·특수부대 말고 모든 병과는 연구 하나로 열림
+    for (const u of UNITS) if (u.rank > 0) expect(techForUnit(u.name), u.name).toBeTruthy();
+    for (const u of ['탄도미사일', '다연장로켓', '장거리 방공', '해안 미사일', '정찰 무인기', '스텔스 전투기', '조기경보기', '지상 공격기', '상륙장갑차', '바다 드론'])
+      expect(techForUnit(u), u).toBeTruthy();
+  });
+});

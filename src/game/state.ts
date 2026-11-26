@@ -24,6 +24,7 @@ import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { remarksTick, type RemarkState } from './remarks';
+import { snsTick, type SnsState } from './leaderSns';
 import { ensureRivalRoster } from './rivals';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
@@ -152,6 +153,8 @@ export interface GameState {
   deploy?: DeployState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
+  /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
+  sns?: SnsState;
   /** 관세(11-26 난이도). 없으면 관세 없음 */
   pressure?: PressureState;
   /** 속국 항복(11-26). 없으면 속국 없음 */
@@ -346,7 +349,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
-    cur = propTick(domTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))));
+    cur = propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

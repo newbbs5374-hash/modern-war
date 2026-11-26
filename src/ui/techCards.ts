@@ -48,7 +48,7 @@ function rng(seed: number) {
 }
 
 /** saved = 미리 골라 둔 열 안 순서(techCardOrder.ts). 연구 목록이 바뀌어 안 맞으면 그 자리에서 짧게(budget번) 다시 고름 */
-export function layoutCards(list: Tech[], saved?: string[][], budget = 60000): CardLayout {
+export function layoutCards(list: Tech[], saved?: string[][], budget = 60000, seed = 20261124): CardLayout {
   const ids = new Set(list.map((t) => t.id));
   const byId = Object.fromEntries(list.map((t) => [t.id, t]));
   // 1) 열 정하기: 시대 순서, 같은 시대 안에서는 선행 다음 열
@@ -130,7 +130,7 @@ export function layoutCards(list: Tech[], saved?: string[][], budget = 60000): C
   };
   let best = layers.map((l) => [...l]);
   let bestX = crossAll(best);
-  const r = rng(20261124);
+  const r = rng(seed);
   const flat = (ls: Array<Array<{ id: string }> | string[]>) => ls.map((l) => l.map((q) => (typeof q === 'string' ? q : q.id)).sort().join()).join('|');
   if (saved && saved.length === cols && flat(saved) === flat(layers)) {
     const it = Object.fromEntries(layers.flat().map((q) => [q.id, q]));

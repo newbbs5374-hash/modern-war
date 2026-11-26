@@ -119,7 +119,8 @@ describe('장관 건의(11-25 대장 요청 1번)', () => {
     for (const cid of ['us', 'jp']) {
       let { s } = withMinister(rich(newGame('t', cid, 0, { seed: 37 })), 'mnd');
       s = advance(s, 10 * H);
-      expect(propOf(s).list.length + propOf(s).yes).toBeGreaterThan(0);
+      // 건의가 한 번이라도 나왔는지(seq는 1부터). 11-26 숙적이 생기며 부관이 떠나 목록에서 빠지는 판이 있어 seq로 봄
+      expect(propOf(s).seq - 1 + propOf(s).yes).toBeGreaterThan(0);
     }
   });
 });

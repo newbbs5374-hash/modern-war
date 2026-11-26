@@ -119,9 +119,10 @@ describe('문화', () => {
   it('협약 나라에는 더 많이 퍼진다', () => {
     let s = calm(rich(newGame('테스트', 'kr', 0)));
     s = { ...s, culture: { ...cultureOf(s), venues: { museum: 2, stage: 2, stadium: 2, studio: 2, park: 2, heritage: 2 } } };
-    s = signPact(s, 'jp');
+    // 11-26 일본은 한국의 숙적(호감 −15)이라 협약을 거절 → 숙적이 아닌 미국으로 봄
+    s = signPact(s, 'us');
     s = pass(s, 10 * H);
-    expect(cultureOf(s).infl.jp).toBeGreaterThan(cultureOf(s).infl.uk * 1.4);
+    expect(cultureOf(s).infl.us).toBeGreaterThan(cultureOf(s).infl.uk * 1.4);
   });
 
   it('행사: 조건이 되면 열고, 끝나면 보상과 쉬는 시간', () => {

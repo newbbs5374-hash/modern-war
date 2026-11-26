@@ -6,6 +6,7 @@
 // AI 판단(실제 15분)마다 한 번 돌아감. 같은 상태면 결과가 늘 같음.
 import { PIONEER_ISLANDS } from '../data/hexmap';
 import { REAL_ISLANDS } from '../data/islands';
+import { archRivalsOf, isArchRival } from '../data/archRivals';
 import { PERSONALITIES } from '../data/leaders';
 import { COUNTRIES, countryById } from '../data/world';
 import { aiStrength } from './balance';
@@ -45,6 +46,12 @@ export const TARIFF_TENSION = 6;
 export const RETALIATE_CHANCE = 0.5;
 /** 관세 협상: 관세율 × 경제 × 이 값만큼 나라 예산을 내면 풀어 줌 */
 export const TARIFF_DEAL_COST = 300;
+
+/** 숙적(data/archRivals.ts): AI가 숙적에게 관세가 없으면 판단마다 새로 걸 확률 · 관세율 · 시간 */
+export const ARCH_TARIFF_CHANCE = 0.04;
+export const ARCH_TARIFF_RATE: [number, number] = [0.3, 0.6];
+export const ARCH_TARIFF_HOURS: [number, number] = [48, 96];
+export const ARCH_TARIFF_ME = 0.4;
 
 /** 분쟁 지역을 남이 쥐고 있을 때 판단마다 오르는 긴장(× 공격성) */
 export const ISLAND_WAR_TENSION = 1.2;
@@ -116,7 +123,7 @@ export function pressureTick(s: GameState): GameState {
     if (!rng.chance(TARIFF_CHANCE * k)) continue;
     const to = rng.weighted(
       alive.filter((b) => b !== a && !tariffs.some((x) => x.from === a && x.to === b)),
-      (b) => (isRival(a, b) ? 3 : sameBloc(a, b) ? 0.4 : 1) * (b === me ? 2 : 1) * (0.5 + countryById(b).economy / 50) * (relationOf(w, a, b) === '전쟁' ? 0.3 : 1),
+      (b) => (isArchRival(a, b) ? 8 : isRival(a, b) ? 3 : sameBloc(a, b) ? 0.4 : 1) * (b === me ? 2 : 1) * (0.5 + countryById(b).economy / 50) * (relationOf(w, a, b) === '전쟁' ? 0.3 : 1),
     );
     if (!to) continue;
     const rate = Math.round((a === 'us' ? rng.range(0.25, 0.6) : rng.range(0.1, 0.35)) * 100) / 100;
@@ -130,6 +137,27 @@ export function pressureTick(s: GameState): GameState {
       putTariff(tariffs, { from: to, to: a, rate: r2, untilMs: t + rng.range(...TARIFF_HOURS) * H });
       addTension(w, a, to, TARIFF_TENSION);
       event(w, t, `📦 ${ga(nm(to))} 맞관세 ${Math.round(r2 * 100)}%로 ${nm(a)}에 맞섰어요.`, me, a, to);
+    }
+  }
+
+  // ── 숙적 관세: AI는 숙적에게 거의 늘 높은 관세를 걸어 둠(맞은 AI 숙적은 꼭 맞관세) ──
+  for (const a of ais) {
+    for (const b of archRivalsOf(a)) {
+      if (!alive.includes(b) || tariffs.some((x) => x.from === a && x.to === b && x.untilMs > t)) continue;
+      // 연합(동맹)이면 관세를 걸지 않고, 전쟁 중이면 이미 교역이 끊김. 내 나라엔 조금 덜 자주(ARCH_TARIFF_ME)
+      const rel = relationOf(w, a, b);
+      if (rel === '연합' || rel === '전쟁') continue;
+      if (!rng.chance(ARCH_TARIFF_CHANCE * per(w, a).tension * (b === me ? ARCH_TARIFF_ME : 1))) continue;
+      const rate = Math.round(rng.range(...ARCH_TARIFF_RATE) * 100) / 100;
+      putTariff(tariffs, { from: a, to: b, rate, untilMs: t + rng.range(...ARCH_TARIFF_HOURS) * H });
+      addTension(w, a, b, TARIFF_TENSION / 2);
+      const goods = rng.pick(['자동차', '반도체', '철강', '배터리', '농산물', '조선', '가전제품', '화학제품']);
+      event(w, t, `📦 ${ga(nm(a))} 숙적 ${nm(b)}산 ${goods}에 관세 ${Math.round(rate * 100)}%!${b === me ? ' 우리 나라 예산이 줄어요.' : ''}`, me, a, b);
+      if (b !== me && !tariffs.some((x) => x.from === b && x.to === a && x.untilMs > t)) {
+        const r2 = Math.round(rate * rng.range(0.8, 1.2) * 100) / 100;
+        putTariff(tariffs, { from: b, to: a, rate: r2, untilMs: t + rng.range(...ARCH_TARIFF_HOURS) * H });
+        event(w, t, `📦 ${ga(nm(b))} 바로 맞관세 ${Math.round(r2 * 100)}%로 받아쳤어요.`, me, a, b);
+      }
     }
   }
 
