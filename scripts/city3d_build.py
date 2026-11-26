@@ -3,7 +3,7 @@ scripts/city3d_cities.json 목록을 Geofabrik 지역별로 묶어 받고 → os
 인자: 다시 만들 파일 이름들(쉼표). 비우면 아직 없는 것만. 둘째 인자: 이 지역만(Actions 나눠 돌리기).
 --regions: 만들 지역 목록을 JSON으로 출력(Actions matrix용).
 """
-import json, math, os, subprocess, sys
+import json, math, os, subprocess, sys, time
 
 cfg = json.load(open('scripts/city3d_cities.json', encoding='utf-8'))['cities']
 args = sys.argv[1:]
@@ -33,7 +33,11 @@ for region, cs in by.items():
     print('받기', url, flush=True)
     # 느리거나 멈추면 끊고(1분 동안 초당 50KB 아래) 프랑스 거울 서버로 한 번 더
     cur = ['curl', '-sSfL', '--retry', '5', '--retry-all-errors', '--retry-delay', '20', '--connect-timeout', '30', '--max-time', '2400', '-y', '60', '-Y', '50000', '-o', pbf]
-    if subprocess.call(cur + [url]) != 0 and subprocess.call(cur + [f"https://download.openstreetmap.fr/extracts/{region.replace('-', '_')}-latest.osm.pbf"]) != 0:
+    ok = subprocess.call(cur + [url]) == 0
+    if not ok:
+        time.sleep(180)  # Geofabrik이 잠깐 막을 때가 있음(404·접속 거부)
+        ok = subprocess.call(cur + [url]) == 0
+    if not ok and subprocess.call(cur + [f"https://download.openstreetmap.fr/extracts/{region.replace('-', '_')}-latest.osm.pbf"]) != 0:
         print('받기 실패', region, flush=True)
         fail += [c['file'] for c in cs]
         continue

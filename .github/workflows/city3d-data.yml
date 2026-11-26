@@ -40,11 +40,16 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-shapely
       - run: python3 scripts/city3d_build.py "${{ github.event.inputs.only }}" "${{ matrix.region }}"
       - id: name
-        run: echo "n=$(echo '${{ matrix.region }}' | tr '/' '_')" >> "$GITHUB_OUTPUT"
+        if: always()
+        run: |
+          echo "n=$(echo '${{ matrix.region }}' | tr '/' '_')" >> "$GITHUB_OUTPUT"
+          mkdir -p out && git ls-files -m -o --exclude-standard public/city3d | grep '\.json$' | xargs -r cp -t out
+          ls out
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: city3d-${{ steps.name.outputs.n }}
-          path: public/city3d/*.json
+          path: out/*.json
           if-no-files-found: ignore
   commit:
     needs: gen
