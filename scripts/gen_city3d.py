@@ -1,7 +1,8 @@
 """서울 3D 시험용 실제 건물 자료 만들기 (OpenStreetMap, ODbL).
 Overpass에서 건물·큰길·물·공원을 받아 작은 JSON(public/city3d/seoul.json)으로 줄임.
 좌표는 서울시청(126.978, 37.5665) 기준 미터(동 +x, 북 +y), 정수.
-실행: python scripts/gen_city3d.py  (인터넷 필요, GitHub Actions에서 돌림)
+실행: GitHub Actions(.github/workflows/city3d-data.yml)가 Geofabrik 한국 파일을 받아 osmium으로 자른 뒤
+     python scripts/gen_city3d.py seoul.geojsonseq
 """
 import json, math, os, sys, time, urllib.parse, urllib.request
 
@@ -112,52 +113,51 @@ def kind(t):
     return 4
 
 
+def poly_rings(geom):
+    """GeoJSON 도형 → 바깥 고리들(경도·위도 목록)"""
+    t = geom['type']
+    if t == 'Polygon':
+        return [geom['coordinates'][0]]
+    if t == 'MultiPolygon':
+        return [p[0] for p in geom['coordinates']]
+    return []
+
+
 def main():
-    s, w, n, e = BBOX
-    blds, roads, water, parks = {}, {}, {}, {}
-    for iy in range(NY):
-        for ix in range(NX):
-            bs = s + (n - s) * iy / NY
-            bn = s + (n - s) * (iy + 1) / NY
-            bw = w + (e - w) * ix / NX
-            be = w + (e - w) * (ix + 1) / NX
-            bb = f'{bs},{bw},{bn},{be}'
-            q = f'[out:json][timeout:280][maxsize:1000000000];(way["building"]({bb});way["highway"~"^(motorway|trunk|primary|secondary)$"]({bb});way["natural"="water"]({bb});way["waterway"="riverbank"]({bb});relation["natural"="water"]({bb});way["leisure"="park"]({bb});way["landuse"~"^(grass|forest)$"]({bb}););out geom;'
-            d = query(q)
-            print('tile', ix, iy, len(d['elements']), file=sys.stderr)
-            for el in d['elements']:
-                t = el.get('tags', {})
-                if el['type'] == 'relation':
-                    for m in el.get('members', []):
-                        if m.get('role') == 'outer' and 'geometry' in m:
-                            r = ring(m['geometry'], 8)
-                            if r and abs(area(r)) > 2000:
-                                water[f"{el['id']}-{len(water)}"] = r
-                    continue
-                g = el.get('geometry')
-                if not g:
-                    continue
-                if 'building' in t:
-                    r = ring(g)
+    # 입력: osmium export -f geojsonseq 결과(작업 흐름이 Geofabrik 한국 파일에서 잘라 만듦)
+    src = sys.argv[1] if len(sys.argv) > 1 else 'seoul.geojsonseq'
+    blds, roads, water, parks = [], [], [], []
+    with open(src, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip().lstrip('\x1e')
+            if not line:
+                continue
+            ft = json.loads(line)
+            t = ft.get('properties') or {}
+            g = ft.get('geometry') or {}
+            if 'building' in t and t.get('building') != 'no':
+                for rr in poly_rings(g):
+                    r = ring([{'lon': c[0], 'lat': c[1]} for c in rr])
                     if not r:
                         continue
                     a = area(r)
                     if a < 60:
                         continue
-                    blds[el['id']] = (r, height(t, a), kind(t), a)
-                elif 'highway' in t:
-                    p = dp([xy(x['lon'], x['lat']) for x in g], 4)
-                    roads[el['id']] = (p, {'motorway': 3, 'trunk': 3, 'primary': 2, 'secondary': 1}[t['highway']])
-                elif t.get('natural') == 'water' or t.get('waterway') == 'riverbank':
-                    r = ring(g, 6)
+                    blds.append((r, height(t, a), kind(t), a))
+            elif t.get('highway') in ('motorway', 'trunk', 'primary', 'secondary') and g.get('type') == 'LineString':
+                p = dp([xy(c[0], c[1]) for c in g['coordinates']], 4)
+                roads.append((p, {'motorway': 3, 'trunk': 3, 'primary': 2, 'secondary': 1}[t['highway']]))
+            elif t.get('natural') == 'water' or t.get('waterway') == 'riverbank' or t.get('water'):
+                for rr in poly_rings(g):
+                    r = ring([{'lon': c[0], 'lat': c[1]} for c in rr], 6)
                     if r and area(r) > 800:
-                        water[el['id']] = r
-                else:
-                    r = ring(g, 6)
+                        water.append(r)
+            elif t.get('leisure') == 'park' or t.get('landuse') in ('grass', 'forest') or t.get('natural') == 'wood':
+                for rr in poly_rings(g):
+                    r = ring([{'lon': c[0], 'lat': c[1]} for c in rr], 6)
                     if r and area(r) > 3000:
-                        parks[el['id']] = r
-            time.sleep(5)
-    items = list(blds.values())
+                        parks.append(r)
+    items = blds
     # 중요도: 부피 큰 것 먼저, 도심 가까운 작은 것도 조금
     items.sort(key=lambda b: -(b[3] * b[1]) / (1 + math.hypot(*b[0][0]) / 4000))
     items = items[:MAX_B]
@@ -167,9 +167,9 @@ def main():
         'center': [C_LON, C_LAT],
         'credit': '© OpenStreetMap contributors (ODbL)',
         'b': [[round(h), k] + rd(r) for (r, h, k, a) in items],
-        'r': [[w] + rd(p) for (p, w) in roads.values() if len(p) >= 2],
-        'w': [rd(r) for r in water.values()],
-        'p': [rd(r) for r in parks.values()],
+        'r': [[w] + rd(p) for (p, w) in roads if len(p) >= 2],
+        'w': [rd(r) for r in water],
+        'p': [rd(r) for r in parks],
     }
     os.makedirs('public/city3d', exist_ok=True)
     with open('public/city3d/seoul.json', 'w') as f:
