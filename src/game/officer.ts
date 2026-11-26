@@ -34,8 +34,9 @@ import { TRAININGS } from '../data/catalog';
 import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, SPOILS_PER_VALUE, SPOILS_TREASURY_SHARE, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
+import { GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, SPOILS_PER_VALUE, SPOILS_TREASURY_SHARE, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
 import { Rng } from './rng';
+import { growFort } from './aiGrowth';
 import { talkTick, type Promise_, type Talk } from './talk';
 import type { GameState } from './state';
 import { armyPower } from './economy';
@@ -227,6 +228,8 @@ export interface OfficerState {
   weekly3d?: number;
   /** 지도자 외교를 다시 할 수 있는 시각 */
   diploReadyMs?: number;
+  /** 정적이 오늘(실제 하루) 깎은 의회 신뢰도(11-27 하루 상한) */
+  rivalHit?: { day: number; lost: number };
   /** 승리 조건을 처음 채운 때(계속 지키는 중). 못 채우면 null */
   winSinceMs?: number | null;
   /** 가속권 */
@@ -962,7 +965,10 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
     const m = makeMission(o, rng, '대전투', city, ns.player.rankIndex);
     // 방어도가 높을수록 어려움
     // 직접 만든 부대가 많을수록 쉬워짐(6단계 생산)
-    const army = Math.min(0.3, armyPower(ns) / 300);
+    const army = Math.min(GRAND_ARMY_MAX, armyPower(ns) / GRAND_ARMY_PER);
+    // 11-27 밸런스: 상대 나라가 셀수록(힘 배율·요새 성장), 수도일수록 어려움
+    const foe = ns.world.owner[city];
+    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0);
     m.field = field;
     if (field) {
       // 연료·탄약: 창고의 석유·구리를 씀(모자라면 그만큼만 채우고 출발)
@@ -979,7 +985,7 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
       m.fuel = Math.round((needF ? fuel / needF : 1) * 100) / 100;
       m.ammo = Math.round((needA ? ammo / needA : 1) * 100) / 100;
     }
-    m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 - army) * 100) / 100;
+    m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 + nation - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
     // 지도자는 6시간마다
     o.grandReadyMs = ns.worldMs + (ns.player.rankIndex >= RANKS.length - 1 ? GRAND_COOLDOWN_HOURS / 2 : GRAND_COOLDOWN_HOURS) * HOUR;
@@ -1008,7 +1014,7 @@ export function officerTick(ns: GameState, ownerBefore: Record<string, string>, 
     if (ownerBefore[c.id] === me && ns.world.owner[c.id] !== me) {
       const big = r >= COMMAND_RANK;
       // 점령했던 남의 도시를 잃는 것은 덜 아픔
-      const loss = (c.home !== me ? 2 : c.capital ? 20 : 8) * (big ? 1 : 0.4);
+      const loss = (c.home !== me ? OCC_LOSS_TRUST : c.capital ? 20 : 8) * (big ? 1 : 0.4);
       o.trust = Math.max(0, o.trust - loss);
       // 도시를 잃으면 정적들 목소리가 커짐
       shiftInfluence(o, c.home === me ? 4 : 1);

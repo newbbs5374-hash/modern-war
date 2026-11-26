@@ -1,7 +1,7 @@
 // 11/23 대장 결정: 지도자가 된 뒤의 라이벌 = 나라 안 정적(야당 대표·군부 실력자·재벌). 11/26 12명으로 늘림.
 // 영향력이 쌓이면 방해 사건을 일으키고, 지도자는 동향 살피기·견제·회유로 맞섬. 회유에 성공하면 내 편(협력)이 되어 덤을 줌.
 import { RANKS } from '../data/ranks';
-import { REAL_MS_PER_GAME_DAY } from './balance';
+import { REAL_MS_PER_GAME_DAY, RIVAL_TRUST_LOSS_PER_DAY } from './balance';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { note, type OfficerState, type Rival } from './officer';
@@ -147,6 +147,16 @@ function allyBonus(ns: GameState, o: OfficerState, role: RivalRole, tickMs: numb
 /** 협력한 '지지도' 정적 한 명마다 지지도 +2 */
 export const approvalAllyBonus = (o: OfficerState) => o.rivals.filter((r, i) => r.ally && ROLE_INFO[roleOf(r, i)].kind === 'approval').length * 2;
 
+/** 정적이 의회 신뢰도를 깎음(11-27: 실제 하루 상한까지만). 실제로 깎은 양을 돌려줌 */
+export function rivalTrustHit(o: OfficerState, worldMs: number, loss: number): number {
+  const day = Math.floor(worldMs / (24 * 3600e3));
+  const hit = o.rivalHit?.day === day ? o.rivalHit : { day, lost: 0 };
+  const real = Math.max(0, Math.min(loss, RIVAL_TRUST_LOSS_PER_DAY - hit.lost, o.trust));
+  o.trust -= real;
+  o.rivalHit = { day, lost: hit.lost + real };
+  return real;
+}
+
 /** 방해 공작 하나 */
 function plot(ns: GameState, o: OfficerState, rv: Rival, role: RivalRole, inf: number, rng: Rng) {
   const info = ROLE_INFO[role];
@@ -156,8 +166,8 @@ function plot(ns: GameState, o: OfficerState, rv: Rival, role: RivalRole, inf: n
   switch (info.kind) {
     case 'trust': {
       const loss = Math.round((big ? 3 : 2) + inf / (big ? 20 : 30));
-      o.trust = Math.max(0, o.trust - loss);
-      note(ns, `${who} 의회 신뢰 −${loss}`);
+      const real = rivalTrustHit(o, ns.worldMs, loss);
+      note(ns, `${who} 의회 신뢰 −${Math.round(real * 10) / 10}`);
       return;
     }
     case 'army': {
@@ -167,7 +177,7 @@ function plot(ns: GameState, o: OfficerState, rv: Rival, role: RivalRole, inf: n
         t.hit();
         note(ns, `${info.icon} ${role} ${rv.name}이(가) ${t.name}에게 불만을 퍼뜨렸어요. 충성 −`);
       } else {
-        o.trust = Math.max(0, o.trust - 2);
+        rivalTrustHit(o, ns.worldMs, 2);
         note(ns, `${info.icon} ${role} ${rv.name}이(가) 군 안에 지도자 험담을 퍼뜨렸어요. 의회 신뢰 −2`);
       }
       return;
@@ -187,7 +197,7 @@ function plot(ns: GameState, o: OfficerState, rv: Rival, role: RivalRole, inf: n
     case 'intel': {
       const lost = Math.min(o.intel, 10);
       o.intel -= lost;
-      o.trust = Math.max(0, o.trust - 2);
+      rivalTrustHit(o, ns.worldMs, 2);
       note(ns, `${who} 정보 −${Math.round(lost)} · 의회 신뢰 −2`);
       return;
     }

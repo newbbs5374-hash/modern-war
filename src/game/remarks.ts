@@ -7,7 +7,7 @@ import { approvalOf } from './approval';
 import { crisisOf } from './crisis';
 import { liveLaws } from './laws';
 import { note } from './officer';
-import { RIVAL_ROLES, roleOf, type RivalRole } from './rivals';
+import { RIVAL_ROLES, rivalTrustHit, roleOf, type RivalRole } from './rivals';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { relationOf } from './world';
@@ -267,7 +267,8 @@ const ALLY_LINE: Record<RivalRole, string> = {
 function apply(ns: GameState, got: { line: Line; name?: string; ally: boolean }, echo: boolean) {
   const { line, name } = got;
   const o = ns.officer;
-  if (line.trust) o.trust = Math.max(0, Math.min(100, o.trust + line.trust));
+  if (line.trust && line.trust < 0) rivalTrustHit(o, ns.worldMs, -line.trust);
+  else if (line.trust) o.trust = Math.max(0, Math.min(100, o.trust + line.trust));
   if (line.inf && name) {
     const rv = o.rivals.find((r) => r.name === name);
     if (rv && !rv.ally) rv.influence = Math.max(0, Math.min(100, (rv.influence ?? 0) + line.inf));
