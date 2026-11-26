@@ -48,7 +48,7 @@ export function Battle3DView({ spec, onEnd, usBuff }: FrameProps) {
         endLabel: siege && act < 2 ? '다음 막으로' : '결과 보기',
         onEnd: (r) => {
           if (!siege) { endRef.current(outcome(r)); return; }
-          const ar: ActResult = { win: r.win, timeout: r.timeout, t: r.t, lost: r.lost, total: r.total, carried: (r as { carried?: number }).carried ?? 0 };
+          const ar: ActResult = { win: r.win, timeout: r.timeout, t: r.t, lost: r.lost, total: r.total, carried: (r as { carried?: number }).carried ?? 0, dead: r.dead };
           results.current = [...results.current.slice(0, act), ar];
           if (r.win && act < 2) { carry.current = r.carry as Carry; setBetween(true); return; }
           endRef.current(siegeOutcome(results.current, acts));
