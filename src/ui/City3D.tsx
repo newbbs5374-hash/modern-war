@@ -94,6 +94,11 @@ function windowTextures() {
   return { day: mk(false), night: mk(true) };
 }
 
+/** 도시별 처음 카메라 자리(없으면 기본) */
+const START_VIEW: Record<string, { cam: [number, number, number]; at: [number, number, number] }> = {
+  seoul: { cam: [1100, 1300, 7000], at: [100, 0, 3700] },
+};
+
 const KIND_COLOR = ['#d9d2c5', '#b9c4cf', '#b8b2a6', '#d6c7b0', '#cfcac0'];
 
 interface Built {
@@ -285,10 +290,11 @@ export default function City3D({ file, level, night }: Props) {
     el.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
     const cam = new THREE.PerspectiveCamera(40, 1, 40, 40000);
-    // 한강 남쪽 위에서 도심(북쪽)을 바라봄
-    cam.position.set(1100, 1300, 7000);
+    // 처음 보는 자리: 서울은 한강 남쪽 위에서 도심(북쪽)을, 다른 도시는 남쪽 위에서 중심을 바라봄
+    const v = START_VIEW[file] ?? { cam: [700, 1500, 3300], at: [0, 0, 300] };
+    cam.position.set(...v.cam);
     const ctl = new MapControls(cam, renderer.domElement);
-    ctl.target.set(100, 0, 3700);
+    ctl.target.set(...v.at);
     ctl.enableDamping = true;
     ctl.maxPolarAngle = 1.32;
     ctl.minDistance = 250;
