@@ -2,7 +2,7 @@ import { PAY_BOOST_CAP, PAY_BOOST_HOURS, PAY_BUDGET_PER_SALARY, PAY_RUBY_CAP } f
 import { Safe } from './Safe';
 // 상점 탭: 매일 할 일 · 업적 · 루비 상점
 import { Card, fmt } from './common';
-import { Tabs, useTab } from './kit';
+import { Fold, Tabs, useTab } from './kit';
 import type { ScreenProps } from './screens';
 import { timeLeft } from './officerScreens';
 import {
@@ -52,7 +52,7 @@ export function ShopScreen({ state, actions }: ScreenProps) {
   return (
     <>
       <Card title="💎 루비" right={<b>{fmt(rubyOf(state))}</b>}>
-        <p className="small muted">매일 할 일·업적·전과(점령·편입·호칭·연구·시설 올리기·돌발 사건·첩보·협정·훈련 별 3개·전투 승리)·봉급날로 루비와 🎫 가속권을 모아요. 루비는 상점에서 가속권·자원으로 바꿔요.</p>
+        <p className="small muted">매일 할 일·업적·전과(모든 콘텐츠)·봉급날로 루비와 🎫 가속권을 모아요. 루비는 상점에서 가속권·자원으로 바꿔요.</p>
         <button className={all.ruby > 0 ? 'primary' : ''} disabled={all.ruby <= 0 && all.boosts <= 0} style={{ width: '100%', marginTop: 6 }} onClick={() => actions.apply(claimAll)}>
           {all.ruby > 0 || all.boosts > 0 ? `🎁 모두받기 · 💎 ${fmt(all.ruby)}${all.boosts ? ` + 🎫 ${all.boosts}장` : ''} (${all.count}개)` : '🎁 모두받기 · 받을 보상이 없어요'}
         </button>
@@ -92,7 +92,7 @@ export function ShopScreen({ state, actions }: ScreenProps) {
       )}
       {tab === 'daily' && (
         <Card title="🏆 전과 보상" right={<small className="muted">작은 전과 하루 최대 💎 {SPOIL_SMALL_CAP} · 🎫 {SPOIL_SMALL_BOOST_CAP}</small>}>
-          {spoils.length === 0 && <p className="small muted">도시 점령·편입, 호칭 오름, 연구 끝, 시설·청사 올리기, 돌발 사건 해결, 첩보 성공, 협정 맺기, 훈련 별 3개, 전투 승리를 하면 루비와 가속권이 여기 쌓여요.</p>}
+          {spoils.length === 0 && <p className="small muted">본부·개인·국방·외교·사회·경제·문화 어디서든 일을 마치면 루비와 가속권이 여기 쌓여요.</p>}
           {spoils.map((x) => (
             <div key={x.k} className="list-row small">
               <span style={{ flex: 1 }}>
@@ -106,9 +106,19 @@ export function ShopScreen({ state, actions }: ScreenProps) {
               전과 보상 받기
             </button>
           )}
-          <p className="small muted">
-            {(Object.keys(SPOILS) as Array<keyof typeof SPOILS>).map((k) => `${SPOILS[k].icon} ${SPOILS[k].name} 💎${SPOILS[k].ruby}${SPOILS[k].boosts ? `+🎫${SPOILS[k].boosts}` : ''}`).join(' · ')}
-            <br />💵 봉급 받기: 봉급 1마다 나라 예산 {PAY_BUDGET_PER_SALARY} · 1시간치마다 💎1(하루 {PAY_RUBY_CAP}) · {PAY_BOOST_HOURS}시간치마다 🎫1(하루 {PAY_BOOST_CAP})
+          <Fold title="📋 어디서 얼마나 받나요(모든 콘텐츠)">
+            {['본부', '개인', '국방', '외교', '사회', '경제', '문화'].map((w) => (
+              <p key={w} className="small">
+                <b>{w}</b>{' '}
+                {(Object.keys(SPOILS) as Array<keyof typeof SPOILS>)
+                  .filter((k) => SPOILS[k].where === w && SPOILS[k].ruby > 0)
+                  .map((k) => `${SPOILS[k].icon} ${SPOILS[k].name} 💎${SPOILS[k].ruby}${SPOILS[k].boosts ? `+🎫${SPOILS[k].boosts}` : ''}`)
+                  .join(' · ')}
+                {w === '본부' ? ' · 💵 봉급 받기(아래)' : ''}
+              </p>
+            ))}
+          </Fold>
+          <p className="small muted">💵 봉급 받기: 봉급 1마다 나라 예산 {PAY_BUDGET_PER_SALARY} · 1시간치마다 💎1(하루 {PAY_RUBY_CAP}) · {PAY_BOOST_HOURS}시간치마다 🎫1(하루 {PAY_BOOST_CAP})
           </p>
         </Card>
       )}
