@@ -25,10 +25,19 @@ function capsOf(owned: Record<string, number> | undefined, dead: Record<string, 
   return out;
 }
 
-export function Battle3DView({ spec, onEnd, usBuff, owned }: FrameProps) {
+export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned }: FrameProps) {
   const siege = spec.variant === 'siege';
   const acts = useMemo(() => (siege ? actsFor(spec.seed, spec.city ? isCoastalCity(spec.city) : undefined) : []), [siege, spec.seed, spec.city]);
-  const one = useMemo(() => (siege ? undefined : stageFor(spec)), [siege, spec]);
+  // 11-26 고침: spec은 화면이 다시 그려질 때마다 새로 만들어짐. 파병 전투(병과·예산 덮어쓰기)는 stageFor가 매번 새 전장을 돌려줘서
+  // 3D 화면이 끝없이 다시 띄워졌음(깜빡임·눌리지 않음). 값으로만 비교한다.
+  const kindsKey = spec.kinds?.join(',') ?? '';
+  const one = useMemo(
+    () => (siege ? undefined : stageFor({ variant: spec.variant, kinds: kindsKey ? kindsKey.split(',') : undefined, budget: spec.budget })),
+    [siege, spec.variant, kindsKey, spec.budget],
+  );
+  const cancelRef = useRef(onCancel);
+  cancelRef.current = onCancel;
+  const [broken, setBroken] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const endRef = useRef(onEnd);
   endRef.current = onEnd;
@@ -45,6 +54,7 @@ export function Battle3DView({ spec, onEnd, usBuff, owned }: FrameProps) {
     // three.js·모형은 이 전투를 열 때만 불러옴
     void import('../../battle3d/view').then(({ mountBattle3D }) => {
       if (gone || !ref.current) return;
+      try {
       const stage = siege ? acts[act] : one;
       if (stage) useStage(stage);
       const c = carry.current;
@@ -70,8 +80,19 @@ export function Battle3DView({ spec, onEnd, usBuff, owned }: FrameProps) {
           if (r.win && act < 2) { carry.current = r.carry as Carry; setBetween(true); return; }
           endRef.current(siegeOutcome(results.current, acts));
         },
-        onQuit: () => endRef.current(siege ? { ...siegeOutcome(results.current, acts), win: false, stars: 0, text: '공성전을 그만뒀어요.' } : { win: false, stars: 0, text: '작전을 그만뒀어요.' }),
+        onQuit: (phase?: string) => {
+          // 아직 싸움을 시작하지 않았으면(배치 중) 패배가 아니라 그냥 나감 — 공성전은 첫 막일 때만
+          if (phase === 'deploy' && (!siege || act === 0) && cancelRef.current) { cancelRef.current(); return; }
+          endRef.current(siege ? { ...siegeOutcome(results.current, acts), win: false, stars: 0, text: '공성전을 그만뒀어요.' } : { win: false, stars: 0, text: '작전을 그만뒀어요.' });
+        },
       });
+      } catch (e) {
+        console.error('3D 전투를 띄우지 못했어요', e);
+        if (!gone) setBroken(true);
+      }
+    }).catch((e) => {
+      console.error('3D 전투를 불러오지 못했어요', e);
+      if (!gone) setBroken(true);
     });
     return () => {
       gone = true;
@@ -84,7 +105,17 @@ export function Battle3DView({ spec, onEnd, usBuff, owned }: FrameProps) {
   return (
     <div className="b3d-wrap">
       <style>{css}</style>
-      {between ? (
+      {broken ? (
+        <div className="b3d-between" key="broken">
+          <div className="b3d-between-box">
+            <h2>3D 전투 화면을 띄우지 못했어요</h2>
+            <p>오류로 나가는 것이라 패배로 치지 않아요. 잠시 뒤 다시 들어와 주세요.</p>
+            <button type="button" className="b3d-between-go" onClick={() => (cancelRef.current ? cancelRef.current() : endRef.current({ win: false, stars: 0, text: '3D 화면 오류로 나갔어요.' }))}>
+              나가기
+            </button>
+          </div>
+        </div>
+      ) : between ? (
         <div className="b3d-between" key="between">
           <div className="b3d-between-box">
             <p className="b3d-between-tag">{actName(acts, act)} 승리</p>

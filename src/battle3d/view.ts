@@ -16,7 +16,7 @@ const GLB_BASE = `${import.meta.env.BASE_URL}battle3d/glb/`;
 
 export interface Battle3DResult { win: boolean; timeout: boolean; t: number; lost: number; total: number; /** 11-26 쓰러진 우리 부대(병과 이름별, 미사일·자폭 포함) */ dead?: Record<string, number>; carry?: unknown; /** 11-26 훈련 점수 계산용 */ sim?: unknown }
 export interface Battle3DOptions {
-  onEnd?(r: Battle3DResult): void; onQuit?(): void; endLabel?: string;
+  onEnd?(r: Battle3DResult): void; onQuit?(phase?: string): void; endLabel?: string;
   /** 공성전: 이 막의 전장 · 넘어온 부대 · 예산 · 시작 지휘력 · 적 체력 배수 · 위에 보일 막 이름 */
   stage?: unknown; preset?: unknown[]; budget?: number; cp0?: number; foeHp?: number; actLabel?: string; naval?: number;
   /** 11-26 훈련 전장: 배치 고정(카드 없이 바로 개시) · 병과 숙련 배수 · 전투 중 땅을 누르면(집중 사격·정찰) · 오른쪽 막대 · 끝 글 */
@@ -1320,7 +1320,7 @@ else if(!OLD&&!TILES.some(t=>t.dom==="land"))$("#dhint").textContent="카드를 
 else if(!OLD&&!TILES.some(t=>t.dom==="sea"))$("#dhint").textContent="카드를 고르고 칸을 누르면 배치 · 바다가 없는 전장이라 육군·공군만 싸워요";
 if(!TILES.some(t=>t.dom===selTab)&&selTab!=="air"){selTab=TILES.some(t=>t.dom==="land")?"land":"sea";}
 {const tb=TABS.find(t=>t.id===selTab);if(!tb.kinds.includes(selKind)||(ST.kinds&&!ST.kinds.includes(selKind)))selKind=tb.kinds.find(k=>!ST.kinds||ST.kinds.includes(k))||selKind;}
-if(opts.onQuit){$("#quit").hidden=false;$("#quit").onclick=()=>opts.onQuit();}
+if(opts.onQuit){$("#quit").hidden=false;$("#quit").onclick=()=>opts.onQuit(S.phase);}
 $("#again").onclick=()=>{if(opts.onEnd&&lastResult)opts.onEnd(lastResult);else setupDeploy(false);};
 
 /* ───────── 돌리기 ───────── */
