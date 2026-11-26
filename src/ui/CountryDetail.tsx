@@ -273,7 +273,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                       disabled={!!canSurrender(state, id)}
                       title={canSurrender(state, id) ?? ''}
                       onClick={() => {
-                        if (!window.confirm(`${c.name}에 항복할까요?\n전쟁이 끝나고 속국이 돼요. 국방예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요(신뢰 −10 · 명성 −20).\n나중에 선전포고로 독립 전쟁을 할 수 있어요.`)) return;
+                        if (!window.confirm(`${c.name}에 항복할까요?\n전쟁이 끝나고 속국이 돼요. 나라 예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요(신뢰 −10 · 명성 −20).\n나중에 선전포고로 독립 전쟁을 할 수 있어요.`)) return;
                         setMsg(actions.applyWith((s) => { const r = doSurrender(s, id); return { state: r.state, out: r.text }; }) ?? '');
                       }}
                     >
@@ -286,7 +286,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
               {id !== me && (
                 <div className="cede-row">
                   <small className="muted" style={{ flexBasis: '100%' }}>
-                    📦 관세 · {tariffBetween(state, id, me) ? `${c.name}가 우리에게 ${Math.round(tariffBetween(state, id, me)!.rate * 100)}% 매김(국방예산 줄어듦)` : '우리에게 매긴 관세 없음'}
+                    📦 관세 · {tariffBetween(state, id, me) ? `${c.name}가 우리에게 ${Math.round(tariffBetween(state, id, me)!.rate * 100)}% 매김(나라 예산 줄어듦)` : '우리에게 매긴 관세 없음'}
                     {tariffBetween(state, me, id) ? ` · 우리가 ${Math.round(tariffBetween(state, me, id)!.rate * 100)}% 매김` : ''}
                   </small>
                   <button
@@ -296,7 +296,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                     onClick={() => setMsg(actions.applyWith((s) => { const r = doTariff(s, id); return { state: r.state, out: r.text }; }) ?? '')}
                   >
                     📦 {tariffBetween(state, id, me) ? '맞관세' : '관세 매기기'} {Math.round(MY_TARIFF_RATE * 100)}%
-                    <small>{canTariff(state, id) ?? `${MY_TARIFF_HOURS}시간 · 국방예산 + · 긴장 +`}</small>
+                    <small>{canTariff(state, id) ?? `${MY_TARIFF_HOURS}시간 · 나라 예산 + · 긴장 +`}</small>
                   </button>
                   {tariffBetween(state, id, me) && (
                     <button
@@ -306,7 +306,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                       onClick={() => setMsg(actions.applyWith((s) => { const r = doDeal(s, id); return { state: r.state, out: r.text }; }) ?? '')}
                     >
                       🤝 관세 협상
-                      <small>{canDeal(state, id) ?? `국방예산 ${dealCost(state, id).toLocaleString('ko-KR')}`}</small>
+                      <small>{canDeal(state, id) ?? `나라 예산 ${dealCost(state, id).toLocaleString('ko-KR')}`}</small>
                     </button>
                   )}
                 </div>
@@ -409,7 +409,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
             <>
               <div className="cfacts">
                 <span>💹 경제 <b>세계 {f.gdpRank}위</b></span>
-                <span>💰 국방예산(게임) <b>{scout ? fmt(scout.treasury) : '❓ 정찰 필요'}</b></span>
+                <span>💰 나라 예산(게임) <b>{scout ? fmt(scout.treasury) : '❓ 정찰 필요'}</b></span>
                 <span>⛔ 국제 제재 <b>{sanctionMult(state, id) < 1 ? '받는 중' : '없음'}</b></span>
               </div>
               <p className="small">📦 실제 주요 수출: {f.exports.join(' · ')}</p>
@@ -490,11 +490,11 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                   <p className="small good">🛰️ 위성 정찰 중: 숫자가 보여요.</p>
                   <div className="cfacts">
                     <span>🎖️ 병력 <b>{fmt(scout.troops)}</b></span>
-                    <span>💰 국방예산 <b>{fmt(scout.treasury)}</b></span>
+                    <span>💰 나라 예산 <b>{fmt(scout.treasury)}</b></span>
                   </div>
                 </>
               ) : (
-                <p className="small">❓ 병력·국방예산은 가려져 있어요. 외교 → 첩보에서 위성 정찰을 하면 보여요.</p>
+                <p className="small">❓ 병력·나라 예산은 가려져 있어요. 외교 → 첩보에서 위성 정찰을 하면 보여요.</p>
               )}
               <small className="stat-group-name">🔮 다음 행동 예측</small>
               <p className="small">

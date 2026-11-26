@@ -1,4 +1,5 @@
 // 내정 화면: 금고(나라 살림 한눈에) · 자원(설명·사용처·획득처) · 시설(분야 5개 × 3개 + 내정 업무, 단계마다 그림)
+import { payPreview } from '../game/payday';
 import { routeTo } from './nav';
 import { ResIcon, facilityArtExact, facilityArtUrl, vaultArtUrl, type VaultName } from './iconArt';
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
@@ -234,9 +235,9 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
       </section>
       <div className="vault">
         <div className="vbox big">
-          <VaultLabel n="국방예산" emoji="💰" />
+          <VaultLabel n="나라 예산" emoji="💰" />
           <b>{fmt(n.treasury)}</b>
-          <Tip label={`+${fmt(budget + cm)}/시간`} title="국방예산 시간당" rows={bRows} total={`+${fmt(budget + cm)}`} />
+          <Tip label={`+${fmt(budget + cm)}/시간`} title="나라 예산 시간당" rows={bRows} total={`+${fmt(budget + cm)}`} />
         </div>
         <div className="vbox big">
           <VaultLabel n="병력" emoji="🪖" />
@@ -318,7 +319,10 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
         </Fold>
       )}
       <button className="wide" style={{ marginTop: 6 }} onClick={actions.claim} disabled={state.player.pendingSalary < 1}>
-        💵 쌓인 봉급 받기 (+{fmt(state.player.pendingSalary)})
+        💵 쌓인 봉급 받기 (+{fmt(state.player.pendingSalary)}){(() => {
+          const p = payPreview(state);
+          return p.salary > 0 ? ` · 💰나라 예산 +${fmt(p.budget)}${p.ruby ? ` · 💎+${p.ruby}` : ''}${p.boosts ? ` · 🎫+${p.boosts}` : ''}` : '';
+        })()}
       </button>
     </>
   );

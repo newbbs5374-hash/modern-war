@@ -9,9 +9,9 @@ export const PENDING_CAP_HOURS = 12;
 /** 게임 달력의 첫날(가상의 근미래) */
 export const GAME_START_DATE = { year: 2031, month: 3, day: 1 };
 
-/** 나라 금고: 시작 국방예산 지수 × 이 값 = 하루 국방예산 */
+/** 나라 금고: 시작 나라 예산 지수 × 이 값 = 하루 나라 예산 */
 export const BUDGET_PER_DAY_PER_POINT = 10;
-/** 나라 시작 금고 = 국방예산 지수 × 이 값 */
+/** 나라 시작 금고 = 나라 예산 지수 × 이 값 */
 export const START_TREASURY_PER_POINT = 200;
 
 /** 하루 모병 = 군사력 지수 × 이 값(명) */
@@ -74,7 +74,7 @@ export const ALLY_DEFEND_SHARE = 0.3;
 export const LOSING_PEACE_MULT = 4;
 /** 바다 건너 침공 힘 배율(미국은 전력 투사로 예외) */
 export const OVERSEAS_PENALTY = 0.75;
-/** 침공 비용 = 보내는 병력 × 이 값(국방예산) */
+/** 침공 비용 = 보내는 병력 × 이 값(나라 예산) */
 export const ATTACK_COST_PER_TROOP = 0.02;
 /** 도시 방어도: 공격이 이기면 깎이고 0이 되면 점령. 판단마다 조금씩 회복 */
 export const CITY_DEFENSE_MAX = 100;
@@ -131,5 +131,5 @@ export const TRAIN_PAY_PER_STAR = 80;
 /** 도시를 차지하면 전리품: 도시 값어치 × 이 값 + 빼앗긴 나라 금고의 몇 % */
 export const SPOILS_PER_VALUE = 1500;
 export const SPOILS_TREASURY_SHARE = 0.06;
-/** 적 침공을 막아 내면 노획: 쳐들어온 병력 × 이 값(국방예산) */
+/** 적 침공을 막아 내면 노획: 쳐들어온 병력 × 이 값(나라 예산) */
 export const DEFEND_BOUNTY = 0.012;

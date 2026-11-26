@@ -81,7 +81,7 @@ export interface CultureState {
 export const AI_START = 2500;
 export const AI_RATE = 34;
 export const AI_GROW_PER_DAY = 0.45;
-/** 관광 1점마다 시간당 관광 수입(국방예산) */
+/** 관광 1점마다 시간당 관광 수입(나라 예산) */
 export const TOUR_INCOME = 1.5;
 
 export function newCulture(s?: Pick<GameState, 'worldMs' | 'player'>): CultureState {
@@ -277,7 +277,7 @@ export function canUpgrade(s: GameState, v: VenueId): string | null {
   if (c.builds.some((b) => b.venue === v)) return '공사 중이에요';
   if (c.builds.length >= BUILD_TEAMS) return `공사 팀 ${BUILD_TEAMS}개가 모두 일하는 중`;
   const cost = upgradeCost(v, to, s);
-  if (treasury(s) < cost.money) return `국방예산 ${cost.money.toLocaleString('ko-KR')} 필요`;
+  if (treasury(s) < cost.money) return `나라 예산 ${cost.money.toLocaleString('ko-KR')} 필요`;
   for (const [r, n] of Object.entries(cost.res)) if ((s.economy.stock[r as Res] ?? 0) < n!) return `${r} ${n}개 필요`;
   return null;
 }
@@ -364,9 +364,9 @@ export const nextStarCost = (s: GameState, k: StarKind) => starCost(starCount(cu
 export const starVenueOk = (s: GameState, k: StarKind) => starKindById(k).from.some((v) => cultureOf(s).venues[v] > 0);
 /** 모자란 인재 점수 */
 export const talentShort = (s: GameState, k: StarKind) => Math.max(0, Math.ceil(nextStarCost(s, k) - (cultureOf(s).talent?.[k] ?? 0)));
-/** 모자란 인재를 국방예산으로 채우는 값 */
+/** 모자란 인재를 나라 예산으로 채우는 값 */
 export const recruitMoney = (s: GameState, k: StarKind) => talentShort(s, k) * TALENT_MONEY;
-/** pay=true면 모자란 인재 점수를 국방예산으로 채워서 데려옴 */
+/** pay=true면 모자란 인재 점수를 나라 예산으로 채워서 데려옴 */
 export function canRecruit(s: GameState, k: StarKind, payMoney = false): string | null {
   const c = cultureOf(s);
   if (s.ending) return '판이 끝났어요';
@@ -374,7 +374,7 @@ export function canRecruit(s: GameState, k: StarKind, payMoney = false): string 
   if (!starVenueOk(s, k)) return `${starKindById(k).from.map((v) => venueById(v).name).join('이나 ')}을 먼저 지어요`;
   const short = talentShort(s, k);
   if (short > 0 && !payMoney) return `인재 점수 ${short}점 모자람`;
-  if (short > 0 && treasury(s) < short * TALENT_MONEY) return `국방예산 ${(short * TALENT_MONEY).toLocaleString('ko-KR')} 필요`;
+  if (short > 0 && treasury(s) < short * TALENT_MONEY) return `나라 예산 ${(short * TALENT_MONEY).toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function nextStarName(s: GameState, k: StarKind): string {
@@ -405,7 +405,7 @@ export function canOpenCourse(s: GameState, id: CourseId): string | null {
   if (coursesOf(c).includes(id)) return '이미 열었어요';
   if (coursesOf(c).length >= courseSlots(c)) return `코스는 ${courseSlots(c)}개까지(하나를 닫아요)`;
   for (const [v, n] of Object.entries(d.needs)) if (c.venues[v as VenueId] < n!) return `${venueById(v as VenueId).name} ${n}단계 필요`;
-  if (treasury(s) < d.money) return `국방예산 ${d.money.toLocaleString('ko-KR')} 필요`;
+  if (treasury(s) < d.money) return `나라 예산 ${d.money.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function openCourse(s: GameState, id: CourseId): GameState {
@@ -434,7 +434,7 @@ export function canHost(s: GameState, id: CultureEventId, target?: string): stri
     if (!target) return '나라를 골라요';
     if (spreadMult(s, target, c) === 0) return '전쟁 중인 나라엔 못 가요';
   }
-  if (treasury(s) < d.money) return `국방예산 ${d.money.toLocaleString('ko-KR')} 필요`;
+  if (treasury(s) < d.money) return `나라 예산 ${d.money.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function hostEvent(s: GameState, id: CultureEventId, target?: string): GameState {
@@ -454,7 +454,7 @@ export function canPact(s: GameState, id: string): string | null {
   if (!isAlive(s.world, id)) return '없는 나라예요';
   if (relationOf(s.world, s.player.countryId, id) === '전쟁') return '전쟁 중이에요';
   if (favorOf(s, id) < 0) return '호감이 0 이상이어야 해요';
-  if (treasury(s) < PACT_COST) return `국방예산 ${PACT_COST.toLocaleString('ko-KR')} 필요`;
+  if (treasury(s) < PACT_COST) return `나라 예산 ${PACT_COST.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function signPact(s: GameState, id: string): GameState {

@@ -119,7 +119,7 @@ export function domEff(s: GameState, key: LawKey): number {
   return v;
 }
 
-/** 국방예산(금고)에서 냄. 모자라면 null */
+/** 나라 예산(금고)에서 냄. 모자라면 null */
 export function payTreasury(s: GameState, amount: number): GameState | null {
   const me = s.player.countryId;
   const n = s.nations[me];

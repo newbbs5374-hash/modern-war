@@ -14,7 +14,7 @@ export interface OrdersState {
   autoSalary: boolean;
   /** 강철·석유가 기준 아래로 떨어지면 가장 싼 나라에서 자동 수입 */
   autoImport: boolean;
-  /** 방어 태세: 내 도시 방어 +10%, 대신 국방예산 수입 -10% */
+  /** 방어 태세: 내 도시 방어 +10%, 대신 나라 예산 수입 -10% */
   defendFirst: boolean;
   /** 돌발 사건은 부관이 바로 무난한 쪽으로 처리 */
   crisisToAide: boolean;
@@ -28,7 +28,7 @@ export interface OrdersState {
 
 export const IMPORT_BELOW = 60;
 export const IMPORT_QTY = 60;
-/** 자동 수입은 국방예산이 이만큼은 남아 있을 때만 */
+/** 자동 수입은 나라 예산이 이만큼은 남아 있을 때만 */
 export const IMPORT_KEEP = 2000;
 export const AUTO_IMPORT_RES: Res[] = ['강철', '석유'];
 export const DEFEND_BONUS = 1.1;
@@ -39,8 +39,8 @@ export const ordersOf = (s: GameState): OrdersState => s.orders ?? newOrders();
 
 export const ORDER_INFO: Array<{ key: 'autoSalary' | 'autoImport' | 'defendFirst' | 'crisisToAide'; icon: string; name: string; text: string }> = [
   { key: 'autoSalary', icon: '💵', name: '봉급 자동 받기', text: '봉급이 12시간 한도에 막히지 않게 부관이 바로 받아 둬요.' },
-  { key: 'autoImport', icon: '🛢️', name: '자원 자동 수입', text: `강철·석유가 ${IMPORT_BELOW}개 아래로 떨어지면 가장 싼 나라에서 ${IMPORT_QTY}개씩 사요(국방예산 ${IMPORT_KEEP.toLocaleString('ko-KR')}은 남겨 둠).` },
-  { key: 'defendFirst', icon: '🛡️', name: '방어 태세', text: '공격받을 때를 대비해 내 도시 방어 +10%. 대신 국방예산 수입 -10%.' },
+  { key: 'autoImport', icon: '🛢️', name: '자원 자동 수입', text: `강철·석유가 ${IMPORT_BELOW}개 아래로 떨어지면 가장 싼 나라에서 ${IMPORT_QTY}개씩 사요(나라 예산 ${IMPORT_KEEP.toLocaleString('ko-KR')}은 남겨 둠).` },
+  { key: 'defendFirst', icon: '🛡️', name: '방어 태세', text: '공격받을 때를 대비해 내 도시 방어 +10%. 대신 나라 예산 수입 -10%.' },
   { key: 'crisisToAide', icon: '⚡', name: '돌발 사건 부관에게 맡기기', text: '사건이 터지면 기다리지 않고 부관이 바로 무난한 쪽을 골라요(해결 업적·할 일은 안 셈).' },
 ];
 
@@ -103,7 +103,7 @@ export function summarizeAway(b: GameState, a: GameState, awayMs: number): AwayS
   const dSalary = a.player.salary + a.player.pendingSalary - (b.player.salary + b.player.pendingSalary);
   if (Math.round(dSalary)) rows.push({ icon: '💵', label: '봉급', value: sg(dSalary), tone: 'good' });
   const dMoney = a.nations[me].treasury - b.nations[me].treasury;
-  rows.push({ icon: '💰', label: '국방예산', value: sg(dMoney), tone: dMoney >= 0 ? 'good' : 'bad' });
+  rows.push({ icon: '💰', label: '나라 예산', value: sg(dMoney), tone: dMoney >= 0 ? 'good' : 'bad' });
   const dTroops = a.nations[me].troops - b.nations[me].troops;
   rows.push({ icon: '🪖', label: '병력', value: sg(dTroops), tone: dTroops >= 0 ? 'good' : 'bad' });
   const mine = (s: GameState) => CITIES.filter((c) => s.world.owner[c.id] === me).map((c) => c.id);

@@ -13,7 +13,7 @@ export type MetricId =
 export const METRICS: Record<MetricId, { icon: string; name: string; unit: string; scaled?: boolean; plus?: boolean }> = {
   troops: { icon: '🪖', name: '병력', unit: '명', scaled: true },
   power: { icon: '⚔️', name: '부대 전투력', unit: '', scaled: true },
-  budget: { icon: '💵', name: '하루 국방예산', unit: '', scaled: true },
+  budget: { icon: '💵', name: '하루 나라 예산', unit: '', scaled: true },
   mil: { icon: '⚙️', name: '군사 연구', unit: '개' },
   soc: { icon: '📜', name: '사회 연구', unit: '개' },
   approval: { icon: '🙂', name: '지지도', unit: '', plus: true },

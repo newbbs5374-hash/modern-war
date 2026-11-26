@@ -1,5 +1,5 @@
 // 국가 예산 나누기(국방·외교·사회·경제 %) · 세금 3단계. 경제 → 예산·세금 탭.
-// 다른 계산(국방예산·자원·모집·징병·민심·호감·분야 점수)이 이 값을 읽어요. 이 파일은 다른 게임 파일을 부르지 않아요(순환 막기).
+// 다른 계산(나라 예산·자원·모집·징병·민심·호감·분야 점수)이 이 값을 읽어요. 이 파일은 다른 게임 파일을 부르지 않아요(순환 막기).
 import type { GameState } from './state';
 
 export type SplitKey = 'def' | 'dip' | 'soc' | 'eco';
@@ -17,12 +17,12 @@ export const SPLIT_INFO: Array<{ key: SplitKey; icon: string; name: string; does
   { key: 'def', icon: '🛡️', name: '국방', does: '부대 모집 속도 · 징병 · 안보 점수' },
   { key: 'dip', icon: '🌐', name: '외교', does: '모든 나라 호감 · 외교 위상' },
   { key: 'soc', icon: '👥', name: '사회', does: '모든 도시 민심(→ 지지도)' },
-  { key: 'eco', icon: '💰', name: '경제', does: '국방예산·자원 생산 · 경제 지수' },
+  { key: 'eco', icon: '💰', name: '경제', does: '나라 예산·자원 생산 · 경제 지수' },
 ];
 export const TAX_INFO: Record<Tax, { icon: string; name: string; budget: number; approval: number; text: string }> = {
-  low: { icon: '🪶', name: '낮음', budget: 0.85, approval: 6, text: '국방예산 −15% · 지지도 +6' },
+  low: { icon: '🪶', name: '낮음', budget: 0.85, approval: 6, text: '나라 예산 −15% · 지지도 +6' },
   mid: { icon: '⚖️', name: '보통', budget: 1, approval: 0, text: '그대로' },
-  high: { icon: '🏦', name: '높음', budget: 1.2, approval: -10, text: '국방예산 +20% · 지지도 −10' },
+  high: { icon: '🏦', name: '높음', budget: 1.2, approval: -10, text: '나라 예산 +20% · 지지도 −10' },
 };
 
 export interface PolicyState {
@@ -50,13 +50,13 @@ export const splitTroop = (s: GameState) => 1 + (splitOf(s).def - SPLIT_DEFAULT.
 export const splitFavor = (s: GameState) => (splitOf(s).dip - SPLIT_DEFAULT.dip) * 0.3;
 /** 사회 예산 → 모든 도시 민심 목표 덤 */
 export const splitLoyalty = (s: GameState) => (splitOf(s).soc - SPLIT_DEFAULT.soc) * 0.35;
-/** 경제 예산 → 국방예산·자원 배율(50%면 +18%) */
+/** 경제 예산 → 나라 예산·자원 배율(50%면 +18%) */
 export const splitEco = (s: GameState) => 1 + (splitOf(s).eco - SPLIT_DEFAULT.eco) * 0.006;
 /** 분야 점수 덤 */
 export const splitDefenseScore = (s: GameState) => (splitOf(s).def - SPLIT_DEFAULT.def) * 0.25;
 export const splitDiploScore = (s: GameState) => (splitOf(s).dip - SPLIT_DEFAULT.dip) * 0.4;
 export const splitEcoScore = (s: GameState) => (splitOf(s).eco - SPLIT_DEFAULT.eco) * 0.3;
-/** 세금 → 국방예산 배율 · 지지도 목표 덤 */
+/** 세금 → 나라 예산 배율 · 지지도 목표 덤 */
 export const taxBudget = (s: GameState) => TAX_INFO[taxOf(s)].budget;
 export const taxApproval = (s: GameState) => TAX_INFO[taxOf(s)].approval;
 

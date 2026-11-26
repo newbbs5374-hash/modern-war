@@ -34,7 +34,7 @@ export const venueById = (id: VenueId) => VENUES.find((v) => v.id === id)!;
 
 /** 단계별 힘(1단계 1 … 5단계 10) */
 export const LEVEL_POWER = [0, 1, 2.5, 4.5, 7, 10];
-/** 그 단계로 올리는 값(국방예산)과 시간(실제 시간) */
+/** 그 단계로 올리는 값(나라 예산)과 시간(실제 시간) */
 export const LEVEL_COST = [0, 400, 1000, 2400, 5000, 10000];
 export const LEVEL_HOURS = [0, 2, 4, 8, 16, 30];
 /** 문화유산은 더 비쌈 */
@@ -152,7 +152,7 @@ export const STAR_MAX = 2;
 export const TALENT_RATE = 1;
 /** n번째(0부터) 스타를 데려오는 데 드는 인재 점수: 첫 스타는 시설만 있으면 바로(11-25) */
 export const starCost = (n: number) => (n === 0 ? 0 : 40 * n);
-/** 인재 점수가 모자라면 1점마다 국방예산으로 채워 바로 데려옴 */
+/** 인재 점수가 모자라면 1점마다 나라 예산으로 채워 바로 데려옴 */
 export const TALENT_MONEY = 60;
 export const ATHLETE_EVENT = 0.15;
 export const ATHLETE_MOOD = 0.5;

@@ -91,7 +91,7 @@ export const CITY_RES: Record<string, Partial<Stock>> = {
 };
 
 export interface UnitCost {
-  /** 국방예산 */
+  /** 나라 예산 */
   money: number;
   res: Partial<Stock>;
   /** 만드는 데 걸리는 실제 시간 */
@@ -147,7 +147,7 @@ export const TOP_RANK = 10;
 export const FACILITIES = ['산업', '인프라', '복지', '과학', '국방'] as const;
 export type Facility = (typeof FACILITIES)[number];
 export const FACILITY_TEXT: Record<Facility, string> = {
-  산업: '국방예산과 자원이 더 많이 쌓임',
+  산업: '나라 예산과 자원이 더 많이 쌓임',
   인프라: '육·해·공 부대 모집이 빨라짐',
   복지: '병력이 늘고, 덜 줄고, 점령지가 조용해짐',
   과학: '연구·임무·전투력이 좋아짐',
@@ -157,11 +157,11 @@ export const FACILITY_TEXT: Record<Facility, string> = {
 /** 내정 시설 31개. 처음 15개(11-23) + 산업·인프라·복지·과학 4개씩 16개(11-24 대장 요청). 단계 1~5.
  * start 0 = 처음엔 빈 땅이라 직접 지어야 함. 새 16개의 효과·먼저 지을 시설·단계 보너스는 data/facilityGrowth.ts */
 export const BUILDINGS = [
-  { id: '군수공장', fac: '산업', icon: '🏭', does: '국방예산 수입', unit: '예산' },
+  { id: '군수공장', fac: '산업', icon: '🏭', does: '나라 예산 수입', unit: '예산' },
   { id: '제련소', fac: '산업', icon: '🔥', does: '강철·알루미늄·티타늄·구리·니켈·텅스텐·코발트 생산', unit: '금속' },
   { id: '첨단공단', fac: '산업', icon: '🔬', does: '석유·희토류·리튬·반도체·우라늄·게르마늄·헬륨 생산', unit: '첨단' },
   { id: '반도체팹', fac: '산업', icon: '💽', does: '모든 자원 생산', unit: '자원', start: 0 },
-  { id: '석유화학단지', fac: '산업', icon: '🛢️', does: '국방예산 수입', unit: '예산', start: 0 },
+  { id: '석유화학단지', fac: '산업', icon: '🛢️', does: '나라 예산 수입', unit: '예산', start: 0 },
   { id: '조선소', fac: '산업', icon: '🚢', does: '해군 전투력', unit: '해군', start: 0 },
   { id: '항공우주단지', fac: '산업', icon: '✈️', does: '공군 전투력', unit: '공군', start: 0 },
   { id: '철도망', fac: '인프라', icon: '🚆', does: '육군 모집 속도', unit: '육군' },
@@ -182,7 +182,7 @@ export const BUILDINGS = [
   { id: '정보본부', fac: '과학', icon: '🕵️', does: '임무 성공률', unit: '임무', start: 0 },
   { id: '우주기지', fac: '과학', icon: '🛰️', does: '정찰 위성으로 모든 전투력', unit: '전투력', start: 0 },
   { id: '기초과학연구원', fac: '과학', icon: '⚛️', does: '연구 속도', unit: '연구', start: 0 },
-  { id: '원자력연구원', fac: '과학', icon: '☢️', does: '자원 생산 · 국방예산', unit: '원자력', start: 0 },
+  { id: '원자력연구원', fac: '과학', icon: '☢️', does: '자원 생산 · 나라 예산', unit: '원자력', start: 0 },
   { id: '인공지능센터', fac: '과학', icon: '🤖', does: '모든 전투력 · 임무 성공률', unit: 'AI', start: 0 },
   { id: '해양과학기지', fac: '과학', icon: '🌊', does: '분쟁 지역 영향력', unit: '영향력', start: 0 },
   { id: '방공포대', fac: '국방', icon: '🛡️', does: '우리 도시 방어도', unit: '방어', start: 0 },

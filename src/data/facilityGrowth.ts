@@ -10,7 +10,7 @@ import type { BuildingId, Facility } from './economy';
 /** 새 시설 16개: 5단계일 때의 효과(1단계 10% … 5단계 100%) */
 export const FAC_EFF: Partial<Record<BuildingId, { eff: Eff; text: string }>> = {
   반도체팹: { eff: { res: 0.12 }, text: '모든 자원 생산 +12%' },
-  석유화학단지: { eff: { budget: 0.1 }, text: '국방예산 +10%' },
+  석유화학단지: { eff: { budget: 0.1 }, text: '나라 예산 +10%' },
   조선소: { eff: { power: { dom: '해', v: 0.08 } }, text: '해군 전투력 +8%' },
   항공우주단지: { eff: { power: { dom: '공', v: 0.08 } }, text: '공군 전투력 +8%' },
   발전소: { eff: { build: { dom: 'all', v: 0.1 } }, text: '모든 부대 모집 속도 +10%' },
@@ -22,7 +22,7 @@ export const FAC_EFF: Partial<Record<BuildingId, { eff: Eff; text: string }>> = 
   문화체육센터: { eff: { loyalty: 4, favor: 2 }, text: '모든 도시 민심 +4 · 모든 나라 호감 +2' },
   보훈복지관: { eff: { loyalty: 3, power: { dom: 'all', v: 0.03 } }, text: '민심 +3 · 모든 전투력 +3%' },
   기초과학연구원: { eff: { research: 0.12 }, text: '연구 +12%' },
-  원자력연구원: { eff: { res: 0.06, budget: 0.05 }, text: '자원 생산 +6% · 국방예산 +5%' },
+  원자력연구원: { eff: { res: 0.06, budget: 0.05 }, text: '자원 생산 +6% · 나라 예산 +5%' },
   인공지능센터: { eff: { power: { dom: 'all', v: 0.05 }, mission: 0.03 }, text: '모든 전투력 +5% · 임무 +3%p' },
   해양과학기지: { eff: { influence: 0.25 }, text: '분쟁 지역 영향력 +25%' },
 };
@@ -49,7 +49,7 @@ export interface Milestone {
 }
 /** 단계 보너스: 3단계·5단계가 되면 추가 효과(모든 시설) */
 export const FAC_MILESTONE: Record<BuildingId, { 3: Milestone; 5: Milestone }> = {
-  군수공장: { 3: { text: '국방예산 +3%', eff: { budget: 0.03 } }, 5: { text: '방산 수출 · 무역 이득 5%', eff: { trade: 0.05 } } },
+  군수공장: { 3: { text: '나라 예산 +3%', eff: { budget: 0.03 } }, 5: { text: '방산 수출 · 무역 이득 5%', eff: { trade: 0.05 } } },
   제련소: { 3: { text: '자원 생산 +3%', eff: { res: 0.03 } }, 5: { text: '육군 모집 +5%', eff: { build: { dom: '육', v: 0.05 } } } },
   첨단공단: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '자원 생산 +5%', eff: { res: 0.05 } } },
   반도체팹: { 3: { text: '연구 +3%', eff: { research: 0.03 } }, 5: { text: '모든 전투력 +2%', eff: { power: { dom: 'all', v: 0.02 } } } },
@@ -79,7 +79,7 @@ export const FAC_MILESTONE: Record<BuildingId, { 3: Milestone; 5: Milestone }> =
   해양과학기지: { 3: { text: '자원 생산 +3%', eff: { res: 0.03 } }, 5: { text: '해군 전투력 +3%', eff: { power: { dom: '해', v: 0.03 } } } },
   방공포대: { 3: { text: '민심 +1', eff: { loyalty: 1 } }, 5: { text: '모든 전투력 +2%', eff: { power: { dom: 'all', v: 0.02 } } } },
   훈련소: { 3: { text: '육군 전투력 +2%', eff: { power: { dom: '육', v: 0.02 } } }, 5: { text: '모든 전투력 +2%', eff: { power: { dom: 'all', v: 0.02 } } } },
-  비축창고: { 3: { text: '자원 생산 +2%', eff: { res: 0.02 } }, 5: { text: '국방예산 +3%', eff: { budget: 0.03 } } },
+  비축창고: { 3: { text: '자원 생산 +2%', eff: { res: 0.02 } }, 5: { text: '나라 예산 +3%', eff: { budget: 0.03 } } },
 };
 
 /** 분야 성장 단계: 분야 시설 단계 합 ÷ (시설 수 × 5)이 20%·40%·60%·80%·100%를 넘으면 1~5단계 */
@@ -87,7 +87,7 @@ export const FIELD_TIER_AT = [0.2, 0.4, 0.6, 0.8, 1.0];
 export const FIELD_TIER_NAME = ['시작', '기초', '성장', '발전', '선진', '세계 최고'];
 /** 분야 성장 1단계마다 분야 전체 보너스 */
 export const FIELD_TIER_EFF: Record<Facility, { eff: Eff; text: string }> = {
-  산업: { eff: { budget: 0.02 }, text: '국방예산 +2%' },
+  산업: { eff: { budget: 0.02 }, text: '나라 예산 +2%' },
   인프라: { eff: { build: { dom: 'all', v: 0.02 } }, text: '모든 부대 모집 +2%' },
   복지: { eff: { loyalty: 1 }, text: '모든 도시 민심 +1' },
   과학: { eff: { research: 0.03 }, text: '연구 +3%' },
@@ -110,7 +110,7 @@ const DOM_NAME = { all: '모든', 육: '육군', 해: '해군', 공: '공군' } 
 export function describeEff(e: Eff): string {
   const p: string[] = [];
   if (e.res) p.push(`자원 생산 +${r1(e.res * 100)}%`);
-  if (e.budget) p.push(`국방예산 +${r1(e.budget * 100)}%`);
+  if (e.budget) p.push(`나라 예산 +${r1(e.budget * 100)}%`);
   if (e.research) p.push(`연구 +${r1(e.research * 100)}%`);
   if (e.power) p.push(`${DOM_NAME[e.power.dom]} 전투력 +${r1(e.power.v * 100)}%`);
   if (e.build) p.push(`${DOM_NAME[e.build.dom]} 모집 +${r1(e.build.v * 100)}%`);

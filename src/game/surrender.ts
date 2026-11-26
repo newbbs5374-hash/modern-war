@@ -1,5 +1,5 @@
 // 11-26 대장 결정: "속국 항복".
-// - 크게 진 나라는 이긴 나라에 항복해 속국이 됨: 전쟁이 끝나고 연합으로 묶이며, 국방예산의 30%를 공물로 바침.
+// - 크게 진 나라는 이긴 나라에 항복해 속국이 됨: 전쟁이 끝나고 연합으로 묶이며, 나라 예산의 30%를 공물로 바침.
 //   속국은 연합이라 주인 나라 전쟁에 함께 끌려 나오고, 연합 승리 계산에도 들어감.
 // - AI끼리는 저절로 항복. 내 나라에 지는 AI는 항복을 "제안"해 오고(12시간 안에 받기), 내가 "항복 요구"를 할 수도 있음.
 // - 내 나라도 전쟁 중인 나라에 항복할 수 있음(판이 끝나지 않음). 속국은 '연합 깨기'를 못 하고 '독립 전쟁'(선전포고)으로만 벗어남.
@@ -25,7 +25,7 @@ export interface VassalState {
   demandReadyMs?: number;
 }
 
-/** 속국이 바치는 공물(국방예산 몫) */
+/** 속국이 바치는 공물(나라 예산 몫) */
 export const TRIBUTE = 0.3;
 /** AI가 질 때 판단마다 항복할 확률(× 평화 성향) */
 export const SURRENDER_CHANCE = 0.03;
@@ -45,7 +45,7 @@ export const lordOf = (s: Pick<GameState, 'vassal'>, id: string): string | null 
 export const isVassalPair = (s: Pick<GameState, 'vassal'>, a: string, b: string) => lordOf(s, a) === b || lordOf(s, b) === a;
 export const vassalsOf = (s: Pick<GameState, 'vassal'>, lord: string) => Object.entries(vassalOf(s).lord).filter(([, l]) => l === lord).map(([v]) => v);
 
-/** 국방예산 배율: 속국은 공물만큼 줄고, 주인은 속국 공물만큼 늚 */
+/** 나라 예산 배율: 속국은 공물만큼 줄고, 주인은 속국 공물만큼 늚 */
 export function vassalMult(s: GameState, id: string): number {
   const me = s.player.countryId;
   const base = (x: string) => countryById(x).budget * aiStrength(x, me);
@@ -81,7 +81,7 @@ function makeVassal(w: WorldState, vs: VassalState, v: string, lord: string, t: 
       q.weariness = 0;
     }
   }
-  event(w, t, `🏳️ ${ga(nm(v))} ${nm(lord)}에 항복해 속국이 됐어요. 국방예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요.`, v === player || lord === player);
+  event(w, t, `🏳️ ${ga(nm(v))} ${nm(lord)}에 항복해 속국이 됐어요. 나라 예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요.`, v === player || lord === player);
 }
 
 function cloneW(s: GameState): WorldState {
@@ -216,7 +216,7 @@ export function doSurrender(s: GameState, id: string): { state: GameState; text:
   const officer = { ...s.officer, trust: Math.max(0, s.officer.trust - 10), fame: Math.max(0, s.officer.fame - 20) };
   return {
     state: { ...finish(s, w, vs), officer },
-    text: `${nm(id)}에 항복했어요. 전쟁은 끝났지만 국방예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요(신뢰 −10 · 명성 −20). 힘을 기르면 선전포고로 독립 전쟁을 할 수 있어요.`,
+    text: `${nm(id)}에 항복했어요. 전쟁은 끝났지만 나라 예산 ${Math.round(TRIBUTE * 100)}%를 공물로 바쳐요(신뢰 −10 · 명성 −20). 힘을 기르면 선전포고로 독립 전쟁을 할 수 있어요.`,
   };
 }
 /** 주인-속국 사이에 선전포고하면(독립 전쟁·속국 치기) 속국 관계가 끝남 */

@@ -304,7 +304,7 @@ export function GroupsPanel({ state, actions }: ScreenProps) {
             <p>
               만족도 70↑이면 덤, 25↓이면 파업·집회 같은 불만 사건과 벌칙이
               생겨요. 면담(+{MEET_GAIN}, 6시간마다)과 요구 수용(+{DEAL_GAIN},{" "}
-              {DEAL_HOURS}시간·국방예산, 맞서는 집단 −8)으로 달랠 수 있어요.
+              {DEAL_HOURS}시간·나라 예산, 맞서는 집단 −8)으로 달랠 수 있어요.
             </p>
           </Help>
         }
@@ -504,7 +504,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
         right={
           <Help title="국가 대형 사업">
             <p>
-              설계 → 공사 → 마무리 3단계, 단계마다 국방예산을 내고 실제 시간(
+              설계 → 공사 → 마무리 3단계, 단계마다 나라 예산을 내고 실제 시간(
               {STAGE_HOURS.join("·")}시간 × 사업 크기)이 지나야 해요.
             </p>
             <p>
@@ -754,7 +754,7 @@ function ZonesCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
             도시만). 도시 3곳마다 1곳 더, 최대 4곳.
           </p>
           <p>
-            지정할 때 국방예산 💵{fmt(zoneCost(state))}. 특구가 2곳 넘으면 '균형
+            지정할 때 나라 예산 💵{fmt(zoneCost(state))}. 특구가 2곳 넘으면 '균형
             발전 논란'으로 사회 안정이 조금 내려가요. 해제는 공짜(그 도시는 하루
             뒤 다시 지정).
           </p>
@@ -839,7 +839,7 @@ export function BudgetSeasonCard({ state, actions }: ScreenProps) {
             {Math.round(VOTE_MS / 3600e3)}시간 뒤 국회가 표결해요.
           </p>
           <p>
-            통과하면 다음 철까지 효과, 부결되거나 안 내면 준예산(국방예산
+            통과하면 다음 철까지 효과, 부결되거나 안 내면 준예산(나라 예산
             −5%·신뢰도 −3). 통과 확률은 신뢰도와 예산안 종류로 정해져요.
           </p>
         </Help>
@@ -886,7 +886,7 @@ export function BudgetSeasonCard({ state, actions }: ScreenProps) {
         <p className="small">
           지금 예산:{" "}
           {active.cut
-            ? "⚠️ 준예산(국방예산 −5%)"
+            ? "⚠️ 준예산(나라 예산 −5%)"
             : `${planById(active.plan)?.icon} ${planById(active.plan)?.name} · ${planById(active.plan)?.text}`}
         </p>
       )}

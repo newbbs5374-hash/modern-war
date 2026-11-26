@@ -34,7 +34,7 @@ export type PostEff =
   | 'favor' // 모든 나라 호감 +
   | 'troop' // 병력 보충 배율 +
   | 'build' // 모집 속도 배율 +
-  | 'budget' // 국방예산 배율 +
+  | 'budget' // 나라 예산 배율 +
   | 'growth' // 인구 성장 +
   | 'research' // 연구 속도 +
   | 'loyalty' // 도시 민심 +
@@ -57,7 +57,7 @@ export const EFF_INFO: Record<PostEff, { name: string; pct: boolean }> = {
   favor: { name: '모든 나라 호감', pct: false },
   troop: { name: '병력 보충', pct: true },
   build: { name: '부대 모집 속도', pct: true },
-  budget: { name: '국방예산', pct: true },
+  budget: { name: '나라 예산', pct: true },
   growth: { name: '인구 성장', pct: true },
   research: { name: '연구 속도', pct: true },
   loyalty: { name: '도시 민심', pct: false },

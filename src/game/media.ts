@@ -298,7 +298,7 @@ export function pressAnswerText(s: GameState, n: number): string {
 export function canGrant(s: GameState, id: number): string | null {
   const p = mediaOf(s).petitions.find((x) => x.id === id);
   if (!p) return '없는 청원';
-  if ((s.nations[me(s)]?.treasury ?? 0) < p.cost) return '국방예산이 모자라요';
+  if ((s.nations[me(s)]?.treasury ?? 0) < p.cost) return '나라 예산이 모자라요';
   return null;
 }
 export function grantPetition(s: GameState, id: number): GameState {

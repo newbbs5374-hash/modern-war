@@ -151,7 +151,7 @@ export const COUNTRIES: Country[] = [
     economy: 25, budget: 22, military: 45, difficulty: '어려움',
     bloc: 'pacific', faith: 'secular', faithStrength: '약',
     specialUnit: { name: '자주포 포병대', base: '포병', effect: '쏘고 바로 이동 · 정확도 +30%' },
-    ability: { name: '방산 수출', effect: '무기를 팔아 국방예산 + · 연합국 생산 도움' },
+    ability: { name: '방산 수출', effect: '무기를 팔아 나라 예산 + · 연합국 생산 도움' },
     shapes: [{ x: 672, y: 212, w: 58, h: 75 }],
   }),
   C({

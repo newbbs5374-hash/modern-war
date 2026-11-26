@@ -4,7 +4,7 @@
 
 /** 도시·시설 효과(나라 전체에 더해짐. 민심은 그 도시만) */
 export interface CityEff {
-  /** 국방예산 배율 + */
+  /** 나라 예산 배율 + */
   budget?: number;
   /** 자원 생산 배율 + */
   res?: number;
@@ -99,7 +99,7 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
     area: 605,
     admin: '특별시 · 25개 자치구',
     industry: ['금융', 'IT·반도체 설계', '방송·문화', '대학·연구'],
-    trait: { name: '수도', icon: '👑', text: '국방예산 +3% · 임무 성공 +1%', eff: { budget: 0.03, mission: 0.01 } },
+    trait: { name: '수도', icon: '👑', text: '나라 예산 +3% · 임무 성공 +1%', eff: { budget: 0.03, mission: 0.01 } },
     landmarks: [
       { id: 'yongsan', name: '대통령실·국방부', kind: 'gov', at: [126.977, 37.533], lv: 5, note: '용산. 대통령 집무실과 국방부·합참' },
       { id: 'nis', name: '국가정보원', kind: 'intel', at: [127.06, 37.462], lv: 4, note: '서초구 내곡동' },
@@ -126,7 +126,7 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
     area: 770,
     admin: '광역시 · 15개 구 · 1개 군(기장)',
     industry: ['항만·물류', '조선·해양', '수산', '관광', '금융(BIFC)'],
-    trait: { name: '해양 수도', icon: '🌊', text: '해군 모집 +4% · 국방예산 +1%', eff: { navy: 0.04, budget: 0.01 } },
+    trait: { name: '해양 수도', icon: '🌊', text: '해군 모집 +4% · 나라 예산 +1%', eff: { navy: 0.04, budget: 0.01 } },
     landmarks: [
       { id: 'rokn', name: '해군작전사령부', kind: 'navy', at: [129.1, 35.105], lv: 5, note: '남구 백운포. 함대 지휘' },
       { id: 'busanport', name: '부산항 북항', kind: 'port', at: [129.05, 35.107], lv: 5, note: '세계 7위권 컨테이너 항' },
@@ -199,7 +199,7 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
     area: 206,
     admin: '시 · 2개 구(완산·덕진)',
     industry: ['탄소 소재', '식품', '전통문화·관광', '공공기관'],
-    trait: { name: '전통문화 도시', icon: '🏯', text: '모든 우리 도시 민심 +1 · 국방예산 +0.5%', eff: { loyaltyAll: 1, budget: 0.005 } },
+    trait: { name: '전통문화 도시', icon: '🏯', text: '모든 우리 도시 민심 +1 · 나라 예산 +0.5%', eff: { loyaltyAll: 1, budget: 0.005 } },
     landmarks: [
       { id: 'hanok', name: '전주 한옥마을', kind: 'culture', at: [127.153, 35.815], lv: 5, note: '완산구' },
       { id: 'jbgov', name: '전북특별자치도청', kind: 'gov', at: [127.108, 35.82], lv: 3, note: '완산구 효자동' },
@@ -232,7 +232,7 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
     area: 1850,
     admin: '특별자치도 · 2개 행정시(제주시·서귀포시)',
     industry: ['관광', '감귤 농업', '수산', '신재생 에너지'],
-    trait: { name: '관광·평화의 섬', icon: '🏝️', text: '국방예산 +1% · 모든 우리 도시 민심 +1 · 해군 모집 +1%', eff: { budget: 0.01, loyaltyAll: 1, navy: 0.01 } },
+    trait: { name: '관광·평화의 섬', icon: '🏝️', text: '나라 예산 +1% · 모든 우리 도시 민심 +1 · 해군 모집 +1%', eff: { budget: 0.01, loyaltyAll: 1, navy: 0.01 } },
     landmarks: [
       { id: 'jejunavy', name: '제주 민군복합항(해군기지)', kind: 'navy', at: [126.48, 33.226], lv: 4, note: '서귀포 강정. 기동함대' },
       { id: 'cju', name: '제주국제공항', kind: 'airport', at: [126.493, 33.507], lv: 5, note: '제주시' },
@@ -249,7 +249,7 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
     area: 512,
     admin: '시 · 1읍 6면 20동 · 섬 365개',
     industry: ['석유화학', '정유', '해양 관광', '수산'],
-    trait: { name: '석유화학 단지', icon: '🛢️', text: '자원 +3% · 국방예산 +0.5%', eff: { res: 0.03, budget: 0.005 } },
+    trait: { name: '석유화학 단지', icon: '🛢️', text: '자원 +3% · 나라 예산 +0.5%', eff: { res: 0.03, budget: 0.005 } },
     landmarks: [
       { id: 'ysnic', name: '여수국가산업단지', kind: 'industry', at: [127.685, 34.85], lv: 5, note: '국내 최대 석유화학 단지' },
       { id: 'gsref', name: '정유 공장', kind: 'energy', at: [127.71, 34.83], lv: 4, note: '하루 80만 배럴' },
@@ -331,7 +331,7 @@ export const KR_CITY_INFO: Record<string, KrCityInfo> = {
     area: 1067,
     admin: '광역시 · 8구 2군(옹진군 섬 제외)',
     industry: ['항공 물류', '항만', '바이오', '철강'],
-    trait: { name: '관문 도시', icon: '✈️', text: '국방예산 +1% · 공군 모집 +1%', eff: { budget: 0.01, air: 0.01 } },
+    trait: { name: '관문 도시', icon: '✈️', text: '나라 예산 +1% · 공군 모집 +1%', eff: { budget: 0.01, air: 0.01 } },
     landmarks: [
       { id: 'icn', name: '인천국제공항', kind: 'airport', at: [126.44, 37.46], lv: 5, note: '영종도. 세계적인 허브 공항' },
       { id: 'icport', name: '인천항', kind: 'port', at: [126.6, 37.46], lv: 5, note: '수도권 바닷길 관문' },

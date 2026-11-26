@@ -517,7 +517,7 @@ export function canRecruit(s: GameState, id: number): string | null {
   const p = personById(s, id);
   if (!p || (p.group !== '인재' && p.group !== '관료' && p.group !== '공공')) return '명단에 없는 사람';
   const cost = recruitCost(s, p);
-  if ((s.nations[s.player.countryId]?.treasury ?? 0) < cost) return `국방예산 ${cost.toLocaleString('ko-KR')} 필요`;
+  if ((s.nations[s.player.countryId]?.treasury ?? 0) < cost) return `나라 예산 ${cost.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function recruit(s: GameState, id: number): GameState {

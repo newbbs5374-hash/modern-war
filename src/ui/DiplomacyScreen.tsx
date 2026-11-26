@@ -110,7 +110,7 @@ export function TradePanel({ state, actions }: ScreenProps) {
       <section className="card">
         <div className="row">
           <div className="ichips">
-            <Chip icon="💰" value={fmt(state.nations[me].treasury)} label="국방예산" />
+            <Chip icon="💰" value={fmt(state.nations[me].treasury)} label="나라 예산" />
             <Chip icon="🔁" value={`${contracts.length}/${CONTRACT_MAX}`} label="계약" />
           </div>
           <Help title="무역">

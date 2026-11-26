@@ -3,7 +3,7 @@ import { newGame, type GameState } from './state';
 import { BOOST_MS, RUBY_PER_BOOST, TEST_BOOSTS, boostLeft, boostsOf, boostsToFinish, useBoost } from './boost';
 import { boardNow, debugAddAide, sendAide, startMission } from './officer';
 
-/** 11-26 난이도로 새 판이 적게 시작해서, 시험은 가속권·국방예산을 넉넉히 넣고 함 */
+/** 11-26 난이도로 새 판이 적게 시작해서, 시험은 가속권·나라 예산을 넉넉히 넣고 함 */
 const RICH = 300;
 const ng = (): GameState => {
   const s = newGame('t', 'kr', 0, { seed: 1 });

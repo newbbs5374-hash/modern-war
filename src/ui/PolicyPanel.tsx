@@ -89,7 +89,7 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
           </button>
         </div>
       </Card>
-      <Card title="세금" icon="🧾" right={<small className="muted">국방예산 시간당 {fmt(perHour)}</small>}>
+      <Card title="세금" icon="🧾" right={<small className="muted">나라 예산 시간당 {fmt(perHour)}</small>}>
         <div className="tax-row">
           {(Object.keys(TAX_INFO) as Tax[]).map((t) => (
             <button key={t} className={`tax-btn ${p.tax === t ? 'on' : ''}`} disabled={p.tax === t || !!waitTax} onClick={() => actions.apply((s) => setTax(s, t))}>

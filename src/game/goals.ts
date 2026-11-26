@@ -35,7 +35,8 @@ export type Count =
   | 'event' // 돌발 사건 고르기
   | 'spy' // 첩보 작전 성공
   | 'star3' // 훈련 별 3개(11-26)
-  | 'annex'; // 점령 도시 편입 완료(11-26)
+  | 'annex' // 점령 도시 편입 완료(11-26)
+  | 'facUp'; // 시설·부처 건물 한 단계 올림(11-26 보상 더 늘리기)
 
 export interface DailyTask {
   id: Count;
@@ -61,16 +62,25 @@ export interface GoalsState {
   /** 작은 전과(훈련 별·전투 승리) 루비를 센 날과 그날 쌓인 양(하루 상한) */
   spoilDay?: number;
   spoilSmall?: number;
+  /** 작은 전과로 그날 받은 가속권(하루 상한) */
+  spoilBoost?: number;
+  /** 봉급 받기로 그날 받은 루비·가속권(하루 상한, 11-26) */
+  payDay?: number;
+  payRuby?: number;
+  payBoost?: number;
 }
 export interface Spoil {
   k: SpoilKind;
   n: number;
   ruby: number;
+  boosts?: number;
 }
 
-export const DAILY_RUBY = 15; // 11-26 보상 늘리기: 10 → 15
-export const DAILY_BONUS_RUBY = 30;
-export const DAILY_BONUS_BOOSTS = 2;
+export const DAILY_RUBY = 20; // 11-26 보상 늘리기: 10 → 15 → 20
+export const DAILY_BONUS_RUBY = 40;
+export const DAILY_BONUS_BOOSTS = 4;
+/** 하루 할 일 수(11-26: 3 → 4) */
+export const DAILY_COUNT = 4;
 
 export const DAILY_POOL: Array<{ id: Count; name: string; icon: string; need: number }> = [
   { id: 'salary', name: '봉급 받기', icon: '💵', need: 2 },
@@ -84,20 +94,30 @@ export const DAILY_POOL: Array<{ id: Count; name: string; icon: string; need: nu
   { id: 'spy', name: '첩보 작전 성공', icon: '🕵️', need: 1 },
   { id: 'research', name: '연구 끝내기', icon: '🔬', need: 1 },
   { id: 'star3', name: '훈련 별 3개 받기', icon: '⭐', need: 1 },
+  { id: 'facUp', name: '시설·청사 올리기', icon: '🏗️', need: 1 },
 ];
 
 // ── 전과 보상(11-26 루비 얻는 곳 늘리기) ──
 // 큰 일(점령·편입·등급)은 그때마다, 작은 일(훈련 별 3개·전투 승리)은 하루 상한까지 루비가 쌓이고, 상점에서 받는다.
-export type SpoilKind = 'capture' | 'annex' | 'rank' | 'star3' | 'merit';
-export const SPOILS: Record<SpoilKind, { icon: string; name: string; ruby: number; small?: boolean }> = {
-  capture: { icon: '🏴', name: '도시 점령', ruby: 8 },
-  annex: { icon: '🗳️', name: '점령 도시 편입', ruby: 12 },
-  rank: { icon: '⭐', name: '호칭 오름', ruby: 10 },
-  star3: { icon: '🎯', name: '훈련 별 3개', ruby: 2, small: true },
-  merit: { icon: '🎖️', name: '임무·전투 승리', ruby: 2, small: true },
+export type SpoilKind = 'capture' | 'annex' | 'rank' | 'research' | 'facUp' | 'event' | 'spy' | 'pact' | 'star3' | 'merit';
+export const SPOILS: Record<SpoilKind, { icon: string; name: string; ruby: number; boosts?: number; small?: boolean }> = {
+  capture: { icon: '🏴', name: '도시 점령', ruby: 12, boosts: 2 },
+  annex: { icon: '🗳️', name: '점령 도시 편입', ruby: 18, boosts: 3 },
+  rank: { icon: '⭐', name: '호칭 오름', ruby: 15, boosts: 3 },
+  research: { icon: '🔬', name: '연구 끝', ruby: 4, boosts: 1 },
+  facUp: { icon: '🏗️', name: '시설·청사 올림', ruby: 3, boosts: 1, small: true },
+  event: { icon: '⚡', name: '돌발 사건 해결', ruby: 3, boosts: 1, small: true },
+  spy: { icon: '🕵️', name: '첩보 작전 성공', ruby: 3, small: true },
+  pact: { icon: '🤝', name: '협정·무역 계약', ruby: 3, small: true },
+  star3: { icon: '🎯', name: '훈련 별 3개', ruby: 3, small: true },
+  merit: { icon: '🎖️', name: '임무·전투 승리', ruby: 3, small: true },
 };
-/** 작은 전과 루비 하루 상한 */
-export const SPOIL_SMALL_CAP = 12;
+/** 작은 전과 루비 하루 상한(11-26: 12 → 30) */
+export const SPOIL_SMALL_CAP = 30;
+/** 작은 전과 가속권 하루 상한 */
+export const SPOIL_SMALL_BOOST_CAP = 6;
+/** 업적 가속권: 루비 20마다 1장(적어도 1장) */
+export const achBoosts = (a: { ruby: number }) => Math.max(1, Math.round(a.ruby / 20));
 export const dailyInfo = (id: Count) => DAILY_POOL.find((d) => d.id === id)!;
 
 export interface Achievement {
@@ -147,6 +167,12 @@ export const ACHIEVEMENTS: Achievement[] = [
   ACH('annex3', '영토 확장', '🗺️', '점령 도시 3개 편입하기', 120, (_, g) => [t(g, 'annex'), 3]),
   ACH('tech30', '기술 선진국', '🧪', '연구 30개 끝내기', 100, (s) => [civOf(s).done.length, 30]),
   ACH('island3', '바다의 주인', '⚓', '분쟁 지역 3곳 차지하기', 80, (s) => [myIslands(s).length, 3]),
+  // 11-26 보상 더 늘리기
+  ACH('pay30', '꼬박꼬박 월급날', '💵', '봉급 30번 받기', 60, (_, g) => [t(g, 'salary'), 30]),
+  ACH('fac1', '첫 삽', '🏗️', '시설·청사 처음 올리기', 20, (_, g) => [t(g, 'facUp'), 1]),
+  ACH('fac10', '건설 대통령', '🏗️', '시설·청사 10번 올리기', 60, (_, g) => [t(g, 'facUp'), 10]),
+  ACH('fac40', '나라를 짓는 사람', '🏙️', '시설·청사 40번 올리기', 150, (_, g) => [t(g, 'facUp'), 40]),
+  ACH('research5', '연구 시작', '🔬', '연구 5개 끝내기', 30, (s) => [civOf(s).done.length, 5]),
   ACH('streak7', '한결같은 지도자', '🗓️', '매일 할 일 7일 연속 다 하기', 120, (_, g) => [g.streak, 7]),
   ...ORIGIN_ACH(),
 ];
@@ -156,14 +182,14 @@ function ORIGIN_ACH(): Achievement[] {
   const me = (s: GameState) => s.player.countryId;
   const O = (origin: OriginId, id: string, name: string, icon: string, text: string, prog: Achievement['prog']): Achievement => ({ ...ACH(`o-${id}`, name, icon, `[출신] ${text}`, 80, prog), origin });
   return [
-    O('econ', 'econ', '나라 곳간지기', '💼', '국방예산 금고 50,000 모으기', (s) => [Math.floor(s.nations[me(s)]?.treasury ?? 0), 50000]),
+    O('econ', 'econ', '나라 곳간지기', '💼', '나라 예산 금고 50,000 모으기', (s) => [Math.floor(s.nations[me(s)]?.treasury ?? 0), 50000]),
     O('general', 'general', '별들의 사령관', '⭐', '장군 4명 두기', (s) => [s.officer.generals.length, 4]),
     O('scientist', 'scientist', '과학 대국', '🔬', '연구 15개 끝내기', (s) => [civOf(s).done.length, 15]),
     O('athlete', 'athlete', '국민 영웅', '🏅', '지지도 80 넘기기', (s) => [Math.floor(presOf(s).approval), 80]),
     O('diplomat', 'diplomat', '세계의 중재자', '🌐', '정상회담 5번 성공', (s) => [mediaOf(s).summits, 5]),
     O('spy', 'spy', '보이지 않는 손', '🕵️', '첩보 작전 10번 성공', (_, g) => [t(g, 'spy'), 10]),
     O('lawyer', 'lawyer', '법치의 수호자', '⚖️', '법안 5개 국회 통과', (s) => [assemblyOf(s).passed ?? 0, 5]),
-    O('chaebol', 'chaebol', '부자 나라', '🏢', '국방예산 금고 150,000 모으기', (s) => [Math.floor(s.nations[me(s)]?.treasury ?? 0), 150000]),
+    O('chaebol', 'chaebol', '부자 나라', '🏢', '나라 예산 금고 150,000 모으기', (s) => [Math.floor(s.nations[me(s)]?.treasury ?? 0), 150000]),
     O('broadcaster', 'broadcaster', '국민 MC', '🎙️', '명성 1,000 쌓기', (s) => [Math.floor(s.officer.fame), 1000]),
     O('activist', 'activist', '광장의 목소리', '✊', '국민 청원 10개 들어주기', (s) => [mediaOf(s).petDone, 10]),
     O('doctor', 'doctor', '건강한 나라', '🩺', '내 도시 평균 민심 80 넘기기', (s) => {
@@ -187,7 +213,7 @@ function rollDaily(seed: number, day: number): DailyTask[] {
   const rng = new Rng(((day + 1) * 2654435761 + seed) >>> 0);
   const pool = [...DAILY_POOL];
   const out: DailyTask[] = [];
-  while (out.length < 3 && pool.length) {
+  while (out.length < DAILY_COUNT && pool.length) {
     const p = pool.splice(Math.floor(rng.next() * pool.length), 1)[0];
     out.push({ id: p.id, need: p.need, have: 0, claimed: false });
   }
@@ -237,6 +263,8 @@ export function countDiff(b: GameState, a: GameState): Partial<Record<Count, num
   add('spy', (a.spy?.ok ?? 0) - (b.spy?.ok ?? 0));
   add('star3', sum(a.officer.perfect) - sum(b.officer.perfect));
   if (b.player.countryId === me) add('annex', annexedCount(a) - annexedCount(b));
+  const lv = (x: GameState) => Object.values(x.economy.buildings ?? {}).reduce((n, y) => n + (y?.level ?? 0), 0) + sum(x.cabinet?.minLv as Record<string, number> | undefined) + sum(x.cabinet?.fac);
+  add('facUp', lv(a) - lv(b));
   return out;
 }
 
@@ -256,7 +284,9 @@ export function trackGoals(b: GameState | null, a: GameState): GameState {
 /** 한 일에서 전과 루비를 쌓는다(작은 일은 하루 상한) */
 function addSpoils(s: GameState, g: GoalsState, d: Partial<Record<Count, number>>): GoalsState {
   const today = dayOf(s.worldMs);
-  let small = g.spoilDay === today ? (g.spoilSmall ?? 0) : 0;
+  const same = g.spoilDay === today;
+  let small = same ? (g.spoilSmall ?? 0) : 0;
+  let smallB = same ? (g.spoilBoost ?? 0) : 0;
   let spoils = g.spoils ?? [];
   let changed = false;
   for (const k of Object.keys(SPOILS) as SpoilKind[]) {
@@ -264,24 +294,29 @@ function addSpoils(s: GameState, g: GoalsState, d: Partial<Record<Count, number>
     if (n <= 0) continue;
     const info = SPOILS[k];
     let ruby = n * info.ruby;
+    let boosts = n * (info.boosts ?? 0);
     if (info.small) {
       ruby = Math.min(ruby, Math.max(0, SPOIL_SMALL_CAP - small));
       small += ruby;
+      boosts = Math.min(boosts, Math.max(0, SPOIL_SMALL_BOOST_CAP - smallB));
+      smallB += boosts;
     }
-    if (ruby <= 0) continue;
+    if (ruby <= 0 && boosts <= 0) continue;
     changed = true;
     const i = spoils.findIndex((x) => x.k === k);
-    spoils = i >= 0 ? spoils.map((x, j) => (j === i ? { ...x, n: x.n + n, ruby: x.ruby + ruby } : x)) : [...spoils, { k, n, ruby }];
+    spoils = i >= 0 ? spoils.map((x, j) => (j === i ? { ...x, n: x.n + n, ruby: x.ruby + ruby, boosts: (x.boosts ?? 0) + boosts } : x)) : [...spoils, { k, n, ruby, boosts }];
   }
-  if (!changed && g.spoilDay === today) return g;
-  return { ...g, spoils, spoilDay: today, spoilSmall: small };
+  if (!changed && same) return g;
+  return { ...g, spoils, spoilDay: today, spoilSmall: small, spoilBoost: smallB };
 }
 export const spoilRuby = (s: GameState) => (goalsOf(s).spoils ?? []).reduce((a, x) => a + x.ruby, 0);
+export const spoilBoosts = (s: GameState) => (goalsOf(s).spoils ?? []).reduce((a, x) => a + (x.boosts ?? 0), 0);
 export function claimSpoils(s: GameState): GameState {
   const g = goalsOf(s);
   const r = spoilRuby(s);
-  if (!r) return s;
-  return { ...s, goals: { ...g, ruby: g.ruby + r, spoils: [] } };
+  const b = spoilBoosts(s);
+  if (!r && !b) return s;
+  return { ...s, goals: { ...g, ruby: g.ruby + r, spoils: [] }, officer: { ...s.officer, boosts: (s.officer.boosts ?? 0) + b } };
 }
 
 /** 모두받기: 다 한 매일 할 일·업적·전과 보상을 한 번에(11-26) */
@@ -332,12 +367,12 @@ export function claimAch(s: GameState, id: string): GameState {
   const a = achList(s).find((x) => x.id === id);
   if (!a || !achState(s, a).ready) return s;
   const g = goalsOf(s);
-  return { ...s, goals: { ...g, ruby: g.ruby + a.ruby, got: [...g.got, id] } };
+  return { ...s, goals: { ...g, ruby: g.ruby + a.ruby, got: [...g.got, id] }, officer: { ...s.officer, boosts: (s.officer.boosts ?? 0) + achBoosts(a) } };
 }
 /** 받을 수 있는 보상 수(빨간 점) */
 export function goalsReady(s: GameState): number {
   const g = goalsOf(s);
-  return g.daily.filter((x) => !x.claimed && x.have >= x.need).length + achList(s).filter((a) => achState(s, a).ready).length + (spoilRuby(s) > 0 ? 1 : 0);
+  return g.daily.filter((x) => !x.claimed && x.have >= x.need).length + achList(s).filter((a) => achState(s, a).ready).length + (spoilRuby(s) > 0 || spoilBoosts(s) > 0 ? 1 : 0);
 }
 
 // ── 루비 상점 ──
@@ -375,9 +410,9 @@ export const SHOP: ShopItem[] = [
   { id: 'res', name: '자원 상자', icon: '📦', text: '강철·석유·알루미늄·구리 각 100', price: 25, give: (s) => giveRes(s, 100) },
   {
     id: 'budget',
-    name: '긴급 국방예산',
+    name: '긴급 나라 예산',
     icon: '💰',
-    text: '국방예산 +5,000',
+    text: '나라 예산 +5,000',
     price: 30,
     give: (s) => {
       const me = s.player.countryId;

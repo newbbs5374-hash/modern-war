@@ -35,7 +35,7 @@ describe('돌발 사건', () => {
     expect(crisisOf(s).log[0]).toContain('부관');
   });
 
-  it('국방예산이 모자라면 돈 드는 선택은 못 고름', () => {
+  it('나라 예산이 모자라면 돈 드는 선택은 못 고름', () => {
     let s = newGame('t', 'kr', 0, { seed: 1 });
     s = { ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 0 } } };
     const oil = CRISES.find((x) => x.id === 'oil')!;

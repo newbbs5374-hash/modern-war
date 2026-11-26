@@ -1,6 +1,6 @@
 // 함대 충돌 관전: 전쟁 중인 두 나라 함대가 바다에서 부딪히는 장면을 미리 계산(같은 씨앗 = 같은 장면).
 // 화면은 이 타임라인을 시간대로 그리기만 함(src/ui/FleetBattle.tsx).
-// 관전이 끝나면 결과가 한 번 반영됨(같은 두 나라는 6시간에 한 번): 진 쪽 국방예산 -3%·병력 -1%.
+// 관전이 끝나면 결과가 한 번 반영됨(같은 두 나라는 6시간에 한 번): 진 쪽 나라 예산 -3%·병력 -1%.
 import { countryById } from '../data/world';
 import { START_TROOPS_PER_POINT } from './balance';
 import { pushReport } from './report';

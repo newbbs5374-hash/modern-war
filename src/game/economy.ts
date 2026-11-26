@@ -151,7 +151,7 @@ export function buildingEff(s: GameState, id: BuildingId): number {
 /** 새 시설 효과(세기 반영): 국방과학연구소 연구 · 정보본부 임무 · 우주기지 전투력 · 방공포대 방어 · 훈련소 훈련 · 비축창고 보급 */
 export { facBonus };
 export const buffActive = (s: GameState, id: BuildingId) => (s.economy.buildings?.[id]?.buffEndMs ?? 0) > s.worldMs;
-/** 군수공장: 국방예산 배율 */
+/** 군수공장: 나라 예산 배율 */
 export const budgetMult = (s: GameState) => 1 + buildingEff(s, '군수공장');
 /** 제련소·첨단공단: 자원 배율 */
 export const resMult = (s: GameState, r: Res) => {
@@ -281,7 +281,7 @@ export function canUpgrade(s: GameState, id: BuildingId): string | null {
   const c = upgradeCost(s, id);
   const fac = buildingInfo(id).fac;
   if (s.economy.facilities[fac].exp < c.exp) return `${fac} 경험치 ${Math.floor(s.economy.facilities[fac].exp)} / ${c.exp}`;
-  if (s.nations[s.player.countryId].treasury < c.money) return `국방예산 ${c.money.toLocaleString()} 필요`;
+  if (s.nations[s.player.countryId].treasury < c.money) return `나라 예산 ${c.money.toLocaleString()} 필요`;
   return null;
 }
 export function upgradeFacility(s: GameState, id: BuildingId): GameState {
@@ -336,7 +336,7 @@ export function canProduce(s: GameState, unit: string, variant?: string | boolea
   if (tech) return tech;
   if (s.economy.queue.length >= QUEUE_MAX) return `생산 줄은 ${QUEUE_MAX}개까지`;
   const c = costOf(s, unit, variant);
-  if (s.nations[me].treasury < c.money) return '국방예산이 모자라요';
+  if (s.nations[me].treasury < c.money) return '나라 예산이 모자라요';
   for (const [r, n] of Object.entries(c.res)) if ((s.economy.stock[r as Res] ?? 0) < n!) return `${r}이(가) 모자라요`;
   return null;
 }
@@ -412,7 +412,7 @@ export function canTrade(s: GameState, id: string, r: Res, qty: number, buy: boo
   if (!(qty > 0)) return '수량';
   if (buy) {
     if (!producesOf(s, id).includes(r)) return `${countryById(id).name}에는 ${r}이(가) 없어요`;
-    if (s.nations[s.player.countryId].treasury < tradePrice(s, id, r) * qty) return '국방예산이 모자라요';
+    if (s.nations[s.player.countryId].treasury < tradePrice(s, id, r) * qty) return '나라 예산이 모자라요';
   } else if ((s.economy.stock[r] ?? 0) < qty) return `${r}이(가) 모자라요`;
   return null;
 }

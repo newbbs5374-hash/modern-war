@@ -35,7 +35,7 @@ export interface GroupDef {
   rival: string;
 }
 export const GROUPS: GroupDef[] = [
-  { id: 'biz', icon: '🏢', name: '재계', wants: '낮은 세금·유연한 노동·경제 예산', good: { budget: 0.04 }, goodText: '국방예산 +4%', bad: { budget: -0.05 }, badText: '국방예산 −5%', riot: '투자 중단 선언', rival: 'labor' },
+  { id: 'biz', icon: '🏢', name: '재계', wants: '낮은 세금·유연한 노동·경제 예산', good: { budget: 0.04 }, goodText: '나라 예산 +4%', bad: { budget: -0.05 }, badText: '나라 예산 −5%', riot: '투자 중단 선언', rival: 'labor' },
   { id: 'labor', icon: '👷', name: '노동계', wants: '노동 보호·사회 예산·누진세', good: { res: 0.04 }, goodText: '자원 +4%', bad: { res: -0.08 }, badText: '자원 −8%', riot: '총파업', rival: 'biz' },
   { id: 'mil', icon: '🎖️', name: '군', wants: '국방 예산·징병·안보 사업', good: { build: 0.04, troop: 0.03 }, goodText: '모집 +4% · 징병 +3%', bad: { build: -0.06, trust: -3 }, badText: '모집 −6% · 신뢰도 −3', riot: '군 내부 불만 표출', rival: 'civic' },
   { id: 'civic', icon: '🪧', name: '시민단체', wants: '복지·환경·언론 자유, 전쟁 반대', good: { loyalty: 3 }, goodText: '모든 도시 민심 +3', bad: { society: -6 }, badText: '사회 안정 −6', riot: '대규모 집회', rival: 'mil' },
@@ -156,7 +156,7 @@ export function dealCost(s: GameState): number {
 }
 export function canDeal(s: GameState, g: string): string | null {
   const me = s.nations[s.player.countryId];
-  if (!me || me.treasury < dealCost(s)) return '국방예산이 모자라요';
+  if (!me || me.treasury < dealCost(s)) return '나라 예산이 모자라요';
   if (domOf(s).groups.mods.some((m) => m.g === g && m.why.startsWith('💼') && m.untilMs > s.worldMs)) return '이미 양보한 집단이에요';
   return null;
 }

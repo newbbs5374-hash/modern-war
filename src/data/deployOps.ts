@@ -67,7 +67,7 @@ export interface RequestKind {
   hours: number;
   /** 요청 글({곳} = 지역 이름) */
   text: string;
-  /** 끝나면 받는 국방예산 · 명성 */
+  /** 끝나면 받는 나라 예산 · 명성 */
   money: number;
   fame: number;
 }

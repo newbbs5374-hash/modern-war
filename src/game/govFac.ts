@@ -54,7 +54,7 @@ export function canBuildGovFac(s: GameState, id: string): string | null {
   if (!govFacOwned(s, f)) return 'min' in f.owner ? '장관이 있어야 해요' : '청장이 있어야 해요';
   if (s.world.owner[govFacCity(s, f)] !== s.player.countryId) return '우리 도시가 아니에요';
   const cost = govFacCost(govFacLevel(s, id));
-  if ((s.nations[s.player.countryId]?.treasury ?? 0) < cost) return `국방예산 ${cost.toLocaleString('ko-KR')} 필요`;
+  if ((s.nations[s.player.countryId]?.treasury ?? 0) < cost) return `나라 예산 ${cost.toLocaleString('ko-KR')} 필요`;
   return null;
 }
 export function buildGovFac(s: GameState, id: string): GameState {

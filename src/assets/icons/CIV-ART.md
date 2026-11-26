@@ -39,13 +39,13 @@
 
 ## 창 1 · 금고 (10장)
 
-### 1. 금고 · 국방예산 · 파일 이름 `icon-vault-budget.png` · 창 1 · 금고
+### 1. 금고 · 나라 예산 · 파일 이름 `icon-vault-budget.png` · 창 1 · 금고
 
 - 무엇: 돈다발과 금괴가 쌓인 열린 철제 금고
 - 참고 그림: `ref-vault.png`(지금 금고 화면), `ref-unit-style.png`(지금 그림 화풍) 2장을 같이 첨부하세요.
 
 ```
-The attached images show the current game screens (temporary emoji icons) and our finished art style. Match the art style of the finished art exactly. Game icon for the "국방예산" box of the treasury screen. An open heavy steel vault door with neat stacks of banknote bundles and a few gold bars inside. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter view from slightly above. Realistic soft shading with a subtle painterly finish, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green, steel and sand palette with one warm accent. Exactly one subject group, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 40 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as icon-vault-budget.png
+The attached images show the current game screens (temporary emoji icons) and our finished art style. Match the art style of the finished art exactly. Game icon for the "나라 예산" box of the treasury screen. An open heavy steel vault door with neat stacks of banknote bundles and a few gold bars inside. Semi-realistic military art (realistic proportions, materials and details like a high-quality modern mobile strategy game render, not anime, not cartoon, not chibi), three-quarter view from slightly above. Realistic soft shading with a subtle painterly finish, slightly boosted contrast so it reads at small size, thin subtle dark edge, muted grey-green, steel and sand palette with one warm accent. Exactly one subject group, centered, filling about 70 percent of the image with empty margin on all sides. Bold simple silhouette that stays readable when shrunk to 40 pixels. Lighting from the top-left. No text, no letters, no numbers, no flags, no national insignia, no logos, no background scenery. Transparent background (PNG with alpha). Square 1:1 image, 1024x1024. File name: save this image as icon-vault-budget.png
 ```
 
 ### 2. 금고 · 병력 · 파일 이름 `icon-vault-troops.png` · 창 1 · 금고

@@ -9,7 +9,7 @@ export interface PersonalityInfo {
   tension: number;
   /** 전쟁을 끝내고 휴전하려는 마음 배율 */
   peace: number;
-  /** 국방예산 배율 */
+  /** 나라 예산 배율 */
   budget: number;
   text: string;
 }

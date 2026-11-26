@@ -465,7 +465,7 @@ export function GovPanel(props: ScreenProps) {
           <Help title="체제와 정책 카드">
             <p>체제를 고르면 정책 카드 칸이 정해져요(⚔️군사 · 💰경제 · 🕊️외교 · ⭐자유). 자유 칸에는 아무 카드나 끼워요.</p>
             <p>칸은 지도자 호칭이 오를수록 늘어요: 처음 2칸 → 전설의 지도자 8칸.</p>
-            <p>카드 바꾸기는 실제 하루 1번 무료, 그 밖엔 국방예산이 들어요. 체제 바꾸기는 국가 헌장 연구 뒤, 예산 {fmt(GOV_CHANGE_COST)}과 하루 혼란(생산·연구 −20%)이 있어요. 처음 고르는 건 무료예요.</p>
+            <p>카드 바꾸기는 실제 하루 1번 무료, 그 밖엔 나라 예산이 들어요. 체제 바꾸기는 국가 헌장 연구 뒤, 예산 {fmt(GOV_CHANGE_COST)}과 하루 혼란(생산·연구 −20%)이 있어요. 처음 고르는 건 무료예요.</p>
             <p>다른 나라도 체제가 있어요. 같은 체제면 호감 +5, 다르면 −3이고, 다른 체제의 맞수와는 긴장이 조금씩 올라요.</p>
           </Help>
         </div>
@@ -575,7 +575,7 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
             className={`civ-gov-card ${c.gov === g.id ? 'on' : ''}`}
             disabled={!!why}
             onClick={() => {
-              if (c.gov && !window.confirm(`${g.name}로 바꿀까요? 국방예산 ${fmt(GOV_CHANGE_COST)} · 하루 혼란`)) return;
+              if (c.gov && !window.confirm(`${g.name}로 바꿀까요? 나라 예산 ${fmt(GOV_CHANGE_COST)} · 하루 혼란`)) return;
               actions.apply((s) => C.setGov(s, g.id));
               onDone();
             }}
@@ -593,7 +593,7 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
             <BoostStart
               state={state}
               apply={(f) => {
-                if (!window.confirm(`${g.name}로 바로 바꿀까요? 국방예산 ${fmt(GOV_CHANGE_COST)} · 혼란은 가속권으로 바로 끝내요`)) return;
+                if (!window.confirm(`${g.name}로 바로 바꿀까요? 나라 예산 ${fmt(GOV_CHANGE_COST)} · 혼란은 가속권으로 바로 끝내요`)) return;
                 actions.apply(f);
                 onDone();
               }}
@@ -657,7 +657,7 @@ export function CityPanel(props: ScreenProps) {
               <b>민심</b>(0~100): 전쟁 피로·점령·자원 부족이면 내려가고, 주거 구역·복지 연구·평화 협정이면 올라요. {LOYALTY_OK}보다 낮으면 그 도시 생산이 줄어요. 아주 낮아도 도시를 잃지는 않아요.
             </p>
             <p>
-              <b>인구</b>(1~10): 민심 60 이상이면 자라요. 처음보다 자란 인구만큼 국방예산과 연구가 늘어요.
+              <b>인구</b>(1~10): 민심 60 이상이면 자라요. 처음보다 자란 인구만큼 나라 예산과 연구가 늘어요.
             </p>
           </Help>
         </div>
@@ -1343,7 +1343,7 @@ function AgreeModal({ state, actions, id, onClose }: ScreenProps & { id: string;
                   setMsg(`${a.icon} ${a.name} 협정을 맺었어요!`);
                 }}
               >
-                {why ? why.replace('국방예산 ', '💰') : `맺기 ${fmt(a.cost)}`}
+                {why ? why.replace('나라 예산 ', '💰') : `맺기 ${fmt(a.cost)}`}
               </button>
             )}
           </div>
@@ -1436,7 +1436,7 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
         <p className="small">
           나는 자원:{' '}
           {p.res === '항구' ? (
-            '⚓ 큰 항구(국방예산 +3%)'
+            '⚓ 큰 항구(나라 예산 +3%)'
           ) : (
             <>
               <ResIcon res={p.res} inline /> {p.res} 시간당 {ISLAND_RES_PER_HOUR}개

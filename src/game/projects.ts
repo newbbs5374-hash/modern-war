@@ -1,4 +1,4 @@
-// A4 국가 대형 사업(11/24): 고속철도·원전·우주발사체 등 10개. 설계 → 공사 → 마무리 → 완공, 단계마다 국방예산과 실제 시간.
+// A4 국가 대형 사업(11/24): 고속철도·원전·우주발사체 등 10개. 설계 → 공사 → 마무리 → 완공, 단계마다 나라 예산과 실제 시간.
 // 한꺼번에 2개까지. 완공하면 판 끝까지 효과 + 이익집단 반응. 공사 중인 도시는 본부 지도·도시 화면에 공사 모습.
 import type { GameState } from './state';
 import type { LawKey } from './laws';
@@ -14,7 +14,7 @@ export const PROJECT_MAX = 2;
 export const STAGES = ['설계', '공사', '마무리'] as const;
 /** 단계별 시간(실제 시간) */
 export const STAGE_HOURS = [4, 16, 8];
-/** 단계별 비용(시간당 국방예산 수입의 몇 배) */
+/** 단계별 비용(시간당 나라 예산 수입의 몇 배) */
 export const STAGE_COST = [2, 6, 3];
 
 export interface ProjectDef {
@@ -34,7 +34,7 @@ export const PROJECTS: ProjectDef[] = [
   { id: 'rail', icon: '🚄', name: '고속철도', text: '자원 +5% · 모든 도시 민심 +3', scale: 1, eff: { res: 0.05, loyalty: 3 }, groups: { labor: 3, biz: 3 }, where: 'any', scene: 'groundbreak' },
   { id: 'nuke', icon: '⚛️', name: '원자력 발전소', text: '자원 +8% · 경제 +2', scale: 1.2, eff: { res: 0.08, economy: 2 }, groups: { biz: 4, civic: -8, youth: -2 }, where: 'coastal', scene: 'factory' },
   { id: 'space', icon: '🚀', name: '우주발사체', text: '연구 +10% · 외교 +2', scale: 1.4, eff: { research: 0.1, diplo: 2 }, groups: { youth: 6, press: 3 }, where: 'coastal', scene: 'launch' },
-  { id: 'chip', icon: '💽', name: '반도체 클러스터', text: '국방예산 +6% · 연구 +4%', scale: 1.3, eff: { budget: 0.06, research: 0.04 }, groups: { biz: 6, youth: 4 }, where: 'any', scene: 'factory' },
+  { id: 'chip', icon: '💽', name: '반도체 클러스터', text: '나라 예산 +6% · 연구 +4%', scale: 1.3, eff: { budget: 0.06, research: 0.04 }, groups: { biz: 6, youth: 4 }, where: 'any', scene: 'factory' },
   { id: 'air', icon: '🛫', name: '신공항', text: '외교 +4 · 경제 +3', scale: 1, eff: { diplo: 4, economy: 3 }, groups: { biz: 4, civic: -2 }, where: 'coastal', scene: 'groundbreak' },
   { id: 'carrier', icon: '🛳️', name: '항공모함 건조', text: '모집 +5% · 안보 +4', scale: 1.5, eff: { build: 0.05, defense: 4 }, groups: { mil: 6, civic: -3 }, where: 'coastal', scene: 'port' },
   { id: 'sub', icon: '🌊', name: '핵추진 잠수함', text: '안보 +6 · 첩보 +4%', scale: 1.4, eff: { defense: 6, spy: 0.04 }, groups: { mil: 6, civic: -4 }, where: 'coastal', scene: 'port' },
@@ -67,7 +67,7 @@ export function canStartProject(s: GameState, id: string, cityId: string): strin
   if (busyProjects(s).length >= PROJECT_MAX) return `한꺼번에 ${PROJECT_MAX}개까지 할 수 있어요`;
   if (!projectCities(s, id).includes(cityId)) return projectById(id).where === 'coastal' ? '바닷가 도시만 돼요' : '이 도시엔 지을 수 없어요';
   const me = s.nations[s.player.countryId];
-  if (!me || me.treasury < stageCost(s, id, 0)) return '국방예산이 모자라요';
+  if (!me || me.treasury < stageCost(s, id, 0)) return '나라 예산이 모자라요';
   return null;
 }
 export function startProject(s: GameState, id: string, cityId: string): GameState {
@@ -87,7 +87,7 @@ export function canAdvanceProject(s: GameState, id: string): string | null {
   if (pr.endMs > s.worldMs) return '지금 단계가 아직 안 끝났어요';
   if (pr.stage === 2) return null;
   const me = s.nations[s.player.countryId];
-  if (!me || me.treasury < stageCost(s, id, pr.stage + 1)) return '국방예산이 모자라요';
+  if (!me || me.treasury < stageCost(s, id, pr.stage + 1)) return '나라 예산이 모자라요';
   return null;
 }
 export function advanceProject(s: GameState, id: string): GameState {

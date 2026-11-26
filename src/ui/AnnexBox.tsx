@@ -35,7 +35,7 @@ function OccTasks({ state, id, go }: { state: GameState; id: string; go?: (s: Sc
   const a = annexEntry(state, id);
   if (!a || !go || !c.front) return null;
   const list = (Object.keys(OCC_TASKS) as OccTask[]).map((t) => ({ t, def: OCC_TASKS[t], why: canOccTask(state, id, t) }));
-  const shown = list.filter((x) => !x.why || /시간 뒤|국방예산|가득/.test(x.why));
+  const shown = list.filter((x) => !x.why || /시간 뒤|나라 예산|가득/.test(x.why));
   if (!shown.length) return null;
   return (
     <div className="occ-tasks">
