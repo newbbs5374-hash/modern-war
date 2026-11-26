@@ -17,6 +17,7 @@ import { cabApprovalRows, cabFieldRows, cabTaxSoft, cabTrust } from './cabinet';
 import { scheduleFieldRows } from './schedule';
 import { lawEff, lawRows } from './laws';
 import { mediaFieldRows } from './media';
+import { approvalAllyBonus } from './rivals';
 import { TAX_INFO, splitDefenseScore, splitDiploScore, splitEcoScore, splitOf, taxApproval, taxOf } from './policy';
 
 const H = 3600e3;
@@ -228,6 +229,8 @@ export function approvalRows(s: GameState, sc: Record<FieldId, number> = fieldVa
   if (tx) rows.push([`${TAX_INFO[taxOf(s)].icon} 세금 ${TAX_INFO[taxOf(s)].name}`, tx]);
   rows.push(...cabApprovalRows(s));
   rows.push(...lawRows(s, 'approval'));
+  const ab = approvalAllyBonus(s.officer);
+  if (ab) rows.push(['🤝 손잡은 정적(언론·노조·지방·종교)', ab]);
   for (const m of presOf(s).mods) if (m.untilMs > s.worldMs && m.v) rows.push([m.why, m.v]);
   return rows;
 }

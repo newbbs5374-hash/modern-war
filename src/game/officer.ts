@@ -147,6 +147,10 @@ export interface Rival {
   woo?: number;
   nextPlotMs?: number;
   watchUntil?: number;
+  /** 11/26: 성별·미국 갈래·얼굴 파일(그 나라 얼굴) */
+  sex?: 'm' | 'f';
+  eth?: string;
+  faceKey?: string;
 }
 
 export interface Mission {

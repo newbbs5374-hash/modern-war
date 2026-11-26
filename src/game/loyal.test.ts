@@ -62,10 +62,15 @@ describe('장군 교육 → 임명', () => {
 });
 
 describe('정적', () => {
-  it('정적 3명은 역할이 다르고, 영향력이 쌓임', () => {
+  it('정적 12명은 역할이 다르고, 얼굴이 겹치지 않고, 영향력이 쌓임', () => {
     let s = newGame('t', 'kr', 0, { seed: 5 });
     const v0 = rivalsView(s);
-    expect(new Set(v0.map((x) => x.role)).size).toBe(3);
+    expect(v0.length).toBe(12);
+    expect(new Set(v0.map((x) => x.role)).size).toBe(12);
+    expect(new Set(v0.map((x) => x.faceKey)).size).toBe(12);
+    expect(v0.every((x) => x.faceKey?.startsWith('face-kr-'))).toBe(true);
+    const us = rivalsView(newGame('t', 'us', 0, { seed: 5 }));
+    expect(us.every((x) => x.faceKey?.startsWith('face-us-'))).toBe(true);
     s = ticks(s, 4 * 24);
     expect(rivalsView(s)[0].influence).toBeGreaterThan(v0[0].influence);
   });

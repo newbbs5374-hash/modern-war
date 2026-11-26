@@ -24,6 +24,7 @@ import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
 import { remarksTick, type RemarkState } from './remarks';
+import { ensureRivalRoster } from './rivals';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
 import type { FleetState } from './fleet';
@@ -204,6 +205,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
     crisis: newCrisis(0),
   };
   s.cabinet = newCabinet(s);
+  ensureRivalRoster(s, true); // 11/26 정적 12명: 그 나라 이름·얼굴
   if (opt.realWorld) {
     // 시작부터 국제 제재를 받는 나라(러시아): 나라 예산 −20%
     for (const [id, days] of Object.entries(START_SANCTIONS)) s.civ!.council.active.push({ agenda: 'sanction', target: id, untilMs: days * REAL_MS_PER_GAME_DAY });
