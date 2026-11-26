@@ -15,6 +15,8 @@ import { pushReport } from './report';
 import { Rng } from './rng';
 import { canDiplo, diploChance, DIPLO_COOLDOWN_HOURS } from './command';
 import { eul, homeOf, isAlive, pairKey, relationOf, sameBloc, syncFollowers, type AnnexCity, type WorldEvent } from './world';
+import { noteCapture } from './territory';
+import { REVIVE_TROOPS } from './balance';
 
 const H = 3600e3;
 /** 군정 기간(시간) */
@@ -65,6 +67,8 @@ export function voteYes(s: GameState, cityId: string): { pct: number; rows: Arra
   if (c.capital) rows.push(['원래 나라 수도', -10]);
   if (!isAlive(s.world, c.home)) rows.push(['원래 나라가 사라짐', 10]);
   else if (relationOf(s.world, me, c.home) === '전쟁') rows.push(['원래 나라 선전(전쟁 중)', -5]);
+  const prop = annexEntry(s, cityId)?.propaganda ?? 0;
+  if (prop) rows.push(['📻 선전 방송', prop]);
   const mois = Math.round(Math.min(10, ministryPower(s, 'mois') * 2));
   if (mois) rows.push(['🏛️ 행정안전부', mois]);
   const pct = Math.max(5, Math.min(95, rows.reduce((a, [, v]) => a + v, 0)));
@@ -76,6 +80,7 @@ export function canVote(s: GameState, cityId: string): string | null {
   const a = annexEntry(s, cityId);
   if (!cityById(cityId).front) return `${cityById(cityById(cityId).hub).name}에서 투표하면 함께 편입돼요`;
   if (!a || s.world.owner[cityId] !== s.player.countryId) return '편입할 수 있는 점령지가 아니에요';
+  if (a.mode === 'puppet') return '꼭두각시 정부 도시는 편입하지 않아요';
   if (a.treaty) return '조약으로 받은 도시라 투표 없이 편입돼요';
   if (a.stage === '군정') return '군정이 끝나야 해요';
   if (a.voteAt) return '투표 중이에요';
@@ -134,9 +139,15 @@ export function annexTick(s: GameState): GameState {
   for (const id of occ) {
     let a = annexEntry(out, id);
     if (!a) {
-      out = setEntry(out, id, { stage: '군정', since: now, okSince: null, voteAt: null, retryMs: 0 });
+      out = setEntry(out, id, freshEntry(out));
+      const c0 = cityById(id);
+      out = pushReport(out, { icon: '🏳️', text: `대장님, ${c0.name}${hasJong(c0.name) ? '을' : '를'} 차지했습니다. 군정 동안 처분을 정해 주십시오: 🗺️ 편입(그대로 두면 이 길) · 🎎 꼭두각시 정부${liberateTo(out, id) ? ' · 🕊️ 해방' : ''}. 도시 창에서 고를 수 있습니다.` });
       continue;
     }
+    out = dailyOcc(out, id);
+    if (s.world.owner[id] !== out.world.owner[id] || out.world.owner[id] !== out.player.countryId) continue;
+    a = annexEntry(out, id)!;
+    if (a.mode === 'puppet') continue;
     const c = cityById(id);
     if (a.stage === '군정' && now >= a.since + milMs(out, id)) {
       a = { ...a, stage: '민정', since: now };
@@ -178,8 +189,10 @@ export function annexTick(s: GameState): GameState {
 registerCityLoyaltyRows((s, cityId) => {
   const a = annexEntry(s, cityId);
   if (!a || s.world.owner[cityId] !== s.player.countryId) return [];
-  if (a.stage === '군정') return [['🪖 군정', MIL_LOYALTY]];
-  const rows: Array<[string, number]> = [['🏛️ 민정', CIVIL_LOYALTY]];
+  const relief: Array<[string, number]> = a.relief && (a.reliefUntil ?? 0) > s.worldMs ? [['📦 구호품', a.relief]] : [];
+  if (a.mode === 'puppet') return [['🎎 꼭두각시 정부', 6], ...relief];
+  if (a.stage === '군정') return [['🪖 군정', MIL_LOYALTY], ...relief];
+  const rows: Array<[string, number]> = [['🏛️ 민정', CIVIL_LOYALTY], ...relief];
   const m = Math.round(Math.min(8, ministryPower(s, 'mois') * 3) * 10) / 10;
   if (m) rows.push(['🏛️ 행안부 민정 지원', m]);
   return rows;
@@ -189,7 +202,7 @@ registerCityLoyaltyRows((s, cityId) => {
 
 /** 넘겨받을 수 있는 도시(그 나라 원래 땅 가운데 우리가 점령한 곳) */
 export function cedeCities(s: GameState, id: string): string[] {
-  return occupiedCities(s).filter((c) => cityById(c).home === id && !annexEntry(s, c)?.treaty);
+  return occupiedCities(s).filter((c) => cityById(c).home === id && !annexEntry(s, c)?.treaty && annexEntry(s, c)?.mode !== 'puppet');
 }
 export function cedeChance(s: GameState, id: string): number {
   return diploChance(s, id, '휴전 제안') * CEDE_RATE;
@@ -222,4 +235,191 @@ export function doCede(s: GameState, id: string, cityId: string): { state: GameS
   const prev = annexEntry(out, cityId);
   out = setEntry(out, cityId, { stage: '민정', since: s.worldMs, okSince: prev?.okSince ?? null, voteAt: null, retryMs: 0, treaty: true });
   return { ok, text, state: out };
+}
+
+// ── 11-26 점령 직후 처분 3갈래(편입 · 꼭두각시 정부 · 해방) + 점령지 관리 임무 ──
+//  처분은 군정 동안 고름(고르지 않으면 편입 길). 꼭두각시는 되돌릴 수 없음. 해방은 도시를 내줌.
+/** 꼭두각시 정부 반발(편입보다 작음) */
+export const PUPPET_FAVOR_HOME = -12;
+export const PUPPET_FAVOR_BLOC = -3;
+/** 해방: 받은 나라 호감 · 그 진영 호감 · 명성 */
+export const LIBERATE_FAVOR = 40;
+export const LIBERATE_FAVOR_BLOC = 8;
+export const LIBERATE_FAME = 10;
+/** 점령할 때 생기는 전쟁 피해(%) · 하루에 저절로 줄어드는 양 */
+export const START_DAMAGE = 25;
+export const DAMAGE_HEAL_PER_DAY = 3;
+/** 꼭두각시 정부가 하루에 떨어져 나갈 확률(원래 나라가 강할 때 / 약할 때) */
+export const PUPPET_BREAK_STRONG = 0.1;
+export const PUPPET_BREAK_WEAK = 0.03;
+
+/** 처분을 고를 수 있는지(안 되면 이유) */
+/** 아직 기록이 없는 막 점령한 도시는 군정으로 보고 고르게 함 */
+const freshEntry = (s: GameState): AnnexCity => ({ stage: '군정', since: s.worldMs, okSince: null, voteAt: null, retryMs: 0, damage: START_DAMAGE, dayMs: s.worldMs });
+const entryOrFresh = (s: GameState, cityId: string) => annexEntry(s, cityId) ?? (occupiedCities(s).includes(cityId) ? freshEntry(s) : null);
+export function canChoose(s: GameState, cityId: string): string | null {
+  const a = entryOrFresh(s, cityId);
+  if (!cityById(cityId).front) return `${cityById(cityById(cityId).hub).name}에서 정하면 함께 따라가요`;
+  if (!a || s.world.owner[cityId] !== s.player.countryId) return '점령지가 아니에요';
+  if (a.mode === 'puppet') return '이미 꼭두각시 정부를 세웠어요';
+  if (a.treaty) return '조약으로 받은 도시예요';
+  if (a.stage !== '군정') return '민정으로 넘어가서 이제 편입 길만 남았어요';
+  return null;
+}
+
+/** 꼭두각시 정부 세우기: 바로, 투표 없이. 반란 없음 · 공물 30% · 자원·생산 없음 */
+export function makePuppet(s: GameState, cityId: string): GameState {
+  if (canChoose(s, cityId)) return s;
+  const a = entryOrFresh(s, cityId)!;
+  const c = cityById(cityId);
+  let out = setEntry(s, cityId, { ...a, mode: 'puppet', since: s.worldMs, okSince: null, voteAt: null, dayMs: s.worldMs });
+  const ev: WorldEvent = { t: s.worldMs, kind: '점령', text: `🎎 ${c.name}에 우리 말을 듣는 꼭두각시 정부를 세웠어요.`, mine: true };
+  out = { ...out, world: { ...out.world, events: [ev, ...out.world.events] } };
+  if (isAlive(out.world, c.home)) out = addFavorNote(out, c.home, `🎎 ${c.name} 꼭두각시 정부`, PUPPET_FAVOR_HOME);
+  for (const o of COUNTRIES) {
+    if (o.id === s.player.countryId || o.id === c.home || !isAlive(out.world, o.id) || !sameBloc(o.id, c.home)) continue;
+    out = addFavorNote(out, o.id, '🎎 남의 땅 꼭두각시', PUPPET_FAVOR_BLOC);
+  }
+  return pushReport(out, { icon: '🎎', text: `대장님, ${c.name}에 꼭두각시 정부가 섰습니다. 반란 걱정 없이 세금의 30%를 공물로 받습니다. 다만 ${countryById(c.home).name}${hasJong(countryById(c.home).name) ? '이' : '가'} 강해지면 떨어져 나갈 수 있습니다.` });
+}
+
+/** 해방해서 돌려줄 나라(없으면 null): 원래 주인이 우리가 빼앗은 나라와 다르거나, 원래 나라가 망했을 때 */
+export function liberateTo(s: GameState, cityId: string): string | null {
+  const c = cityById(cityId);
+  const me = s.player.countryId;
+  if (c.home === me) return null;
+  const from = s.world.from?.[cityId];
+  if (!isAlive(s.world, c.home) || (from && from !== c.home)) return c.home;
+  return null;
+}
+export function canLiberate(s: GameState, cityId: string): string | null {
+  const why = canChoose(s, cityId);
+  if (why) return why;
+  if (!liberateTo(s, cityId)) return `${countryById(cityById(cityId).home).name}에게서 빼앗은 도시라 해방할 곳이 없어요`;
+  return null;
+}
+
+/** 해방: 원래 나라에 돌려줌(망했으면 되살림) → 호감·명성 크게 +, 그 나라가 연합(전쟁 중이면 휴전) */
+export function liberate(s: GameState, cityId: string): GameState {
+  if (canLiberate(s, cityId)) return s;
+  const me = s.player.countryId;
+  const c = cityById(cityId);
+  const to = liberateTo(s, cityId)!;
+  const revived = !isAlive(s.world, to);
+  const w = { ...s.world, owner: { ...s.world.owner }, defense: { ...s.world.defense }, pairs: { ...s.world.pairs } };
+  noteCapture(w, cityId, to);
+  w.owner[cityId] = to;
+  w.defense[cityId] = Math.max(w.defense[cityId] ?? 0, 50);
+  syncFollowers(w);
+  const k = pairKey(me, to);
+  const before = w.pairs[k]?.rel;
+  const rel = before === '전쟁' ? '휴전' : '연합';
+  w.pairs[k] = { ...w.pairs[k], rel, tension: Math.min(w.pairs[k]?.tension ?? 0, 10) };
+  const nm = countryById(to).name;
+  const ev: WorldEvent = { t: s.worldMs, kind: '외교', text: `🕊️ ${c.name}${hasJong(c.name) ? '을' : '를'} ${nm}에 돌려주며 해방했어요.${revived ? ` ${nm}${hasJong(nm) ? '이' : '가'} 되살아났어요.` : ''} ${nm}${hasJong(nm) ? '이' : '가'} ${rel === '연합' ? '연합을 맺었어요' : '휴전에 응했어요'}.`, mine: true };
+  let out: GameState = { ...s, world: { ...w, events: [ev, ...w.events] } };
+  if (revived) out = { ...out, nations: { ...out.nations, [to]: { ...out.nations[to], troops: Math.max(out.nations[to]?.troops ?? 0, REVIVE_TROOPS) } } };
+  out = addFavorNote(out, to, `🕊️ ${c.name} 해방`, LIBERATE_FAVOR);
+  for (const o of COUNTRIES) {
+    if (o.id === me || o.id === to || !isAlive(out.world, o.id) || !sameBloc(o.id, to)) continue;
+    out = addFavorNote(out, o.id, '🕊️ 도시 해방', LIBERATE_FAVOR_BLOC);
+  }
+  out = { ...out, officer: { ...out.officer, fame: out.officer.fame + LIBERATE_FAME } };
+  return pushReport(out, { icon: '🕊️', text: `대장님, ${c.name} 해방을 세계가 반깁니다! 명성 +${LIBERATE_FAME}, ${nm} 호감 +${LIBERATE_FAVOR}. ${nm}${hasJong(nm) ? '이' : '가'} ${rel === '연합' ? '우리와 연합을 맺었습니다' : '휴전에 응했습니다'}.` });
+}
+
+/** 하루마다: 전쟁 피해 회복 · 꼭두각시 이탈 판정 */
+function dailyOcc(s: GameState, cityId: string): GameState {
+  let a = annexEntry(s, cityId);
+  if (!a) return s;
+  const day = 24 * H;
+  const last = a.dayMs ?? a.since;
+  if (s.worldMs < last + day) return s;
+  const days = Math.floor((s.worldMs - last) / day);
+  a = { ...a, dayMs: last + days * day, damage: Math.max(0, (a.damage ?? 0) - DAMAGE_HEAL_PER_DAY * days) };
+  let out = setEntry(s, cityId, a);
+  if (a.mode !== 'puppet') return out;
+  const c = cityById(cityId);
+  if (!isAlive(out.world, c.home)) return out;
+  const homeFront = FRONT.filter((x) => x.home === c.home);
+  const kept = homeFront.filter((x) => out.world.owner[x.id] === c.home).length;
+  const p = kept >= homeFront.length * 0.6 ? PUPPET_BREAK_STRONG : PUPPET_BREAK_WEAK;
+  const rng = new Rng((out.world.seed ^ Math.floor(a.dayMs! / 1000) ^ cityId.length * 131) >>> 0);
+  let broke = false;
+  for (let i = 0; i < Math.min(days, 7) && !broke; i++) broke = rng.chance(p);
+  if (!broke) return out;
+  const w = { ...out.world, owner: { ...out.world.owner }, defense: { ...out.world.defense } };
+  noteCapture(w, cityId, c.home);
+  w.owner[cityId] = c.home;
+  w.defense[cityId] = CAPTURED_DEFENSE_BACK;
+  syncFollowers(w);
+  const ev: WorldEvent = { t: out.worldMs, kind: '점령', text: `🎎 ${c.name} 꼭두각시 정부가 무너지고 ${countryById(c.home).name} 땅으로 돌아갔어요.`, mine: true };
+  out = { ...out, world: { ...w, events: [ev, ...w.events] } };
+  return pushReport(out, { icon: '🎎', text: `대장님, ${c.name} 꼭두각시 정부가 ${countryById(c.home).name} 편으로 돌아섰습니다. 도시를 잃었습니다.` });
+}
+const CAPTURED_DEFENSE_BACK = 40;
+
+// ── 점령지 관리 임무: 미니게임 한 판(별 1~3)으로 효과가 커짐 ──
+export type OccTask = '소탕' | '구호' | '재건' | '선전';
+export interface OccTaskDef { icon: string; name: string; mini: string; when: string; desc: string; cost: (value: number) => number }
+export const OCC_TASKS: Record<OccTask, OccTaskDef> = {
+  소탕: { icon: '🪖', name: '잔당 소탕', mini: 'shoot-popup', when: '군정', desc: '하루 동안 반란 확률 −25%×별, 군정 2시간×별 단축, 노획 국방예산', cost: () => 0 },
+  구호: { icon: '📦', name: '구호품 배급', mini: 'sup-ration', when: '민정·꼭두각시', desc: '이틀 동안 민심 +4×별(국방예산 씀)', cost: (v) => v * 800 },
+  재건: { icon: '🏗️', name: '전후 재건', mini: 'sup-road', when: '피해가 있을 때', desc: '전쟁 피해 −8%×별 → 수입 회복(국방예산 씀)', cost: (v) => v * 1000 },
+  선전: { icon: '📻', name: '선전 방송', mini: 'rec-speech', when: '민정', desc: '주민투표 찬성률 +3%×별(최대 +12%)', cost: () => 0 },
+};
+export const OCC_TASK_HOURS = 12;
+export const OCC_LOOT_PER_VALUE = 500;
+
+/** 이 임무를 지금 할 수 있는지(안 되면 이유) */
+export function canOccTask(s: GameState, cityId: string, t: OccTask): string | null {
+  const a = annexEntry(s, cityId);
+  if (!cityById(cityId).front) return '점령 도시에서 해요';
+  if (!a || s.world.owner[cityId] !== s.player.countryId) return '점령지가 아니에요';
+  const ready = a.taskReady?.[t] ?? 0;
+  if (s.worldMs < ready) return `${Math.ceil((ready - s.worldMs) / H)}시간 뒤 다시 할 수 있어요`;
+  const puppet = a.mode === 'puppet';
+  if (t === '소탕' && (a.stage !== '군정' || puppet)) return '군정 동안만 해요';
+  if (t === '구호' && a.stage !== '민정' && !puppet) return '민정이나 꼭두각시 정부에서 해요';
+  if (t === '재건' && !(a.damage ?? 0)) return '고칠 피해가 없어요';
+  if (t === '선전' && (a.stage !== '민정' || puppet || a.treaty)) return '편입을 기다리는 민정 도시에서 해요';
+  if (t === '선전' && (a.propaganda ?? 0) >= 12) return '찬성률 보너스가 가득 찼어요';
+  const cost = OCC_TASKS[t].cost(cityById(cityId).value);
+  if (cost && s.nations[s.player.countryId].treasury < cost) return `국방예산 ${cost.toLocaleString('ko-KR')} 필요`;
+  return null;
+}
+
+/** 임무 결과 반영(진 판도 시간은 씀). stars 0 = 실패 */
+export function applyOccTask(s: GameState, cityId: string, t: OccTask, stars: number): { state: GameState; text: string } {
+  const why = canOccTask(s, cityId, t);
+  if (why) return { state: s, text: why };
+  const me = s.player.countryId;
+  const c = cityById(cityId);
+  let a = annexEntry(s, cityId)!;
+  a = { ...a, taskReady: { ...(a.taskReady ?? {}), [t]: s.worldMs + OCC_TASK_HOURS * H } };
+  const cost = OCC_TASKS[t].cost(c.value);
+  let treasury = s.nations[me].treasury - cost;
+  let text = '';
+  const st = Math.max(0, Math.min(3, stars));
+  if (!st) text = `${OCC_TASKS[t].name} 실패… 효과 없음${cost ? ` (국방예산 −${cost.toLocaleString('ko-KR')})` : ''}`;
+  else if (t === '소탕') {
+    const loot = c.value * OCC_LOOT_PER_VALUE * st;
+    treasury += loot;
+    a = { ...a, sweepUntil: s.worldMs + 24 * H, sweepStars: st, since: a.since - 2 * H * st };
+    text = `잔당 소탕 ${'★'.repeat(st)} · 하루 동안 반란 −${25 * st}% · 군정 ${2 * st}시간 단축 · 노획 국방예산 +${loot.toLocaleString('ko-KR')}`;
+  } else if (t === '구호') {
+    a = { ...a, relief: 4 * st, reliefUntil: s.worldMs + 48 * H };
+    text = `구호품 배급 ${'★'.repeat(st)} · 이틀 동안 민심 +${4 * st}`;
+  } else if (t === '재건') {
+    const d = Math.max(0, (a.damage ?? 0) - 8 * st);
+    text = `전후 재건 ${'★'.repeat(st)} · 전쟁 피해 ${a.damage ?? 0}% → ${d}%`;
+    a = { ...a, damage: d };
+  } else {
+    const v = Math.min(12, (a.propaganda ?? 0) + 3 * st);
+    a = { ...a, propaganda: v };
+    text = `선전 방송 ${'★'.repeat(st)} · 주민투표 찬성률 보너스 +${v}%`;
+  }
+  let out = setEntry(s, cityId, a);
+  out = { ...out, nations: { ...out.nations, [me]: { ...out.nations[me], treasury } } };
+  return { state: out, text: `${c.name} ${text}` };
 }

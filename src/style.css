@@ -1130,6 +1130,14 @@ button.mini { padding: 3px 7px; font-size: 13px; }
 .annex-box { margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: rgba(63, 184, 201, 0.1); border: 1px solid rgba(63, 184, 201, 0.55); }
 .annex-box.done { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.6); }
 .annex-box p { margin: 4px 0; }
+.annex-choose { margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
+.annex-choose-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.annex-pick { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; padding: 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.18); font-size: 12px; min-width: 0; }
+.annex-pick small { font-size: 10.5px; line-height: 1.35; opacity: 0.85; }
+.annex-pick.now { border-color: rgba(63, 184, 201, 0.8); background: rgba(63, 184, 201, 0.14); }
+.occ-tasks { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.occ-tasks button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1px; }
+.occ-tasks button small { font-size: 10.5px; opacity: 0.85; }
 .annex-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
 .annex-steps span { padding: 3px 4px; border-radius: 8px; text-align: center; font-size: 12px; background: rgba(0, 0, 0, 0.25); opacity: 0.6; }
 .annex-steps span.done { background: rgba(34, 197, 94, 0.25); opacity: 1; }

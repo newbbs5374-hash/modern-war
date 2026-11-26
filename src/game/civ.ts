@@ -75,7 +75,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { facBonus, facilityEffects } from './facility';
 import { Rng } from './rng';
 import type { GameState } from './state';
-import { homeOf, isAlive, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
+import { homeOf, isAlive, isPuppet, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
 const H = 3600e3;
 const DAY = 24 * H;
@@ -908,7 +908,7 @@ export function minePerHour(s: GameState): Partial<Record<Res, number>> {
   for (const city of CITIES) {
     if (s.world.owner[city.id] !== me) continue;
     const cc = civOf(s).cities[city.id];
-    for (const m of cc?.mines ?? []) if (m.doneMs <= s.worldMs) out[m.res] = (out[m.res] ?? 0) + MINE_PER_HOUR * (homeOf(s.world, city.id) === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc!.loyalty);
+    for (const m of cc?.mines ?? []) if (m.doneMs <= s.worldMs) out[m.res] = (out[m.res] ?? 0) + MINE_PER_HOUR * (homeOf(s.world, city.id) === me ? 1 : isPuppet(s.world, city.id) ? 0 : OCCUPIED_RES) * loyaltyMult(cc!.loyalty);
   }
   return out;
 }
@@ -1194,7 +1194,7 @@ export function cityParts(s: GameState, cityId: string): { trait: CityEff; marks
 /** 도시 하나가 실제로 주는 몫: 민심이 낮으면 줄고 점령지는 절반 */
 export function cityShare(s: GameState, cityId: string): number {
   const c = cityById(cityId);
-  return loyaltyMult(cityCiv(s, cityId).loyalty) * (homeOf(s.world, c.id) === s.player.countryId ? 1 : 0.5);
+  return loyaltyMult(cityCiv(s, cityId).loyalty) * (homeOf(s.world, c.id) === s.player.countryId ? 1 : isPuppet(s.world, c.id) ? 0 : 0.5);
 }
 /** 계산 기억(같은 문명 상태·시각·땅 주인이면 다시 안 셈) */
 const effMemo = new WeakMap<object, { ms: number; owner: object; me: string; v: EffSet }>();
@@ -1424,7 +1424,7 @@ export function civAccrue(s: GameState, ms: number): GameState {
     const cc = c.cities[city.id];
     for (const m of cc?.mines ?? []) {
       if (m.doneMs > s.worldMs) continue;
-      stock[m.res] = (stock[m.res] ?? 0) + MINE_PER_HOUR * (homeOf(s.world, city.id) === me ? 1 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
+      stock[m.res] = (stock[m.res] ?? 0) + MINE_PER_HOUR * (homeOf(s.world, city.id) === me ? 1 : isPuppet(s.world, city.id) ? 0 : OCCUPIED_RES) * loyaltyMult(cc.loyalty) * h;
       stockChanged = true;
     }
   }
