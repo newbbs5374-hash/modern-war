@@ -23,6 +23,7 @@ import { Tabs, useTab, type TabDef } from './kit';
 import { FieldBar } from './PresUI';
 import { PolicyPanel } from './PolicyPanel';
 import type { DefenseTab, EconomyTab, PersonalTab, SocietyTab } from './nav';
+import { MacroPanel, PolityScreen, SpeechPanel, polityBadge } from './PolityUI';
 import { GeneralCandidates, MinistryCards, TalentPanel } from './CabinetUI';
 import { SchedulePanel } from './ScheduleUI';
 import { AssemblyPanel } from './AssemblyUI';
@@ -68,7 +69,7 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'win', label: '승리', icon: '🏆', badge: winBadge(state) },
     { id: 'aides', label: officeName(state.player.countryId), icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
-    { id: 'plan', label: '일정', icon: '📅', badge: scheduleOf(state).slots.filter((x) => !x).length || null },
+    { id: 'plan', label: '일정', icon: '📅', badge: state.polity?.speech.open ? '🎤' : scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
     { id: 'album', label: '사진첩', icon: '📸' },
   ];
@@ -84,7 +85,12 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'win' && <VictoryPanel {...props} />}
       {tab === 'aides' && <StaffTab {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
-      {tab === 'plan' && <SchedulePanel {...props} />}
+      {tab === 'plan' && (
+        <>
+          {state.polity?.speech.open && <SpeechPanel {...props} />}
+          <SchedulePanel {...props} />
+        </>
+      )}
       {tab === 'agenda' && <AgendaPanel {...props} />}
       {tab === 'album' && <AlbumPanel {...props} />}
       </Safe>
@@ -167,6 +173,7 @@ export function SocietyScreen(props: ScreenProps) {
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
     { id: 'tech', label: '사회 연구', icon: '📜', badge: !civ.cur.soc && needPick(state) ? '!' : null },
     { id: 'politics', label: '정계', icon: '🗳️', badge: o.chiefRival || o.dismissDeadlineMs !== null || (!assemblyOf(state).vote && !liveLaws(state).length) ? '!' : null },
+    { id: 'nation', label: '국정', icon: '📋', badge: polityBadge(state) },
     { id: 'press', label: '언론·청원', icon: '🎙️', badge: mediaOf(state).petitions.length || (state.worldMs >= mediaOf(state).pressMs ? '!' : null) },
     { id: 'opinion', label: '여론', icon: '👥', badge: GROUPS.some((g) => groupSat(state, g.id) <= 25) ? '!' : null },
   ];
@@ -201,6 +208,7 @@ export function SocietyScreen(props: ScreenProps) {
         </>
       )}
       {tab === 'opinion' && <GroupsPanel {...props} />}
+      {tab === 'nation' && <PolityScreen {...props} />}
       </Safe>
     </>
   );
@@ -211,6 +219,7 @@ export function EconomyScreen(props: ScreenProps) {
   const [raw, setTab] = useTab<EconomyTab>('economy', 'vault');
   const tabs: TabDef<EconomyTab>[] = [
     { id: 'vault', label: '금고', icon: '💰' },
+    { id: 'macro', label: '경기', icon: '📈', badge: props.state.polity?.econ.crisis ? '!' : null },
     { id: 'tax', label: '예산·세금', icon: '📊' },
     { id: 'res', label: '자원', icon: '⛏️' },
     { id: 'ind', label: '산업 시설', icon: '🏭', badge: choreIn(props, ECONOMY_BUILDINGS) ? '!' : null },
@@ -233,6 +242,7 @@ export function EconomyScreen(props: ScreenProps) {
           <PolicyPanel {...props} />
         </>
       )}
+      {tab === 'macro' && <MacroPanel {...props} />}
       {tab === 'res' && <ResourcePanel {...props} />}
       {tab === 'ind' && (
         <>
