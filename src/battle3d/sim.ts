@@ -8,7 +8,9 @@ export type Kind =
   | 'inf' | 'sf' | 'ifv' | 'hack' | 'tank' | 'spg' | 'aa'
   | 'drone' | 'heli' | 'jet' | 'bomber' | 'missile'
   | 'dd' | 'cv' | 'sub' | 'lha' | 'ssn' | 'laser'
-  | 'cvjet' | 'hq';
+  | 'cvjet' | 'hq'
+  /** 11-26 새 전장용: 무장 고속정(해적) · 무장 트럭(반군) · 지켜야 할 상선 · 지켜야 할 차량·민간인 */
+  | 'boat' | 'tech' | 'cargo' | 'vip';
 export type CmdKey = 'arty' | 'smoke' | 'air' | 'cruise' | 'emp' | 'repair' | 'para';
 
 export interface UnitDef {
@@ -16,6 +18,8 @@ export interface UnitDef {
   dom: Dom; hits: Partial<Record<Dom, number>>; r: number;
   y?: number; minR?: number; splash?: number; stealth?: boolean; hack?: boolean; kamikaze?: boolean; jet?: boolean;
   bomber?: boolean; missile?: boolean; carrier?: boolean; lha?: boolean; cruise?: boolean; aura?: boolean; model?: string;
+  /** 11-26 다른 병과 모형을 빌려 씀(크기 배수) · 지켜야 할 대상(쓰러지면 짐) */
+  look?: Kind; lookScale?: number; ally?: boolean;
 }
 
 /* ───────── 숫자(초안) ───────── */
@@ -40,6 +44,10 @@ export const DEF: Record<Kind, UnitDef> = {
   laser: { name: '레이저 방공함', cost: 34, hp: 950, atk: 30, def: 40, range: 5, cd: .25, spd: .8, dom: 'sea', hits: { air: 3.5, sea: .4 }, r: 1, aura: true },
   cvjet: { name: '함재기', cost: 0, hp: 200, atk: 20, def: 10, range: 3.2, cd: .8, spd: 2.8, dom: 'air', y: 2.6, jet: true, hits: { air: 1.3, land: .6, sea: .5 }, r: .55, model: 'jet' },
   hq:    { name: '지휘소', cost: 0, hp: 3000, atk: 0, def: 40, range: 0, cd: 99, spd: 0, dom: 'land', hits: {}, r: 1.4 },
+  boat:  { name: '무장 고속정', cost: 12, hp: 300, atk: 15, def: 10, range: 3.2, cd: .6, spd: 1.5, dom: 'sea', hits: { sea: 1, land: .5, air: .3 }, r: .6, look: 'dd', lookScale: .55 },
+  tech:  { name: '무장 트럭', cost: 10, hp: 280, atk: 14, def: 12, range: 2.8, cd: .6, spd: 1.6, dom: 'land', hits: { land: 1, air: .3 }, r: .5, look: 'ifv', lookScale: .85 },
+  cargo: { name: '상선', cost: 0, hp: 1500, atk: 0, def: 30, range: 0, cd: 99, spd: .32, dom: 'sea', hits: {}, r: 1.2, look: 'lha', ally: true },
+  vip:   { name: '호송 차량', cost: 0, hp: 900, atk: 0, def: 45, range: 0, cd: 99, spd: .3, dom: 'land', hits: {}, r: .6, look: 'hack', ally: true },
 };
 export const TABS: Array<{ id: 'land' | 'sea' | 'air'; name: string; kinds: Kind[] }> = [
   { id: 'land', name: '육군', kinds: ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa'] },
@@ -54,7 +62,9 @@ export const CMD: Record<CmdKey, { cost: number; r: number; name: string }> = {
   cruise: { cost: 7, r: 1.7, name: '순항 미사일' }, emp: { cost: 4, r: 2.6, name: '전자전' }, repair: { cost: 3, r: 2.2, name: '긴급 수리' }, para: { cost: 5, r: 1, name: '공수 투입' },
 };
 export const CMD_ORDER: CmdKey[] = ['arty', 'smoke', 'air', 'cruise', 'emp', 'repair', 'para'];
-export const FIELD = { xMin: -10, xMax: 10, zTop: -15, zBot: 14 };
+/** 전장 넓이(기본 = 시험판 해안 전장). 11-26: 큰 전장은 Stage.field로 넓힘(useStage가 바꿈) */
+export const FIELD0 = { xMin: -10, xMax: 10, zTop: -15, zBot: 14 };
+export let FIELD = FIELD0;
 export type Place = [Kind, number, number];
 export const ENEMY: Place[] = [['hq', 5, -13],
   ['tank', 2.2, -8.8], ['tank', 4.6, -8.6], ['tank', 7, -8.8], ['inf', 1, -7.6], ['inf', 3.4, -7.4], ['inf', 6, -7.6], ['sf', 8.4, -7.8], ['ifv', 3.4, -9.8], ['ifv', 6.2, -10],
@@ -67,7 +77,7 @@ export const DEFAULT: Place[] = [['tank', 1.6, 9.8], ['tank', 4.4, 9.8], ['tank'
 
 /* ───────── 전장(막마다 바뀜) ───────── */
 /** 건물 덩어리(위에서 본 네모). 땅 부대는 못 지나가고, 붙어 있으면 덜 맞음 */
-export interface Block { x0: number; x1: number; z0: number; z1: number; h?: number }
+export interface Block { x0: number; x1: number; z0: number; z1: number; h?: number; /** 11-26 rock = 바위 절벽(건물 대신) */ rock?: boolean }
 /** 거점: 원 안에 우리 땅 부대만 있으면 조금씩 차지함 */
 export interface PointDef { name: string; x: number; z: number; r: number }
 export interface Stage {
@@ -91,7 +101,23 @@ export interface Stage {
   tick?(S: Sim): void;
   cmds?: CmdKey[]; kinds?: Kind[]; cpRate?: number; foeGoal?: { x: number; z: number };
   cam?: { tx?: number; tz?: number; dist?: number; pitch?: number };
+  /** 11-26 큰 전장: 넓이 · 생김새(풀밭·사막·눈·밀림·밤·바다…) · 이기는 조건 · 우리 편 지킬 대상 · 지킬 대상이 갈 곳 · 적이 처음부터 몰려옴 · 기본 배치 · 예산 · 소개 글 */
+  field?: { xMin: number; xMax: number; zTop: number; zBot: number };
+  theme?: Theme;
+  win?: WinRule;
+  allies?: Place[]; allyGoal?: { x: number; z: number };
+  foeAggr?: boolean;
+  deploy?: Place[]; budget?: number; desc?: string;
+  /** 정해진 시각(초)에 몰려오는 적(버티기·습격) */
+  timed?: Array<{ at: number; list: Place[]; msg?: string }>;
+  /** 화면 꾸미기: 길(점 목록) · 숲 무리 · 산 */
+  roads?: Array<Array<[number, number]>>; woods?: Array<[number, number, number]>; hills?: Array<[number, number, number, number]>;
 }
+/** 생김새 */
+export type Theme = 'green' | 'desert' | 'snow' | 'jungle' | 'night' | 'steppe' | 'ocean' | 'arctic' | 'dusk' | 'rock';
+/** 이기는 조건: hq = 지휘소 파괴 · points = 거점 모두 · all = 적 모두 · hqwaves = 지휘소 → 최후 저항 → 남은 적 · survive = 시간까지 버티기 · escort = 지킬 대상이 목적지 도착 */
+export type WinRule = 'hq' | 'points' | 'all' | 'hqwaves' | 'survive' | 'escort';
+export const winOf = (st: Stage): WinRule => st.win ?? (st.id === 'coast' ? 'hq' : st.id === 'street' ? 'points' : 'hqwaves');
 
 function coastXC(z: number) { return -3.2 + Math.sin(z * .22) * 1.1 + Math.sin(z * .61 + 1) * .35; }
 function riverZC(x: number) { return 0.6 + Math.sin(x * .5) * .8; }
@@ -108,6 +134,7 @@ function hAtC(x: number, z: number) {
 /** 1막 외곽: 시험판 해안 전장 그대로 */
 export const COAST: Stage = {
   id: 'coast', name: '1막 · 외곽', op: 'COASTLINE-05', goal: '목표: 외곽 지휘소 파괴',
+  desc: '바다와 강이 있는 해안 들판이에요. 육군·해군·공군이 함께 싸워요. 외곽 지휘소를 부수면 이겨요.',
   coastX: coastXC, riverZ: riverZC, bridges: [1.6, 6.2], hAt: hAtC, enemy: ENEMY, timeLimit: TIME_LIMIT, usGoal: { x: 5, z: -12 },
 };
 /** 지금 쓰는 전장(배치할 때 정함) */
@@ -126,8 +153,9 @@ export function inBlock(x: number, z: number, m = 0) { return (ST.blocks ?? []).
 export interface Tile { x: number; z: number; dom: 'land' | 'sea' }
 function makeTiles(): Tile[] {
   const out: Tile[] = [];
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 13; c++) {
-    const x = -8.6 + c * 1.5, z = 9.8 + r * 1.4, cx = coastX(z);
+  const cols = 13 + Math.round((FIELD.xMax - FIELD.xMin - 20) / 1.5), x0 = (FIELD.xMin + FIELD.xMax) / 2 - 9.6 - Math.round((FIELD.xMax - FIELD.xMin - 20) / 1.5) * .75;
+  for (let r = 0; r < 3; r++) for (let c = 0; c < cols; c++) {
+    const x = x0 + 1 + c * 1.5, z = FIELD.zBot - 4.2 + r * 1.4, cx = coastX(z);
     const dom = x < cx - .75 ? 'sea' : x > cx + .65 ? 'land' : null; if (!dom) continue;
     if (inBlock(x, z, .3)) continue;
     out.push({ x, z, dom });
@@ -136,7 +164,7 @@ function makeTiles(): Tile[] {
 }
 export let TILES: Tile[] = makeTiles();
 /** 전장 바꾸기(배치 전에 부름) */
-export function useStage(st: Stage) { ST = st; BRIDGES = st.bridges; TILES = makeTiles(); }
+export function useStage(st: Stage) { ST = st; FIELD = st.field ?? FIELD0; BRIDGES = st.bridges; TILES = makeTiles(); }
 export function tileOk(t: Tile, kind: Kind) { const dm = DEF[kind].dom; return dm === 'air' || (dm === 'sub' ? 'sea' : dm) === t.dom; }
 
 /* ───────── 전투 상태 ───────── */
@@ -194,6 +222,8 @@ export interface Sim {
   foeHp: number;
   /** 11-26 훈련: 집중 사격 대상(누른 적) · 훈련이 쓰는 숫자들 */
   focus?: number; drill?: Record<string, number>;
+  /** 11-26 정해진 시각 증원이 몇 번 나왔나 */
+  tn?: number;
 }
 
 export function createSim(hooks: SimHooks = {}): Sim {
@@ -242,12 +272,14 @@ function goalFor(S: Sim, u: Unit) { // 칠 대상이 없을 때 향할 곳
     if (u.side === 'foe') {
       // 빼앗긴 거점이 가까우면 되찾으러 감, 아니면 제자리 지킴
       if (!u.aggr) for (const p of S.pts) if (p.own === 'us' && dist(u, p) < 7) return { x: p.x, z: p.z };
-      return u.aggr || !u.home ? { x: 0, z: 11 } : u.home;
+      if (u.aggr || !u.home) { const a = S.units.find((o) => o.alive && o.d.ally); return a ? { x: a.x, z: a.z } : ST.foeGoal ?? { x: (FIELD.xMin + FIELD.xMax) / 2, z: FIELD.zBot - 3 }; }
+      return u.home;
     }
     const open = S.pts.filter((p) => p.own === 'foe');
     if (open.length) { let b = open[0]; for (const p of open) if (dist(u, p) < dist(u, b)) b = p; return { x: b.x, z: b.z }; }
     const hq = S.units.find((o) => o.kind === 'hq' && o.alive);
     if (hq) return { x: hq.x, z: hq.z + 1.6 };
+    if (winOf(ST) === 'escort' || winOf(ST) === 'survive') { const a = S.units.find((o) => o.alive && o.d.ally); if (a) return { x: a.x + (u.id % 3 - 1) * 1.2, z: a.z - 1.5 }; }
     let best: Unit | null = null;
     for (const o of S.units) if (o.alive && o.side === 'foe' && (!best || dist(u, o) < dist(u, best))) best = o;
     return best ? { x: best.x, z: best.z } : ST.usGoal;
@@ -288,20 +320,21 @@ export function setupDeploy(S: Sim, mine: Pick3[], opt: DeployOpt = {}): Unit[] 
   S.units = []; S.pending = []; S.smokes = []; S.result = null;
   S.seed = 7; S.nid = 1; S.simT = 0; S.cp = Math.min(10, opt.cp0 ?? 3); S.phase = 'deploy';
   S.foeHp = opt.foeHp ?? 1; S.wave = 0; S.waveT = 0; S.reinfN = 0; S.reinfT = 0;
-  S.pts = (ST.points ?? []).map((p) => ({ ...p, own: 'foe' as Side, prog: 0 }));
+  S.pts = (ST.points ?? []).map((p) => ({ ...p, own: 'foe' as Side, prog: 0 })); S.tn = 0;
   ST.enemy.forEach(([k, x, z]) => { const d = DEF[k]; if (d.dom === 'sea' || d.dom === 'sub') x = Math.min(x, coastX(z) - d.r * .55 - .5); if (d.dom === 'land') x = Math.max(x, coastX(z) + .6); spawnFoe(S, k, x, z, false); });
   const out = mine.map((d) => {
     const t = d.at ? { x: d.at[0], z: d.at[1] } : TILES[d.tile]; const u = makeUnit(S, d.kind, 'us', t.x, t.z);
     const b = opt.usBuff?.[d.kind]; if (b && b !== 1) { u.buff = b; u.max = Math.round(u.max * b); u.hp = u.max; }
     if (d.hp != null && d.hp < 1) u.hp = Math.max(1, Math.round(u.max * d.hp)); if (d.carried) u.carried = true; if (d.goal) u.goal = d.goal; if (d.hold) u.hold = true; return u;
   });
+  for (const [k, x, z] of ST.allies ?? []) { const a = makeUnit(S, k, 'us', x, z); a.goal = ST.allyGoal ?? { x, z }; if (!ST.allyGoal) a.hold = true; }
   ST.setup?.(S);
   return out;
 }
 export function spawnFoe(S: Sim, k: Kind, x: number, z: number, aggr: boolean) {
   const u = makeUnit(S, k, 'foe', x, z);
   if (S.foeHp !== 1) { u.max = Math.round(u.max * S.foeHp); u.hp = u.max; }
-  if (ST.id !== 'coast') { u.home = { x, z }; if (aggr) u.aggr = true; }
+  if (ST.id !== 'coast') { u.home = { x, z }; if (aggr || ST.foeAggr) u.aggr = true; }
   return u;
 }
 /** 기본 배치(예산 안에서 가까운 칸) */
@@ -313,6 +346,23 @@ export function defaultDeploy(): Array<{ kind: Kind; tile: number }> {
     if (i < 0 || spent() + DEF[kind].cost > BUDGET) continue;
     out.push({ kind, tile: i });
   }
+  return out;
+}
+/** 11-26 어느 전장이든 기본 배치: 전장의 deploy 목록 → 남은 예산은 쓸 수 있는 병과로 채움 */
+export function autoDeploy(budget = ST.budget ?? BUDGET): Array<{ kind: Kind; tile: number }> {
+  if (ST.id === 'coast' && budget === BUDGET) return defaultDeploy();
+  const out: Array<{ kind: Kind; tile: number }> = [];
+  let spent = 0;
+  const ok = (k: Kind) => !ST.kinds || ST.kinds.includes(k);
+  const add = (kind: Kind, x: number, z: number) => {
+    if (!ok(kind) || spent + DEF[kind].cost > budget) return false;
+    const i = nearestTile(out, kind, x, z); if (i < 0) return false;
+    out.push({ kind, tile: i }); spent += DEF[kind].cost; return true;
+  };
+  const zb = FIELD.zBot, cx = (FIELD.xMin + FIELD.xMax) / 2;
+  for (const [kind, x, z] of ST.deploy ?? DEFAULT.map(([k, x, z]) => [k, x + cx, z - 14 + zb] as Place)) add(kind, x, z);
+  const fill: Kind[] = ['tank', 'inf', 'ifv', 'aa', 'spg', 'dd', 'jet', 'heli', 'sf', 'sub', 'tank', 'drone', 'inf', 'laser', 'jet'];
+  for (let n = 0, i = 0; n < 60 && budget - spent >= 8; n++, i++) add(fill[i % fill.length], cx + ((i * 3.7) % 16) - 8, zb - 3.6 + (i % 3) * 1.3);
   return out;
 }
 export function nearestTile(taken: Array<{ tile: number }>, kind: Kind, x: number, z: number) {
@@ -390,7 +440,7 @@ export function step(S: Sim) {
     }
     if (u.d.jet) {
       let ta = want;
-      if (u.x < FIELD.xMin + 1.6 || u.x > FIELD.xMax - 1.6 || u.z < FIELD.zTop + 1.4 || u.z > FIELD.zBot - 1.6) ta = Math.atan2(2 - u.x, -1 - u.z);
+      if (u.x < FIELD.xMin + 1.6 || u.x > FIELD.xMax - 1.6 || u.z < FIELD.zTop + 1.4 || u.z > FIELD.zBot - 1.6) ta = Math.atan2((FIELD.xMin + FIELD.xMax) / 2 + 2 - u.x, (FIELD.zTop + FIELD.zBot) / 2 - .5 - u.z);
       else if (dd < 1.2 && !u.d.bomber) ta = u.hd;
       const diff = angDiff(ta, u.hd), mt = (u.d.bomber ? 1.3 : 2.1) * TICK;
       u.hd += Math.max(-mt, Math.min(mt, diff)); u.bank = Math.max(-1, Math.min(1, diff * 1.6));
@@ -419,11 +469,13 @@ export function step(S: Sim) {
     if (t && !jam && dd <= u.d.range && u.cd <= 0) { u.cd = u.d.cd * (.9 + rnd(S) * .2); fire(S, u, t); }
   }
   if (ST.rule) { const r = ST.rule(S); if (r) endBattle(S, r === 'win', r === 'time'); return; }
-  const usLeft = S.units.some((u) => u.alive && u.side === 'us' && !u.d.missile);
+  const usLeft = S.units.some((u) => u.alive && u.side === 'us' && !u.d.missile && !u.d.ally);
   const won = ST.id === 'coast' ? !S.units.find((u) => u.kind === 'hq')!.alive : stageRules(S);
+  const allyLost = S.units.some((u) => u.d.ally && !u.alive);
   if (won) endBattle(S, true, false);
+  else if (allyLost) endBattle(S, false, false);
   else if (!usLeft && !S.pending.length) endBattle(S, false, false);
-  else if (S.simT >= ST.timeLimit) endBattle(S, false, true);
+  else if (S.simT >= ST.timeLimit) endBattle(S, winOf(ST) === 'survive', true);
 }
 /** 시가전·도심: 이만큼 안의 적만 노림(먼 적은 무시하고 거점·지휘소로 감) */
 function leashOf(S: Sim, u: Unit): number {
@@ -435,6 +487,13 @@ function leashOf(S: Sim, u: Unit): number {
 const landIn = (S: Sim, side: Side, p: { x: number; z: number; r: number }) => S.units.filter((u) => u.alive && u.side === side && u.d.dom === 'land' && u.kind !== 'hq' && (!u.waitT || S.simT >= u.waitT) && dist(u, p) < p.r).length;
 /** 거점 차지 · 증원 · 최후 저항. 이겼으면 true */
 function stageRules(S: Sim): boolean {
+  const T = ST.timed;
+  while (T && (S.tn ?? 0) < T.length && S.simT >= T[S.tn ?? 0].at) {
+    const e = T[S.tn ?? 0]; S.tn = (S.tn ?? 0) + 1;
+    e.list.forEach(([k, x, z]) => spawnFoe(S, k, x, z, true));
+    S.hooks.log?.(e.msg ?? `적 ${e.list.length}개 부대가 몰려와요(${S.tn}/${T.length})`, 'x');
+    S.hooks.event?.({ type: 'wave', n: S.tn!, of: T.length });
+  }
   // 거점: 우리만 있으면 6초에 걸쳐 차지, 적만 있으면 되돌림
   for (const p of S.pts) {
     const us = landIn(S, 'us', p), foe = landIn(S, 'foe', p);
@@ -450,7 +509,12 @@ function stageRules(S: Sim): boolean {
     if (S.reinfT >= R.every) { S.reinfT = 0; S.reinfN++; R.list.forEach(([k, x, z]) => { const u = spawnFoe(S, k, x, z, false); const tgt = S.pts.find((p) => p.own === 'foe') ?? S.pts[0]; if (tgt) u.home = { x: tgt.x + (rnd(S) - .5) * 1.4, z: tgt.z + (rnd(S) - .5) * 1.4 }; }); S.hooks.log?.(`적 증원 부대 도착(${S.reinfN}/${R.max})`, 'x'); S.hooks.event?.({ type: 'reinf', n: S.reinfN }); }
   }
   const foeAlive = S.units.some((u) => u.alive && u.side === 'foe' && u.kind !== 'hq');
-  if (ST.id === 'street') return S.pts.length > 0 && S.pts.every((p) => p.own === 'us');
+  const rule = winOf(ST);
+  if (rule === 'points') return S.pts.length > 0 && S.pts.every((p) => p.own === 'us');
+  if (rule === 'all') return (S.tn ?? 0) >= (T?.length ?? 0) && !S.units.some((u) => u.alive && u.side === 'foe');
+  if (rule === 'survive') return false;
+  if (rule === 'escort') { const al = S.units.filter((u) => u.d.ally); return al.length > 0 && al.every((u) => u.alive && dist(u, ST.allyGoal ?? ST.usGoal) < 1.8); }
+  if (rule === 'hq') { const h = S.units.find((u) => u.kind === 'hq'); return h ? !h.alive : !foeAlive; }
   // 도심: 지휘소 → 최후 저항 파도들 → 남은 적 모두
   const hq = S.units.find((u) => u.kind === 'hq');
   if (hq?.alive) return false;
@@ -486,7 +550,7 @@ function fire(S: Sim, u: Unit, t: Unit) {
   if (u.d.hack) { t.jam = S.simT + 3; S.pending.push({ at: S.simT + .1, fn: () => { if (t.alive) damage(S, t, u.d.atk * mul, u); } }); u.visFire = { kind: 'hack', tx: t.x, tz: t.z, tgt: t }; return; }
   const delay = u.kind === 'tank' ? .12 : (u.kind === 'sub' || u.kind === 'ssn') ? Math.min(2, dist(u, t) * .25) : u.kind === 'heli' ? .35 : .05;
   S.pending.push({ at: S.simT + delay, fn: () => { if (t.alive) damage(S, t, u.d.atk * mul, u); } });
-  u.visFire = { kind: u.kind, tx: t.x, tz: t.z, tgt: t, air: t.d.dom === 'air', fly: delay };
+  u.visFire = { kind: u.d.look ?? u.kind, tx: t.x, tz: t.z, tgt: t, air: t.d.dom === 'air', fly: delay };
 }
 function endBattle(S: Sim, win: boolean, timeout: boolean) {
   if (S.phase !== 'battle') return; S.phase = 'end';
@@ -540,12 +604,19 @@ export function outcome(r: { win: boolean; timeout: boolean; t: number; lost: nu
   const loss = r.total ? r.lost / r.total : 1;
   const stars = r.win ? (loss <= 0.25 && r.t <= ST.timeLimit * 0.6 ? 3 : loss <= 0.5 ? 2 : 1) : 0;
   const m = Math.floor(r.t / 60), s = Math.floor(r.t % 60);
-  const head = r.win ? '적 지휘소를 무너뜨렸어요.' : r.timeout ? `제한 시간 ${TIME_LIMIT / 60}분 안에 지휘소를 부수지 못했어요.` : '아군 부대가 모두 쓰러졌어요.';
+  const head = winText(r.win, r.timeout);
   return { win: r.win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${r.lost}/${r.total}` };
+}
+/** 이기고 진 까닭(이기는 조건마다) */
+export function winText(win: boolean, timeout: boolean): string {
+  const rule = winOf(ST), lim = `${Math.round(ST.timeLimit / 60 * 10) / 10}분`;
+  if (win) return rule === 'points' ? '거점을 모두 차지했어요.' : rule === 'all' ? '적을 모두 물리쳤어요.' : rule === 'survive' ? `${lim}을 끝까지 버텼어요.` : rule === 'escort' ? '지킬 대상을 무사히 목적지까지 데려갔어요.' : rule === 'hqwaves' && ST.waves ? '지휘소를 부수고 최후 저항까지 막아 냈어요.' : '적 지휘소를 무너뜨렸어요.';
+  if (timeout) return rule === 'escort' ? `제한 시간 ${lim} 안에 목적지에 닿지 못했어요.` : `제한 시간 ${lim} 안에 끝내지 못했어요.`;
+  return '아군 부대가 모두 쓰러졌거나 지킬 대상을 잃었어요.';
 }
 /** 화면 없이 돌린 전투의 결과 */
 export function headlessOutcome(S: Sim) {
-  const mine = S.units.filter((u) => u.side === 'us' && !u.d.missile && u.kind !== 'cvjet');
+  const mine = S.units.filter((u) => u.side === 'us' && !u.d.missile && u.kind !== 'cvjet' && !u.d.ally);
   const r = S.result ?? { win: false, timeout: true, t: S.simT };
   return outcome({ ...r, lost: mine.filter((u) => !u.alive).length, total: mine.length });
 }

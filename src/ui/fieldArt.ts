@@ -1,6 +1,6 @@
 // 지도 위 전투 그림 칸. 대장이 만든 그림을 src/assets/field/ 에 정해진 이름으로 넣으면 바로 나옴.
 // 그림이 없으면 임시 그림(이모지·색 육각형)을 씀. 목록과 GPT 프롬프트는 src/assets/field/README.md
-import type { FKind, FTerrain } from '../battle/field';
+import type { FKind, FTerrain } from '../data/fieldKinds';
 import { EXCLUSIVES, SPECIALS } from '../data/specials';
 import { countryById } from '../data/world';
 

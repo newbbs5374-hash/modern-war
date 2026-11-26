@@ -1,7 +1,7 @@
 // 부관 임명 창(11-24): 병과를 고르고, 그 병과에 특화된 후보 4명 중 한 명을 조건 없이 임명.
 import { useState } from 'react';
 import { AIDE_SPECIALTIES, type AideSpecialty } from '../data/officers';
-import { AIDE_EFFECT } from '../battle/grid';
+import { AIDE_EFFECT } from '../data/aideEffect';
 import { AIDE_TRAITS, aideSeats, appointAide, canAppointAide, candLeftMs, candsOf, rerollCands, rerollsLeft, type AideCand } from '../game/aidePick';
 import { AIDE_ICON } from './icons';
 import { Face } from './Portrait';

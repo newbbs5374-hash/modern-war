@@ -2,7 +2,6 @@
 import { salaryPerDay } from '../game/state';
 import { playerKeys } from '../data/looks';
 import { originFits, originOf } from '../game/origin';
-import { fieldRoster } from '../game/economy';
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
 import { STAT_GROUPS, TRAININGS } from '../data/catalog';
@@ -54,11 +53,12 @@ import {
   type ErrandKind,
   type Mission,
 } from '../game/officer';
-import { AIDE_EFFECT } from '../battle/grid';
+import { AIDE_EFFECT } from '../data/aideEffect';
 import { minisFor } from '../battle/minigames';
 import { UNIT_LV_AT, threeFor, unitBonusPct, unitLevel, unitName, weekLeftMs, weekOf, weeklyInfo, weeklyTraining } from '../battle3d/train3d';
 import { TEST_MODE } from '../game/balance';
-import { GRAND_STAGES, OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
+import { OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
+import { ACT_POOLS } from '../battle3d/stages';
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
 import { PersonFace } from './People';
@@ -263,10 +263,9 @@ export function GrandCard({ state, actions }: ScreenProps) {
   const targets = rank >= GRAND_RANK ? grandTargets(state).slice(0, 6) : [];
   const help = (
     <>
-      <p>🏙️ 전쟁 중인 나라의 도시 하나를 골라 점령하러 가요. 두 가지 방법이 있어요.</p>
-      <p>🛰️ <b>2.5D 전장(추천)</b>: 싸우기 전에 병과 8개를 골라 출전하고, 실제 위성 사진으로 비스듬히 내려다본 도시 둘레 약 40km에서 육·해·공 부대를 실시간으로 움직여요. 땅 모양(바다·강·산·시가지)도 실제와 같아요. 적 사령부·적 기함과 붙는 큰 싸움은 "직접 지휘"로 직접 할 수 있어요.</p>
-      <p>🎬 <b>다섯 판</b>: {GRAND_STAGES.map((g) => `${FRAME_ICON[g.frame]} ${g.label}`).join(' → ')}. 시가지 돌입(⚑)은 꼭 이기고, 세 판 이상 이기면 차지해요.</p>
-      <p>어느 쪽이든 부관에게 맡길 수 있어요(별 최대 2).</p>
+      <p>🏙️ 전쟁 중인 나라의 도시 하나를 골라 점령하러 가요. 싸움은 3D <b>3막 공성전</b>이에요.</p>
+      <p>🏰 1막 외곽 → 2막 시가전(거점 차지) → 3막 도심(지휘소 + 최후 저항). 막마다 전장이 여러 곳 중에서 바뀌어요(1막 {ACT_POOLS[0].length}곳 · 2막 {ACT_POOLS[1].length}곳 · 3막 {ACT_POOLS[2].length}곳). 바닷가 도시는 1막에 바다가 있는 전장이 나와요. 살아남은 부대는 다친 그대로 다음 막으로 이어져요.</p>
+      <p>부관에게 맡길 수 있어요(별 최대 2).</p>
       <p>방어도가 낮은 도시일수록 쉽고, 국방 → 부대에서 부대를 만들면 더 쉬워져요. {GRAND_COOLDOWN_HOURS}시간마다 한 번.</p>
     </>
   );
@@ -301,21 +300,13 @@ export function GrandCard({ state, actions }: ScreenProps) {
             <>
               <button onClick={() => setPick(null)}>닫기</button>
               <button
-                onClick={() => {
-                  actions.apply((s) => startGrand(s, pick, false));
-                  setPick(null);
-                }}
-              >
-                🎬 다섯 판
-              </button>
-              <button
                 className="gold"
                 onClick={() => {
                   actions.apply((s) => startGrand(s, pick, true));
                   setPick(null);
                 }}
               >
-                🛰️ 2.5D 전장으로 출격
+                🏰 3막 공성전으로 출격
               </button>
             </>
           }
@@ -324,12 +315,12 @@ export function GrandCard({ state, actions }: ScreenProps) {
             {countryById(state.world.owner[pick]).name} · 방어도 {Math.round(state.world.defense[pick])}
             {cityById(pick).capital && cityById(pick).home === state.world.owner[pick] ? ' · 수도' : ''}
           </p>
-          <div className="tiles c5" style={{ margin: '8px 0' }}>
-            {GRAND_STAGES.map((g, i) => (
-              <Tile key={i} icon={FRAME_ICON[g.frame]} label={`${i + 1}`} sub={g.label} tone={i === 3 ? 'gold' : undefined} />
+          <div className="tiles c3" style={{ margin: '8px 0' }}>
+            {['외곽', '시가전', '도심'].map((g, i) => (
+              <Tile key={g} icon={['🌄', '🏙️', '🏛️'][i]} label={`${i + 1}막`} sub={g} tone={i === 2 ? 'gold' : undefined} />
             ))}
           </div>
-          <p className="small muted">🛰️ 2.5D 전장(추천): 병과 8개를 골라 실제 위성 사진 위에서 부대를 움직여 사령부를 무너뜨리고 도심을 차지해요. 🎬 다섯 판: 위 다섯 전투를 이어서 해요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
+          <p className="small muted">🏰 3막 공성전: 막마다 다른 3D 전장에서 외곽 → 시가전 → 도심을 차례로 뚫어요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
         </Modal>
       )}
     </Card>
@@ -859,9 +850,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
                 icon={FRAME_ICON[x.frame]}
                 label={x.label}
                 onClick={() => {
-                  const pp = practicePlan(i, (Date.now() & 0xffff) + i);
-                  // 연습장 지도 위 전투에도 우리 특화 유닛이 나옴(연료·탄약은 가득)
-                  setPendingPlan({ ...pp, stages: pp.stages.map((st) => (st.frame === 'field' ? { ...st, army: { roster: fieldRoster(state) } } : st)) });
+                  setPendingPlan(practicePlan(i, (Date.now() & 0xffff) + i));
                   go('battle');
                 }}
               />

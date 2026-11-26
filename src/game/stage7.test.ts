@@ -4,8 +4,6 @@ import { advance, newGame, type GameState } from './state';
 import { canGift, claimErrand, debugAddAide, giftAide, masteryLevel, readyAides, sendAide, trainAide, featuredTraining } from './officer';
 import { canDiplo, diploChance, doDiplo, COMMAND_TOP } from './command';
 import { checkVictory, HOLD_DAYS } from './victory';
-import { createGridBattle } from '../battle/grid';
-import { weatherOf } from '../battle/spec';
 import { CITIES } from '../data/cities';
 import { COUNTRIES } from '../data/world';
 import { pairKey, relationOf } from './world';
@@ -57,17 +55,14 @@ describe('훈련 숙련도', () => {
 });
 
 describe('전투 다양화', () => {
-  test('날씨는 정해진 값 중 하나, 같은 seed면 같음', () => {
-    for (let i = 0; i < 30; i++) {
-      expect(['맑음', '밤', '비', '안개', '눈']).toContain(weatherOf(i));
-      expect(weatherOf(i)).toBe(weatherOf(i));
+  test('임무 종류마다 어울리는 3D 전장이 여러 곳이고, 씨앗으로 돌아가며 고름', async () => {
+    const { KIND_FIELDS, fieldById } = await import('../battle3d/pick');
+    const { resolveField } = await import('../battle/spec');
+    for (const [k, ids] of Object.entries(KIND_FIELDS)) {
+      for (const id of ids) expect(fieldById(id).id, `${k} ${id}`).toBe(id);
+      const seen = new Set(Array.from({ length: 40 }, (_, i) => resolveField(`@${k}`, i * 977)));
+      expect(seen.size, k).toBe(ids.length);
     }
-  });
-  test('섬멸전엔 적 지휘관이 나오고 이름에 상대 나라가 붙음', () => {
-    const b = createGridBattle({ goal: 'eliminate', difficulty: 1, rank: 3, stats: {}, aides: [], seed: 5, enemy: '북한군' });
-    const boss = b.units.filter((u) => u.boss);
-    expect(boss).toHaveLength(1);
-    expect(boss[0].name).toContain('북한군');
   });
 });
 

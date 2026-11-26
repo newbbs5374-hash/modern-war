@@ -1,18 +1,14 @@
 // 맡기기(부관·장군) = 그 판을 자동전투로 끝까지 돌린 결과. 즉시완료와 같은 계산.
-import { createArty, finishArty } from './arty';
-import { createCourse, finishCourse } from './course';
-import { createGridBattle, finishGrid, type Goal } from './grid';
-import { createPuzzle, finishPuzzle, type PuzzleKind } from './puzzle';
-import { createRange, finishRange } from './range';
-import { createShooter, finishShooter } from './shooter';
-import { createSideBattle, finishSide, type SideGoal } from './side';
+// 11-26: 전투는 3D 전투만 남음(훈련 미니게임 · 3D 훈련 · 3D 전투/공성전).
 import type { BattleSpec } from './spec';
-import { createField, finishField } from './field';
 import { autoMini } from './minigames';
-import { headlessOutcome, runHeadless } from '../battle3d/sim';
+import { COAST, autoDeploy, createSim, headlessOutcome, runHeadless, setupDeploy, startBattle, step, useStage } from '../battle3d/sim';
 import { runSiegeHeadless } from '../battle3d/siege';
+import { actsFor } from '../battle3d/stages';
 import { foeHpOf } from '../battle3d/foeHp';
+import { stageFor } from '../battle3d/pick';
 import { autoThree } from '../battle3d/train3d';
+import { isCoastalCity } from '../data/cities';
 
 export interface AutoInput {
   spec: BattleSpec;
@@ -21,39 +17,28 @@ export interface AutoInput {
   aides: Array<{ name: string; specialty: string; level: number; bond?: number }>;
 }
 
-export const rangeAim = (stats: Record<string, number>, rank: number) => 0.5 + 0.4 * Math.min(1, (stats['사격'] ?? 8) / (20 + rank * 10));
-
-/** 전투 묶음의 부대 정보 → 지도 위 전투 입력 */
-export function fieldArmy(spec: BattleSpec) {
-  const a = spec.army;
-  return { ...(a ? { roster: a.roster, enemyId: a.enemyId, fuel: a.fuel, ammo: a.ammo } : {}), ...(spec.picks ? { picks: spec.picks } : {}) };
+/** 3D 전장 한 판을 기본 배치로 끝까지(맡기기) */
+export function autoField(spec: Pick<BattleSpec, 'variant' | 'difficulty' | 'kinds' | 'budget'>): { win: boolean; stars: number; text: string } {
+  if (spec.variant === 'coast') return headlessOutcome(runHeadless());
+  const st = stageFor(spec);
+  useStage(st);
+  const S = createSim();
+  setupDeploy(S, autoDeploy(), { foeHp: foeHpOf(spec.difficulty) });
+  startBattle(S);
+  for (let i = 0; i < 9000 && S.phase === 'battle'; i++) step(S);
+  const r = headlessOutcome(S);
+  useStage(COAST);
+  return r;
 }
 
-export function autoResult({ spec, stats, rank, aides }: AutoInput): { win: boolean; stars: number; text: string } {
+export function autoResult({ spec, stats, rank }: AutoInput): { win: boolean; stars: number; text: string } {
   const d = spec.difficulty;
-  const seed = spec.seed;
   switch (spec.frame) {
-    case 'grid':
-      return finishGrid(createGridBattle({ goal: spec.variant as Goal, difficulty: d, rank, stats, aides, seed, squadSize: spec.squadSize, weather: spec.weather, enemy: spec.enemy })).result!;
-    case 'side':
-      return finishSide(createSideBattle({ goal: spec.variant as SideGoal, difficulty: d, rank, stats, seed })).result!;
-    case 'arty':
-      return finishArty(createArty({ difficulty: d, rank, stats, seed, weather: spec.weather })).result!;
-    case 'shooter':
-      return finishShooter(createShooter({ difficulty: d, rank, stats, seed })).result!;
-    case 'puzzle':
-      return finishPuzzle(createPuzzle(spec.variant as PuzzleKind, seed, rank + Math.round((d - 1) * 10))).result!;
-    case 'course':
-      return finishCourse(createCourse({ rank, stats, seed })).result!;
-    case 'range':
-      return finishRange(createRange({ rank, stats, seed }), rangeAim(stats, rank)).result!;
     case 'mini':
-      return autoMini(spec.variant, stats, rank, seed);
+      return autoMini(spec.variant, stats, rank, spec.seed);
     case 'b3d':
-      return spec.variant === 'siege' ? runSiegeHeadless(foeHpOf(d)).outcome : headlessOutcome(runHeadless());
+      return spec.variant === 'siege' ? runSiegeHeadless(foeHpOf(d), undefined, actsFor(spec.seed, spec.city ? isCoastalCity(spec.city) : undefined)).outcome : autoField(spec);
     case 'd3':
-      return autoThree(spec.variant, seed);
-    case 'field':
-      return finishField(createField({ city: spec.city, difficulty: d, rank, stats, seed, enemy: spec.enemy, defense: spec.defense, ...fieldArmy(spec) })).result!;
+      return autoThree(spec.variant, spec.seed);
   }
 }

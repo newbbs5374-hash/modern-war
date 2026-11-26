@@ -1,5 +1,6 @@
 // 3막 공성전 전장: 1막 외곽(해안) → 2막 시가전(거점 4곳) → 3막 도심 내부(지휘소 + 최후 저항 2번)
 import { COAST, type Block, type Place, type Stage } from './sim';
+import { BEACHHEAD, BIG_FIELDS, CANYON, DUNE, FJORD, HARBOR, HIGHLAND, NEWTOWN, OLDTOWN, PALACE } from './fields';
 
 const flat = (x: number, z: number) => .05 + Math.sin(x * .7 + z * .3) * .012 + Math.cos(z * .9 - x * .4) * .01;
 const noSea = () => -99, noRiver = () => 99;
@@ -14,6 +15,7 @@ function grid(xs: Array<[number, number]>, zs: Array<[number, number]>, skip: Ar
 export const STREET: Stage = {
   id: 'street', name: '2막 · 시가전', op: 'URBAN-12', goal: '목표: 거점 4곳 모두 차지',
   coastX: noSea, riverZ: noRiver, bridges: [], hAt: flat, timeLimit: 240, usGoal: { x: -1.2, z: -10 }, urban: true,
+  desc: '건물 사이 거리에서 싸워요. 거점 4곳(기차역 앞·시장 사거리·방송국 광장·구청 앞)에 우리 땅 부대만 서 있으면 조금씩 차지해요. 적이 거점을 쥐고 있는 동안 30초마다 증원이 와요. 건물에 붙은 부대는 덜 맞아요.',
   blocks: grid(
     [[-10.6, -7.3], [-5.5, -2.1], [-.3, 3.1], [4.9, 10.6]],
     [[-15.6, -10.9], [-9.1, -5.3], [-3.5, .3], [2.1, 5.7]],
@@ -40,6 +42,7 @@ export const STREET: Stage = {
 export const CORE: Stage = {
   id: 'core', name: '3막 · 도심 내부', op: 'CITADEL-01', goal: '목표: 지휘소 파괴 → 최후 저항 막기',
   coastX: noSea, riverZ: noRiver, bridges: [], hAt: flat, timeLimit: 240, usGoal: { x: 0, z: -9 }, urban: true,
+  desc: '도심 한가운데 광장에 적 지휘소가 있어요. 지휘소를 부수면 끝이 아니에요. 최후 저항 부대가 양옆과 뒤에서 두 번 몰려와요. 모두 막아 내면 도시를 차지해요.',
   blocks: [
     ...grid(
       [[-10.6, -6.1], [-4.3, -1.1], [1.1, 4.3], [6.1, 10.6]],
@@ -68,6 +71,26 @@ export const CORE: Stage = {
 };
 
 export const ACTS: Stage[] = [COAST, STREET, CORE];
+/** 11-26 막마다 돌아가며 쓰는 전장(같은 판만 되풀이하지 않게). 바닷가 도시는 1막에 바다가 있는 판 */
+export const ACT_POOLS: Stage[][] = [
+  [COAST, BEACHHEAD, FJORD, HARBOR, HIGHLAND, DUNE, CANYON],
+  [STREET, OLDTOWN, NEWTOWN],
+  [CORE, PALACE],
+];
+const SEA_ACT1 = [COAST, BEACHHEAD, FJORD, HARBOR], LAND_ACT1 = [HIGHLAND, DUNE, CANYON];
+/** 씨앗 → 0~1(골고루 섞음) */
+export function mix(n: number): number {
+  let h = (n | 0) ^ 0x9e3779b9;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+/** 공성전 세 막 고르기(씨앗으로 정해짐). coastal = 바다에 닿은 도시 */
+export function actsFor(seed: number, coastal?: boolean): Stage[] {
+  const r = (n: number, k: number) => Math.floor(mix(seed * 3 + k) * n);
+  const p1 = coastal == null ? ACT_POOLS[0] : coastal ? SEA_ACT1 : LAND_ACT1;
+  return [p1[r(p1.length, 1)], ACT_POOLS[1][r(ACT_POOLS[1].length, 2)], ACT_POOLS[2][r(ACT_POOLS[2].length, 3)]];
+}
+export const stageById = (id: string): Stage | undefined => [...ACT_POOLS.flat(), ...BIG_FIELDS].find((s) => s.id === id);
 /** 2·3막 기본 보충(예산 안에서 앞에서부터) */
 export const URBAN_FILL: Place[] = [
   ['tank', 1.6, 9.8], ['inf', 3, 9.8], ['ifv', 4.4, 9.8], ['tank', -2.6, 9.8], ['aa', 3, 11.2], ['spg', 1.6, 12.6],

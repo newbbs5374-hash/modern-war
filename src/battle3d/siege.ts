@@ -1,6 +1,6 @@
 // 3막 공성전 흐름: 막마다 전장을 바꾸고, 살아남은 부대(다친 그대로)를 다음 막으로 넘긴다.
 import {
-  BUDGET, DEF, ST, createSim, defaultDeploy, nearestTile, setupDeploy, startBattle, step, useStage,
+  BUDGET, DEF, ST, autoDeploy, createSim, nearestTile, setupDeploy, startBattle, step, useStage,
   type Kind, type Pick3, type Sim, type Stage,
 } from './sim';
 import { ACTS, URBAN_FILL } from './stages';
@@ -49,7 +49,7 @@ export function fillReinf(mine: Pick3[], budget = REINF_BUDGET): Pick3[] {
   return out;
 }
 export function spentOf(mine: Pick3[]) { return mine.reduce((s, d) => s + (d.carried ? 0 : DEF[d.kind].cost), 0); }
-export const budgetOf = (act: number) => (act === 0 ? BUDGET : REINF_BUDGET);
+export const budgetOf = (act: number, st?: Stage) => (act === 0 ? st?.budget ?? BUDGET : REINF_BUDGET);
 
 /** 막 하나를 화면 없이 돌림 */
 export function runAct(stage: Stage, mine: Pick3[], cp0 = 3, foeHp = 1, maxSteps = 6000): Sim {
@@ -68,7 +68,7 @@ export function actResult(S: Sim): ActResult {
 }
 
 /** 세 막 결과 → 임무 결과(별·글) */
-export function siegeOutcome(results: ActResult[]): { win: boolean; stars: number; text: string } {
+export function siegeOutcome(results: ActResult[], acts: Stage[] = ACTS): { win: boolean; stars: number; text: string } {
   const win = results.length === 3 && results.every((r) => r.win);
   // 넘어온 부대는 한 번만 셈
   const total = results.reduce((s, r) => s + r.total - (r.carried ?? 0), 0) || 1, lost = results.reduce((s, r) => s + r.lost, 0);
@@ -78,22 +78,24 @@ export function siegeOutcome(results: ActResult[]): { win: boolean; stars: numbe
   const m = Math.floor(t / 60), s = Math.floor(t % 60);
   const failAt = results.findIndex((r) => !r.win);
   const head = win ? '외곽·시가전·도심을 모두 뚫고 도시를 차지했어요.'
-    : failAt >= 0 ? `${ACTS[failAt].name}에서 밀려났어요.` : '공성전을 그만뒀어요.';
+    : failAt >= 0 ? `${actName(acts, failAt)}에서 밀려났어요.` : '공성전을 그만뒀어요.';
   return { win, stars, text: `${head} 걸린 시간 ${m}분 ${s}초 · 아군 손실 ${lost}/${total}` };
 }
 
+/** 막 이름(앞에 '1막 ·' 붙임) */
+export const actName = (acts: Stage[], i: number) => (/^\d막/.test(acts[i]?.name ?? '') ? acts[i].name : `${i + 1}막 · ${acts[i]?.name ?? ''}`);
 /** 맡기기: 세 막을 기본 배치로 끝까지 */
-export function runSiegeHeadless(foeHp = 1, budget = REINF_BUDGET): { results: ActResult[]; outcome: ReturnType<typeof siegeOutcome> } {
+export function runSiegeHeadless(foeHp = 1, budget = REINF_BUDGET, acts: Stage[] = ACTS): { results: ActResult[]; outcome: ReturnType<typeof siegeOutcome> } {
   const results: ActResult[] = [];
   let carry: Carry | null = null;
-  for (let a = 0; a < ACTS.length; a++) {
-    useStage(ACTS[a]);
-    const mine = a === 0 ? defaultDeploy() : fillReinf(placeCarried(carry!), budget);
-    const S = runAct(ACTS[a], mine, a === 0 ? 3 : navalCp(carry!), foeHp);
+  for (let a = 0; a < acts.length; a++) {
+    useStage(acts[a]);
+    const mine = a === 0 ? autoDeploy() : fillReinf(placeCarried(carry!), budget);
+    const S = runAct(acts[a], mine, a === 0 ? 3 : navalCp(carry!), foeHp);
     const r = actResult(S); results.push(r);
     if (!r.win) break;
     carry = carryFrom(S, carry?.naval ?? 0);
   }
   useStage(ACTS[0]);
-  return { results, outcome: siegeOutcome(results) };
+  return { results, outcome: siegeOutcome(results, acts) };
 }
