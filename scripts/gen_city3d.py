@@ -141,7 +141,9 @@ def sea_polys(coast, half_m):
         return []
     B = box(-half_m, -half_m, half_m, half_m)
     lines = [LineString(c) for c in coast if len(c) >= 2]
-    cut = [l.intersection(B) for l in lines]
+    # 범위보다 조금 넓게 자른 뒤 테두리와 합쳐야 교차점이 정확히 이어짐(딱 맞게 자르면 틈이 생겨 바다가 안 나뉨)
+    B2 = B.buffer(2000)
+    cut = [l.intersection(B2) for l in lines]
     noded = unary_union([g for g in cut if not g.is_empty] + [B.boundary])
     segs = [(c[i], c[i + 1]) for c in coast for i in range(len(c) - 1)]
 
@@ -160,6 +162,8 @@ def sea_polys(coast, half_m):
 
     out = []
     for face in polygonize(noded):
+        if not B.contains(face.representative_point()):
+            continue
         if face.area < 20000 or not is_sea(face.representative_point()):
             continue
         f = face.simplify(12)
