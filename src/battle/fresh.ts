@@ -55,32 +55,38 @@ export function wegoFoePlan(g: WGame): void {
   });
 }
 
-/** 한 판(8초) 돌리기: 모두 동시에 1초에 한 칸, 사거리 안 가장 가까운 적을 쏨 */
-export function wegoRun(g: WGame): WGame {
-  for (let t = 0; t < WG.SECS; t++) {
-    const moved = new Set<string>();
-    for (const u of g.units) {
-      if (u.hp <= 0 || !u.path.length) continue;
-      const [tc, tr] = u.path[0];
-      const nc = u.c + Math.sign(tc - u.c), nr = u.r + Math.sign(tr - u.r);
-      if (inMap(nc, nr) && !g.units.some((o) => o !== u && o.hp > 0 && o.c === nc && o.r === nr)) {
-        u.c = nc;
-        u.r = nr;
-        moved.add(u.id);
-      }
-      if (u.c === tc && u.r === tr) u.path.shift();
+/** 1초: 모두 동시에 한 칸, 사거리 안 가장 가까운 적을 쏨. 쏜 줄을 돌려줌(화면 효과용) */
+export function wegoStep(g: WGame): Array<{ from: WUnit; to: WUnit }> {
+  const moved = new Set<string>();
+  for (const u of g.units) {
+    if (u.hp <= 0 || !u.path.length) continue;
+    const [tc, tr] = u.path[0];
+    const nc = u.c + Math.sign(tc - u.c), nr = u.r + Math.sign(tr - u.r);
+    if (inMap(nc, nr) && !g.units.some((o) => o !== u && o.hp > 0 && o.c === nc && o.r === nr)) {
+      u.c = nc;
+      u.r = nr;
+      moved.add(u.id);
     }
-    const dmg = new Map<WUnit, number>();
-    for (const u of g.units) {
-      if (u.hp <= 0) continue;
-      const foes = g.units.filter((o) => o.side !== u.side && o.hp > 0 && cheb(o, u) <= WG.RANGE);
-      if (!foes.length) continue;
-      const tgt = foes.reduce((a, b) => (cheb(a, u) <= cheb(b, u) ? a : b));
-      const cover = g.map[tgt.r][tgt.c] === 'h' ? 0.4 : g.map[tgt.r][tgt.c] === 'f' ? 0.6 : 1;
-      dmg.set(tgt, (dmg.get(tgt) ?? 0) + 14 * cover * (moved.has(u.id) ? 0.6 : 1) * (u.side === 'foe' ? 0.85 : 1));
-    }
-    dmg.forEach((d, u) => (u.hp = Math.max(0, u.hp - d)));
+    if (u.c === tc && u.r === tr) u.path.shift();
   }
+  const dmg = new Map<WUnit, number>();
+  const shots: Array<{ from: WUnit; to: WUnit }> = [];
+  for (const u of g.units) {
+    if (u.hp <= 0) continue;
+    const foes = g.units.filter((o) => o.side !== u.side && o.hp > 0 && cheb(o, u) <= WG.RANGE);
+    if (!foes.length) continue;
+    const tgt = foes.reduce((a, b) => (cheb(a, u) <= cheb(b, u) ? a : b));
+    const cover = g.map[tgt.r][tgt.c] === 'h' ? 0.4 : g.map[tgt.r][tgt.c] === 'f' ? 0.6 : 1;
+    dmg.set(tgt, (dmg.get(tgt) ?? 0) + 14 * cover * (moved.has(u.id) ? 0.6 : 1) * (u.side === 'foe' ? 0.85 : 1));
+    shots.push({ from: u, to: tgt });
+  }
+  dmg.forEach((d, u) => (u.hp = Math.max(0, u.hp - d)));
+  return shots;
+}
+export const wegoOver = (g: WGame) => g.round >= WG.ROUNDS || !g.units.some((u) => u.side === 'foe' && u.hp > 0) || !g.units.some((u) => u.side === 'us' && u.hp > 0);
+/** 한 판(8초) 통째로 */
+export function wegoRun(g: WGame): WGame {
+  for (let t = 0; t < WG.SECS; t++) wegoStep(g);
   g.round++;
   for (const u of g.units) u.path = [];
   return g;
@@ -127,7 +133,7 @@ export function makeNet(seed: number, level = 1): Net {
 export const linked = (n: Net, a: number, b: number) => n.links.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
 /** 길 실행: 한 칸 1틱, 방화벽은 2틱 더. 보안 수치 + 탐지기와 같은 칸이면 +4. 10 넘으면 들킴 */
-export function runNetPath(n: Net, path: number[]): { ok: boolean; det: number; ticks: number; caught: boolean } {
+export function runNetPath(n: Net, path: number[], start = 0): { ok: boolean; det: number; ticks: number; caught: boolean } {
   if (path[0] !== n.entry || path[path.length - 1] !== n.target) return { ok: false, det: 10, ticks: 0, caught: false };
   for (let i = 1; i < path.length; i++) if (!linked(n, path[i - 1], path[i])) return { ok: false, det: 10, ticks: 0, caught: false };
   let det = 0, tick = 0;
@@ -135,7 +141,7 @@ export function runNetPath(n: Net, path: number[]): { ok: boolean; det: number; 
     const node = n.nodes[id];
     const stay = node.wall ? 3 : 1;
     for (let s = 0; s < stay; s++) {
-      if (n.tracer[tick % n.tracer.length] === id) det += 4;
+      if (n.tracer[(tick + start) % n.tracer.length] === id) det += 4;
       tick++;
     }
     det += node.sec;

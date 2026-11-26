@@ -85,6 +85,9 @@ export const MINIGAMES: MiniDef[] = [
   { id: 'n-arty-observe', training: '포격', name: '관측병 무전', how: '쌍안경으로 표적을 봐요. 포탄이 떨어진 곳을 보고 "좌·우·가까이·멀리 50"을 골라 다시 요청해요. 표적 3개, 표적마다 5발.', secs: 120, on: true, three: true, fresh: 'A' },
   { id: 'n-sea-bridge', training: '해상', name: '함교 조함', how: '함교에서 키와 속도로 배를 몰아요. 큰 배는 천천히 돌고 조류에 밀려요. 부표 사이로 들어가 초록 선석에 천천히 곧게 대고 ⚓ 계류.', secs: 150, on: true, three: true, fresh: 'A' },
   { id: 'n-fit-run3d', training: '체력', name: '3D 달리기 코스', how: '뒤에서 본 달리기. 밀어서 ◀▶ 줄 바꾸기, ⬆ 허들 넘기, ⬇ 철조망 포복. 숨 막대가 바닥나면 끝. 💧 물병으로 숨 회복.', secs: 70, on: true, three: true, fresh: 'A' },
+  // 11-26 새 훈련 틀 B "계획 짜고 재생"
+  { id: 'n-tac-wego', training: '전술', name: '작전 지도 동시 진행', how: '우리 분대를 누르고 땅을 눌러 갈 곳을 찍어요(3곳까지). ▶ 실행을 누르면 적도 몰래 세운 계획대로 동시에 8초 움직여요. 4판 안에 적을 제압하고 깃발 건물을 차지.', secs: 180, on: true, three: true, fresh: 'B' },
+  { id: 'n-hack-net', training: '해킹', name: '서버 침투 지도', how: '입구부터 목표 서버까지 서버를 눌러 길을 이어요. 빨간 서버는 들킴이 많고, 그물(방화벽)은 오래 머물러요. 빨간 고리(탐지기)를 피해 ▶ 침투 실행. 서버 3곳.', secs: 150, on: true, three: true, fresh: 'B' },
 ];
 
 export const miniById = (id: string): MiniDef | undefined => MINIGAMES.find((m) => m.id === id);
