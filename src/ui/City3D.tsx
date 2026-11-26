@@ -421,7 +421,21 @@ export default function City3D({ file, level, night }: Props) {
         const rs = roadStrips(d.r);
         const roads = new THREE.Mesh(rs.g, roadMat);
         scene.add(parks, roads, water);
-        if (d.s?.length) scene.add(new THREE.Mesh(seaShapes(d.s, 0.6), waterMat));
+        if (d.s?.length) {
+          scene.add(new THREE.Mesh(seaShapes(d.s, 0.6), waterMat));
+          // 바다 도시: 바다를 도시 너머로 보이게, 바다 반대쪽 위에서 바다 쪽을 바라봄
+          if (!START_VIEW[file]) {
+            let sx = 0, sy = 0, n = 0;
+            for (const poly of d.s) for (let k = 0; k + 1 < poly[0].length; k += 2) { sx += poly[0][k]; sy += poly[0][k + 1]; n++; }
+            const L = Math.hypot(sx, sy);
+            if (n && L > 1) {
+              const dx = sx / L, dz = -sy / L;
+              cam.position.set(-dx * 3300, 1500, -dz * 3300);
+              ctl.target.set(dx * 300, 0, dz * 300);
+              ctl.update();
+            }
+          }
+        }
         paths = rs.paths;
         for (let i = 0; i < 4; i++) {
           const c = makeCrane();
