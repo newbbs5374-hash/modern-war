@@ -8,6 +8,7 @@ import { createGridBattle } from '../battle/grid';
 import { weatherOf } from '../battle/spec';
 import { CITIES } from '../data/cities';
 import { COUNTRIES } from '../data/world';
+import { pairKey, relationOf } from './world';
 
 const H = 3600e3;
 const rich = (s: GameState): GameState => ({ ...s, player: { ...s.player, salary: 1e6 } });
@@ -76,7 +77,7 @@ describe('지도자 외교', () => {
     const s = newGame('t', 'kr', 0, { seed: 3 });
     expect(canDiplo(s, 'us', '연합 제안')).toBeTruthy();
   });
-  test('한 번 하면 대기 시간, 확률은 0~1', () => {
+  test('선전포고하면 전쟁, 확률은 0~1', () => {
     const s = top(newGame('t', 'kr', 0, { seed: 3 }));
     const other = COUNTRIES.find((c) => c.id !== 'kr' && !canDiplo(s, c.id, '선전포고'))!;
     const p = diploChance(s, other.id, '연합 제안');
@@ -84,7 +85,21 @@ describe('지도자 외교', () => {
     expect(p).toBeLessThanOrEqual(1);
     const r = doDiplo(s, other.id, '선전포고');
     expect(r.ok).toBe(true);
-    expect(canDiplo(r.state, other.id, '휴전 제안')).toBeTruthy();
+    expect(canDiplo(r.state, other.id, '선전포고')).toBeTruthy(); // 이미 전쟁 중
+  });
+  test('선전포고는 외교 대기 중에도 바로, 연합국도 연합을 깨고 칠 수 있음', () => {
+    let s = top(newGame('t', 'kr', 0, { seed: 3 }));
+    const ids = COUNTRIES.filter((c) => c.id !== 'kr').map((c) => c.id);
+    const k = pairKey('kr', ids[1]);
+    s = { ...s, officer: { ...s.officer, diploReadyMs: s.worldMs + 3600e3 }, world: { ...s.world, pairs: { ...s.world.pairs, [k]: { ...s.world.pairs[k], rel: '연합' } } } };
+    expect(canDiplo(s, ids[1], '연합 제안')).toBeTruthy();
+    expect(canDiplo(s, ids[1], '선전포고')).toBeNull();
+    const r = doDiplo(s, ids[1], '선전포고');
+    expect(relationOf(r.state.world, 'kr', ids[1])).toBe('전쟁');
+    expect(r.state.officer.fame).toBeLessThanOrEqual(s.officer.fame);
+    expect(canDiplo(r.state, ids[1], '선전포고')).toBeTruthy();
+    // 바로 다른 나라에도 선전포고 가능
+    expect(canDiplo(r.state, ids[2], '선전포고')).toBeNull();
   });
 });
 

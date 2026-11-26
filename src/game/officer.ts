@@ -911,7 +911,10 @@ export function grandTargets(s: GameState): string[] {
 export function canGrand(s: GameState): string | null {
   if (s.player.rankIndex < GRAND_RANK) return `${rankName(GRAND_RANK)}부터 열려요`;
   if (s.officer.active) return '다른 임무를 하는 중이에요';
-  if (s.worldMs < s.officer.grandReadyMs) return '다음 대전투를 준비하는 중이에요';
+  if (s.worldMs < s.officer.grandReadyMs) {
+    const m = Math.max(1, Math.ceil((s.officer.grandReadyMs - s.worldMs) / 60e3));
+    return `다음 대전투를 준비하는 중이에요 · ${m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음`;
+  }
   if (!grandTargets(s).length) return '전쟁 중인 나라가 없어요';
   return null;
 }
