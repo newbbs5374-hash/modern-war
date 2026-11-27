@@ -47,6 +47,7 @@ import { facBonus } from './facility';
 import { citiesOf, eul, ga, homeOf, isAlive, relationOf, syncFollowers, type WorldEvent } from './world';
 import { actAllowsTarget, grandCapLeft, grandToday, noteGrand } from './acts';
 import { planCounter } from './counter';
+import { campaignDiff, campaignLocked, noteCampaignWin } from './campaign';
 import { RIVAL_ROLES, hasAlly, rivalTick, shiftInfluence, type RivalRole } from './rivals';
 import { addLoyalty, generalMissionBonus, loyaltyMissionBonus, loyaltyMissionMult, loyaltyRewardMult, loyaltyTick, schoolTick, touchAide } from './loyal';
 
@@ -945,6 +946,7 @@ function captureCity(ns: GameState, city: string) {
   ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + loot }, ...(ns.nations[prev] ? { [prev]: { ...ns.nations[prev], treasury: Math.max(0, ns.nations[prev].treasury - (ns.nations[prev].treasury * SPOILS_TREASURY_SHARE)) } } : {}) };
   const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}`, mine: true };
   w.events.unshift(ev);
+  noteCampaignWin(ns, city, prev);
   planCounter(ns, city, prev);
 }
 
@@ -952,7 +954,7 @@ function captureCity(ns: GameState, city: string) {
 export function grandTargets(s: GameState): string[] {
   const me = s.player.countryId;
   const w = s.world;
-  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁' && actAllowsTarget(s, c.id))
+  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁' && actAllowsTarget(s, c.id) && !campaignLocked(s, c.id))
     .map((c) => c.id)
     .sort((a, b) => w.defense[a] - w.defense[b]);
 }
@@ -980,7 +982,7 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
     const army = Math.min(GRAND_ARMY_MAX, armyPower(ns) / GRAND_ARMY_PER);
     // 11-27 밸런스: 상대 나라가 셀수록(힘 배율·요새 성장), 수도일수록 어려움
     const foe = ns.world.owner[city];
-    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0) + (actAi(ns.world) - 1) * GRAND_ACT_DIFF;
+    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0) + (actAi(ns.world) - 1) * GRAND_ACT_DIFF + campaignDiff(ns, city);
     m.field = field;
     if (field) {
       // 연료·탄약: 창고의 석유·구리를 씀(모자라면 그만큼만 채우고 출발)

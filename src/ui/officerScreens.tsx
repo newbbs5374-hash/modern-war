@@ -13,6 +13,9 @@ import { cityById } from '../data/cities';
 import { COUNTRIES, countryById } from '../data/world';
 import { canDiplo, doDiplo } from '../game/command';
 import { isAlive, relationOf } from '../game/world';
+import { campaignInfo } from '../game/campaign';
+import { CAMPAIGN_STREAK_MAX } from '../game/balance';
+import type { GameState } from '../game/state';
 import {
   AIDE_STORIES,
   COMMAND_RANK,
@@ -289,7 +292,8 @@ export function GrandCard({ state, actions }: ScreenProps) {
         </>
       ) : (
         <div className="tiles c3">
-          {targets.map((id) => {
+          {state.world.act != null && <CampaignStrips state={state} onPick={setPick} />}
+          {targets.filter((id) => state.world.act == null || cityById(id).home !== state.world.owner[id]).map((id) => {
             const c = cityById(id);
             const owner = state.world.owner[id];
             return (
@@ -333,6 +337,47 @@ export function GrandCard({ state, actions }: ScreenProps) {
         </Modal>
       )}
     </Card>
+  );
+}
+
+/** 11-27 전역: 전쟁 중인 나라마다 국경 → 수도 길 한 줄. 빛나는 칸이 다음에 칠 도시 */
+function CampaignStrips({ state, onPick }: { state: GameState; onPick: (city: string) => void }) {
+  const me = state.player.countryId;
+  const foes = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id) && relationOf(state.world, me, c.id) === '전쟁');
+  return (
+    <>
+      {foes.map((f) => {
+        const info = campaignInfo(state, f.id);
+        if (!info.route.length) return null;
+        return (
+          <div key={f.id} className="camp">
+            <div className="camp-head">
+              <b>
+                {FLAG[f.id]} {f.name} 전역
+              </b>
+              <small>
+                {info.mine}/{info.route.length}
+                {info.streak > 0 && ` · 🔥 기세 ${Math.min(CAMPAIGN_STREAK_MAX, info.streak)}`}
+                {info.cut && ' · ⚠️ 보급선 끊김'}
+              </small>
+            </div>
+            <div className="camp-route">
+              {info.route.map((id, i) => {
+                const c = cityById(id);
+                const mine = state.world.owner[id] === me;
+                const next = id === info.next;
+                return (
+                  <button key={id} className={`camp-node ${mine ? 'mine' : ''} ${next ? 'next' : ''}`} disabled={!next} onClick={() => onPick(id)}>
+                    <i>{mine ? '✅' : c.capital ? '⭐' : next ? '⚔️' : i + 1}</i>
+                    <small>{c.name}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </>
   );
 }
 
