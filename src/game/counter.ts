@@ -2,6 +2,7 @@
 // 내가 도시를 빼앗으면 빼앗긴 나라가 몇 시간 뒤 되찾으러 온다(장이 오를수록 자주).
 // 닿기 전에 직접 3D 방어전으로 막거나, 그냥 두면 부대가 알아서 막는다(질 수도 있음).
 // 장 기록이 없는 옛 저장에는 반격이 없다.
+import { logBattle } from './battleLog';
 import { cityById } from '../data/cities';
 import { countryById } from '../data/world';
 import type { BattlePlan } from '../battle/spec';
@@ -94,7 +95,8 @@ export function settleCounter(s: GameState, id: number, win: boolean, stars: num
   }
   const ev: WorldEvent = { t: ns.worldMs, kind: win ? '전투' : '점령', text, mine: true };
   ns.world.events = [ev, ...ns.world.events].slice(0, EVENT_LOG_MAX);
-  return { state: pushReport(ns, { icon: win ? '🛡️' : '💥', text: `${how === '맡김' ? '부대가 반격을 맞았습니다. ' : ''}${text}` }), text };
+  const logged = logBattle(ns, { kind: '반격 방어', title: `${city.name} 방어`, city: c.city, win, stars, direct: how === '직접' });
+  return { state: pushReport(logged, { icon: win ? '🛡️' : '💥', text: `${how === '맡김' ? '부대가 반격을 맞았습니다. ' : ''}${text}` }), text };
 }
 
 /** 세계 판단마다: 시간이 다 된 반격은 부대가 알아서 맞음 */

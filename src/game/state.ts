@@ -6,8 +6,11 @@ import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
+import { occAdminTick } from './occAdmin';
+import type { OccAdminState } from './occAdmin';
 import { pressureTick, tariffMult, type PressureState } from './pressure';
 import { surrenderTick, vassalMult, type VassalState } from './surrender';
+import { hegemonyMult, hegemonyTick, type HegemonyState } from './hegemony';
 import { applyOrigin, type OriginId } from './origin';
 import type { LeaderLook } from '../data/looks';
 import { START_SANCTIONS } from '../data/conflicts';
@@ -44,7 +47,7 @@ import { domTick } from './domesticTick';
 import type { PolityState } from './polity';
 import type { DomState } from './domestic';
 import { approvalBudgetMult, approvalTroopMult, presTick, type PresState } from './approval';
-import { aiGovBudget, aiGovEff, civAccrue, civBudgetMult, civTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
+import { aiGovBudget, aiGovEff, civAccrue, civBudgetMult, civTick, techGoalTick, defenseMult, newCiv, sanctionMult, type CivState } from './civ';
 import { accrueEconomy, attritionMult, budgetMult, economyTick, occupyHold, newEconomy, welfareMult, type EconomyState } from './economy';
 import {
   AI_TICK_MS,
@@ -69,6 +72,17 @@ import { growTick } from './aiGrowthTick';
 import { actsTick } from './acts';
 import { counterTick, type CounterState } from './counter';
 import { finaleTick, type FinaleState } from './finale';
+import { sagaTick, type SagaState } from './saga';
+import type { TourState } from './tour';
+import { megaTick, type MegaState } from './megaPlan';
+import { moleTick, type MoleState } from './mole';
+import type { PrepState } from './prepOps';
+import { warGoalTick, type WarGoals } from './warGoal';
+import { raidTick, type RaidState } from './missileWar';
+import type { JointState } from './jointOps';
+import { wcTick, type WcState } from './worldCrisis';
+import { secTick, type SecState } from './security';
+import type { BattleLogState } from './battleLog';
 import type { CampaignState } from './campaign';
 
 export interface NationState {
@@ -143,6 +157,8 @@ export interface GameState {
   cabinet?: CabinetState;
   /** 장관·장군·부관 건의와 도시 개발 계획(11-25) */
   props?: PropState;
+  /** 11-27 점령지 관리청(편입 전 점령 도시를 맡는 관리단·건의, game/occAdmin.ts) */
+  occAdmin?: OccAdminState;
   /** 인물 대화 기록(11-25) */
   chat?: ChatState;
   /** 11-27 인물 만남·인연·부탁·인맥 수첩(game/meet.ts) */
@@ -165,6 +181,28 @@ export interface GameState {
   campaign?: CampaignState;
   /** 11-27 4장 마지막 위기 진행 */
   finale?: FinaleState;
+  /** 11-27 연속 위기 이야기 */
+  saga?: SagaState;
+  /** 11-27 지방 순방 */
+  tour?: TourState;
+  /** 11-27 국가 대계획 */
+  mega?: MegaState;
+  /** 11-27 방첩 */
+  mole?: MoleState;
+  /** 11-27 사전 작전 */
+  prep?: PrepState;
+  /** 11-27 전쟁 목표(나라 → 목표) */
+  warGoals?: WarGoals;
+  /** 11-27 미사일·드론 전 */
+  raid?: RaidState;
+  /** 11-27 연합 합동 작전 */
+  joint?: JointState;
+  /** 11-27 주간 세계 위기 */
+  wcrisis?: WcState;
+  /** 11-27 점령지 치안 작전 */
+  sec?: SecState;
+  /** 11-27 전투 기록관 */
+  blog?: BattleLogState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
@@ -173,6 +211,8 @@ export interface GameState {
   pressure?: PressureState;
   /** 속국 항복(11-26). 없으면 속국 없음 */
   vassal?: VassalState;
+  /** 11-27 대륙 패권·제재·약탈 계약·도움 요청(hegemony.ts). 없으면 처음 판단 때 채움 */
+  hegemony?: HegemonyState;
   /** 내정 새 콘텐츠 8가지(11-26: 선거·경제 지표·재난·감사·지사·인구·개헌·연설). 없으면 처음 쓸 때 채움 */
   polity?: PolityState;
 }
@@ -242,9 +282,9 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
-export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4, pl: 1.1 };
+export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4, pl: 1.1, ng: 1.2, br: 1.1, co: 1.1, fi: 1.3 };
 /** 나라 특수 능력 중 나라 예산에 붙는 배율(11-26 사우디 오일 머니) */
-export const BUDGET_BONUS: Record<string, number> = { sa: 1.2 };
+export const BUDGET_BONUS: Record<string, number> = { sa: 1.2, eg: 1.1, za: 1.1, dz: 1.1, br: 1.1, ve: 1.15, au: 1.15, mx: 1.1, es: 1.1 };
 
 export function salaryPerDay(s: GameState): number {
   return RANKS[s.player.rankIndex].salaryPerDay;
@@ -266,7 +306,7 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 /** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind * (BUDGET_BONUS[countryId] ?? 1);
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -370,8 +410,8 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
-    cur = counterTick(finaleTick(actsTick(cur)));
+    cur = hegemonyTick(surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))));
+    cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }

@@ -7,6 +7,7 @@ import { DAY, H, addMark, bumpRival, clamp, polityOf, polityLog, roll, tell, wit
 import { Rng } from './rng';
 import { budgetPerDay, type GameState } from './state';
 import { myCityIds } from './zones';
+import { homeOf } from './world';
 import { cityById } from '../data/cities';
 import { isHometown } from '../data/krCities';
 import { makeName } from '../data/names';
@@ -39,18 +40,20 @@ export const coopGoal = (s: GameState, g: Governor) => clamp((g.party === 'rulin
 
 function makeGov(s: GameState, rng: Rng, party: 'ruling' | 'opp', taken: Set<string>): Governor {
   const sex: 'm' | 'f' = rng.next() < 0.3 ? 'f' : 'm';
-  const age = 50 + Math.floor(rng.next() * 18);
+  const age = 54 + Math.floor(rng.next() * 14); // 11-27 시·도지사는 50~60대
   const name = makeName(s.player.countryId, sex, rng, taken);
   return { name, sex, age, id: 7000 + Math.floor(rng.next() * 90000), party, coop: party === 'ruling' ? 58 + Math.floor(rng.next() * 10) : 33 + Math.floor(rng.next() * 10) };
 }
 
 export const governorsOf = (s: GameState) => polityOf(s).governors;
-export const myGovernors = (s: GameState): Array<[string, Governor]> => myCityIds(s).filter((id) => governorsOf(s)[id]).map((id) => [id, governorsOf(s)[id]]);
+/** 11-27 지사가 있는 도시: 내 도시 가운데 '우리 땅'(원래 땅·편입한 땅). 편입 전 점령지는 점령지 관리청(occAdmin.ts)이 맡음 */
+export const governedCityIds = (s: GameState): string[] => myCityIds(s).filter((id) => homeOf(s.world, id) === s.player.countryId);
+export const myGovernors = (s: GameState): Array<[string, Governor]> => governedCityIds(s).filter((id) => governorsOf(s)[id]).map((id) => [id, governorsOf(s)[id]]);
 
 /** 지사 채우기(새로 얻은 도시)·잃은 도시 지우기 */
-function ensureGovernors(s: GameState): GameState {
+export function ensureGovernors(s: GameState): GameState {
   const p = polityOf(s);
-  const mine = myCityIds(s);
+  const mine = governedCityIds(s);
   const have = Object.keys(p.governors);
   if (mine.length === have.length && mine.every((id) => p.governors[id])) return s;
   const rng = new Rng(p.seed ^ 0x9e37);

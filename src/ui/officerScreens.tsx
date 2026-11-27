@@ -1,4 +1,6 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { JOINT_DIFF, alliesOf, askChance, askSupport, canAsk, supportOn } from '../game/jointOps';
+import { PREPS, PREP_DIFF, canPrep, doPrep, prepChance, prepLive } from '../game/prepOps';
 import { buyGrand, canBuyGrand, grandCapLeft, grandToday } from '../game/acts';
 import { GRAND_EXTRA_MAX, GRAND_EXTRA_RUBY } from '../game/balance';
 import { salaryPerDay } from '../game/state';
@@ -261,6 +263,48 @@ function WarPick({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
   );
 }
 
+/** 11-27 전투 3: 대전투 전에 거는 사전 작전 3종 */
+function PrepPanel({ state, actions, city }: Pick<ScreenProps, 'state' | 'actions'> & { city: string }) {
+  const [msg, setMsg] = useState('');
+  const live = prepLive(state, city);
+  const sup = supportOn(state, city);
+  const allies = alliesOf(state);
+  return (
+    <div className="prep">
+      <b className="small">🎯 사전 작전 {live.length ? `· 성공 ${live.length}개(난이도 −${(live.length * PREP_DIFF).toFixed(2)})` : '· 이기면 이 도시 대전투가 쉬워져요'}</b>
+      <div className="prep-ops">
+        {PREPS.map((d) => {
+          const no = canPrep(state, city, d.id);
+          const done = live.includes(d.id);
+          return (
+            <button key={d.id} className={done ? 'done' : ''} disabled={!!no} title={no ?? d.text} onClick={() => setMsg(actions.applyWith((s) => { const r = doPrep(s, city, d.id); return { state: r.state, out: r.text }; }) ?? '')}>
+              <span>{done ? '✅' : d.icon}</span>
+              <b>{d.name}</b>
+              <small>{done ? '성공' : no ?? `성공 ${Math.round(prepChance(state, city, d.id) * 100)}% · ${d.cost}`}</small>
+            </button>
+          );
+        })}
+      </div>
+      {sup ? (
+        <p className="small joint-on">🤝 {countryById(sup.ally).name}군이 함께 싸워요 · 난이도 −{JOINT_DIFF} · {timeLeft(sup.untilMs - state.worldMs)} 남음</p>
+      ) : allies.length ? (
+        <div className="joint-ask">
+          <b className="small">🤝 연합군 지원 청하기</b>
+          {allies.slice(0, 4).map((c) => {
+            const no = canAsk(state, c.id, city);
+            return (
+              <button key={c.id} className="mini" disabled={!!no} title={no ?? ''} onClick={() => setMsg(actions.applyWith((s) => { const r = askSupport(s, c.id, city); return { state: r.state, out: r.text }; }) ?? '')}>
+                {c.name} {Math.round(askChance(state, c.id) * 100)}%
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      {msg && <p className="small sch-msg">{msg}</p>}
+    </div>
+  );
+}
+
 /* ───────── 대전투(존경받는 지도자부터): 도시 하나를 다섯 판으로 차지 ───────── */
 export function GrandCard({ state, actions }: ScreenProps) {
   const rank = state.player.rankIndex;
@@ -334,6 +378,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
               <Tile key={g} icon={['🌄', '🏙️', '🏛️'][i]} label={`${i + 1}막`} sub={g} tone={i === 2 ? 'gold' : undefined} />
             ))}
           </div>
+          <PrepPanel state={state} actions={actions} city={pick} />
           <p className="small muted">🏰 3막 공성전: 막마다 다른 3D 전장에서 외곽 → 시가전 → 도심을 차례로 뚫어요. 도착(4시간 이동)하면 작전 탭에서 시작해요.</p>
         </Modal>
       )}

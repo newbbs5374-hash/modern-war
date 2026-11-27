@@ -9,20 +9,21 @@ import {
   answerPress,
   canGrant,
   canPress,
-  canSummit,
   grantPetition,
-  holdSummit,
   mediaOf,
   pressAnswerText,
   pressMult,
   questionById,
   startPress,
-  summitChance,
   summitTargets,
   type Agenda,
 } from '../game/media';
 import { Card, fmt } from './common';
-import { Help } from './kit';
+import { Help, Modal } from './kit';
+import { LEADERS } from '../data/leaders';
+import { PersonFace } from './People';
+import { sceneArt } from './scenes';
+import { INVITE_APPROVAL, INVITE_COST, MINE, STAGES, TONES, TONE_INFO, VISIT_FAVOR, canTalk, finishTalk, inviteCost, talkWants, theirLine, type Grade, type Mode, type Tone } from '../game/summitTalk';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
 
@@ -141,16 +142,42 @@ export function SummitPanel({ state, actions }: ScreenProps) {
   const list = summitTargets(state);
   const [to, setTo] = useState<string>(list[0]?.id ?? '');
   const [ag, setAg] = useState<Agenda>('trade');
+  const [mode, setMode] = useState<Mode>('visit');
   const [msg, setMsg] = useState('');
-  const why = to ? canSummit(state, to) : '나라를 고르세요';
+  const [talk, setTalk] = useState<Tone[] | null>(null);
+  const [wants, setWants] = useState<Tone[]>([]);
+  const [done, setDone] = useState<{ text: string; grade: Grade } | null>(null);
+  const why = to ? canTalk(state, to, mode) : '나라를 고르세요';
+  const name = COUNTRIES.find((c) => c.id === to)?.name ?? '';
+  const art = sceneArt('summit', false);
+  const pick = (tone: Tone) => {
+    const picks = [...(talk ?? []), tone];
+    if (picks.length < STAGES.length) return setTalk(picks);
+    const r = actions.applyWith((s) => {
+      const f = finishTalk(s, to, ag, mode, picks, wants);
+      return { state: f.state, out: f };
+    });
+    setTalk(picks);
+    if (r) {
+      setDone({ text: r.text, grade: r.grade });
+      setMsg(r.text);
+    }
+  };
+  const close = () => {
+    setTalk(null);
+    setDone(null);
+  };
+  const step = talk?.length ?? 0;
   return (
     <Card
-      title="정상회담"
+      title="정상회담 · 국빈 방문"
       icon="🤝"
       right={
         <Help title="정상회담">
-          <p>실제 하루에 한 번, 전쟁 중이 아닌 나라 정상과 만나요. 성공 확률은 호감·정치 스탯·외교부 힘으로 정해져요.</p>
-          <p>성공: 호감 +12(평화 선언은 +16)·명성 +20·의제 효과. 실패: 호감 −4·지지도 −2.</p>
+          <p>실제 하루에 한 번, 전쟁 중이 아닌 나라 정상과 3단계(인사 · 의제 · 마무리)로 이야기해요.</p>
+          <p>단계마다 상대 정상의 한마디를 읽고 어울리는 태도를 고르세요. 딱 맞으면 2점, 「따뜻하게」는 틀려도 1점이에요. 평소 사이가 좋으면(성공 70% 이상) 1점을 더 받아요.</p>
+          <p>6점 이상 큰 협정(호감·명성 1.5배, 지지도 +3 사흘) · 4~5점 합의(호감 +12·명성 +20·의제 효과) · 3점 이하 결렬(호감 −4·지지도 −2).</p>
+          <p>국빈 초청은 하루 예산의 {Math.round(INVITE_COST * 100)}%가 들지만 1점을 더 받고 지지도 +{INVITE_APPROVAL}. 찾아가면 돈이 안 들고 호감 +{VISIT_FAVOR}.</p>
         </Help>
       }
     >
@@ -158,7 +185,7 @@ export function SummitPanel({ state, actions }: ScreenProps) {
         <select value={to} onChange={(e) => setTo(e.target.value)}>
           {list.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name} (호감 {Math.round(favorOf(state, c.id))} · 성공 {Math.round(summitChance(state, c.id) * 100)}%)
+              {c.name} (호감 {Math.round(favorOf(state, c.id))} · {LEADERS[c.id]?.personality})
             </option>
           ))}
         </select>
@@ -174,11 +201,65 @@ export function SummitPanel({ state, actions }: ScreenProps) {
         ))}
       </div>
       <p className="small muted">{AGENDAS[ag].text}</p>
-      <button className="gold wide" disabled={!!why} onClick={() => setMsg(actions.applyWith((s) => { const r = holdSummit(s, to, ag); return { state: r.state, out: r.text }; }) ?? '')}>
-        🤝 {COUNTRIES.find((c) => c.id === to)?.name ?? ''} 정상회담
+      <div className="sum-modes">
+        <button className={mode === 'visit' ? 'on' : ''} onClick={() => setMode('visit')}>
+          ✈️ 찾아가기 <small>무료 · 호감 +{VISIT_FAVOR}</small>
+        </button>
+        <button className={mode === 'invite' ? 'on' : ''} onClick={() => setMode('invite')}>
+          🎌 국빈 초청 <small>💰{fmt(inviteCost(state))} · 점수 +1</small>
+        </button>
+      </div>
+      <button className="gold wide" disabled={!!why} onClick={() => { setDone(null); setWants(talkWants(state, to)); setTalk([]); }}>
+        🤝 {name} 정상과 만나기
       </button>
-      {why && state.worldMs < m.summitMs && <p className="small muted center">다음 회담까지 {timeLeft(m.summitMs - state.worldMs)}</p>}
+      {why && state.worldMs < m.summitMs ? <p className="small muted center">다음 회담까지 {timeLeft(m.summitMs - state.worldMs)}</p> : why && to ? <p className="small muted center">{why}</p> : null}
       {msg && <p className="small sch-msg">{msg}</p>}
+      {talk && (
+        <Modal title={`${name} 정상회담`} icon="🤝" onClose={close}>
+          <div className="sum-talk">
+            <div className="sum-scene" style={art ? { backgroundImage: `url(${art})` } : undefined}>
+              <span className="sum-face">
+                <PersonFace who={{ kind: 'leader', country: to }} keys={[`leader-${to}`]} fallback="👤" />
+              </span>
+              <span className="sum-who">
+                <b>{LEADERS[to]?.name}</b>
+                <small>
+                  {name} {LEADERS[to]?.title} · {LEADERS[to]?.personality}
+                </small>
+              </span>
+            </div>
+            <div className="sum-steps">
+              {STAGES.map((n, i) => (
+                <span key={n} className={i < step ? 'done' : i === step && !done ? 'on' : ''}>
+                  {i + 1}. {n}
+                  {talk[i] && <em>{TONE_INFO[talk[i]].icon}</em>}
+                </span>
+              ))}
+            </div>
+            {done ? (
+              <>
+                <p className={`sum-result sum-${done.grade}`}>{done.grade === 'big' ? '📜 큰 협정을 맺었어요!' : done.grade === 'ok' ? '🤝 합의에 이르렀어요.' : '😶 회담이 결렬됐어요.'}</p>
+                <p className="small">{done.text}</p>
+                <button className="gold wide" onClick={close}>
+                  확인
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="sum-line">“{theirLine(wants[step], step)}”</p>
+                {TONES.map((tone) => (
+                  <button key={tone} className="wide crisis-opt" onClick={() => pick(tone)}>
+                    <b>
+                      {TONE_INFO[tone].icon} {TONE_INFO[tone].name}
+                    </b>
+                    <small className="muted">{MINE[step][tone]}</small>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
     </Card>
   );
 }

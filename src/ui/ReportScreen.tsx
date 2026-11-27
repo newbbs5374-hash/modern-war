@@ -10,6 +10,7 @@ import { Card } from './common';
 import { routeTo, type Screen } from './nav';
 import type { ScreenProps } from './screens';
 import { PlanList, ProposalCard } from './TalkUI';
+import { OccAdminCard } from './OccAdminUI';
 
 /** 부처가 있는 화면(큰 탭·작은 탭) */
 const MIN_PLACE: Record<string, [string, string]> = {
@@ -45,7 +46,7 @@ export function placeOf(act: PropAct, min: MinistryId): { screen: string; tab: s
 }
 
 /** 받을 보고 수(위 띠 배지) */
-export const reportCount = (s: GameState) => propOf(s).list.length;
+export const reportCount = (s: GameState) => propOf(s).list.length + (s.occAdmin?.list.length ?? 0);
 
 export function ReportScreen({ state, actions, go }: ScreenProps) {
   const [msg, setMsg] = useState('');
@@ -99,6 +100,7 @@ export function ReportScreen({ state, actions, go }: ScreenProps) {
         })}
         {msg && <p className="small result">{msg}</p>}
       </Card>
+      <OccAdminCard state={state} apply={(f) => actions.apply(f)} />
       {p.plans.length > 0 && (
         <Card title={`도시 개발 계획 ${p.plans.length}건`} icon="🏗️">
           <PlanList state={state} actions={actions} />

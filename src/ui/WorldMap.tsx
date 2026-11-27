@@ -26,7 +26,7 @@ import {
   seaNearXY,
   project,
 } from "../data/realmap";
-import { homeOf, isAlive, relationOf, type WorldState } from "../game/world";
+import { homeOf, isAlive, pairKey, relationOf, type WorldState } from "../game/world";
 import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./units";
 import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
 import { unitArtUrl } from "./iconArt";
@@ -34,7 +34,7 @@ import { Mover } from "./mover";
 import { nightPath, useNowMinute, useWorldJson, worldSatUrl, type WorldSat } from "./worldSky";
 import { polyD, seaLoop, seaRoute } from "../data/seaPath";
 
-export type MapMode = "나라" | "관계" | "묶음";
+export type MapMode = "나라" | "관계" | "묶음" | "군사" | "긴장";
 /** 나라마다 한눈에 구분되는 색(국경선 대신 색으로 영토를 보여 줌). 이웃끼리 겹치지 않게 고름 */
 export const COUNTRY_COLORS: Record<string, string> = {
   us: "#3b82f6",
@@ -55,6 +55,25 @@ export const COUNTRY_COLORS: Record<string, string> = {
   ph: "#d946ef",
   pk: "#15803d",
   sa: "#c2410c",
+  // 11-27 새 나라 18개
+  eg: "#eab308",
+  ng: "#16a34a",
+  za: "#0d9488",
+  et: "#b45309",
+  dz: "#4d7c0f",
+  br: "#10b981",
+  ar: "#7dd3fc",
+  co: "#fde047",
+  ve: "#be123c",
+  cl: "#2563eb",
+  au: "#0ea5e9",
+  ca: "#dc2626",
+  mx: "#65a30d",
+  fr: "#1d4ed8",
+  it: "#059669",
+  es: "#f59e0b",
+  gr: "#60a5fa",
+  fi: "#e0f2fe",
 };
 
 export const REL_COLORS: Record<Relation | "나", string> = {
@@ -63,6 +82,34 @@ export const REL_COLORS: Record<Relation | "나", string> = {
   전쟁: "#ef4444",
   휴전: "#f59e0b",
   중립: "#9ca3af",
+};
+
+/** 낮음(청회) → 높음(붉음) */
+const heat = (v: number) => {
+  const f = Math.max(0, Math.min(1, v));
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * f);
+  return `rgb(${mix(100, 239)},${mix(150, 68)},${mix(190, 68)})`;
+};
+/** 11-27 세계 4: 보기 바꾸기 — 나라 · 관계 · 묶음 · 군사(군사력이 셀수록 붉게) · 긴장(나와 긴장이 높을수록 붉게) */
+export function modeColor(mode: MapMode, world: WorldState, me: string, id: string): string {
+  if (mode === "나라") return COUNTRY_COLORS[id] ?? "#94a3b8";
+  if (mode === "묶음") return BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color;
+  if (mode === "군사") return heat((COUNTRIES.find((c) => c.id === id)?.military ?? 0) / 100);
+  if (id === me) return REL_COLORS["나"];
+  if (mode === "긴장") {
+    const rel = relationOf(world, me, id);
+    if (rel === "전쟁") return "#b91c1c";
+    if (rel === "연합") return REL_COLORS["연합"];
+    return heat((world.pairs[pairKey(me, id)]?.tension ?? 0) / 100);
+  }
+  return REL_COLORS[relationOf(world, me, id)];
+}
+export const MODE_LEGEND: Record<MapMode, Array<[string, string]>> = {
+  나라: [],
+  관계: [["#fde047", "나"], ["#3b82f6", "연합"], ["#ef4444", "전쟁"], ["#f59e0b", "휴전"], ["#9ca3af", "중립"]],
+  묶음: [],
+  군사: [["rgb(100,150,190)", "약함"], ["rgb(170,109,129)", "보통"], ["rgb(239,68,68)", "강함"]],
+  긴장: [["#fde047", "나"], ["#3b82f6", "연합"], ["rgb(100,150,190)", "평온"], ["rgb(239,68,68)", "긴장 높음"], ["#b91c1c", "전쟁"]],
 };
 
 interface Props {
@@ -509,14 +556,7 @@ export function WorldMap({
   deploys,
   cityLv,
 }: Props) {
-  const colorOf = (id: string) =>
-    mode === "나라"
-      ? (COUNTRY_COLORS[id] ?? "#94a3b8")
-      : mode === "묶음"
-        ? BLOCS[COUNTRIES.find((c) => c.id === id)!.bloc].color
-        : id === playerCountryId
-          ? REL_COLORS["나"]
-          : REL_COLORS[relationOf(world, playerCountryId, id)];
+  const colorOf = (id: string) => modeColor(mode, world, playerCountryId, id);
 
   const defKey = Object.entries(world.defense).filter(([, v]) => v < CITY_DEFENSE_MAX - 2).map(([k]) => k).join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps

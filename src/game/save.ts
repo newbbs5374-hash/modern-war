@@ -2,7 +2,7 @@
 // 나중에 서버 저장으로 바꿀 때는 이 파일만 고치면 된다.
 
 import { applyNation } from './nation';
-import { migrateBureau, migrateStats2 } from './cabinet';
+import { giveFaces, migrateBureau, migrateStats2 } from './cabinet';
 import { migrateYoungAides } from './aidePick';
 import { ensureRivalRoster } from './rivals';
 import { COUNTRIES } from '../data/world';
@@ -20,7 +20,7 @@ import { LEADERS } from '../data/leaders';
 import { startingRelation } from '../data/world';
 import { NOW_CONFLICTS } from '../data/conflicts';
 import { newOfficer } from './officer';
-import { migrateCityTiles, newCiv } from './civ';
+import { fillAiGov, migrateCityTiles, newCiv } from './civ';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
 
 export const SAVE_KEY = 'modern-war-save';
@@ -129,8 +129,10 @@ export function parseSave(text: string): GameState | null {
     // 문명식 운영(연구·체제·외교·도시)이 없는 옛 저장: 새로 채움
     if (!s.civ || !Array.isArray(s.civ.done) || !s.civ.council) s.civ = newCiv(s);
     if (s.civ.lastSwapMs === null) s.civ.lastSwapMs = -Infinity;
+    fillAiGov(s.civ, s.world); // 11/27 새 나라 18개: 옛 저장엔 AI 체제가 없어 호감·협정 탭이 멈췄음
     if (s.cabinet?.people) migrateStats2(s.cabinet); // 11/24 스탯 18개: 옛 인물에 새 스탯 채움
     if (s.cabinet?.people) migrateBureau(s.cabinet, s.player.countryId, s.worldMs); // 11/24 관료 56명
+    if (s.cabinet?.people) giveFaces(s.cabinet); // 11/27 나이를 얼굴 나이대에 맞춤(얼굴은 그대로)
     ensureRivalRoster(s); // 11/26 정적 3명 → 12명(빠진 역할 채우고 얼굴 주기)
     migrateYoungAides(s); // 11/24 부관은 젊은 얼굴(장관 얼굴과 안 겹침)
     s = migrateCityTiles(s); // 11/24 도시 칸 4.5배·실제 모양: 옛 구역 자리 옮기기
@@ -166,7 +168,7 @@ function addNewNations(s: GameState): void {
         ? { rel: now.rel, tension: now.tension, weariness: now.weariness }
         : { rel, tension: rel === '중립' ? (isRival(a.id, b.id) ? 25 : 5) : 0, weariness: 0 };
     }
-  w.events.unshift({ t: s.worldMs, kind: '외교', text: '🌏 새 나라 5개(대만·폴란드·필리핀·파키스탄·사우디아라비아)가 세계 무대에 나왔어요.', mine: false });
+  w.events.unshift({ t: s.worldMs, kind: '외교', text: `🌏 새 나라 ${add.length}개(${add.map((c) => c.name).join('·')})가 세계 무대에 나왔어요.`, mine: false });
 }
 
 export function saveGame(s: GameState, st: Storage | null = storage()): boolean {

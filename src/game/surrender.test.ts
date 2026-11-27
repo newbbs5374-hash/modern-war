@@ -48,10 +48,10 @@ describe('속국 항복(11-26)', () => {
     for (let i = 0; i < 400 && !lordOf(s, 'in'); i++) s = surrenderTick({ ...s, worldMs: s.worldMs + 15 * 60e3 });
     expect(lordOf(s, 'in')).toBe('cn');
   });
-  it('항복 요구: 실패하면 대기, 전쟁 중일 때만', () => {
+  it('항복 요구: 실패해도 대기 없이 다시(11-27), 전쟁 중일 때만', () => {
     let s = crush(war(newGame('t', 'kr', 0, { seed: 4 }), 'kr', 'kp'), 'kr', 'kp');
     s = doDemand(s, 'kp').state;
-    if (!lordOf(s, 'kp')) expect(doDemand(s, 'kp').state).toBe(s);
+    if (!lordOf(s, 'kp')) expect(doDemand(s, 'kp').state).not.toBe(s);
     expect(doDemand(newGame('t', 'kr', 0), 'us').text).toBe('');
   });
   it('세계가 흘러도 망가지지 않음', () => {

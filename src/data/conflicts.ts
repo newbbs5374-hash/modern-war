@@ -58,7 +58,40 @@ export const NOW_CONFLICTS: NowConflict[] = [
   {
     a: 'ir', b: 'sa', rel: '중립', tension: 50, weariness: 0, icon: '🛢️', name: '걸프만 맞수',
     text: '걸프만을 사이에 두고 이란과 사우디가 오래 맞서 왔어요. 석유 시설이 공격받은 적도 있어요.',
+  },  // 11-27 새 나라 18개
+  {
+    a: 'eg', b: 'et', rel: '중립', tension: 50, weariness: 0, icon: '🌊', name: '나일강 댐 다툼',
+    text: '에티오피아가 나일강 위쪽에 큰 댐을 지었어요. 이집트는 물이 끊길까 봐 군사 행동까지 말해요.',
   },
+  {
+    a: 'co', b: 've', rel: '중립', tension: 45, weariness: 0, icon: '🪖', name: '안데스 국경 긴장',
+    text: '베네수엘라와 콜롬비아 국경에 무장 세력과 군대가 몰려 있어요.',
+  },
+  {
+    a: 'us', b: 've', rel: '중립', tension: 55, weariness: 0, icon: '🛢️', name: '카리브해 석유 제재',
+    text: '미국이 베네수엘라 석유를 막고 카리브해에 군함을 보냈어요.',
+  },
+  {
+    a: 'ar', b: 'uk', rel: '중립', tension: 40, weariness: 0, icon: '🐧', name: '포클랜드 섬 분쟁',
+    text: '아르헨티나는 지금도 포클랜드(말비나스) 섬이 자기 땅이라고 말해요.',
+  },
+  {
+    a: 'gr', b: 'tr', rel: '중립', tension: 45, weariness: 0, icon: '🏝️', name: '에게해 섬 다툼',
+    text: '그리스와 튀르키예 전투기가 에게해 섬 위에서 자주 맞부딪혀요.',
+  },
+  {
+    a: 'fi', b: 'ru', rel: '중립', tension: 40, weariness: 0, icon: '🌲', name: '핀란드 국경 봉쇄',
+    text: '핀란드가 나토에 들어간 뒤 러시아 국경 검문소를 모두 닫았어요.',
+  },
+  {
+    a: 'mx', b: 'us', rel: '중립', tension: 35, weariness: 0, icon: '🌵', name: '국경 장벽·관세',
+    text: '미국이 국경 장벽과 관세로 멕시코를 몰아붙이고 있어요.',
+  },
+  {
+    a: 'au', b: 'cn', rel: '중립', tension: 35, weariness: 0, icon: '🦘', name: '남태평양 줄다리기',
+    text: '중국이 남태평양 섬나라에 손을 뻗자 호주가 잠수함 동맹으로 맞서요.',
+  },
+
 ];
 
 /** 전쟁 중인 전선 도시 → 시작 방어도(최대 100) */

@@ -10,7 +10,7 @@ import numpy as np
 from skimage.measure import approximate_polygon
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-L0, L1, B0, B1, PX = -15, 300, 5, 80, 6
+L0, L1, B0, B1, PX = -15, 330, -56, 80, 6  # 11-27 남반구까지
 out = []
 for f in json.load(open(sys.argv[1]))['features']:
     g = f['geometry']

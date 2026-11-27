@@ -148,6 +148,8 @@ export interface CivState {
   /** 비용(예산·자원)을 이미 낸 연구(11-27). 옛 저장엔 없음 — 진행 중인 연구는 낸 것으로 침 */
   paid?: string[];
   cur: { mil: string | null; soc: string | null };
+  /** 11-27 화면 4: 찍어 둔 연구 목표(줄마다 하나). 가는 길이 빛나고, 연구가 끝나면 다음 걸음을 알아서 시작 */
+  goal?: { mil?: string | null; soc?: string | null };
   /** 고르지 않은 동안 모인 연구 점수(다음 연구에 씀, 12시간치까지) */
   bank: { mil: number; soc: number };
   era: Era;
@@ -200,6 +202,14 @@ export function newCiv(s: Pick<GameState, 'world' | 'worldMs'>): CivState {
     nextId: 1,
     log: [],
   };
+}
+
+/** 11-27 나라가 늘어난 옛 저장: 새 나라의 AI 체제를 새 판과 같은 규칙으로 채움 */
+export function fillAiGov(c: CivState, world: GameState['world']): void {
+  c.aiGov ??= {};
+  COUNTRIES.forEach((x, i) => {
+    if (!c.aiGov[x.id]) c.aiGov[x.id] = AI_GOV[world.personalities[x.id]]?.[i % 2] ?? 'assembly';
+  });
 }
 
 let fallback: CivState | null = null;
@@ -419,6 +429,50 @@ export function startResearch(s: GameState, id: string): GameState {
     if (!c.paid?.includes(id)) c.paid = [...(c.paid ?? []), id];
     c.cur[t.line] = id;
   });
+}
+
+/** 목표까지 남은 연구(먼저 해야 하는 것부터, 목표가 마지막) */
+export function techPath(s: GameState, goalId: string): Tech[] {
+  const out: Tech[] = [];
+  const seen = new Set<string>();
+  const walk = (id: string) => {
+    if (seen.has(id) || hasTech(s, id)) return;
+    seen.add(id);
+    const t = techById(id);
+    if (!t) return;
+    for (const n of t.needs) walk(n);
+    out.push(t);
+  };
+  walk(goalId);
+  return out;
+}
+export const techGoalOf = (s: GameState, line: 'mil' | 'soc') => {
+  const id = civOf(s).goal?.[line];
+  return id && !hasTech(s, id) ? techById(id) ?? null : null;
+};
+/** 목표를 찍거나(같은 걸 다시 찍으면 풂) 지움 */
+export function setTechGoal(s: GameState, line: 'mil' | 'soc', id: string | null): GameState {
+  return withCiv(s, (c) => {
+    c.goal = { ...(c.goal ?? {}), [line]: id && c.goal?.[line] !== id ? id : null };
+  });
+}
+/** 목표로 가는 길에서 지금 바로 연구할 수 있는 첫 걸음 */
+export function goalNext(s: GameState, line: 'mil' | 'soc'): Tech | null {
+  const g = techGoalOf(s, line);
+  if (!g) return null;
+  return techPath(s, g.id).find((t) => t.line === line && !canResearch(s, t.id)) ?? null;
+}
+/** 세계 판단마다: 연구 칸이 비었고 목표가 있으면 다음 걸음을 알아서 시작(값을 못 내면 기다림) */
+export function techGoalTick(s: GameState): GameState {
+  const c = civOf(s);
+  if (!c.goal) return s;
+  let ns = s;
+  for (const line of ['mil', 'soc'] as const) {
+    if (civOf(ns).cur[line] || !c.goal[line]) continue;
+    const next = goalNext(ns, line);
+    if (next) ns = startResearch(ns, next.id);
+  }
+  return ns;
 }
 
 /** 실제 1시간에 쌓이는 연구 점수(두 줄이 따로 같은 속도로) */

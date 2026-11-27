@@ -1,3 +1,5 @@
+import { favsOf, fullHomeOn } from './favs';
+import { goSpot, spotsOf } from './TreeScreen';
 import { meetBadge } from './MeetUI';
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
 import { payPreview } from '../game/payday';
@@ -12,7 +14,7 @@ import { pendingCap, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, fmt } from './common';
 import type { Screen } from './nav';
-import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
+import { COUNTRY_COLORS, MODE_LEGEND, REL_COLORS, WorldMap, modeColor, type MapMode } from './WorldMap';
 import { Globe } from './globe/Globe';
 import { Safe } from './Safe';
 import { GrandCard, MissionCard, timeLeft } from './officerScreens';
@@ -46,7 +48,7 @@ import { routeTo } from './nav';
 import { SettingsScreen } from './SettingsScreen';
 import { UiIcon } from './uiIcon';
 import { SnsPhone } from './SnsPhone';
-import { ActCard, CounterCards } from './ActsUI';
+import { ActCard, BattleLogCard, CounterCards, RaidCards, SecurityCards, WorldCrisisCard } from './ActsUI';
 import { TodoCard, TreeScreen } from './TreeScreen';
 import { snsUnread } from '../game/leaderSns';
 
@@ -129,7 +131,7 @@ export function HomeScreen(props: ScreenProps) {
   );
 
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
-  const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
+  const allSpots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
     [
       { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
       { icon: '📱', label: '정상 SNS', x: 90, y: 28, on: () => setSnsOpen(true), badge: snsUnread(state) || null },
@@ -144,6 +146,14 @@ export function HomeScreen(props: ScreenProps) {
       { icon: '📰', label: '국정 보고', x: 70, y: 87, on: () => setBrfOpen(true), badge: todos(state).length || null },
       { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
     ];
+  // 11-27 화면 5: 본부 간단히 = 아이콘 3개(대화·SNS·보고) + 내가 꽂은 즐겨찾기 4개
+  const simple = !fullHomeOn();
+  const favSpots = simple
+    ? favsOf()
+        .map((k) => spotsOf(state).find((sp) => sp.key === k))
+        .filter((sp): sp is NonNullable<typeof sp> => !!sp)
+    : [];
+  const spots = simple ? allSpots.filter((sp) => ['대화', '정상 SNS', '보고'].includes(sp.label)) : allSpots;
 
   return (
     <div className="home-stage">
@@ -172,7 +182,10 @@ export function HomeScreen(props: ScreenProps) {
           <b className="hq-title">📌 주요 임무</b>
           <ActCard state={state} />
           <CounterCards state={state} go={go} />
-          <TodoCard state={state} go={go} />
+          <RaidCards state={state} apply={actions.apply} applyWith={actions.applyWith} />
+          <WorldCrisisCard state={state} apply={actions.apply} />
+          <SecurityCards state={state} applyWith={actions.applyWith} />
+          <TodoCard state={state} go={go} apply={actions.apply} />
           {gstep && !guideOf(state).hidden && (
             <div className="guide-hq">
               <button
@@ -242,7 +255,7 @@ export function HomeScreen(props: ScreenProps) {
               <small>{a ? (missionReady ? '도착! 전투하기' : `${timeLeft(a.endMs - state.worldMs)} 남음`) : '게시판에 새 임무'}</small>
             </span>
           </button>
-          <button className="hq" onClick={() => goTab('personal', 'personal', 'profile')}>
+          {!simple && <button className="hq" onClick={() => goTab('personal', 'personal', 'profile')}>
             <span>{ttl.icon}</span>
             <span className="hq-main">
               <b>{ttl.name}</b>
@@ -251,8 +264,8 @@ export function HomeScreen(props: ScreenProps) {
                 <span className="bar-fill" style={{ width: `${ttlPct}%` }} />
               </span>
             </span>
-          </button>
-          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'defense', 'train')}>
+          </button>}
+          {!simple && <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'defense', 'train')}>
             <span>📅</span>
             <span className="hq-main">
               <b>
@@ -260,7 +273,7 @@ export function HomeScreen(props: ScreenProps) {
               </b>
               <small>{drills > 0 ? '훈련할 수 있어요' : '일정이 차는 중'}</small>
             </span>
-          </button>
+          </button>}
           <button className={`hq ${pending >= cap * 0.5 ? 'hot' : ''}`} disabled={pending < 1} onClick={actions.claim}>
             <span>💵</span>
             <span className="hq-main">
@@ -271,7 +284,7 @@ export function HomeScreen(props: ScreenProps) {
               </span>
             </span>
           </button>
-          {wars.length > 0 && (
+          {!simple && wars.length > 0 && (
             <div className="hq-wars">
               <small>전쟁 중</small>
               {wars.slice(0, 5).map((c) => (
@@ -298,6 +311,19 @@ export function HomeScreen(props: ScreenProps) {
             {sp.badge != null && sp.badge !== 0 && !sp.locked && <i className="bld-badge">{sp.badge}</i>}
           </button>
         ))}
+        {favSpots.map((sp) => (
+          <button key={sp.key} className="bld fav" onClick={() => go(goSpot(sp))} aria-label={sp.label}>
+            <span className="bld-ico"><span className="ui-emo">{sp.locked ? '🔒' : sp.icon}</span></span>
+            <small>{sp.label}</small>
+            {sp.badge ? <i className="bld-badge">{sp.badge}</i> : null}
+          </button>
+        ))}
+        {simple && (
+          <button className="bld fav-add" onClick={() => go('tree')} aria-label="즐겨찾기 고르기">
+            <span className="bld-ico"><span className="ui-emo">{favSpots.length ? '🌳' : '⭐'}</span></span>
+            <small>{favSpots.length ? '국정 나무' : '꽂기'}</small>
+          </button>
+        )}
       </div>
 
       {latest && (
@@ -343,6 +369,21 @@ function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string
           ? (CITY_INST[c.name] ?? []).map((i) => `${instById(i).icon} ${instById(i).name}(${instById(i).does})`).join(' · ')
           : '없음'}
       </p>
+      {owner === state.player.countryId && (
+        <button
+          className="primary wide-btn"
+          onClick={() => {
+            try {
+              sessionStorage.setItem('city-focus', id);
+            } catch {
+              /* 무시 */
+            }
+            go(routeTo('society', 'society', 'city'));
+          }}
+        >
+          🏙️ 도시 안으로 들어가기
+        </button>
+      )}
       {st === '점령당함' && (
         <button className="primary wide-btn" onClick={() => go(routeTo('ops', 'ops', 'mission'))}>
           🏙️ 국방 → 작전에서 되찾기
@@ -382,6 +423,7 @@ export function OpsScreen(props: ScreenProps) {
         <>
           <MissionCard {...props} />
           <WarStrip {...props} />
+          <BattleLogCard state={props.state} />
         </>
       )}
       {tab === 'grand' &&
@@ -446,8 +488,7 @@ function MapPanel({ state }: ScreenProps) {
       /* 저장 못 해도 그대로 */
     }
   };
-  const globeColor = (id: string) =>
-    mode === '나라' ? COUNTRY_COLORS[id] ?? '#94a3b8' : mode === '묶음' ? BLOCS[countryById(id).bloc].color : id === me ? REL_COLORS['나'] : REL_COLORS[relationOf(w, me, id)];
+  const globeColor = (id: string) => modeColor(mode, w, me, id);
   const otherWars = Object.entries(w.pairs)
     .filter(([k, p]) => p.rel === '전쟁' && !k.split('|').includes(me) && k.split('|').every((id) => isAlive(w, id)))
     .map(([k]) => k.split('|'));
@@ -457,11 +498,11 @@ function MapPanel({ state }: ScreenProps) {
         title="세계 지도"
         icon="🗺️"
         right={
-          <span className="seg">
+          <span className="seg wm-modes">
             <button className={globe ? 'on' : ''} onClick={() => setGlobe(!globe)} aria-label="지구본으로 보기">
               🌐
             </button>
-            {(['나라', '관계', '묶음'] as MapMode[]).map((m) => (
+            {(['나라', '관계', '묶음', '군사', '긴장'] as MapMode[]).map((m) => (
               <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
                 {m}
               </button>
@@ -470,6 +511,16 @@ function MapPanel({ state }: ScreenProps) {
         }
         help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 점선은 도(주·성) 경계예요. 주요 도시를 점령하면 공격을 시작한 도시부터 그 도시까지 길목의 땅도 함께 차지하고, 빼앗긴 땅은 점령한 나라 색에 빗금으로 보여요. 🚢✈️🛡️ 배·비행기·전차는 그 나라가 가진 병과예요(우리나라는 직접 만든 부대). 평소엔 자기 나라 둘레를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. 해외 파병(외교 → 파병) 부대는 파병 간 나라 둘레에서 움직여요. 확대할수록 자세해져요: 3배부터 실제 강·고속도로와 도시 단계 아이콘, 5배부터 철도·지방 도로. 서로 전쟁 중인 두 나라 땅이 맞닿은 곳엔 붉은 전선이 생기고, 공격받는 도시는 붉게 깜빡여요.</p>}
       >
+        {MODE_LEGEND[mode].length > 0 && (
+          <p className="wm-legend">
+            {MODE_LEGEND[mode].map(([c, n]) => (
+              <span key={n}>
+                <i style={{ background: c }} />
+                {n}
+              </span>
+            ))}
+          </p>
+        )}
         {globe ? (
           <Safe where="지구본" small>
             <Globe world={w} playerCountryId={me} selectedId={sel} onSelect={setSel} colorOf={globeColor} onFail={() => setGlobe(false)} />

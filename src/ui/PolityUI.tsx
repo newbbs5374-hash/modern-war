@@ -8,6 +8,7 @@ import { timeLeft } from './officerScreens';
 import { SceneImg } from './DomesticUI';
 import { PersonFace } from './CabinetUI';
 import { countryFaceUrl } from './Portrait';
+import { faceIdxForAge, faceTag } from '../data/faces';
 import { LOOK } from '../data/names';
 import { cityById } from '../data/cities';
 import { polityOf } from '../game/polity';
@@ -388,7 +389,8 @@ function ProbePanel({ state, actions }: ScreenProps) {
 
 /* ───────── 🗺️ 시·도지사 ───────── */
 function GovFace({ country, g }: { country: string; g: { sex: 'm' | 'f'; age: number; id: number } }) {
-  const url = countryFaceUrl({ country, sex: g.sex, age: g.age, id: g.id }, LOOK[country] ?? 'we');
+  // 11-27: 시·도지사 나이에 맞는 나이대 얼굴
+  const url = countryFaceUrl({ country, sex: g.sex, age: g.age, id: g.id, face: faceIdxForAge(faceTag(country), g.sex, g.age, g.id) }, LOOK[country] ?? 'we');
   return <span className="cab-face" style={{ width: 46, height: 46, fontSize: 24 }}>{url ? <img className="face-img" src={url} alt="" draggable={false} /> : '🧑‍💼'}</span>;
 }
 function GovernorsPanel({ state, actions }: ScreenProps) {

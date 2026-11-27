@@ -75,6 +75,14 @@ function build(): Prov[] {
     const p = list.find((q) => q.c === c.home && inProv(q, c.x, c.y));
     if (p) p.seat = c.id;
   }
+  // 11-27 바닷가 거점(더반·툴롱 등)이 거친 도 경계 밖이면: 거점 도시가 안에 없는 가장 가까운 자기 나라 도를 다스림
+  const byId = new Map(CITIES.map((c) => [c.id, c]));
+  for (const c of CITIES) {
+    if (!c.front || list.some((q) => q.seat === c.id)) continue;
+    const free = list.filter((q) => q.c === c.home && !(byId.get(q.seat)?.front && inProv(q, byId.get(q.seat)!.x, byId.get(q.seat)!.y)));
+    const p = free.sort((a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y))[0];
+    if (p) p.seat = c.id;
+  }
   return list;
 }
 

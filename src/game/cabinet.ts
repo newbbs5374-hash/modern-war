@@ -7,7 +7,7 @@ import { ORIGIN_SHAPE2, STAT2_IDS, type AnyStat } from '../data/stats2';
 import { NEEDS, type Need } from '../data/needs';
 import { LOOK, ethOfName, makeNameEth, pickUsEth } from '../data/names';
 import { US_ETH, deckSize, type UsEth } from '../data/faces';
-import { assignFaces } from '../data/faces';
+import { ageForBand, assignFaces, deckSlot, faceTag } from '../data/faces';
 import {
   FACTION_BONUS_AT,
   GRADES,
@@ -71,6 +71,8 @@ export interface Person {
   post?: PostId;
   pals: number[];
   foes: number[];
+  /** 지방 순방에서 만난 인재의 출신 도시(11-27) */
+  home?: string;
   pay: number;
   /** 들어온 시각(인재 명단에 올라온 시각) */
   sinceMs: number;
@@ -244,21 +246,21 @@ const BUREAU_TITLES: Array<{ group: Group; title: string; origin: PersonOrigin[]
   { group: '관료', title: '전직 차관', origin: ['mayor', 'diplomat', 'econ', 'lawyer'], n: 10, age: [55, 68] },
   { group: '공공', title: '공기업 사장', origin: ['exec', 'econ', 'chaebol'], n: 8, age: [52, 66] },
   { group: '공공', title: '국책 연구원장', origin: ['scientist', 'professor', 'doctor'], n: 8, age: [50, 66] },
-  { group: '공공', title: '시장·군수', origin: ['mayor', 'commoner', 'partisan'], n: 6, age: [48, 64] },
+  { group: '공공', title: '시장·군수', origin: ['mayor', 'commoner', 'partisan'], n: 6, age: [52, 66] },
 ];
 const NPC_TITLES: Array<{ group: Group; title: string; origin: PersonOrigin[]; n: number; age: [number, number] }> = [
   { group: '정계', title: '국회의장', origin: ['partisan', 'lawyer'], n: 1, age: [58, 70] },
   { group: '정계', title: '여당 대표', origin: ['partisan'], n: 1, age: [52, 66] },
-  { group: '정계', title: '원내대표', origin: ['partisan', 'prosecutor'], n: 1, age: [48, 62] },
-  { group: '정계', title: '정적 측근', origin: ['partisan', 'soldier', 'exec'], n: 6, age: [45, 64] },
-  { group: '정계', title: '야당 의원', origin: ['partisan', 'lawyer', 'journalist'], n: 4, age: [44, 66] },
-  { group: '정계', title: '도지사', origin: ['mayor', 'partisan'], n: 4, age: [50, 66] },
+  { group: '정계', title: '원내대표', origin: ['partisan', 'prosecutor'], n: 1, age: [52, 64] },
+  { group: '정계', title: '정적 측근', origin: ['partisan', 'soldier', 'exec'], n: 6, age: [50, 64] },
+  { group: '정계', title: '야당 의원', origin: ['partisan', 'lawyer', 'journalist'], n: 4, age: [50, 66] },
+  { group: '정계', title: '도지사', origin: ['mayor', 'partisan'], n: 4, age: [54, 68] },
   { group: '재계', title: '그룹 회장', origin: ['chaebol', 'exec'], n: 4, age: [55, 72] },
   { group: '언론', title: '언론사 사장', origin: ['journalist', 'broadcaster'], n: 3, age: [50, 68] },
-  { group: '시민', title: '시민단체 대표', origin: ['activist', 'lawyer', 'religious'], n: 3, age: [42, 66] },
+  { group: '시민', title: '시민단체 대표', origin: ['activist', 'lawyer', 'religious'], n: 3, age: [46, 66] },
   { group: '시민', title: '대학 총장', origin: ['professor', 'scientist', 'doctor'], n: 2, age: [56, 70] },
-  { group: '시민', title: '노조 위원장', origin: ['activist', 'commoner'], n: 2, age: [45, 62] },
-  { group: '군', title: '야전 사령관', origin: ['general', 'soldier', 'admiral', 'commando'], n: 6, age: [50, 60] },
+  { group: '시민', title: '노조 위원장', origin: ['activist', 'commoner'], n: 2, age: [48, 62] },
+  { group: '군', title: '야전 사령관', origin: ['general', 'soldier', 'admiral', 'commando'], n: 6, age: [54, 62] },
   ...BUREAU_TITLES,
 ];
 
@@ -278,10 +280,10 @@ export function newCabinet(s: Pick<GameState, 'world' | 'worldMs' | 'player'>): 
   // 다른 나라 외교장관·국방장관 24명
   for (const cc of COUNTRIES) {
     if (cc.id === me) continue;
-    const p = genPerson(c, rng, { country: cc.id, group: '외국', origin: rng.pick(['diplomat', 'partisan', 'professor'] as PersonOrigin[]), age: [50, 66], title: `${cc.name} 외교장관` }, s.worldMs, taken);
+    const p = genPerson(c, rng, { country: cc.id, group: '외국', origin: rng.pick(['diplomat', 'partisan', 'professor'] as PersonOrigin[]), age: [54, 68], title: `${cc.name} 외교장관` }, s.worldMs, taken);
     p.known = true;
     c.people.push(p);
-    const g = genPerson(c, rng, { country: cc.id, group: '외국', origin: rng.pick(['general', 'admiral', 'soldier'] as PersonOrigin[]), age: [52, 64], title: `${cc.name} 국방장관` }, s.worldMs, taken);
+    const g = genPerson(c, rng, { country: cc.id, group: '외국', origin: rng.pick(['general', 'admiral', 'soldier'] as PersonOrigin[]), age: [56, 66], title: `${cc.name} 국방장관` }, s.worldMs, taken);
     g.known = true;
     c.people.push(g);
   }
@@ -297,19 +299,25 @@ export function newCabinet(s: Pick<GameState, 'world' | 'worldMs' | 'player'>): 
 const faceRank = (p: Person) => (p.seat || p.post ? 100 : 0) + (p.buddy ? 50 : 0) + (p.group === '외국' ? 0 : p.group === '인재' ? 10 : 20);
 /** 한 화면에 같이 나오는 무리: 인재 명단과 내 내각은 한 화면, 나머지는 무리마다 */
 const faceScreen = (p: Person) => (p.group === '인재' || p.group === '내각' ? 'cab' : p.group);
-/** 얼굴 나눠 주기(빈 사람만, 겹치면 순위 낮은 쪽이 바꿈). c를 고침 */
+/** 얼굴 나눠 주기(빈 사람만, 겹치면 순위 낮은 쪽이 바꿈). c를 고침.
+ * 11-27 대장 "얼굴은 50대인데 나이가 40세": 받은 얼굴의 나이대에 나이를 맞춤(40대 얼굴 42~49 · 50대 50~59 · 60대 60~69) */
 export function giveFaces(c: CabinetState) {
   for (const p of c.people) if (p.country === 'us' && !p.eth) p.eth = ethOfName('us', p.name);
   const m = assignFaces(c.people.map((p) => ({ id: p.id, sex: p.sex, age: p.age, country: p.country, eth: p.eth, face: p.face, rank: faceRank(p), screen: faceScreen(p) })));
-  for (const p of c.people) p.face = m.get(p.id);
+  for (const p of c.people) {
+    p.face = m.get(p.id);
+    if (p.face !== undefined) p.age = ageForBand(p.age, deckSlot(faceTag(p.country, p.eth), p.sex, p.face).band, p.id);
+  }
 }
+/** 인재 명단 나이(11-27): 장관·청장 후보라 대부분 50~60대, 40대 후반이 조금 */
+const POOL_AGE: [number, number] = [46, 68];
 
 /** 인재 명단 후보 한 명(나라 사람 90%, 다른 나라에서 온 사람 10%) */
 export function poolPerson(c: CabinetState, rng: Rng, me: string, worldMs: number, taken: Set<string>): Person {
   const country = rng.chance(0.1) ? rng.pick(COUNTRIES.filter((x) => x.id !== me)).id : me;
   // 5%는 전설 등급(드물게 나타나는 큰 인물)
   const grade = rng.chance(0.05) ? '전설' : undefined;
-  return genPerson(c, rng, { country, group: '인재', age: [38, 66], grade }, worldMs, taken);
+  return genPerson(c, rng, { country, group: '인재', age: POOL_AGE, grade }, worldMs, taken);
 }
 
 export function cabinetOf(s: GameState): CabinetState {
@@ -701,12 +709,13 @@ export function refreshPool(s: GameState, want: PoolWant = {}): GameState {
       }
       const country = rng.chance(0.1) ? rng.pick(COUNTRIES.filter((x) => x.id !== me)).id : me;
       const grade = rng.chance(0.05) ? '전설' : undefined;
-      const p = genPerson(c, rng, { country, group: '인재', age: [38, 66], grade, origin: rng.pick(origins) }, ns.worldMs, taken);
+      const p = genPerson(c, rng, { country, group: '인재', age: POOL_AGE, grade, origin: rng.pick(origins) }, ns.worldMs, taken);
       if (want.spec) p.spec = want.spec;
       if (want.faction) p.faction = want.faction;
       c.people.push(p);
     }
     c.seed = rng.seed;
+    giveFaces(c); // 11-27 새 후보도 바로 얼굴·나이 맞춤
     const tag = [want.faction, want.spec].filter(Boolean).join(' · ');
     cabLog(c, picky ? `📋 인재 명단을 새로 받았어요(${tag}).` : '📋 인재 명단을 새로 받았어요.');
   });
@@ -716,7 +725,7 @@ export function refreshPool(s: GameState, want: PoolWant = {}): GameState {
 export function addBuddy(s: GameState, origin: PersonOrigin, spec: SpecId | null): GameState {
   return withCab(s, (c, ns) => {
     const rng = new Rng(c.seed ^ 0x5bd1);
-    const p = genPerson(c, rng, { country: ns.player.countryId, group: '내각', origin, grade: '우수', age: [40, 58] }, ns.worldMs, takenNames(c));
+    const p = genPerson(c, rng, { country: ns.player.countryId, group: '내각', origin, grade: '우수', age: [48, 62] }, ns.worldMs, takenNames(c));
     if (spec) p.spec = spec;
     p.loyalty = 80;
     p.known = true;
@@ -724,6 +733,7 @@ export function addBuddy(s: GameState, origin: PersonOrigin, spec: SpecId | null
     if (p.hidden === '비리 전력' || p.hidden === '이중 첩자 의혹') p.hidden = null;
     c.people.push(p);
     c.seed = (c.seed + rng.seed) >>> 0;
+    giveFaces(c);
     cabLog(c, `👥 옛 동료 ${p.name}이(가) 함께 왔어요.`);
   });
 }

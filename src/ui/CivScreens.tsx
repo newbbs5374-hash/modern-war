@@ -1,11 +1,13 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 지역 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
+import { CITY_DEFENSE_MAX } from '../game/balance';
 import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
 import { GOV_FACILITIES } from '../data/govFacilities';
 import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, boostLeft, startAndFinish } from '../game/boost';
+import { TOUR_DONE_APPROVAL, TOUR_DONE_LOYALTY, TOUR_PAY_LOYALTY, TOUR_TALK_LOYALTY, canSolve, canTour, issueById, payCost, solveIssue, startTour, tourOf } from '../game/tour';
 import { Suspense, lazy, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 /** 3D 도시(11/26 서울 시험): 누를 때만 three.js를 불러옴 */
@@ -23,6 +25,7 @@ import {
   ENVOY_COST,
   ERAS,
   GOVS,
+  type Gov,
   GOV_CHANGE_COST,
   GOV_CHAOS_MS,
   ISLAND_LEAD_MIN,
@@ -242,6 +245,12 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
   const W = L.width + TT_PAD.x * 2;
   const Hh = L.height + TT_PAD.top + TT_PAD.bottom;
   const doneN = list.filter((t) => st[t.id] === 'done').length;
+  // 11-27 화면 4: 찍어 둔 목표까지 가는 길
+  const goal = C.techGoalOf(state, line);
+  const path = goal ? C.techPath(state, goal.id) : [];
+  const onPath = new Set(path.map((t) => t.id));
+  const goalHours = path.reduce((a, t) => a + C.techLeft(state, t), 0) / Math.max(0.01, C.researchRate(state));
+  const step = goal ? C.goalNext(state, line) : null;
   // 처음 열 때·줄을 바꿀 때: 지금 연구(없으면 열 수 있는 첫 카드)가 보이게
   useLayoutEffect(() => {
     const el = box.current;
@@ -266,6 +275,23 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
           <span className="lg-done">■ 끝남</span> <span className="lg-now">■ 연구 중</span> <span className="lg-open">■ 열 수 있음</span> <span className="lg-far">■ 아직</span>
         </span>
       </div>
+      {goal ? (
+        <div className="tt-goal">
+          <span>
+            🎯 목표 <b>{goal.name}</b> · 남은 연구 {path.length}개 · 약 {timeLeft(goalHours * H)}
+          </span>
+          {step && c.cur[line] !== step.id && (
+            <button className="mini" disabled={!!C.techPayWhy(state, step.id)} onClick={() => actions.apply((s) => C.startResearch(s, step.id))}>
+              ▶ {step.name}
+            </button>
+          )}
+          <button className="mini" onClick={() => actions.apply((s) => C.setTechGoal(s, line, null))} aria-label="목표 지우기">
+            ✕
+          </button>
+        </div>
+      ) : (
+        <p className="tt-goal muted">🎯 카드를 눌러 「목표로 찍기」를 하면 가는 길이 빛나고, 연구가 끝날 때마다 다음 걸음을 알아서 시작해요.</p>
+      )}
       <div className="tt-box" ref={box}>
         <div className="tt-board" style={{ width: W, height: Hh }}>
           {L.eras.map((e, i) => {
@@ -281,7 +307,7 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
           })}
           <svg className="tt-lines" width={W} height={Hh} viewBox={`${-TT_PAD.x} ${-TT_PAD.top} ${W} ${Hh}`} aria-hidden>
             {edges.map((e) => (
-              <path key={`${e.from}>${e.to}`} d={cardPath(e.pts)} className={e.cls} />
+              <path key={`${e.from}>${e.to}`} d={cardPath(e.pts)} className={`${e.cls}${onPath.has(e.to) && (onPath.has(e.from) || st[e.from] === 'done') ? ' goal' : ''}`} />
             ))}
           </svg>
           {list.map((t) => {
@@ -296,7 +322,7 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
             return (
               <button
                 key={t.id}
-                className={`tt-node s-${s}`}
+                className={`tt-node s-${s}${onPath.has(t.id) ? ' on-goal' : ''}${goal?.id === t.id ? ' is-goal' : ''}`}
                 data-tech={t.id}
                 style={{ left: n.x + TT_PAD.x, top: n.y + TT_PAD.top - CARD_H / 2, width: CARD_W, height: CARD_H }}
                 onClick={() => onPick(t)}
@@ -381,6 +407,9 @@ function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech
               {why ?? payWhy ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)${priceText ? ` · ${priceText}` : ''}` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간${priceText ? ` · ${priceText}` : ''}`)}
             </button>
             {!why && !payWhy && <BoostBar state={state} apply={actions.apply} target={{ kind: 'tech', id: t.id }} compact />}
+            <button className="wide" onClick={() => (actions.apply((s) => C.setTechGoal(s, t.line, t.id)), onClose())}>
+              {c.goal?.[t.line] === t.id ? '🎯 목표에서 빼기' : `🎯 목표로 찍기 · 먼저 할 연구까지 ${C.techPath(state, t.id).length}개`}
+            </button>
           </span>
         )
       }
@@ -612,7 +641,40 @@ function PolicyNow({ state }: { state: ScreenProps['state'] }) {
 
 function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => void }) {
   const c = C.civOf(state);
+  const basics = GOVS.filter((g) => !g.needs);
+  const later = GOVS.filter((g) => g.needs);
+  const chip = (g: Gov) => (
+    <span key={g.id} className={`gt-node ${c.gov === g.id ? 'on' : g.needs && !C.hasTech(state, g.needs) ? 'locked' : 'open'}`}>
+      <ArtIcon k={govArtKey(g.id)} emoji={g.icon} alt={g.name} />
+      <small>{g.name}</small>
+    </span>
+  );
   return (
+    <>
+    {/* 11-27 화면 4: 체제 나무 — 처음부터 고르는 넷 + 사회 연구로 열리는 넷. 잠긴 연구를 누르면 연구 목표로 찍음 */}
+    <div className="gov-tree">
+      <b className="gt-root">🏛️ 나라 체제</b>
+      <svg className="gt-lines" viewBox="0 0 400 20" preserveAspectRatio="none" aria-hidden>
+        {[50, 150, 250, 350].map((x) => (
+          <path key={x} d={`M200 0 C200 12 ${x} 8 ${x} 20`} />
+        ))}
+      </svg>
+      <div className="gt-row">{basics.map(chip)}</div>
+      <div className="gt-row gt-tech">
+        {later.map((g) => {
+          const tech = techById(g.needs!)!;
+          const done = C.hasTech(state, tech.id);
+          const goal = c.goal?.soc === tech.id;
+          return (
+            <button key={g.id} className={`gt-need ${done ? 'done' : goal ? 'goal' : ''}`} disabled={done} onClick={() => actions.apply((s) => C.setTechGoal(s, 'soc', tech.id))} title="누르면 연구 목표로 찍어요">
+              {done ? '✓' : goal ? '🎯' : '🔬'} {tech.name}
+            </button>
+          );
+        })}
+      </div>
+      <div className="gt-row">{later.map(chip)}</div>
+      <small className="muted">아랫줄 체제는 위에 적힌 사회 연구를 끝내면 열려요. 연구 이름을 누르면 연구 목표로 찍혀요.</small>
+    </div>
     <div className="civ-gov-pick">
       {GOVS.map((g) => {
         const why = C.canSetGov(state, g.id as GovId);
@@ -656,6 +718,7 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
         );
       })}
     </div>
+    </>
   );
 }
 
@@ -666,7 +729,16 @@ const loyaltyFace = (v: number) => (v >= 75 ? '😊' : v >= LOYALTY_OK ? '🙂' 
 export function CityPanel(props: ScreenProps) {
   const { state } = props;
   const me = state.player.countryId;
-  const [pick, setPick] = useState<string | null>(null);
+  // 본부 지도에서 '도시 안으로 들어가기'로 왔으면 그 도시를 바로 엶
+  const [pick, setPick] = useState<string | null>(() => {
+    try {
+      const f = sessionStorage.getItem('city-focus');
+      sessionStorage.removeItem('city-focus');
+      return f && state.world.owner[f] === me ? f : null;
+    } catch {
+      return null;
+    }
+  });
   const mine = CITIES.filter((c) => state.world.owner[c.id] === me);
   const t = C.cityTotals(state);
   return (
@@ -816,10 +888,31 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
   const [msg, setMsg] = useState('');
   const [zoom, setZoom] = useState(1);
   const [open, setOpen] = useState(false);
+  // 11-27 지방 순방
+  const [issue, setIssue] = useState<number | null>(null);
+  const tour = tourOf(state);
+  const tourHere = tour.open?.city === id ? tour.open : null;
+  const tourWhy = canTour(state, id);
+  const mine = state.world.owner[id] === state.player.countryId;
   // 그때와 지금: 취임 첫날 모습으로 잠깐 되돌려 보기
   const [then, setThen] = useState(false);
   const [dayMode, setDayMode] = useState<DayMode>('자동');
-  const [is3d, setIs3d] = useState(false);
+  // 11-27 도시 1: 3D 자료가 있는 도시는 3D로 먼저 열림(2D로 바꾸면 그 선택을 기억)
+  const [is3d, setIs3dRaw] = useState(() => {
+    try {
+      return localStorage.getItem('mw-city-3d') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const setIs3d = (v: boolean) => {
+    setIs3dRaw(v);
+    try {
+      localStorage.setItem('mw-city-3d', v ? '1' : '0');
+    } catch {
+      /* 저장 못 해도 그대로 */
+    }
+  };
   /** 3D 시험용: 단계 미리보기(null = 지금 인구) */
   const [preview, setPreview] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1080,6 +1173,53 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
           </div>
         )}
       </div>
+      {mine && (
+        <div className="tour-box">
+          {tourHere ? (
+            <>
+              <b>🚌 순방 중 · 현안 {tourHere.issues.filter((x) => x.done).length}/{tourHere.issues.length}</b>
+              <small className="muted"> {is3d && CITY3D_FILE[id] ? '도시 위 표시나 아래 칸을 누르세요' : '아래 칸을 누르세요'}</small>
+              <div className="tour-chips">
+                {tourHere.issues.map((x, i) => (
+                  <button key={i} className={x.done ? 'done' : ''} disabled={!!x.done} onClick={() => setIssue(i)}>
+                    {x.done ? '✅' : issueById(x.def).icon} {issueById(x.def).title}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <button className="gold wide" disabled={!!tourWhy} onClick={() => actions.apply((s) => startTour(s, id))}>
+              🚌 {city.name} 순방하기
+              <small> {tourWhy ? (state.worldMs < tour.nextMs && !tour.open ? `· 다음 순방까지 ${timeLeft(tour.nextMs - state.worldMs)}` : `· ${tourWhy}`) : `· 현안 3곳을 풀면 민심·지지도 +${TOUR_DONE_APPROVAL}·이 도시 출신 인재`}</small>
+            </button>
+          )}
+        </div>
+      )}
+      {issue != null && tourHere?.issues[issue] && !tourHere.issues[issue].done && (
+        <Modal title={`${city.name} · ${issueById(tourHere.issues[issue].def).title}`} icon={issueById(tourHere.issues[issue].def).icon} onClose={() => setIssue(null)}>
+          <div className="crisis">
+            <p>{issueById(tourHere.issues[issue].def).text}</p>
+            {(['pay', 'talk'] as const).map((how) => {
+              const why = canSolve(state, issue, how);
+              return (
+                <button
+                  key={how}
+                  className="wide crisis-opt"
+                  disabled={!!why}
+                  onClick={() => {
+                    actions.apply((s) => solveIssue(s, issue, how));
+                    setIssue(null);
+                  }}
+                >
+                  <b>{issueById(tourHere.issues[issue].def)[how]}</b>
+                  <small className="muted">{why ?? (how === 'pay' ? `💰 나라 예산 −${fmt(payCost(state))} · 민심 +${TOUR_PAY_LOYALTY}` : `무료 · 민심 +${TOUR_TALK_LOYALTY}`)}</small>
+                </button>
+              );
+            })}
+            <p className="small muted">세 곳을 모두 풀면 민심 +{TOUR_DONE_LOYALTY} · 지지도 +{TOUR_DONE_APPROVAL}(하루) · {city.name} 출신 인재 한 명. 예산으로 두 곳 이상 풀면 우수 인재가 올 수 있어요.</p>
+          </div>
+        </Modal>
+      )}
       <div className="city-zoom-bar">
         {[1, 2, 3].map((z) => (
           <button key={z} className={zoom === z ? 'on' : ''} onClick={() => setZoom(z)}>
@@ -1104,7 +1244,14 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
       {is3d && CITY3D_FILE[id] ? (
         <>
           <Suspense fallback={<div className="city3d city3d-msg">🏗️ 3D 도시 불러오는 중…</div>}>
-            <City3D file={CITY3D_FILE[id]} level={preview ?? stg.stage.lv + stg.frac} night={night} />
+            <City3D
+              file={CITY3D_FILE[id]}
+              level={preview ?? stg.stage.lv + stg.frac}
+              night={night}
+              marks={tourHere?.issues.map((x) => ({ x: x.x, y: x.y, icon: issueById(x.def).icon, label: issueById(x.def).title, done: !!x.done }))}
+              onMark={setIssue}
+              scars={Math.max(0, Math.min(1, (CITY_DEFENSE_MAX - (state.world.defense[id] ?? CITY_DEFENSE_MAX)) / (CITY_DEFENSE_MAX * 0.7)))}
+            />
           </Suspense>
           <label className="city3d-preview small">
             <span>

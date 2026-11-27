@@ -1,6 +1,9 @@
 // 3단계: 장교의 성장(스탯·공훈·승급), 임무, 간이 훈련, 부관·장군, 라이벌, 불신임.
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
+import { prepDiff } from './prepOps';
+import { jointDiff } from './jointOps';
+import { logBattle } from './battleLog';
 import { WEEKLY_MULT, unitLevel, unitName } from '../battle3d/train3d';
 import { EASY_SUB_SHARE, EASY_UNITS, EASY_UNIT_LV, easyById, easyLv, easyNextLv, easyStats } from '../battle/easy';
 import { noteCapture } from './territory';
@@ -945,6 +948,7 @@ export function claimMission(s: GameState, outcome?: BattleOutcome): { state: Ga
   let out = state;
   if (won && a.kind === '현장방문') out = addPresMod(out, '🤝 민생 현장 방문', 4, 24);
   if (won && a.kind === '교민철수') out = addPresMod(out, '✈️ 교민 무사 귀환', 2, 24);
+  if (outcome || a.kind === '대전투' || a.kind === '작전') out = logBattle(out, { kind: a.kind, title: a.title, city: a.city, win: won, stars: outcome?.stars ?? 0, direct: !!outcome });
   return { state: won ? eureka(out, { kind: 'mission', name: a.kind }) : out, text };
 }
 
@@ -998,7 +1002,7 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
     const army = Math.min(GRAND_ARMY_MAX, armyPower(ns) / GRAND_ARMY_PER);
     // 11-27 밸런스: 상대 나라가 셀수록(힘 배율·요새 성장), 수도일수록 어려움
     const foe = ns.world.owner[city];
-    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0) + (actAi(ns.world) - 1) * GRAND_ACT_DIFF + campaignDiff(ns, city);
+    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0) + (actAi(ns.world) - 1) * GRAND_ACT_DIFF + campaignDiff(ns, city) + prepDiff(ns, city) + jointDiff(ns, city);
     m.field = field;
     if (field) {
       // 연료·탄약: 창고의 석유·구리를 씀(모자라면 그만큼만 채우고 출발)

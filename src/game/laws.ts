@@ -49,7 +49,9 @@ export interface AssemblyState {
   /** 카드를 새로 받는 시각 */
   offerMs: number;
   /** 표결 중인 법안 */
-  vote: { id: BillId; endMs: number; chance: number } | null;
+  vote: { id: BillId; endMs: number; chance: number; whip?: { st: Array<'yes' | 'maybe' | 'no'>; used: number; base: number; first: number } } | null;
+  /** 11-27 표 대결: 약속 빚(잊히는 시각들). 하나마다 다음 법안 확률이 내려감 */
+  debts?: number[];
   laws: Law[];
   /** 다음 재신임 투표 시각 */
   confMs: number;
@@ -60,6 +62,11 @@ export interface AssemblyState {
   confWarned: boolean;
   /** 통과시킨 법안 수 */
   passed?: number;
+  /** 11-27 내정 2 임기와 선거: 이번 임기를 시작할 때의 공약 이행·깨진 공약 수(그 뒤 늘어난 만큼 표가 됨). 옛 저장은 없음 */
+  termDone?: number;
+  termBroken?: number;
+  /** 재신임에서 지면 이때까지 '야당 지도자'(법안을 못 냄). 지나면 복귀 */
+  oppUntilMs?: number;
   log: string[];
 }
 

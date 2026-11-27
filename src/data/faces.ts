@@ -5,12 +5,15 @@
 // 게임은 사람마다 "그 묶음·성별 안의 몇 번째 얼굴"(Person.face)을 하나씩 나눠 줘서, 묶음이 남아 있는 동안 같은 얼굴이 두 사람에게 가지 않아요.
 // 이름은 묶음에 맞는 이름표에서 뽑아요(names.ts makeNameEth) → 이름과 인종이 어긋나지 않음.
 
-export type FaceBand = '50' | '60';
+export type FaceBand = '40' | '50' | '60';
 export interface FacePlan {
   m50: number;
   m60: number;
   f50: number;
   f60: number;
+  /** 40대(40~49세) 얼굴: 11-27 넷째 묶음부터 */
+  m40?: number;
+  f40?: number;
 }
 const N = (m50: number, m60: number, f50: number, f60: number): FacePlan => ({ m50, m60, f50, f60 });
 
@@ -33,12 +36,17 @@ export const US_ETH_WEIGHT: Record<UsEth, number> = { we: 0.5, bl: 0.2, hi: 0.2,
 
 /** 사람의 얼굴 묶음 이름 */
 export const faceTag = (country: string, eth?: string): string =>
-  country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : FACE_BORROW[country] ? faceTag(FACE_BORROW[country]) : 'us-we';
+  country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : FACE_BORROW[country] ? (FACE_BORROW[country].startsWith('us-') ? FACE_BORROW[country] : faceTag(FACE_BORROW[country])) : 'us-we';
 /**
  * 11-26 새 나라 5개: 얼굴 그림이 오기 전까지 가까운 나라 얼굴을 빌려 씀(이름은 그 나라 이름표에서 뽑음).
  * 그림이 들어오면 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2·YOUNG_READY에 그 나라를 넣고 여기서 지우면 돼요.
  */
-export const FACE_BORROW: Record<string, string> = {}; // 11-27 새 나라 5개 얼굴이 들어와서 빌리지 않음
+export const FACE_BORROW: Record<string, string> = {
+  // 11-27 새 나라 18개: 그림이 오기 전까지 비슷한 얼굴을 빌림(us-bl·us-hi·us-we는 미국 얼굴 갈래)
+  eg: 'ir', dz: 'sa', ng: 'us-bl', za: 'us-bl', et: 'us-bl',
+  br: 'us-hi', ar: 'us-hi', co: 'us-hi', ve: 'us-hi', cl: 'us-hi', mx: 'us-hi',
+  au: 'uk', ca: 'us-we', fr: 'de', it: 'de', es: 'us-hi', gr: 'tr', fi: 'pl',
+};
 
 /**
  * 추가 얼굴(11-24 대장 결정 "나라별 더"): 나라마다 22장(남 13 · 여 9) → 모두 62장.
@@ -76,42 +84,77 @@ export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'u
 const tagCountry = (tag: string) => (tag.startsWith('us-') ? 'us' : tag);
 const extra2On = (tag: string) => EXTRA2_READY.includes(tagCountry(tag));
 
-const part = (p: FacePlan, sex: 'm' | 'f') => (sex === 'm' ? [p.m50, p.m60] : [p.f50, p.f60]);
+/**
+ * 넷째 묶음(11-27 대장 "얼굴과 나이가 안 맞아"): 40대 얼굴(남 20 · 여 12)과 50·60대 16장 = 나라마다 48장(4×4 세 장).
+ * 40대 얼굴이 없으면 40대 인물도 50대 얼굴을 받고 나이가 50대로 맞춰져요. 그림이 들어온 나라만 EXTRA3_READY에 넣어요.
+ */
+const STD4: FacePlan = { m40: 20, f40: 12, m50: 4, m60: 4, f50: 4, f60: 4 };
+export const FACE_EXTRA3: Record<string, FacePlan> = {
+  kr: STD4, kp: STD4, jp: STD4, cn: STD4, in: STD4, uk: STD4, de: STD4, ru: STD4, ua: STD4, ir: STD4, il: STD4, tr: STD4,
+  tw: STD4, pl: STD4, ph: STD4, pk: STD4, sa: STD4,
+  // 미국 48 = 백인 24 · 흑인 10 · 히스패닉 10 · 아시아계 4
+  'us-we': { m40: 10, f40: 6, m50: 2, m60: 2, f50: 2, f60: 2 },
+  'us-bl': { m40: 4, f40: 2, m50: 1, m60: 1, f50: 1, f60: 1 },
+  'us-hi': { m40: 4, f40: 2, m50: 1, m60: 1, f50: 1, f60: 1 },
+  'us-as': { m40: 2, f40: 2, m50: 0, m60: 0, f50: 0, f60: 0 },
+};
+export const EXTRA3_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'tw', 'pl', 'ph', 'pk', 'sa']; // 11-27 그림 들어옴(18개국 모두)
+const extra3On = (tag: string) => EXTRA3_READY.includes(tagCountry(tag));
+
+const BANDS: readonly FaceBand[] = ['40', '50', '60'];
+const bandCount = (p: FacePlan, sex: 'm' | 'f', b: FaceBand): number => (sex === 'm' ? { '40': p.m40, '50': p.m50, '60': p.m60 } : { '40': p.f40, '50': p.f50, '60': p.f60 })[b] ?? 0;
+/** 켜진 묶음들(차례대로). 앞 묶음 번호는 그대로라 저장된 판의 얼굴이 바뀌지 않아요 */
+function plansOf(tag: string, extra: boolean, extra2: boolean, extra3: boolean): FacePlan[] {
+  const out = [FACE_PLAN[tag] ?? STD];
+  if (extra) out.push(FACE_EXTRA[tag] ?? STD2);
+  if (extra && extra2) out.push(FACE_EXTRA2[tag] ?? STD3);
+  if (extra && extra2 && extra3) out.push(FACE_EXTRA3[tag] ?? STD4);
+  return out;
+}
 
 /** 묶음·성별 안 얼굴 수(extra: 추가 얼굴까지) */
-export function deckSize(tag: string, sex: 'm' | 'f', extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag)): number {
-  const [a, b] = part(FACE_PLAN[tag] ?? STD, sex);
-  const [c, d] = extra ? part(FACE_EXTRA[tag] ?? STD2, sex) : [0, 0];
-  const [e, f] = extra2 ? part(FACE_EXTRA2[tag] ?? STD3, sex) : [0, 0];
-  return a + b + c + d + e + f;
+export function deckSize(tag: string, sex: 'm' | 'f', extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag), extra3 = extra && extra2 && extra3On(tag)): number {
+  return plansOf(tag, extra, extra2, extra3).reduce((a, p) => a + BANDS.reduce((x, b) => x + bandCount(p, sex, b), 0), 0);
 }
-/** i번째 얼굴의 나이대·번호: 0~(기존 수−1)은 기존 얼굴, 그다음은 추가 얼굴 */
-export function deckSlot(tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag)): { band: FaceBand; n: number } {
-  const [b50, b60] = part(FACE_PLAN[tag] ?? STD, sex);
-  const [e50, e60] = part(FACE_EXTRA[tag] ?? STD2, sex);
-  const [g50] = part(FACE_EXTRA2[tag] ?? STD3, sex);
-  const size = deckSize(tag, sex, extra, extra2);
-  const k = ((i % size) + size) % size;
-  if (k < b50) return { band: '50', n: k + 1 };
-  if (k < b50 + b60) return { band: '60', n: k - b50 + 1 };
-  const j = k - b50 - b60;
-  if (j < e50) return { band: '50', n: b50 + j + 1 };
-  if (j < e50 + e60) return { band: '60', n: b60 + (j - e50) + 1 };
-  const q = j - e50 - e60;
-  return q < g50 ? { band: '50', n: b50 + e50 + q + 1 } : { band: '60', n: b60 + e60 + (q - g50) + 1 };
+/** i번째 얼굴의 나이대·번호: 묶음 차례대로(묶음 안은 40·50·60대 차례), 번호는 나이대마다 이어 붙임 */
+export function deckSlot(tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag), extra3 = extra && extra2 && extra3On(tag)): { band: FaceBand; n: number } {
+  const plans = plansOf(tag, extra, extra2, extra3);
+  const size = deckSize(tag, sex, extra, extra2, extra3);
+  let k = ((i % size) + size) % size;
+  const seen: Record<FaceBand, number> = { '40': 0, '50': 0, '60': 0 };
+  for (const p of plans)
+    for (const b of BANDS) {
+      const n = bandCount(p, sex, b);
+      if (k < n) return { band: b, n: seen[b] + k + 1 };
+      k -= n;
+      seen[b] += n;
+    }
+  return { band: '50', n: 1 };
 }
+/** 얼굴 나이대에 맞는 나이 범위(11-27): 40대 얼굴 42~49 · 50대 얼굴 50~59 · 60대 얼굴 60~69 */
+export const BAND_AGE: Record<FaceBand, [number, number]> = { '40': [42, 49], '50': [50, 59], '60': [60, 69] };
+/** 나이가 얼굴 나이대에 맞지 않으면 그 나이대 안으로 옮김(사람마다 조금씩 다르게) */
+export function ageForBand(age: number, band: FaceBand, id: number): number {
+  const [lo, hi] = BAND_AGE[band];
+  if (age >= lo && age <= hi) return age;
+  const j = ((id * 7) >>> 0) % 4;
+  return age < lo ? lo + j : hi - j;
+}
+/** 나이에 맞는 얼굴 나이대 */
+export const bandOfAge = (age: number): FaceBand => (age >= 60 ? '60' : age >= 50 ? '50' : '40');
 export const pad2 = (n: number) => String(n).padStart(2, '0');
 /** i번째 얼굴의 파일 이름(확장자 없이) */
-export const faceFile = (tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag)) => {
-  const { band, n } = deckSlot(tag, sex, i, extra, extra2);
+export const faceFile = (tag: string, sex: 'm' | 'f', i: number, extra = FACE_EXTRA_READY, extra2 = extra && extra2On(tag), extra3 = extra && extra2 && extra3On(tag)) => {
+  const { band, n } = deckSlot(tag, sex, i, extra, extra2, extra3);
   return `face-${tag}-${sex}-${band}-${pad2(n)}`;
 };
 /** 모든 얼굴 파일 이름(명령문·시험용) */
-export function allFaceFiles(extra = FACE_EXTRA_READY, extra2?: boolean): string[] {
+export function allFaceFiles(extra = FACE_EXTRA_READY, extra2?: boolean, extra3?: boolean): string[] {
   const out: string[] = [];
   for (const tag of Object.keys(FACE_PLAN)) {
     const e2 = extra2 ?? (extra && extra2On(tag));
-    for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(tag, sex, extra, e2); i++) out.push(faceFile(tag, sex, i, extra, e2));
+    const e3 = extra3 ?? (extra && e2 && extra3On(tag));
+    for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(tag, sex, extra, e2, e3); i++) out.push(faceFile(tag, sex, i, extra, e2, e3));
   }
   return out;
 }
@@ -217,7 +260,10 @@ export function assignFaces(people: FacePerson[]): Map<number, number> {
     const sk = `${key}|${p.screen ?? ''}`;
     const scr = onScreen.get(sk) ?? new Set<number>();
     onScreen.set(sk, scr);
-    const want: FaceBand = p.age >= 60 ? '60' : '50';
+    const want = bandOfAge(p.age);
+    const bandOf = (k: number) => deckSlot(tag, p.sex, k).band;
+    // 맞는 나이대가 없으면 가까운 나이대(40대 → 50대, 60대 → 50대, 50대 → 55세 넘으면 60대·아니면 40대)
+    const near: FaceBand[] = want === '50' ? (p.age >= 55 ? ['50', '60', '40'] : ['50', '40', '60']) : want === '40' ? ['40', '50', '60'] : ['60', '50', '40'];
     // 빈 얼굴은 사람마다 다른 순서로(명단을 새로 받아도 방금 나간 얼굴이 같은 자리에 다시 나오지 않게)
     const free = cnt
       .map((c, k) => (c === 0 ? k : -1))
@@ -225,14 +271,16 @@ export function assignFaces(people: FacePerson[]): Map<number, number> {
       .sort((x, y) => mix(p.id, x) - mix(p.id, y));
     const okOld = p.face !== undefined && p.face >= 0 && p.face < size && !scr.has(p.face) && (cnt[p.face] === 0 || free.length === 0);
     let i = okOld ? p.face! : -1;
-    if (i < 0) i = free.find((k) => deckSlot(tag, p.sex, k).band === want) ?? free[0] ?? -1;
+    // 이미 받은 얼굴은 그대로(나이를 얼굴에 맞춤, cabinet giveFaces). 새 사람은 맞는 나이대 → 가까운 나이대
+    if (i < 0) for (const b of near) if (i < 0) i = free.find((k) => bandOf(k) === b) ?? -1;
+    if (i < 0) i = free[0] ?? -1;
     if (i < 0) {
       // 얼굴을 다 썼으면: 같은 화면에 없는 얼굴 중 가장 적게 쓴 것(나이대 맞는 쪽 먼저)
       const cand = cnt.map((_, k) => k).filter((k) => !scr.has(k));
       const pool = cand.length ? cand : cnt.map((_, k) => k);
       const min = Math.min(...pool.map((k) => cnt[k]));
       const same = pool.filter((k) => cnt[k] === min);
-      i = same.find((k) => deckSlot(tag, p.sex, k).band === want) ?? same[0];
+      i = same.find((k) => bandOf(k) === want) ?? same[0];
     }
     cnt[i]++;
     scr.add(i);
@@ -308,7 +356,7 @@ export function faceSheetsExtra2(): FaceSheet[] {
     const cells: FaceSheet['cells'] = [];
     for (const tag of tagsOf(c))
       for (const sex of ['m', 'f'] as const)
-        for (let i = deckSize(tag, sex, true, false); i < deckSize(tag, sex, true, true); i++) cells.push({ file: faceFile(tag, sex, i, true, true), tag, sex, band: deckSlot(tag, sex, i, true, true).band });
+        for (let i = deckSize(tag, sex, true, false); i < deckSize(tag, sex, true, true, false); i++) cells.push({ file: faceFile(tag, sex, i, true, true, false), tag, sex, band: deckSlot(tag, sex, i, true, true, false).band });
     out.push(...cut16(c, cells, 9));
   }
   return out;
@@ -348,6 +396,60 @@ export function newNationSheets(): FaceSheet[] {
     add('m', '60', total.m60);
     add('f', '50', total.f50 + 1);
     add('f', '60', total.f60);
+    out.push(...cut16(c, cells, 1));
+    const young: FaceSheet['cells'] = [];
+    for (const sex of ['m', 'f'] as const) for (let i = 0; i < YOUNG_PLAN.kp[sex]; i++) young.push({ file: youngFile(c, sex, i), tag: c, sex, band: '30' });
+    out.push(...cut16(c, young, 1, 'y'));
+  }
+  return out;
+}
+
+/** 나이에 맞는 얼굴 번호 하나(시·도지사처럼 얼굴 번호를 따로 갖지 않는 사람용, 11-27). seed가 같으면 늘 같은 얼굴 */
+export function faceIdxForAge(tag: string, sex: 'm' | 'f', age: number, seed: number): number {
+  const n = deckSize(tag, sex);
+  const want = bandOfAge(age);
+  const ok = Array.from({ length: n }, (_, k) => k).filter((k) => deckSlot(tag, sex, k).band === want);
+  const alt = want === '40' ? Array.from({ length: n }, (_, k) => k).filter((k) => deckSlot(tag, sex, k).band === '50') : [];
+  const list = ok.length ? ok : alt.length ? alt : Array.from({ length: n }, (_, k) => k);
+  return list[(((seed * 2654435761) >>> 0) % 100003) % list.length];
+}
+
+/* ───────── 11-27 넷째 묶음(40대 얼굴 + 50·60대 더) 그림 ───────── */
+/** 18개국 모두 */
+export const ALL_FACE_COUNTRIES = [...SHEET_COUNTRIES, ...NEW_FACE_COUNTRIES];
+/** 나라마다 4×4 세 장(48명): sheet-<나라>-a1 ~ a3 */
+export function faceSheetsExtra3(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  for (const c of ALL_FACE_COUNTRIES) {
+    const cells: FaceSheet['cells'] = [];
+    for (const tag of tagsOf(c))
+      for (const sex of ['m', 'f'] as const)
+        for (let i = deckSize(tag, sex, true, true, false); i < deckSize(tag, sex, true, true, true); i++) cells.push({ file: faceFile(tag, sex, i, true, true, true), tag, sex, band: deckSlot(tag, sex, i, true, true, true).band });
+    out.push(...cut16(c, cells, 1, 'a'));
+  }
+  return out;
+}
+
+/* ───────── 11-27 새 나라 18개(아프리카·남미·호주·캐나다·멕시코·유럽 5) 얼굴 그림 ───────── */
+// 처음부터 40대까지 넣어 넷째 묶음과 같은 수: 남 40대 20 · 50대 52 · 60대 45, 여 40대 12 · 50대 37 · 60대 24 = 190명
+// + 남는 2칸(40대 남녀 1명씩) = 192명 → 4×4 열두 장(sheet-eg-1 ~ 12) + 젊은 부관 두 장(sheet-eg-y1·y2) + 수행비서 한 장.
+// 그림이 들어오기 전까지는 FACE_BORROW의 비슷한 얼굴을 써요.
+export const NEW_FACE_COUNTRIES2 = ['eg', 'ng', 'za', 'et', 'dz', 'br', 'ar', 'co', 've', 'cl', 'au', 'ca', 'mx', 'fr', 'it', 'es', 'gr', 'fi'];
+export function newNationSheets2(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  const sum = (k: keyof FacePlan) => [STD, STD2, STD3, STD4].reduce((a, p) => a + (p[k] ?? 0), 0);
+  for (const c of NEW_FACE_COUNTRIES2) {
+    out.push({ sheet: `secretary-${c}`, country: c, grid: 1, cells: [{ file: `secretary-${c}`, tag: c, sex: 'f', band: '20' }] });
+    const cells: FaceSheet['cells'] = [];
+    const add = (sex: 'm' | 'f', band: FaceBand, n: number) => {
+      for (let i = 1; i <= n; i++) cells.push({ file: `face-${c}-${sex}-${band}-${pad2(i)}`, tag: c, sex, band });
+    };
+    add('m', '40', sum('m40') + 1);
+    add('m', '50', sum('m50'));
+    add('m', '60', sum('m60'));
+    add('f', '40', sum('f40') + 1);
+    add('f', '50', sum('f50'));
+    add('f', '60', sum('f60'));
     out.push(...cut16(c, cells, 1));
     const young: FaceSheet['cells'] = [];
     for (const sex of ['m', 'f'] as const) for (let i = 0; i < YOUNG_PLAN.kp[sex]; i++) young.push({ file: youngFile(c, sex, i), tag: c, sex, band: '30' });

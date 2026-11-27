@@ -52,6 +52,10 @@ export const WEARINESS_SCALE = 60;
 export const TRUCE_START_TENSION = 20;
 /** 전쟁이 나면 연합국이 끌려 들어올 확률 */
 export const ALLY_JOIN_CHANCE = 0.6;
+/** 11-27: 내 나라는 연합국 전쟁에 저절로 덜 끌려감(대신 연합국이 '도움 요청'을 보내 와 내가 고름, hegemony.ts) */
+export const ALLY_JOIN_ME = 0.25;
+/** 11-27: 내 나라가 이미 이만큼 전쟁 중이면, AI 연합국이 끌려 들어와 적으로 붙거나 자원 전쟁·패권 전쟁으로 새로 걸어오지 않음(한꺼번에 몰려와 판이 끝나지 않게) */
+export const ME_MAX_FRONTS = 3;
 
 /** 전쟁 상대마다 판단 한 번에 침공할 확률(× 지도자 공격성) */
 export const INVADE_CHANCE = 0.04;
@@ -109,14 +113,15 @@ export const TEST_MODE = { freeTraining: true };
 
 // ── 11-26 난이도 올리기(대장 요청) ──
 
-/** 한국을 뺀 AI 나라 힘 배율(예산·모병·시작 금고·병력). 미국 > 중국 > 러시아 > 나머지 */
-export const AI_STRENGTH: Record<string, number> = { us: 1.8, cn: 1.7, ru: 1.4 };
-export const AI_STRENGTH_DEFAULT = 1.25;
+/** AI 나라 힘 배율(예산·모병·시작 금고·병력). 미국 > 중국 > 러시아 > 나머지.
+ *  11-27 대장 요청 "AI는 자원도 병력도 많아 플레이어보다 훨씬 강하게": 1.8/1.7/1.4/1.25 → 2.3/2.1/1.75/1.5, 한국도 AI면 똑같이 */
+export const AI_STRENGTH: Record<string, number> = { us: 2.3, cn: 2.1, ru: 1.75 };
+export const AI_STRENGTH_DEFAULT = 1.5;
 /** 힘 배율 중 전투 질(병력 한 명의 힘)로 붙는 몫(1.8이면 전투 힘 +20%) */
 export const AI_QUALITY_SHARE = 0.25;
-/** 그 나라 힘 배율: 내 나라·한국은 1 */
+/** 그 나라 힘 배율: 내 나라는 1 */
 export function aiStrength(id: string, player: string): number {
-  if (id === player || id === 'kr') return 1;
+  if (id === player) return 1;
   return AI_STRENGTH[id] ?? AI_STRENGTH_DEFAULT;
 }
 /** 시작할 때 내 나라 금고·병력(예전의 몇 배). 시험판 자원 넉넉히 지급도 새 판에선 안 함 */

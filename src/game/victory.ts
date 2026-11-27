@@ -13,6 +13,7 @@ import type { GameState } from './state';
 import { relationOf } from './world';
 import { peaceTick } from './peace';
 import { cultureWinTick } from './culture';
+import { megaDoneAll } from './megaPlan';
 
 export const VICTORY_RANK = RANKS.length - 1;
 export const ALLIED_SHARE = 0.76;
@@ -21,7 +22,7 @@ export const HOLD_DAYS = 7;
 const HOLD_MS = HOLD_DAYS * 24 * 3600e3;
 
 export interface Ending {
-  kind: '연합 승리' | '정복 승리' | '평화 승리' | '문화 승리';
+  kind: '연합 승리' | '정복 승리' | '평화 승리' | '문화 승리' | '과학 승리';
   /** 전쟁 며칠째에 이겼는지 */
   day: number;
   country: string;
@@ -92,6 +93,8 @@ export function checkVictory(s: GameState): GameState {
   const p = victoryProgress(s);
   if (pt.won && !hasWon(s, '평화 승리')) return finish(s, '평화 승리', p);
   if (ct.won && !hasWon(s, '문화 승리')) return finish(s, '문화 승리', p);
+  // 11-27 국가 대계획 3가지를 모두 끝내면 과학 승리
+  if (megaDoneAll(s) && !hasWon(s, '과학 승리')) return finish(s, '과학 승리', p);
   const kind = p.mine >= p.needAlone && p.capsOk && !hasWon(s, '정복 승리') ? '정복 승리' : p.allied >= p.needAllied && !hasWon(s, '연합 승리') ? '연합 승리' : null;
   const since = s.officer.winSinceMs ?? null;
   if (!kind) return since === null ? s : { ...s, officer: { ...s.officer, winSinceMs: null } };
@@ -113,7 +116,7 @@ function finish(s: GameState, kind: Ending['kind'], p: ReturnType<typeof victory
     captured: p.captured,
     generals: s.officer.generals.map((g) => g.name),
   };
-  const ev = { t: s.worldMs, kind: '점령' as const, text: kind === '평화 승리' ? `🕊️ 평화 승리! ${ending.country}이(가) 세계에 평화를 가져왔어요.` : kind === '문화 승리' ? `🎨 문화 승리! ${ending.country}의 문화가 세계를 사로잡았어요.` : `🏆 ${kind}! ${ending.country}이(가) 전쟁을 끝냈어요.`, mine: true };
+  const ev = { t: s.worldMs, kind: '점령' as const, text: kind === '평화 승리' ? `🕊️ 평화 승리! ${ending.country}이(가) 세계에 평화를 가져왔어요.` : kind === '문화 승리' ? `🎨 문화 승리! ${ending.country}의 문화가 세계를 사로잡았어요.` : kind === '과학 승리' ? `🔬 과학 승리! ${ending.country}이(가) 인류의 내일을 열었어요.` : `🏆 ${kind}! ${ending.country}이(가) 전쟁을 끝냈어요.`, mine: true };
   return { ...s, ending, world: { ...s.world, events: [ev, ...s.world.events] } };
 }
 

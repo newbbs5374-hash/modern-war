@@ -8,6 +8,8 @@ import { COUNTRIES, countryById, startingRelation, type Relation } from '../data
 import {
   ALLY_DEFEND_SHARE,
   ALLY_JOIN_CHANCE,
+  ALLY_JOIN_ME,
+  ME_MAX_FRONTS,
   HOMELAND_DEFENSE,
   LAST_STAND_DEFENSE,
   LOSING_PEACE_MULT,
@@ -269,6 +271,13 @@ export const TENSION_ARCH = 0.15;
 const pInfo = (w: WorldState, id: string) => PERSONALITIES[w.personalities[id]];
 
 /** 두 나라 신앙이 부딪히는가(빛의 언약 ↔ 성검 교단, 또는 같은 북극성 정교끼리 정통 다툼) */
+/** 11-27 새 나라 18개 맞수(대륙 패권·국경·자원 다툼) */
+const NEW_RIVALS = new Set(
+  [
+    ['eg', 'et'], ['ng', 'za'], ['dz', 'fr'], ['eg', 'dz'], ['br', 'ar'], ['co', 've'], ['ar', 'cl'], ['us', 've'], ['ar', 'uk'],
+    ['au', 'cn'], ['ca', 'ru'], ['mx', 'us'], ['fr', 'it'], ['es', 'uk'], ['gr', 'tr'], ['fi', 'ru'], ['br', 've'], ['za', 'et'],
+  ].map((p) => p.sort().join('-')),
+);
 function faithClash(a: string, b: string): boolean {
   const fa = countryById(a).faith;
   const fb = countryById(b).faith;
@@ -286,6 +295,7 @@ export function isRival(a: string, b: string): boolean {
   const ab = [a, b].sort().join('-');
   if (ab === 'cn-in') return true;
   if (ab === 'cn-tw' || ab === 'in-pk' || ab === 'ir-sa') return true; // 11-26 새 나라 맞수
+  if (NEW_RIVALS.has(ab)) return true; // 11-27 새 나라 18개 맞수
   if (isArchRival(a, b)) return true; // 11-26 나라마다 정한 숙적(data/archRivals.ts)
   return faithClash(a, b);
 }
@@ -332,6 +342,11 @@ export const ga = (w: string) => w + (hasBatchim(w) ? '이' : '가');
 export const eul = (w: string) => w + (hasBatchim(w) ? '을' : '를');
 export const gwa = (w: string) => w + (hasBatchim(w) ? '과' : '와');
 
+/** 내 나라가 지금 싸우는 나라 수 */
+export function playerFronts(w: WorldState, player: string): number {
+  return COUNTRIES.filter((c) => c.id !== player && isAlive(w, c.id) && relationOf(w, player, c.id) === '전쟁').length;
+}
+
 function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
   // 11-27 1장(취임 100일): 내 나라는 전쟁에 휘말리지 않음(나라를 키우는 때)
   if (ctx.w.act === 1 && (attacker === ctx.player || defender === ctx.player)) {
@@ -352,9 +367,10 @@ function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
       if (ally === side || ally === enemy || !isAlive(ctx.w, ally)) continue;
       if (ctx.w.act === 1 && (ally === ctx.player || enemy === ctx.player)) continue;
       if (relationOf(ctx.w, ally, side) !== '연합') continue;
+      if (enemy === ctx.player && playerFronts(ctx.w, ctx.player) >= ME_MAX_FRONTS) continue; // 11-27 한꺼번에 몰려오지 않게
       const q = ctx.w.pairs[pairKey(ally, enemy)];
       if (q.rel !== '중립') continue;
-      if (!ctx.rng.chance(ALLY_JOIN_CHANCE)) continue;
+      if (!ctx.rng.chance(ally === ctx.player ? ALLY_JOIN_ME : ALLY_JOIN_CHANCE)) continue;
       q.rel = '전쟁';
       q.tension = 0;
       q.weariness = 0;
@@ -434,9 +450,9 @@ function diplomacy(ctx: Ctx) {
 }
 
 /** 11-26 새 나라 특수 능력: 자기 땅 방어 때 힘 배율 */
-export const HOME_GUARD: Record<string, number> = { tw: 1.25, pl: 1.15, ph: 1.2 };
+export const HOME_GUARD: Record<string, number> = { tw: 1.25, pl: 1.15, ph: 1.2, et: 1.25, ar: 1.15, cl: 1.2, ca: 1.2, it: 1.1, gr: 1.2 };
 /** 11-26 파키스탄 핵 억지: 다른 나라가 이 나라에 침공을 걸 확률 배율 */
-export const DETERRENCE: Record<string, number> = { pk: 0.7 };
+export const DETERRENCE: Record<string, number> = { pk: 0.7, fr: 0.75 };
 
 function power(ctx: Ctx, country: string, troops: number, defending: boolean, overseas: boolean): number {
   const c = countryById(country);

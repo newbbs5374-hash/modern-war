@@ -26,6 +26,8 @@ export interface Battle3DOptions {
   endText?(S: unknown, win: boolean, timeout: boolean): string;
   /** 11-26 가진 부대만: 3D 병과별 낼 수 있는 수(없으면 제한 없음 · 앞 막에서 넘어온 부대는 안 셈) */
   owned?: Record<string, number>;
+  /** 11-27 전투 5: 함께 나간 장군의 지휘 기술(막마다 한 번, 지휘력 안 씀 · twice면 두 번 떨어짐) */
+  gen?: { name: string; k: string; label: string; twice: boolean };
   /** 개발용: window.__snapUnits로 모형 아이콘 찍기 */
   snap?: boolean;
 }
@@ -811,7 +813,7 @@ function buildTiles(){
 
 
 /* ───────── 전투 상태(계산은 sim.ts) ───────── */
-let acc=0, speed=1, deploy=[], selKind="tank", selTab="land", aiming=null;
+let acc=0, speed=1, deploy=[], selKind="tank", selTab="land", aiming=null, genUsed=false, genAim=false;
 const vq=[];
 const at=(fn,dly)=>vq.push({at:S.simT+(dly||0),fn});
 function baseY(u){if(u.d.amph&&isSea(u.x,u.z))return WATER_Y-.16;return u.d.dom==="sea"?WATER_Y-.07:u.d.dom==="sub"?WATER_Y:u.d.dom==="air"?Math.max(hAt(u.x,u.z),WATER_Y):hAt(u.x,u.z);}
@@ -1187,6 +1189,8 @@ function buildCmds(){
   const w=$("#cmds");w.innerHTML="";
   CMD_ORDER.filter(k=>!ST.cmds||ST.cmds.includes(k)).forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-cmd";b.dataset.k=k;b.innerHTML=`${CMD[k].name}<small>지휘력 ${CMD[k].cost}</small><span class="b3-fill"></span>`;
     b.onclick=()=>{if(aiming===k){cancelAim();return;}if(aiming)cancelAim();startAim(k);};w.append(b);});
+  if(opts.gen&&CMD[opts.gen.k]){const g=opts.gen;genUsed=false;const b=document.createElement("button");b.type="button";b.className="b3-gcmd";b.id="gencmd";b.innerHTML=`🎖️ ${g.label}<small>${g.name} 장군 · 한 번${g.twice?" · 강화":""}</small>`;
+    b.onclick=()=>{if(genUsed)return;if(genAim){cancelAim();return;}if(S.phase!=="battle")return;if(aiming)cancelAim();genAim=true;aiming=g.k;S.phase="aim";$("#aim").hidden=false;$("#aimtxt").textContent=`${g.name} 장군 · ${g.label} · 목표 지점을 누르세요 · 시간 정지`;hud();};w.append(b);}
   const pp=$("#pips");pp.innerHTML="";for(let i=0;i<10;i++)pp.append(document.createElement("i"));
 }
 function highlightTiles(){depTiles.forEach(t=>{const ok=tileOk(t,selKind);t.m.material.opacity=ok?.16:.04;t.e.material.opacity=ok?.6:.12;});}
@@ -1278,7 +1282,9 @@ function endPtr(ev){
   if(S.phase==="deploy"&&!d.moved){pick(ev);const hit=ray.intersectObjects(depTiles.map(t=>t.m))[0];if(hit)placeAt(hit.object.userData.i);return;}
   if(S.phase==="aim"&&aimMark&&aimMark.visible){const p=aimMark.position.clone();const k=aiming;
     if(k==="para"&&isSea(p.x,p.z,-.3)){$("#aimtxt").textContent="공수 투입은 땅에만 할 수 있어요";return;}
-    cancelAim();doCmd(k,p.x,p.z);}
+    const gk=genAim;cancelAim();
+    if(gk&&opts.gen){S.cp+=CMD[k].cost;doCmd(k,p.x,p.z);if(opts.gen.twice){S.cp+=CMD[k].cost;doCmd(k,p.x+.9,p.z+.6);}genUsed=true;const gb=$("#gencmd");if(gb){gb.disabled=true;gb.classList.add("b3-used");}log(`${opts.gen.name} 장군의 ${opts.gen.label}!`,"k");}
+    else doCmd(k,p.x,p.z);}
 }
 cvs.addEventListener("pointerup",endPtr);
 cvs.addEventListener("pointercancel",ev=>{ptrs.delete(ev.pointerId);drag=null;gest=null;multi=false;});
@@ -1295,7 +1301,7 @@ function moveAim(p){
   $("#aimtxt").textContent=`${CMD[aiming].name} · 좌표 ${gridRef(p.x,p.z)} · 손을 떼면 실행`;
 }
 function startAim(k){if(S.phase!=="battle"||S.cp<CMD[k].cost)return;aiming=k;S.phase="aim";$("#aim").hidden=false;$("#aimtxt").textContent=`${CMD[k].name} · 목표 지점을 누르세요 · 시간 정지`;hud();}
-function cancelAim(){aiming=null;S.phase="battle";$("#aim").hidden=true;if(aimMark)aimMark.visible=false;hud();}
+function cancelAim(){aiming=null;genAim=false;S.phase="battle";$("#aim").hidden=true;if(aimMark)aimMark.visible=false;hud();}
 $("#go").onclick=startBattle;
 $("#clear").onclick=()=>{deploy.filter(d=>!d.carried).forEach(d=>{scene.remove(d.u.root);S.units=S.units.filter(u=>u!==d.u);});deploy=deploy.filter(d=>d.carried);refreshDeploy();};
 $("#speed").onclick=e=>{speed=speed===1?2:1;e.target.textContent="×"+speed;};

@@ -1,4 +1,5 @@
 // 전투 화면: 훈련·임무·작전(여러 판)·대전투·승급 심사·연습장. 틀에 맞는 화면을 열고, 끝나면 결과를 받음.
+import { genSkillOf } from '../../game/generalSkill';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
@@ -46,6 +47,8 @@ export interface FrameProps {
   owned?: Record<string, number>;
   /** 11-26: 싸우기 전에 나가거나 화면 오류로 나가면 결과 없이 돌아감(패배 아님) */
   onCancel?: () => void;
+  /** 11-27 전투 5: 함께 나가는 장군의 지휘 기술(대전투만) */
+  gen?: { name: string; k: string; label: string; twice: boolean } | null;
   /** 11-27 한 손가락 미니 훈련 단계 */
   easyLv?: Record<string, number>;
 }
@@ -145,7 +148,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) deadSoFar[k] = (deadSoFar[k] ?? 0) + v;
   const ownSrc = plan.source === 'deploy' && plan.deploy ? deployOf(state).list.find((x) => x.id === plan.deploy!.dep)?.units ?? {} : plan.source === 'training' || plan.source === 'practice' ? null : state.economy.army;
   const owned = ownSrc ? ownedByBase(ownSrc, deadSoFar) : undefined;
-  const props: FrameProps = { spec, stats, rank, owned, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: mulBuffs(unitBuffs(o.unitXp), specialBuffs(ownSrc ?? state.economy.army)), puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
+  const props: FrameProps = { spec, stats, rank, owned, gen: spec.variant === 'siege' ? genSkillOf(o) : null, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: mulBuffs(unitBuffs(o.unitXp), specialBuffs(ownSrc ?? state.economy.army)), puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;

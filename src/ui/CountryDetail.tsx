@@ -1,5 +1,8 @@
 // 외교 → 국가정보 → 나라 누르면 열리는 큰 팝업(11-24 대장 요청 4번).
 // 위: 그 나라 실제 지도(도·도시·점령·분쟁 지역·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
+import { HELP_FAVOR, allyWars, canHelp, helpAlly, helpChance, helpLoot } from '../game/jointOps';
+import { campaignArt } from './scenes';
+import { GOALS, goalById, goalMet, setGoal, settleWar, takenIn, warGoalOf } from '../game/warGoal';
 import { useMemo, useState } from 'react';
 import { CITIES, cityById } from '../data/cities';
 import { COUNTRY_FACTS } from '../data/countryFacts';
@@ -16,6 +19,8 @@ import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { deployOf } from '../game/deploy';
+import { regionIcon, regionName, regionOf } from '../data/regions';
+import { regionStanding, sanctionsOn, squeezesOn } from '../game/hegemony';
 import { TRIBUTE, acceptSurrender, canAccept, canDemand, canSurrender, demandChance, doDemand, doSurrender, lordOf } from '../game/surrender';
 import { MY_TARIFF_HOURS, MY_TARIFF_RATE, canDeal, canTariff, dealCost, doDeal, doTariff, tariffBetween } from '../game/pressure';
 import { scoutView } from '../game/spy';
@@ -193,7 +198,16 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
 
   return (
     <Modal title={c.name} icon={FLAG[id]} onClose={onClose} big>
-      {iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />}
+      {id !== me && relationOf(w, me, id) === '전쟁' && campaignArt(id) ? (
+        <div className="act-cover">
+          <img src={campaignArt(id)!} alt="" draggable={false} />
+          <b>⚔️ {c.name} 전역</b>
+        </div>
+      ) : (
+        iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />
+      )}
+      {id !== me && relationOf(w, me, id) === '전쟁' && <WarGoalBox state={state} actions={actions} id={id} />}
+      {id !== me && relationOf(w, me, id) === '연합' && allyWars(state, id).length > 0 && <HelpAllyBox state={state} actions={actions} id={id} />}
       <div className="cdetail">
         <CountryMap state={state} id={id} />
         <div className="cdetail-side">
@@ -217,6 +231,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                 <span>⚖️ 난이도 <b>{c.difficulty}</b></span>
               </div>
               <p className="small muted">📌 {f.note}</p>
+              <HegLine state={state} id={id} />
               {id !== me && <AiGrowBox state={state} id={id} />}
               {top && id !== me && (
                 <div className="buttons">
@@ -523,6 +538,23 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
 }
 
 /** AI 나라 성장(11-26): 지금 전략과 갈래 5개 단계 */
+/** 11-27 대륙 패권 한 줄: 대륙 순위·지분, 받는 제재·약탈 계약 */
+function HegLine({ state, id }: { state: GameState; id: string }) {
+  const rid = regionOf(id);
+  const st = regionStanding(state, rid);
+  const i = st.findIndex((x) => x.id === id);
+  if (i < 0) return null;
+  const sc = sanctionsOn(state, id).length;
+  const sq = squeezesOn(state, id).length;
+  return (
+    <p className="small muted" style={{ margin: '4px 0' }}>
+      {i === 0 && st.length > 1 ? '👑' : regionIcon(rid)} {regionName(rid)} {i + 1}위 · 힘 지분 {Math.round(st[i].share * 100)}%
+      {sc ? ` · 🚫 제재 ${sc}` : ''}
+      {sq ? ` · ⛓️ 약탈 계약 ${sq}` : ''}
+    </p>
+  );
+}
+
 function AiGrowBox({ state, id }: { state: GameState; id: string }) {
   const w = state.world;
   const g = w.grow?.[id];
@@ -550,6 +582,60 @@ function AiGrowBox({ state, id }: { state: GameState; id: string }) {
         })}
       </div>
       <p className="small muted">남는 나라 예산을 성향대로 써서 단계를 올려요. 전쟁 중엔 군비·요새, 땅을 잃으면 되찾기에 힘을 몰아요.</p>
+    </div>
+  );
+}
+
+/** 11-27 전투 7: 싸우는 연합국을 도우러 가기 */
+function HelpAllyBox({ state, actions, id }: Pick<ScreenProps, 'state' | 'actions'> & { id: string }) {
+  const [msg, setMsg] = useState('');
+  const no = canHelp(state, id);
+  return (
+    <div className="wargoal">
+      <b className="small">🤝 {countryById(id).name}은(는) 지금 {allyWars(state, id).map((c) => c.name).join(' · ')}와(과) 싸우고 있어요</b>
+      <button className="wide gold" disabled={!!no} onClick={() => setMsg(actions.applyWith((s) => { const r = helpAlly(s, id); return { state: r.state, out: r.text }; }) ?? '')}>
+        ✈️ 도우러 가기 · {no ?? `성공 ${Math.round(helpChance(state) * 100)}% · 호감 +${HELP_FAVOR} · 전리품 ${helpLoot(state).toLocaleString('ko-KR')}`}
+      </button>
+      {msg && <p className="small sch-msg">{msg}</p>}
+    </div>
+  );
+}
+
+/** 11-27 전투 4: 전쟁 목표 고르기 · 목표를 이루면 협상으로 끝내기 */
+function WarGoalBox({ state, actions, id }: Pick<ScreenProps, 'state' | 'actions'> & { id: string }) {
+  const g = warGoalOf(state, id);
+  const [msg, setMsg] = useState('');
+  if (!g)
+    return (
+      <div className="wargoal">
+        <b className="small">🎯 이 전쟁의 목표를 정하세요</b>
+        <div className="wargoal-opts">
+          {GOALS.map((d) => (
+            <button key={d.id} onClick={() => actions.apply((s) => setGoal(s, id, d.id))}>
+              <span>{d.icon}</span>
+              <b>{d.name}</b>
+              <small>{d.need}</small>
+              <small className="muted">{d.reward}</small>
+            </button>
+          ))}
+        </div>
+        <small className="muted">목표를 이루면 확률 없이 협상으로 전쟁을 끝낼 수 있어요. 목표보다 더 차지하면 다른 나라들이 경계해요.</small>
+      </div>
+    );
+  const d = goalById(g.goal);
+  const met = goalMet(state, id);
+  return (
+    <div className="wargoal">
+      <b className="small">
+        🎯 전쟁 목표: {d.icon} {d.name} · 차지한 본토 도시 {takenIn(state, id)}곳
+      </b>
+      <small className="muted"> {d.id === 'total' ? '끝까지 싸워요.' : met ? '목표를 이뤘어요!' : `조건: ${d.need}`}</small>
+      {d.id !== 'total' && (
+        <button className="gold wide" disabled={!met} onClick={() => setMsg(actions.applyWith((s) => { const r = settleWar(s, id); return { state: r.state, out: r.text }; }) ?? '')}>
+          🕊️ 협상으로 끝내기 <small>· {d.reward}</small>
+        </button>
+      )}
+      {msg && <p className="small sch-msg">{msg}</p>}
     </div>
   );
 }

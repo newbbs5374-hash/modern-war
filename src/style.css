@@ -1465,6 +1465,29 @@ button.big { min-height: 64px; font-size: 18px; }
 .sns-tag { color: #fb923c; font-weight: 700; }
 .sns-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
 .sns-act button { font-size: 12px; padding: 5px 10px; }
+/* 내 글 쓰기(11-27) */
+.sns-write { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px; border-radius: 14px; font-weight: 800; }
+.sns-write small { font-weight: 500; font-size: 11px; opacity: 0.85; }
+.sns-compose { display: flex; flex-direction: column; gap: 6px; background: #17212b; border: 1px solid #14b8a655; border-radius: 14px; padding: 8px; }
+.sns-c-head { display: flex; justify-content: space-between; align-items: center; }
+.sns-tones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.sns-tones button { color: inherit; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 11px; padding: 5px 2px; border-radius: 10px; background: #1e2833; border: 1px solid #ffffff1a; white-space: nowrap; }
+.sns-tones button span { font-size: 20px; line-height: 1.1; }
+.sns-tones button.t-good.on { background: #14b8a6; color: #04201d; border-color: #14b8a6; font-weight: 800; }
+.sns-tones button.t-bad.on { background: #f97316; color: #2a1102; border-color: #f97316; font-weight: 800; }
+.sns-tones button.t-self.on { background: #ffb020; color: #2a1d02; border-color: #ffb020; font-weight: 800; }
+.sns-targets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; max-height: 132px; overflow-y: auto; }
+.sns-targets button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 3px 1px; border-radius: 8px; background: #1e2833; border: 1px solid #ffffff14; font-size: 18px; }
+.sns-targets button small { font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.sns-targets button i { position: absolute; top: 0; right: 1px; font-size: 10px; font-style: normal; }
+.sns-targets button.on { border-color: #14b8a6; background: #14b8a633; }
+.sns-input { width: 100%; box-sizing: border-box; resize: none; font: inherit; font-size: 13px; background: #0d141b; color: inherit; border: 1px solid #ffffff22; border-radius: 10px; padding: 6px 8px; }
+.sns-c-row { display: flex; justify-content: space-between; align-items: center; }
+.sns-pv { margin: 0; line-height: 1.5; background: #0d141b; border-radius: 10px; padding: 6px 8px; }
+.sns-pv .up { color: #5eead4; }
+.sns-pv .down { color: #fb923c; }
+.sns-tag.mine { color: #5eead4; }
+.sns-re-btn { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: transparent; border: 1px solid #ffffff22; }
 
 /* 11-27 4막 구조 */
 .hq.act-hq { border: 1px solid var(--hud, #3fb8c9); background: #3d5566; }
@@ -1629,3 +1652,95 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 /* 11-27 전선 지도 화살표 */
 .wm-atk { animation: wm-atk-march 0.9s linear infinite; }
 @keyframes wm-atk-march { to { stroke-dashoffset: var(--d, -7px); } }
+/* 11-27 본부 날씨(비·눈·흐림): 보기만 */
+.hl-wx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hl-wx i { position: absolute; inset: -60px 0 0 -60px; }
+.hl-wx-gray { background: rgba(70, 80, 96, .2); }
+.hl-wx-rain { background: rgba(28, 40, 62, .26); }
+.hl-wx-rain i:nth-child(1) { background: linear-gradient(104deg, transparent 47%, rgba(214, 232, 255, .42) 50%, transparent 53%) 0 0 / 13px 52px; animation: hl-rain .42s linear infinite; }
+.hl-wx-rain i:nth-child(2) { background: linear-gradient(104deg, transparent 48%, rgba(214, 232, 255, .26) 50%, transparent 52%) 5px 9px / 23px 78px; animation: hl-rain2 .6s linear infinite; }
+@keyframes hl-rain { to { transform: translate(-13px, 52px); } }
+@keyframes hl-rain2 { to { transform: translate(-19.5px, 78px); } }
+.hl-wx-snow { background: rgba(210, 222, 236, .14); }
+.hl-wx-snow i { animation: hl-fall linear infinite; inset: -120px 0 0 -60px; }
+.hl-wx-snow i:nth-child(1) { --s: 47px; --x: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .95) 0 1.5px, transparent 1.9px) 5px 9px / 47px 47px; animation-duration: 4.6s; }
+.hl-wx-snow i:nth-child(3) { --s: 83px; --x: -26px; background: radial-gradient(circle, rgba(255, 255, 255, .85) 0 2px, transparent 2.5px) 31px 60px / 83px 83px; animation-duration: 6.4s; }
+.hl-wx-snow i:nth-child(2) { --s: 61px; --x: -9px; background: radial-gradient(circle, rgba(255, 255, 255, .8) 0 1.2px, transparent 1.6px) 40px 22px / 61px 61px; animation-duration: 7.3s; }
+.hl-wx-snow i:nth-child(4) { --s: 109px; --x: 18px; background: radial-gradient(circle, rgba(255, 255, 255, .9) 0 2.4px, transparent 3px) 70px 15px / 109px 109px; animation-duration: 9.1s; }
+@keyframes hl-fall { to { transform: translate(var(--x), var(--s)); } }
+@media (prefers-reduced-motion: reduce) { .hl-wx i { animation: none !important; } }
+/* 11-27 장 표지·전역 표지 그림 */
+.act-cover { position: relative; margin: 0 0 8px; border-radius: 8px; overflow: hidden; aspect-ratio: 3 / 1.25; }
+.act-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.act-cover b { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 10px 7px; font-size: 15px; color: #fff; background: linear-gradient(transparent, rgba(8, 14, 22, .85)); }
+.act-thumb { width: 100%; aspect-ratio: 3 / 1.4; object-fit: cover; border-radius: 5px; display: block; margin-bottom: 4px; }
+.act-step:not(.on):not(.past) .act-thumb { filter: grayscale(.7) brightness(.7); }
+/* 11-27 도시 특화 나무 */
+.spec-done { color: #7ee0b0; }
+.dom-opt.on { outline: 1px solid #3fb8c9; }
+/* 11-27 점령지 관리청 */
+.oa-box { margin: 6px 0; padding: 6px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.45); display: flex; flex-direction: column; gap: 4px; }
+.oa-team { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.oa-team > div { display: flex; flex-direction: column; min-width: 0; }
+.oa-team small { font-size: 11px; opacity: 0.85; }
+.oa-team.off { opacity: 0.6; }
+.oa-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 6px 0; }
+.oa-prop { display: flex; gap: 6px; align-items: center; padding: 5px 6px; border-radius: 8px; background: rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.12); margin: 3px 0; min-width: 0; }
+.oa-prop .li-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.oa-prop small { font-size: 10.5px; line-height: 1.35; opacity: 0.85; }
+.oa-prop .oa-eff { color: #fbbf24; opacity: 1; }
+.oa-ico { font-size: 22px; flex: none; }
+.oa-btns { display: flex; flex-direction: column; gap: 3px; flex: none; }
+.oa-btns button { padding: 3px 8px; font-size: 12px; }
+
+/* 11-27 화면 5·6: 찾기 · 즐겨찾기 · 본부 간단히 */
+.tree-find { display: flex; gap: 4px; margin-top: 6px; align-items: center; }
+.tree-find input { flex: 1; min-width: 0; padding: 7px 10px; font-size: 13px; border: 1px solid var(--line, #5b6b7c); background: #2f3a45; color: var(--text, #f1f5f9); border-radius: 8px; }
+.tree-find .mini { white-space: nowrap; }
+.tree-find .mini.on { border-color: var(--amber, #ffb020); color: var(--amber, #ffb020); }
+.tree-found { margin-top: 6px; }
+.tree-star { position: absolute; top: -6px; left: -2px; font-style: normal; font-size: 12px; }
+.tree-more { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; position: relative; padding-top: 18px; }
+.tree-more > b { position: absolute; top: 0; left: 2px; font-size: 11px; opacity: 0.8; }
+.tree-more .tree-leaf { min-height: 50px; border-color: var(--line, #5b6b7c); }
+.tree-more .tree-leaf small { font-size: 10px; }
+.bld-col .bld.fav .bld-ico { outline: 1px solid var(--amber, #ffb020); }
+.bld-col .bld.fav .ui-emo img { width: 26px; height: 26px; }
+.bld-col .bld.fav-add { opacity: 0.8; }
+
+/* 11-27 화면 4: 연구 목표 길 */
+.tt-goal { display: flex; align-items: center; gap: 6px; margin: 4px 0 6px; font-size: 12px; }
+.tt-goal span { flex: 1; min-width: 0; }
+.tt-goal b { color: #7dffb0; }
+.tt-lines path.goal { stroke: #7dffb0; stroke-width: 3.5; opacity: 1; stroke-dasharray: none; filter: drop-shadow(0 0 4px #7dffb0cc); }
+.tt-node.on-goal { border-color: #7dffb0; border-style: solid; opacity: 1; filter: none; box-shadow: 0 0 0 1px #7dffb0, 0 0 10px #7dffb066; }
+.tt-node.is-goal { box-shadow: 0 0 0 2px #7dffb0, 0 0 14px #7dffb0aa; }
+.tt-node.is-goal .tt-name::before { content: '🎯 '; }
+
+/* 11-27 본부 2: 도시로 빨려 들어가기 */
+.hl-dive { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(circle at 50% 45%, #ffffff00 0%, #ffffff00 18%, #0b1622cc 70%); animation: hl-dive .65s ease-in forwards; }
+@keyframes hl-dive { 0% { opacity: 0; } 60% { opacity: 1; background-color: #ffffff00; } 100% { opacity: 1; background-color: #e8f4ffcc; } }
+
+/* 11-27 세계 4: 보기 바꾸기 범례 */
+.wm-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 4px; font-size: 11px; }
+.wm-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.wm-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.seg.wm-modes { flex-wrap: nowrap; gap: 2px; }
+.seg.wm-modes button { padding: 5px 5px; font-size: 11px; white-space: nowrap; min-width: 0; }
+
+/* 11-27 화면 4: 체제 나무 */
+.gov-tree { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 10px; padding: 8px; border-radius: 10px; background: rgba(0, 0, 0, 0.18); }
+.gt-root { align-self: center; padding: 4px 12px; border: 2px solid var(--amber, #ffb020); border-radius: 8px; font-size: 13px; }
+.gt-lines { display: block; width: 100%; height: 18px; }
+.gt-lines path { fill: none; stroke: var(--hud, #3fb8c9); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.gt-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.gt-node { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px; border: 1px solid var(--hud, #3fb8c9); border-radius: 8px; font-size: 22px; text-align: center; }
+.gt-node img { width: 30px; height: 30px; }
+.gt-node small { font-size: 10.5px; line-height: 1.2; word-break: keep-all; }
+.gt-node.on { border-color: var(--gold, #e6b800); box-shadow: 0 0 0 1px var(--gold, #e6b800) inset; }
+.gt-node.locked { opacity: 0.5; border-style: dashed; }
+.gt-tech { margin-top: 6px; }
+.gt-need { padding: 4px 2px; font-size: 10.5px; line-height: 1.2; border: 1px dashed #8e9eae; position: relative; }
+.gt-need::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 2px; height: 5px; background: #8e9eae; }
+.gt-need.done { border: 1px solid #5fe0f0; color: #5fe0f0; opacity: 1; }
+.gt-need.goal { border: 1px solid #7dffb0; color: #7dffb0; }
