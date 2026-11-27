@@ -22,6 +22,7 @@ import { EAmbush, EBreath, ECarrier, EConvoy, EHoldRun, EMarch, EParade, ERally,
 import { ELiar, EPack, ERings, ESatDiff } from './easyB';
 import { EAirdrop, EBomb, EFilm, EFlare, EHill, EIntercept, ELeadShot, ERefuel, ETakedown, ETide, ETot, EWaves } from './easyC';
 import { EAirFuel, EBombSet, EClimb, ECover, EFront, ELowFly, ERadio, ERepair, EScoot, ESeaFuel, ETrace, EWheel } from './easyD';
+import { ECold, EDepot, EDisguise, EJudge, EMind, EMole, EPredict, EReview, ESchool, ESpeech } from './easyE';
 import { EASY } from '../../../battle/easy';
 
 /** 한 손가락 미니 훈련 화면(easy.ts 의 view 이름) */
@@ -33,6 +34,8 @@ const EASY_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'e:intercept': EIntercept, 'e:film': EFilm, 'e:tide': ETide, 'e:waves': EWaves, 'e:hill': EHill, 'e:tot': ETot,
   'e:airfuel': EAirFuel, 'e:seafuel': ESeaFuel, 'e:lowfly': ELowFly, 'e:bombset': EBombSet, 'e:cover': ECover, 'e:radio': ERadio,
   'e:wheel': EWheel, 'e:trace': ETrace, 'e:front': EFront, 'e:repair': ERepair, 'e:scoot': EScoot, 'e:climb': EClimb,
+  'e:disguise': EDisguise, 'e:predict': EPredict, 'e:review': EReview, 'e:mole': EMole, 'e:mind': EMind, 'e:speech': ESpeech,
+  'e:judge': EJudge, 'e:school': ESchool, 'e:cold': ECold, 'e:depot': EDepot,
 };
 
 export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {

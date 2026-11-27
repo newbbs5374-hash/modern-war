@@ -1583,3 +1583,19 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .eg-liar button.dim { opacity: .55; }
 .eg-liar-a { margin: 0; min-height: 18px; font-size: 12.5px; color: #fff; }
 .eg-gauge.red .eg-fill { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #ffb020, #ff5a4a); border-radius: 0 0 9px 9px; }
+.eg-quiz { padding: 0 0 8px; gap: 6px; }
+.eg-quiz > button, .eg-quiz > p { margin-left: 10px; margin-right: 10px; }
+.eg-quiz > button { min-height: 50px; font-size: 12.5px; }
+.eg-qhead { height: 92px; background-size: cover; background-position: center 35%; display: flex; align-items: flex-end; }
+.eg-qhead b { width: 100%; padding: 14px 10px 5px; font-size: 13px; color: #fff; background: linear-gradient(0deg, #000c, transparent); }
+.eg-qme { margin: 0; font-size: 12px; color: var(--amber, #ffb020); font-weight: 700; }
+.eg-qq { margin: 0; font-size: 13px; color: #fff; line-height: 1.4; }
+.eg-jug { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 4px 10px; }
+.eg-jug button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; min-height: 0; background: #33404c; color: #fff; border: 2px solid #5a6877; border-radius: 8px; }
+.eg-jug button.on { border-color: #22d3ee; }
+.eg-jug-ic { font-size: 30px; line-height: 1; }
+.eg-jug-bar { position: relative; width: 26px; height: 92px; border-radius: 6px; background: #0008; overflow: hidden; }
+.eg-jug-bar em { position: absolute; left: 0; right: 0; bottom: 0; transition: height .25s; }
+.eg-jug small { font-size: 11px; color: #fff; }
+.eg-jug .eg-jug-next { color: #ffb020; }
+.eg-jug-act { font-size: 11.5px; font-weight: 700; color: #0b1112; background: var(--hud, #3fb8c9); border-radius: 6px; padding: 2px 6px; }

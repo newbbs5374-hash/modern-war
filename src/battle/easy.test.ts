@@ -4,6 +4,7 @@ import { MINIGAMES, minisFor } from './minigames';
 import { MINI_VIEWS } from '../ui/battle/mini';
 import { Rng } from '../game/rng';
 import { PACK_H, PACK_W, ambushKills, liarRound, packFits, packPieces, pathEval, sandBest, sandCells, sandScore } from './easyLogic';
+import { juggleScore, juggleStart, juggleStep, quizSet, type QuizKind } from './easyQuiz';
 import { TRAININGS } from '../data/catalog';
 
 describe('한 손가락 미니 훈련', () => {
@@ -83,6 +84,32 @@ describe('미니 훈련 규칙', () => {
       expect(r.facts.length).toBe(3);
       expect(r.lie).toBeGreaterThanOrEqual(0);
       expect(r.facts[r.lie]).toContain('첩보원');
+    }
+  });
+  it('고르기 문제: 보기 3개, 정답 하나, 한 판에 겹치지 않음', () => {
+    const kinds: QuizKind[] = ['disguise', 'predict', 'review', 'mole', 'mind', 'speech', 'judge', 'school'];
+    for (const kind of kinds)
+      for (let seed = 1; seed < 12; seed++) {
+        const set = quizSet(kind, new Rng(seed), 5);
+        expect(set.length, kind).toBe(5);
+        for (const q of set) {
+          expect(q.opts.length).toBe(3);
+          expect(new Set(q.opts).size).toBe(3);
+          expect(q.ok).toBeGreaterThanOrEqual(0);
+          expect(q.ok).toBeLessThan(3);
+        }
+      }
+  });
+  it('셋 가운데 하나 챙기기: 빨간 것을 챙기면 버틸 수 있다', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const rng = new Rng(seed);
+      let j = juggleStart(rng, 1);
+      for (let t = 0; t < 9; t++) {
+        const risk = j.v.map((x, i) => x - j.next[i]);
+        j = juggleStep(j, risk.indexOf(Math.min(...risk)), rng, 1);
+      }
+      expect(j.turn).toBe(9);
+      expect(juggleScore(j, 9)).toBeGreaterThan(0.5);
     }
   });
 });
