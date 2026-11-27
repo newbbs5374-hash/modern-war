@@ -1294,3 +1294,10 @@ select.wide, button.wide { width: 100%; }
 .mega-steps span.on { opacity: 1; background: rgba(79, 209, 165, 0.18); }
 .mega-steps span.run { opacity: 1; outline: 1px solid var(--gold, #e6b800); }
 .mega-body button.gold { font-size: 12px; padding: 6px 4px; }
+/* 11-27 방첩 */
+.mole-spots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; margin: 6px 0; }
+.mole-spots button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 1px; }
+.mole-spots button span { font-size: 22px; line-height: 1.1; }
+.mole-spots button b { font-size: 10.5px; white-space: nowrap; }
+.mole-spots button small { font-size: 10px; opacity: 0.8; }
+.mole-spots button.clear { opacity: 0.5; }
