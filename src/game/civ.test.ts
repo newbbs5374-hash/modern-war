@@ -318,3 +318,18 @@ describe('연구 늘리기(11-26): 군사 100 · 사회 70', () => {
       expect(techForUnit(u), u).toBeTruthy();
   });
 });
+
+describe('11-27 옛 저장 + 새 나라: AI 체제 채움', () => {
+  it('aiGov가 빠진 옛 저장도 모든 나라 체제·호감을 계산함', () => {
+    const s = newGame('t', 'kr', 0, { seed: 11 });
+    const old = JSON.parse(JSON.stringify(s));
+    for (const c of COUNTRIES.slice(13)) delete old.civ.aiGov[c.id];
+    const back = parseSave(JSON.stringify(old))!;
+    for (const c of COUNTRIES) {
+      expect(back.civ!.aiGov[c.id]).toBeTruthy();
+      expect(govById(back.civ!.aiGov[c.id]).icon).toBeTruthy();
+      if (c.id !== 'kr') expect(Number.isFinite(C.favorOf(back, c.id))).toBe(true);
+    }
+    expect(govById(undefined).icon).toBeTruthy();
+  });
+});
