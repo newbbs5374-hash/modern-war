@@ -4,7 +4,7 @@
 import { COUNTRIES, countryById } from '../data/world';
 import { addFavorNote } from './civ';
 import { domLog, domOf, payTreasury, registerDomRows, withDom, type Rows } from './domestic';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { isAlive, relationOf } from './world';
 
 export type FirmId = 'land' | 'sea' | 'air' | 'missile';
@@ -43,7 +43,7 @@ export const liveDeals = (s: GameState) => armsOf(s).deals.filter((d) => d.until
 /** 한꺼번에 맺을 수 있는 계약 수: 기업 단계 합 ÷ 2(올림), 많아야 6 */
 export const dealSlots = (s: GameState) => Math.min(6, Math.ceil(FIRMS.reduce((a, f) => a + firmLv(s, f.id), 0) / 2));
 
-export const firmCost = (s: GameState, id: FirmId) => Math.round(budgetPerDay(s, s.player.countryId) * FIRM_COST_DAYS * (firmLv(s, id) + 1));
+export const firmCost = (s: GameState, id: FirmId) => Math.round(priceBase(s) * FIRM_COST_DAYS * (firmLv(s, id) + 1));
 export function canGrowFirm(s: GameState, id: FirmId): string | null {
   if (!firmById(id)) return '없는 기업이에요';
   if (firmLv(s, id) >= FIRM_MAX) return '끝까지 키웠어요';

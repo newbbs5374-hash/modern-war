@@ -9,7 +9,7 @@ import { cityCiv, civOf } from './civ';
 import { armyPower } from './economy';
 import { pushReport } from './report';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 
 const H = 3600e3;
 export const SEC_GAP_MS: [number, number] = [10 * H, 18 * H];
@@ -30,7 +30,7 @@ export const secOf = (s: GameState): SecState => s.sec ?? { nextMs: s.worldMs + 
 
 export const sweepChance = (s: GameState, size: number) => Math.max(0.25, Math.min(0.95, 0.55 + Math.min(0.25, armyPower(s) / 6000) + (s.officer.stats['통솔'] ?? 0) / 250 - size * 0.08));
 export const talkChance = (s: GameState, size: number) => Math.max(0.2, Math.min(0.9, 0.45 + (s.officer.stats['정치'] ?? 0) / 150 - size * 0.06));
-export const talkCost = (s: GameState) => Math.max(40, Math.round(budgetPerDay(s, s.player.countryId) * TALK_COST));
+export const talkCost = (s: GameState) => Math.max(40, Math.round(priceBase(s) * TALK_COST));
 
 export type SecHow = 'sweep' | 'talk';
 export function canAct(s: GameState, id: number, how: SecHow): string | null {
@@ -80,7 +80,7 @@ function sabotage(s: GameState, c: Cell): GameState {
   const me = s.player.countryId;
   if (s.world.owner[c.city] !== me) return s;
   let ns = addLoyalty(s, c.city, -SAB_LOYALTY * c.size);
-  const cost = Math.round(budgetPerDay(s, me) * SAB_COST * c.size);
+  const cost = Math.round(priceBase(s) * SAB_COST * c.size);
   ns = {
     ...ns,
     world: { ...ns.world, defense: { ...ns.world.defense, [c.city]: Math.max(0, (ns.world.defense[c.city] ?? 0) - SAB_DEFENSE * c.size) } },

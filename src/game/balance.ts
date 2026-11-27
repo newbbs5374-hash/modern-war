@@ -139,6 +139,25 @@ export const SPOILS_TREASURY_SHARE = 0.06;
 /** 적 침공을 막아 내면 노획: 쳐들어온 병력 × 이 값(나라 예산) */
 export const DEFEND_BOUNTY = 0.012;
 
+// ── 11-27 대장 요청 "나라가 커지고 도시를 점령하면 예산이 일시적·지속적으로 늘게" ──
+/** 점령 도시 세금(나라 예산만, 병력은 그대로 OCCUPIED_INCOME): 군정 50→60%, 민정 75→85% */
+export const OCCUPIED_BUDGET = 0.6;
+export const CIVIL_BUDGET = 0.85;
+/** 나라 규모 보너스: 가진 도시 값어치가 본토를 넘는 만큼 × 이 값(나라 예산), 상한 */
+export const SIZE_BONUS_PER = 0.2;
+export const SIZE_BONUS_MAX = 0.4;
+/** 점령한 도시를 따라 넘어오는 내정 도시 전리품(도시 값어치 × SPOILS_PER_VALUE × 이 값) */
+export const SPOILS_FOLLOWER_SHARE = 0.5;
+/** 수도를 차지하면 그 나라 금고의 이만큼 접수(보통 도시는 SPOILS_TREASURY_SHARE) */
+export const SPOILS_CAPITAL_SHARE = 0.25;
+/** 그 나라가 마지막 도시를 잃고 망하면 남은 금고의 이만큼 접수 */
+export const SPOILS_FALL_SHARE = 0.3;
+/** 편입 끝(주민투표 통과·강화 조약) 정착 지원금: 도시 값어치 × 이 값 */
+export const ANNEX_GRANT_PER_VALUE = 1200;
+/** 국방비 → 나라 예산 옮기기(전용): 한 번에 국방비의 이만큼, 옮길 때 이만큼 사라짐(행정 비용) */
+export const DEF_MOVE_SHARE = 0.25;
+export const DEF_MOVE_LOSS = 0.1;
+
 // ── 11-27 밸런스 조정(세계정복 무과금 4~5주) ──
 
 /** 대전투 난이도에 상대 나라 힘을 얹음: (힘 배율 − 1) × 이 값. 미국 +0.16 · 중국 +0.14 · 러시아 +0.08 · 나머지 +0.05 */

@@ -5,7 +5,7 @@ import { addPresMod } from './approval';
 import { ministryPower, postPower } from './cabinet';
 import { payTreasury, snap } from './domestic';
 import { DAY, H, addMark, bumpRival, bumpTrust, clamp, polityOf, polityLog, roll, tell, withPolity, type Disaster } from './polity';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { myCityIds } from './zones';
 import { cityById, isCoastalCity } from '../data/cities';
 import type { MinistryId } from '../data/cabinet';
@@ -90,7 +90,7 @@ export function canRespond(s: GameState, rid: string): string | null {
   if (!disasterKind(d.kind).stages[d.stage][0].includes(rid)) return '이 단계에서 고를 수 없어요';
   if (rid === 'money') {
     const me = s.nations[s.player.countryId];
-    if (!me || me.treasury < budgetPerDay(s, s.player.countryId) * 0.5) return '나라 예산이 모자라요';
+    if (!me || me.treasury < priceBase(s) * 0.5) return '나라 예산이 모자라요';
   }
   return null;
 }
@@ -100,7 +100,7 @@ export function respond(s: GameState, rid: string): GameState {
   if (canRespond(s, rid)) return s;
   let ns = s;
   const me = ns.player.countryId;
-  if (rid === 'money') ns = payTreasury(ns, budgetPerDay(ns, me) * 0.5) ?? ns;
+  if (rid === 'money') ns = payTreasury(ns, priceBase(ns) * 0.5) ?? ns;
   if (rid === 'army') {
     const n = ns.nations[me];
     ns = { ...ns, nations: { ...ns.nations, [me]: { ...n, troops: n.troops * 0.995 } } };
@@ -154,7 +154,7 @@ function finish(s: GameState, d: Disaster): GameState {
     ns = tell(ns, `${k.icon} ${cname} ${k.name}을(를) 잘 넘겼어요. 지지도 +2`);
   } else {
     const days = w === 1 ? 1 : 2;
-    ns = payTreasury(ns, Math.min(ns.nations[me].treasury, budgetPerDay(ns, me) * days)) ?? ns;
+    ns = payTreasury(ns, Math.min(ns.nations[me].treasury, priceBase(ns) * days)) ?? ns;
     ns = addPresMod(ns, `${k.icon} ${cname} ${k.name} 늑장 대응`, w === 1 ? -3 : -6, 48);
     ns = addMark(ns, d.cityId, w === 1 ? -6 : -12, 72, `${k.icon} 재난 피해`);
     if (w === 0) ns = bumpTrust(ns, -3);

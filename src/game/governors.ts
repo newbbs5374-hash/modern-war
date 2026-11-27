@@ -5,7 +5,7 @@ import { payTreasury, registerDomRows, snap } from './domestic';
 import { registerCityLoyaltyRows, loyaltyTarget } from './civ';
 import { DAY, H, addMark, bumpRival, clamp, polityOf, polityLog, roll, tell, withPolity, type GovDemand, type Governor } from './polity';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { myCityIds } from './zones';
 import { homeOf } from './world';
 import { cityById } from '../data/cities';
@@ -106,7 +106,7 @@ export function canAnswer(s: GameState, pay: boolean): string | null {
   }
   return null;
 }
-export const demandCost = (s: GameState, d: GovDemand) => Math.round(budgetPerDay(s, s.player.countryId) * demandDef(d.kind).days);
+export const demandCost = (s: GameState, d: GovDemand) => Math.round(priceBase(s) * demandDef(d.kind).days);
 export function answerDemand(s: GameState, pay: boolean): GameState {
   if (canAnswer(s, pay)) return s;
   const d = polityOf(s).demand!;
