@@ -119,7 +119,7 @@ export function moleTick(s: GameState): GameState {
   }
   m.open = { from: rng.pick(list)!, at: Math.floor(rng.next() * MOLE_SPOTS.length), clear: [], clueMs: 0, untilMs: s.worldMs + MOLE_STAY_MS };
   m.seed = rng.seed;
-  return pushReport({ ...s, mole: m, dom: domOf(s) }, { icon: '🕵️', text: '각하, 우리 부처 어딘가에 적 첩자가 숨어든 것 같습니다. 연구와 첩보가 새고 있습니다. 작전 → 첩보에서 찾아내 주십시오.' });
+  return pushReport({ ...s, mole: m, dom: domOf(s) }, { icon: '🕵️', text: '각하, 우리 부처 어딘가에 적 첩자가 숨어든 것 같습니다. 연구와 첩보가 새고 있습니다. 작전 → 정보전에서 찾아내 주십시오.' });
 }
 
 registerDomRows((s, key) => {

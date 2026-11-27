@@ -15,6 +15,8 @@ import { cultureTabs } from './CultureScreen';
 import { diploTabs } from './DiplomacyScreen';
 import { defenseTabs, economyTabs, personalTabs, societyTabs } from './MainScreens';
 import { Modal, type TabDef } from './kit';
+import { recommendActs, runDay } from '../game/dayPlan';
+import { SLOTS, actById, doAct, scheduleOf } from '../game/schedule';
 import { routeTo, type Screen } from './nav';
 import { Face } from './Portrait';
 import type { ScreenProps } from './screens';
@@ -78,22 +80,71 @@ export function TodoList({ state, go, max }: { state: GameState; go: (s: Screen)
   );
 }
 
+type Apply = ScreenProps['actions']['apply'];
+/** 11-27 대통령의 하루: 오늘 일정 3칸 + 부관 추천 카드. 한 번에 보내거나 한 장씩 고름 */
+export function DayPlan({ state, apply, go }: { state: GameState; apply?: Apply; go: (s: Screen) => void }) {
+  const [msg, setMsg] = useState('');
+  const sc = scheduleOf(state);
+  const rec = recommendActs(state);
+  let k = 0;
+  return (
+    <div className="dayplan">
+      <div className="dayplan-head">
+        <b>☀️ 대통령의 하루</b>
+        <button className="mini" onClick={() => go(routeTo('personal', 'personal', 'plan'))}>
+          직접 고르기 ▸
+        </button>
+      </div>
+      <div className="dayplan-slots">
+        {SLOTS.map((name, i) => {
+          const done = sc.slots[i];
+          const card = done ? null : rec[k++];
+          const a = done ? actById(done) : card ? actById(card.id) : null;
+          return (
+            <button key={name} className={done ? 'done' : ''} disabled={!!done || !card || !apply} onClick={() => card && apply?.((s) => doAct(s, card.id).state)}>
+              <small>{name}</small>
+              <span>{a ? a.icon : '·'}</span>
+              <b>{a ? a.name : '빈 칸'}</b>
+              <small className="muted">{done ? '마침 ✅' : card ? card.why : ''}</small>
+            </button>
+          );
+        })}
+      </div>
+      {rec.length > 0 && apply && (
+        <button
+          className="gold wide"
+          onClick={() => {
+            const r = runDay(state);
+            apply(() => r.state);
+            setMsg(r.text);
+          }}
+        >
+          ☀️ 추천대로 하루 보내기({rec.length}칸)
+        </button>
+      )}
+      {msg && <p className="small sch-msg dayplan-msg">{msg}</p>}
+    </div>
+  );
+}
+export const dayFree = (state: GameState) => scheduleOf(state).slots.filter((x) => !x).length;
+
 /** 본부 '주요 임무' 칸: 오늘 할 일 한 줄(누르면 목록) */
-export function TodoCard({ state, go }: { state: GameState; go: (s: Screen) => void }) {
+export function TodoCard({ state, go, apply }: { state: GameState; go: (s: Screen) => void; apply?: Apply }) {
   const [open, setOpen] = useState(false);
   const n = todoCount(state);
-  if (!n) return null;
+  if (!n && !dayFree(state) && !open) return null;
   return (
     <>
       <button className="hq todo-hq" onClick={() => setOpen(true)}>
         <span>📋</span>
         <span className="hq-main">
           <b>오늘 할 일 {n}건</b>
-          <small>누르면 한곳에서 볼 수 있어요</small>
+          <small>{dayFree(state) ? `☀️ 오늘 일정 ${dayFree(state)}칸이 비었어요` : '누르면 한곳에서 볼 수 있어요'}</small>
         </span>
       </button>
       {open && (
         <Modal title={`오늘 할 일 ${n}건`} icon="📋" onClose={() => setOpen(false)}>
+          <DayPlan state={state} apply={apply} go={(s) => (setOpen(false), go(s))} />
           <TodoList state={state} go={(s) => (setOpen(false), go(s))} />
         </Modal>
       )}
@@ -101,7 +152,7 @@ export function TodoCard({ state, go }: { state: GameState; go: (s: Screen) => v
   );
 }
 
-export function TreeScreen({ state, go }: ScreenProps) {
+export function TreeScreen({ state, go, actions }: ScreenProps) {
   const [todoOpen, setTodoOpen] = useState(false);
   const branches = branchesOf(state);
   const n = todoCount(state);
@@ -154,6 +205,7 @@ export function TreeScreen({ state, go }: ScreenProps) {
       <p className="tree-legend">칸을 누르면 그 화면으로 가요 · 빨간 점 = 할 일 · 🔒 = 아직 잠김 · 맨 위 얼굴 = 사람(인사·인맥)</p>
       {todoOpen && (
         <Modal title={`오늘 할 일 ${n}건`} icon="📋" onClose={() => setTodoOpen(false)}>
+          <DayPlan state={state} apply={actions?.apply} go={(s) => (setTodoOpen(false), go(s))} />
           <TodoList state={state} go={(s) => (setTodoOpen(false), go(s))} />
         </Modal>
       )}

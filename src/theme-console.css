@@ -1301,3 +1301,14 @@ select.wide, button.wide { width: 100%; }
 .mole-spots button b { font-size: 10.5px; white-space: nowrap; }
 .mole-spots button small { font-size: 10px; opacity: 0.8; }
 .mole-spots button.clear { opacity: 0.5; }
+/* 11-27 대통령의 하루 */
+.dayplan { padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); margin-bottom: 10px; }
+.dayplan-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.dayplan-head .mini { font-size: 11px; padding: 2px 8px; }
+.dayplan-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-bottom: 6px; }
+.dayplan-slots button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 3px; min-height: 96px; }
+.dayplan-slots button span { font-size: 24px; line-height: 1.1; }
+.dayplan-slots button b { font-size: 12px; }
+.dayplan-slots button small { font-size: 10.5px; line-height: 1.25; text-align: center; }
+.dayplan-slots button.done { opacity: 0.6; }
+.dayplan-msg { white-space: pre-line; }
