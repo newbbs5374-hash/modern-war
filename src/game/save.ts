@@ -2,7 +2,7 @@
 // 나중에 서버 저장으로 바꿀 때는 이 파일만 고치면 된다.
 
 import { applyNation } from './nation';
-import { migrateBureau, migrateStats2 } from './cabinet';
+import { giveFaces, migrateBureau, migrateStats2 } from './cabinet';
 import { migrateYoungAides } from './aidePick';
 import { ensureRivalRoster } from './rivals';
 import { COUNTRIES } from '../data/world';
@@ -131,6 +131,7 @@ export function parseSave(text: string): GameState | null {
     if (s.civ.lastSwapMs === null) s.civ.lastSwapMs = -Infinity;
     if (s.cabinet?.people) migrateStats2(s.cabinet); // 11/24 스탯 18개: 옛 인물에 새 스탯 채움
     if (s.cabinet?.people) migrateBureau(s.cabinet, s.player.countryId, s.worldMs); // 11/24 관료 56명
+    if (s.cabinet?.people) giveFaces(s.cabinet); // 11/27 나이를 얼굴 나이대에 맞춤(얼굴은 그대로)
     ensureRivalRoster(s); // 11/26 정적 3명 → 12명(빠진 역할 채우고 얼굴 주기)
     migrateYoungAides(s); // 11/24 부관은 젊은 얼굴(장관 얼굴과 안 겹침)
     s = migrateCityTiles(s); // 11/24 도시 칸 4.5배·실제 모양: 옛 구역 자리 옮기기

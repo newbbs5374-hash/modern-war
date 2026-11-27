@@ -3,7 +3,7 @@
 // - 후보는 실제 12시간마다 새로 바뀜. 임명은 돈·레벨·시간 조건 없음. 자리가 꽉 차면 한 명과 바꿈
 // - 얼굴은 나라별 얼굴(faces.ts)을 쓰고, 이름도 내 나라 이름표에서 뽑음
 import { AIDE_SPECIALTIES, aideSlots, type AideSpecialty } from '../data/officers';
-import { KR_NAMED_YOUNG, deckSize, faceFile, faceTag, youngFile, youngReady, youngSize } from '../data/faces';
+import { KR_NAMED_YOUNG, ageForBand, deckSize, faceFile, faceTag, youngFile, youngReady, youngSize, type FaceBand } from '../data/faces';
 import { makeNameEth } from '../data/names';
 import { cabinetOf } from './cabinet';
 import { note, withOfficer, type Aide, type OfficerState } from './officer';
@@ -92,7 +92,10 @@ const youngFree = (use: Map<string, number>, tag: string, sex: 'm' | 'f') => Arr
 /** 가장 덜 쓴 얼굴 하나 고르기(고른 얼굴은 use에 더함) */
 function pickFace(use: Map<string, number>, tag: string, sex: 'm' | 'f', rng: Rng): string {
   const n = deckSize(tag, sex);
-  const files = Array.from({ length: n }, (_, i) => faceFile(tag, sex, i));
+  const all = Array.from({ length: n }, (_, i) => faceFile(tag, sex, i));
+  // 부관은 젊은 편이라 40대 얼굴이 있으면 그쪽 먼저(11-27)
+  const forty = all.filter((f) => /-40-\d+$/.test(f));
+  const files = forty.length && forty.some((f) => !use.get(f)) ? forty : all;
   const min = Math.min(...files.map((f) => use.get(f) ?? 0));
   const free = files.filter((f) => (use.get(f) ?? 0) === min);
   const f = rng.pick(free);
@@ -116,6 +119,11 @@ function makeCand(s: GameState, rng: Rng, specialty: AideSpecialty, trait: AideT
   }
   const { name, eth } = nm;
   taken.add(name);
+  // 11-27: 젊은 얼굴이 모자라 장관급 얼굴을 받으면 나이도 그 얼굴 나이대로
+  const fk = faceKey ?? pickFace(use, faceTag(country, eth), sex, rng);
+  const fb = /-(40|50|60)-\d+$/.exec(fk)?.[1] as FaceBand | undefined;
+  const age0 = faceKey ? Math.round(rng.range(25, 36)) : Math.round(rng.range(28, 39));
+  const age = fb ? ageForBand(age0, fb, age0 * 31 + name.length) : age0;
   const t = AIDE_TRAITS[trait];
   const jig = () => Math.round(rng.range(-4, 4));
   return {
@@ -124,9 +132,9 @@ function makeCand(s: GameState, rng: Rng, specialty: AideSpecialty, trait: AideT
     specialty,
     trait,
     sex,
-    age: faceKey ? Math.round(rng.range(25, 36)) : Math.round(rng.range(28, 39)),
+    age,
     eth,
-    faceKey: faceKey ?? pickFace(use, faceTag(country, eth), sex, rng),
+    faceKey: fk,
     level: t.level + (trait === '노련' && rng.chance(0.4) ? 1 : 0),
     bond: Math.max(5, t.bond + jig()),
     loyalty: Math.max(30, Math.min(90, t.loyalty + jig())),
