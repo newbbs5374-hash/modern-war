@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXTRA2_READY, FACE_PLAN, allFaceFiles, assignFaces, deckSize, faceFile, faceTag } from './faces';
+import { EXTRA2_READY, EXTRA3_READY, FACE_PLAN, allFaceFiles, assignFaces, deckSize, faceFile, faceTag } from './faces';
 import { ethOfName, makeNameEth } from './names';
 import { Rng } from '../game/rng';
 import { newGame } from '../game/state';
@@ -23,7 +23,8 @@ describe('나라별 얼굴 40장(11-24)', () => {
     expect(deckSize('kr', 'm', true, false) + deckSize('kr', 'f', true, false)).toBe(62);
     // 셋째 묶음이 켜진 나라(EXTRA2_READY)는 80장씩 더(11-25)
     const files = allFaceFiles(true);
-    expect(files.length).toBe(1116 + 80 * EXTRA2_READY.length);
+    // 넷째 묶음(40대, 11-27)이 켜진 나라는 48장씩 더
+    expect(files.length).toBe(1116 + 80 * EXTRA2_READY.length + 48 * EXTRA3_READY.length);
     expect(new Set(files).size).toBe(files.length);
     const missing = files.filter((f) => !have.has(f));
     expect(missing).toEqual([]);
