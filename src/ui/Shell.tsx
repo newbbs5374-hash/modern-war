@@ -72,6 +72,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
   const pres = presOf(state);
   // 11-27 대장 요청: 맨 위 줄 = 지지도·신뢰도·명성·나라 예산·국방비(큰 수는 k·M). 누르면 말풍선에 전부.
   // 11/28 디자인 개편: 같은 5개를 색 동그라미 + 큰 숫자 알약으로(이모지 대신 한 글자 표시)
+  // 11/28 대장 요청: 루비도 넣고 글씨·동그라미를 줄여 3칸×2줄로(위 띠 높이는 그대로)
   const wallet = (
     <button ref={walletRef} className="wallet gx" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
       <span title="지지도"><i style={{ background: '#2f8a52' }}>♥</i>{Math.round(pres.approval)}</span>
@@ -79,6 +80,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
       <span title="명성"><i style={{ background: '#7a4fc0' }}>★</i>{fmtKM(state.officer.fame)}</span>
       <span title="나라 예산"><i style={{ background: '#a37a10' }}>₩</i>{fmtKM(n.treasury)}</span>
       <span title="국방비"><i style={{ background: '#4a6a8a' }}>⛨</i>{fmtKM(n.def ?? 0)}</span>
+      <span title="루비"><i style={{ background: '#c0335a' }}>◆</i>{fmtKM(rubyOf(state))}</span>
     </button>
   );
   const nationRows: Array<{ icon: string; name: string; where: string; v: string; tone?: string }> = [

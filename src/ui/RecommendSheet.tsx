@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type { GameState } from '../game/state';
 import { advisorOf, adviceAccuracy, adviceSeed, canFollow, followAdvice, pickAdvice, tone, type AdviceField } from '../game/advice';
 import { RecCards, adviceTips } from './AdviceBar';
-import { ADVICE_PER_DAY, adviceLeft, autoOn, canRunTip, runTip, setAuto, sortTips, tradeTips, type TipSort, type TradeTip } from '../game/tradeAdvice';
+import { ADVICE_PER_DAY, ADVICE_RESET_H, adviceLeft, adviceResetIn, autoOn, canRunTip, runTip, setAuto, sortTips, tradeTips, type TipSort, type TradeTip } from '../game/tradeAdvice';
 import { countryById } from '../data/world';
 import { Modal } from './kit';
 import { PersonFace } from './CabinetUI';
@@ -13,6 +13,7 @@ import { Flag } from './flag';
 import { ResIcon } from './iconArt';
 import { fmt } from './common';
 import { cabinetOf, ministerOf } from '../game/cabinet';
+import { timeLeft } from './officerScreens';
 
 const NAME: Record<AdviceField | 'culture', string> = { defense: '국방', diplo: '외교', society: '내정', economy: '경제', culture: '문화' };
 
@@ -78,7 +79,9 @@ export function RecommendSheet({
                 {t}
               </button>
             ))}
-            <span className="gx-chip te">오늘 {left}/{ADVICE_PER_DAY}번</span>
+            <span className="gx-chip te">
+              남은 {left}/{ADVICE_PER_DAY}번 · {timeLeft(adviceResetIn(state))} 뒤 다시 채움
+            </span>
           </div>
           {trades.length === 0 && <p className="empty">지금은 남는 거래가 없어요. 시세가 바뀌면 다시 골라 드릴게요.</p>}
           {trades.map((t, i) => {
@@ -137,7 +140,7 @@ export function RecommendSheet({
           <div className="rec-auto glass">
             <span>
               <b>🤖 무역 맡기기</b>
-              <small>장관이 1위 되팔기를 하루 {ADVICE_PER_DAY}번까지 알아서 실행해요</small>
+              <small>장관이 1위 되팔기를 {ADVICE_RESET_H}시간마다 {ADVICE_PER_DAY}번까지 알아서 실행해요</small>
             </span>
             <button className={`gx-switch ${autoOn(state) ? 'on' : ''}`} role="switch" aria-checked={autoOn(state)} onClick={() => apply((s) => setAuto(s, !autoOn(s)))}>
               <i />

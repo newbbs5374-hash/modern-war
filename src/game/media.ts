@@ -1,10 +1,10 @@
 // 기자회견·국민 청원·정상회담(11-23 기획 ⑥⑦⑧).
-// - 기자회견: 실제 6시간마다. 지금 나라 상황에 맞는 질문 3개 → 답 고르기 → 지지도·신뢰도·분야 점수·호감·정적
+// - 기자회견: 실제 6시간마다. 나라 상황 질문 + 평소 질문 50여 개 중 7~10개(최근에 나온 질문은 피함) → 답 고르기 → 지지도·신뢰도·분야 점수·호감·정적
 // - 국민 청원: 도시마다 요구(병원·도로·치안·학교·일자리)가 올라옴. 예산을 써서 들어주면 그 도시 민심↑, 하루 안에 안 들어주면 민심↓
 // - 정상회담: 실제 하루 한 번. 나라와 의제를 골라 만남 → 성공하면 호감·의제 효과·명성, 실패하면 호감·지지도↓
 import { COUNTRIES } from '../data/world';
 import { CITIES } from '../data/cities';
-import { addPresMod, approvalOf, type FieldId } from './approval';
+import { addPresMod, approvalOf, presOf, type FieldId } from './approval';
 import { cabinetOf, ministerOf, ministryPower } from './cabinet';
 import { addFavorNote, civOf, favorOf } from './civ';
 import { note, withOfficer } from './officer';
@@ -51,8 +51,10 @@ export interface MediaState {
   nextId: number;
   /** 다음 기자회견을 열 수 있는 시각 */
   pressMs: number;
-  /** 진행 중인 기자회견: 질문 3개와 지금 몇 번째 */
+  /** 진행 중인 기자회견: 질문 7~10개와 지금 몇 번째 */
   press: { qs: QId[]; i: number; got: string[] } | null;
+  /** 최근 기자회견에 나온 질문(되풀이 줄이기) */
+  recent?: QId[];
   petitions: Petition[];
   petMs: number;
   /** 청원 들어준 수 */
@@ -104,14 +106,16 @@ export interface Answer {
   rival?: number;
   fire?: boolean;
 }
-export type QId = 'war' | 'tax' | 'scandal' | 'opp' | 'cold' | 'city' | 'goal' | 'health' | 'vote' | 'economy';
+export type QId = string;
 interface Question {
   id: QId;
   when: (s: GameState) => boolean;
   ask: (s: GameState) => string;
   answers: (s: GameState) => Answer[];
+  /** 언제든 나오는 평소 질문 */
+  calm?: boolean;
 }
-export const QUESTIONS: Question[] = [
+const BASE_QUESTIONS: Question[] = [
   {
     id: 'war',
     when: (s) => wars(s).length > 0,
@@ -213,7 +217,95 @@ export const QUESTIONS: Question[] = [
     ],
   },
 ];
-export const questionById = (id: QId) => QUESTIONS.find((q) => q.id === id)!;
+
+/* ───────── 11/28 대장 요청: 평소 질문 더 많이(매번 같은 질문이 나오지 않게) ───────── */
+
+/** 짧게 적는 답: [말, 효과] — 효과 글은 자동으로 만듦 */
+type Eff = Pick<Answer, 'approval' | 'trust' | 'field'>;
+const FIELD_NAME: Record<FieldId, string> = { personal: '평판', defense: '안보', diplo: '외교', society: '사회', economy: '경제' };
+const sgn = (v: number) => (v > 0 ? `+${v}` : `−${-v}`);
+export function effSum(e: Eff): string {
+  const out: string[] = [];
+  if (e.field) out.push(`${FIELD_NAME[e.field[0]]} ${sgn(e.field[1])}`);
+  if (e.approval) out.push(`지지도 ${sgn(e.approval)}`);
+  if (e.trust) out.push(`신뢰도 ${sgn(e.trust)}`);
+  return out.join(' · ') || '변화 없음';
+}
+const A = (text: string, e: Eff): Answer => ({ text, sum: effSum(e), ...e });
+const F = (f: FieldId, v: number, more: Omit<Eff, 'field'> = {}): Eff => ({ field: [f, v], ...more });
+/** 평소 질문 하나 */
+const calm = (id: string, ask: string, answers: Answer[], when: (s: GameState) => boolean = () => true): Question => ({ id, when, ask: () => ask, answers: () => answers, calm: true });
+
+export const CALM_QUESTIONS: Question[] = [
+  // 경제
+  calm('jobs', '청년 일자리가 부족하다는 목소리가 높습니다.', [A('청년 고용 기업에 세금을 깎겠습니다', F('economy', 3, { approval: 1 })), A('공공 일자리를 늘리겠습니다', F('society', 4)), A('시장이 알아서 풀 문제입니다', { approval: -2 })]),
+  calm('house', '집값이 너무 올랐다는 불만이 큽니다.', [A('공공 주택을 대거 짓겠습니다', F('society', 4)), A('대출 규제를 풀겠습니다', F('economy', 3, { trust: -1 })), A('곧 안정될 것입니다', { approval: -2 })]),
+  calm('export', '수출이 줄고 있다는 보도가 나왔습니다.', [A('직접 해외 세일즈에 나서겠습니다', F('economy', 4)), A('새 시장을 찾겠습니다', F('diplo', 3)), A('일시적인 현상입니다', { trust: -1 })]),
+  calm('oil', '기름값이 크게 올랐습니다.', [A('유류세를 잠시 낮추겠습니다', { approval: 3, trust: -1 }), A('비축유를 풀겠습니다', F('economy', 3)), A('아껴 쓰자고 부탁드립니다', { approval: -1 })]),
+  calm('startup', '새로 생기는 회사가 줄고 있습니다.', [A('창업 지원금을 두 배로 늘리겠습니다', F('economy', 4)), A('규제를 확 풀겠습니다', F('economy', 3, { trust: 1 })), A('대기업이 더 중요합니다', { approval: -2 })]),
+  calm('farm', '농민들이 쌀값 폭락에 시위하고 있습니다.', [A('정부가 사들이겠습니다', F('society', 3, { approval: 1 })), A('수출길을 열겠습니다', F('economy', 3)), A('경쟁력을 키워야 합니다', { approval: -2 })]),
+  calm('chip', '반도체 경쟁에서 뒤처진다는 우려가 있습니다.', [A('연구 단지를 새로 짓겠습니다', F('economy', 4)), A('인재를 키우겠습니다', F('society', 3)), A('아직 우리가 앞서 있습니다', { trust: -1 })]),
+  calm('debt', '나랏빚이 너무 늘었다는 지적입니다.', [A('씀씀이를 줄이겠습니다', { trust: 3, approval: -1 }), A('성장으로 갚겠습니다', F('economy', 3)), A('빚도 투자입니다', { trust: -2 })]),
+  calm('small', '골목 가게들이 문을 닫고 있습니다.', [A('소상공인 지원금을 풀겠습니다', F('society', 3, { approval: 1 })), A('전통시장 상품권을 늘리겠습니다', F('economy', 3)), A('시대의 흐름입니다', { approval: -3 })]),
+  calm('coin', '가상화폐 투자 피해가 늘고 있습니다.', [A('투자자 보호법을 만들겠습니다', { trust: 2 }), A('새 산업으로 키우겠습니다', F('economy', 3)), A('투자는 본인 책임입니다', { approval: -2 })]),
+  // 사회
+  calm('birth', '아이를 낳는 집이 줄고 있습니다.', [A('육아 수당을 크게 올리겠습니다', F('society', 4, { approval: 1 })), A('집 걱정부터 덜어 드리겠습니다', F('society', 3)), A('개인의 선택입니다', { approval: -2 })]),
+  calm('old', '노인 빈곤 문제가 심각합니다.', [A('기초 연금을 올리겠습니다', F('society', 4)), A('어르신 일자리를 만들겠습니다', F('economy', 2, { approval: 1 })), A('가족이 함께 돌봐야 합니다', { approval: -2 })]),
+  calm('school', '사교육비 부담이 크다는 학부모가 많습니다.', [A('공교육을 확 바꾸겠습니다', F('society', 4)), A('방과후 수업을 무료로 하겠습니다', { approval: 2 }), A('교육열은 우리의 힘입니다', { trust: -1 })]),
+  calm('hospital', '지방에 병원이 부족합니다.', [A('국립 병원을 짓겠습니다', F('society', 4)), A('원격 진료를 열겠습니다', F('economy', 2, { trust: 1 })), A('큰 도시로 가시면 됩니다', { approval: -3 })]),
+  calm('crime', '흉악 범죄가 늘었다는 불안이 큽니다.', [A('경찰을 늘리겠습니다', F('society', 3, { approval: 1 })), A('처벌을 무겁게 하겠습니다', { approval: 2, trust: -1 }), A('통계로는 줄었습니다', { approval: -1 })]),
+  calm('dust', '미세먼지가 너무 심합니다.', [A('공장 배출을 강하게 막겠습니다', F('society', 3, { trust: 1 })), A('이웃 나라와 함께 풀겠습니다', F('diplo', 3)), A('비가 오면 좋아집니다', { approval: -2 })]),
+  calm('quake', '지진 대비가 부족하다는 지적입니다.', [A('건물 안전 점검을 하겠습니다', F('society', 3, { trust: 1 })), A('재난 훈련을 늘리겠습니다', F('defense', 2, { approval: 1 })), A('우리 땅은 안전합니다', { trust: -2 })]),
+  calm('drug', '마약 사건이 잇따르고 있습니다.', [A('마약과의 전쟁을 선포합니다', F('society', 3, { approval: 1 })), A('치료 센터를 늘리겠습니다', F('society', 2, { trust: 1 })), A('일부의 일탈입니다', { trust: -2 })]),
+  calm('sports', '국가대표팀이 큰 대회에서 우승했습니다!', [A('선수단을 청와대로 초대하겠습니다', { approval: 3 }), A('체육 예산을 늘리겠습니다', F('society', 3)), A('축하는 국민 몫입니다', F('personal', 2))]),
+  calm('idol', '우리 가수가 세계 1위를 했습니다.', [A('문화 예산을 늘리겠습니다', F('personal', 3, { approval: 1 })), A('해외 공연을 돕겠습니다', F('diplo', 3)), A('잘 모르는 분야입니다', { approval: -1 })]),
+  calm('strike', '큰 노조가 파업을 예고했습니다.', [A('직접 만나 이야기하겠습니다', F('society', 3, { trust: 1 })), A('법대로 하겠습니다', F('economy', 2, { approval: -1 })), A('불법 파업은 용서 없습니다', { approval: -2, trust: 1 })]),
+  calm('ai', '인공지능이 일자리를 빼앗는다는 걱정이 있습니다.', [A('새 기술 교육을 무료로 하겠습니다', F('society', 3)), A('AI 산업을 키워 새 일자리를 만들겠습니다', F('economy', 4)), A('막을 수 없는 흐름입니다', { approval: -2 })]),
+  // 안보·외교
+  calm('spy', '외국 간첩이 잡혔다는 소식입니다.', [A('배후를 끝까지 밝히겠습니다', F('defense', 4)), A('외교 경로로 항의하겠습니다', F('diplo', 2, { trust: 1 })), A('조용히 처리하겠습니다', { trust: -1 })]),
+  calm('cyber', '정부 전산망이 해킹당했습니다.', [A('사이버 부대를 늘리겠습니다', F('defense', 4)), A('피해를 숨김없이 밝히겠습니다', { trust: 3 }), A('큰 피해는 없습니다', { trust: -2 })]),
+  calm('draft', '군 복무 기간을 줄여 달라는 요구가 있습니다.', [A('줄이고 첨단 무기로 채우겠습니다', { approval: 3, field: ['defense', -2] }), A('지금이 꼭 필요합니다', F('defense', 3, { approval: -1 })), A('급여를 올려 드리겠습니다', F('defense', 2, { approval: 1 }))]),
+  calm('arms', '무기 수출이 늘었다는데 비판도 있습니다.', [A('우리 방산은 세계 최고입니다', F('economy', 3)), A('평화를 위한 나라에만 팝니다', F('diplo', 3)), A('비판은 받아들이겠습니다', { trust: 1 })]),
+  calm('ally', '동맹국이 방위비를 더 내라고 합니다.', [A('당당히 협상하겠습니다', F('diplo', 3, { approval: 1 })), A('우리 힘으로 지키겠습니다', F('defense', 4)), A('요구를 들어주겠습니다', { approval: -3, field: ['diplo', 2] })]),
+  calm('refugee', '난민을 받아야 하느냐는 논쟁이 뜨겁습니다.', [A('인도적으로 받겠습니다', F('diplo', 4, { approval: -1 })), A('엄격히 심사하겠습니다', { trust: 2 }), A('받지 않겠습니다', { approval: 1, field: ['diplo', -3] })]),
+  calm('nuke', '핵무장을 해야 한다는 여론이 있습니다.', [A('모든 길을 열어 두겠습니다', F('defense', 4)), A('비핵화 원칙은 그대로입니다', F('diplo', 3)), A('지금 말할 때가 아닙니다', { trust: -1 })]),
+  calm('space', '우리 위성 발사가 성공했습니다.', [A('우주 강국이 되겠습니다', F('personal', 3, { approval: 1 })), A('국방 위성도 늘리겠습니다', F('defense', 3)), A('연구원들의 공입니다', { trust: 2 })]),
+  calm('border', '국경에서 작은 충돌이 있었습니다.', [A('단호히 대응하겠습니다', F('defense', 4)), A('대화로 풀겠습니다', F('diplo', 3)), A('별일 아닙니다', { trust: -2 })]),
+  calm('un', '국제기구에서 우리 목소리가 작다는 지적입니다.', [A('분담금을 늘리겠습니다', F('diplo', 4, { approval: -1 })), A('평화 유지군을 보내겠습니다', F('diplo', 3)), A('실리가 더 중요합니다', F('economy', 2))]),
+  // 개인·정치
+  calm('family', '가족 회사 특혜 의혹이 나왔습니다.', [A('모든 자료를 공개하겠습니다', { trust: 3, approval: -1 }), A('사실이 아닙니다', { approval: -2 }), A('법대로 조사받겠습니다', { trust: 2 })]),
+  calm('promise', '선거 공약을 안 지켰다는 비판이 있습니다.', [A('남은 임기에 꼭 지키겠습니다', { approval: 1, trust: -1 }), A('상황이 바뀌어 고쳤습니다', { trust: 2 }), A('대부분 지켰습니다', { approval: -2 })]),
+  calm('holiday', '휴가를 너무 오래 갔다는 지적입니다.', [A('휴가를 줄이겠습니다', { approval: 2 }), A('쉬어야 일도 잘합니다', F('personal', 1, { approval: -1 })), A('휴가 중에도 일했습니다', { trust: -1 })]),
+  calm('young', '젊은 층의 지지가 낮습니다.', [A('청년 장관을 뽑겠습니다', { approval: 2 }), A('SNS로 직접 소통하겠습니다', F('personal', 3)), A('결국 성과로 알아줄 것입니다', { trust: 1 })]),
+  calm('media', '언론을 탄압한다는 비판이 있습니다.', [A('언론 자유는 꼭 지키겠습니다', { trust: 3 }), A('가짜 뉴스만 막겠습니다', F('society', 2, { approval: -1 })), A('언론도 반성해야 합니다', { approval: -3 })]),
+  calm('reform', '공무원 사회가 너무 느리다는 불만입니다.', [A('부처를 확 줄이겠습니다', F('economy', 3, { trust: -1 })), A('일 잘하면 상을 주겠습니다', F('society', 2, { trust: 1 })), A('공무원은 잘하고 있습니다', { approval: -1 })]),
+  calm('hobby', '대통령의 취미가 궁금합니다.', [A('(웃으며) 등산입니다', { approval: 2 }), A('밤마다 역사책을 읽습니다', F('personal', 2)), A('일이 취미입니다', { trust: 1 })]),
+  calm('rich', '부자 증세를 해야 한다는 목소리가 있습니다.', [A('공정하게 더 걷겠습니다', F('society', 3, { approval: 1 })), A('투자가 줄어들 것입니다', F('economy', 3, { approval: -1 })), A('검토하겠습니다', { trust: -1 })]),
+  calm('flood', '장마로 큰 피해가 났습니다.', [A('바로 현장으로 가겠습니다', { approval: 3 }), A('특별 재난 지역으로 정하겠습니다', F('society', 4)), A('하늘이 한 일입니다', { approval: -4 })]),
+];
+
+/** 상황 질문 더(나라 상황에 맞을 때만) */
+const hot = (id: string, when: (s: GameState) => boolean, ask: (s: GameState) => string, answers: Answer[]): Question => ({ id, when, ask, answers: () => answers });
+export const HOT_MORE: Question[] = [
+  hot('warcost', (s) => wars(s).length > 0, () => '전쟁 비용이 너무 크다는 지적입니다.', [A('승리가 가장 싼 길입니다', F('defense', 3, { approval: -1 })), A('전쟁 국채를 발행하겠습니다', F('economy', -2, { trust: 1 })), A('다른 예산을 줄이겠습니다', F('society', -2, { trust: 2 }))]),
+  hot('warfam', (s) => wars(s).length > 0, (s) => `${wa(wars(s)[0]?.name ?? '적국')}의 전쟁에 나간 장병 가족들이 걱정이 많습니다.`, [A('장병 가족을 끝까지 돌보겠습니다', F('society', 3, { approval: 2 })), A('곧 모두 돌아올 것입니다', { approval: 2, trust: -2 }), A('희생은 잊지 않겠습니다', { trust: 2 })]),
+  hot('hightrust', (s) => s.officer.trust < 40, () => '정부를 믿지 못하겠다는 국민이 늘었습니다.', [A('모든 회의를 공개하겠습니다', { trust: 4, approval: -1 }), A('결과로 믿음을 되찾겠습니다', { trust: 2 }), A('오해가 쌓였을 뿐입니다', { trust: -2 })]),
+  hot('popular', (s) => approvalOf(s) >= 65, () => '지지도가 아주 높은데, 비결이 무엇입니까?', [A('모두 국민 덕분입니다', { approval: 2 }), A('지금부터가 더 중요합니다', { trust: 2 }), A('제가 잘해서입니다', F('personal', 2, { approval: -2 }))]),
+  hot('lowtax', (s) => taxOf(s) === 'low', () => '세금이 너무 낮아 나라 살림이 걱정된다는 말이 있습니다.', [A('세금은 그대로, 씀씀이를 줄이겠습니다', { approval: 1, trust: 1 }), A('조금 올리겠습니다', { approval: -2, trust: 2 }), A('경제가 살아나면 채워집니다', F('economy', 3))]),
+];
+
+for (const q of BASE_QUESTIONS) if (['economy', 'goal', 'health'].includes(q.id)) q.calm = true;
+export const QUESTIONS: Question[] = [...BASE_QUESTIONS, ...HOT_MORE, ...CALM_QUESTIONS];
+/** 한 번 회견의 질문 수(7~10) */
+export const PRESS_MIN = 7;
+export const PRESS_MAX = 10;
+/** 상황 질문은 한 회견에 이만큼까지 */
+const PRESS_HOT_MAX = 4;
+/** 최근 질문 기억 수 */
+const PRESS_RECENT = 30;
+const QMAP = new Map(QUESTIONS.map((q) => [q.id, q]));
+/** 없는 질문(옛 저장 등)은 평소 질문으로 대신 */
+export const questionById = (id: QId) => QMAP.get(id) ?? QMAP.get('goal')!;
 
 export function canPress(s: GameState): string | null {
   const m = mediaOf(s);
@@ -221,23 +313,56 @@ export function canPress(s: GameState): string | null {
   if (s.worldMs < m.pressMs) return '다음 기자회견을 기다려요';
   return null;
 }
-/** 기자회견 열기: 상황에 맞는 질문 우선 3개 */
+/** 기자회견 열기: 상황 질문 먼저(최대 4개), 나머지는 최근에 안 나온 평소 질문으로 7~10개 */
 export function startPress(s: GameState): GameState {
   const m = structuredClone(mediaOf(s));
   if (m.press || s.worldMs < m.pressMs) return s;
   const rng = new Rng(m.seed);
-  const hot = QUESTIONS.filter((q) => !['economy', 'goal', 'health'].includes(q.id) && q.when(s)).map((q) => q.id);
-  const calm: QId[] = ['economy', 'goal', 'health'];
+  const recent = new Set(m.recent ?? []);
+  const total = PRESS_MIN + Math.floor(rng.next() * (PRESS_MAX - PRESS_MIN + 1));
+  const take = (from: QId[], n: number, out: QId[]) => {
+    while (out.length < n && from.length) out.push(from.splice(Math.floor(rng.next() * from.length), 1)[0]);
+  };
+  const hotIds = QUESTIONS.filter((q) => !q.calm && q.when(s)).map((q) => q.id);
   const pick: QId[] = [];
-  while (pick.length < 3 && hot.length) pick.push(hot.splice(Math.floor(rng.next() * hot.length), 1)[0]);
-  while (pick.length < 3 && calm.length) pick.push(calm.splice(Math.floor(rng.next() * calm.length), 1)[0]);
+  // 상황 질문: 최근에 안 나온 것 먼저
+  take(hotIds.filter((id) => !recent.has(id)), PRESS_HOT_MAX, pick);
+  take(hotIds.filter((id) => recent.has(id) && !pick.includes(id)), Math.min(2, PRESS_HOT_MAX), pick);
+  const calmIds = QUESTIONS.filter((q) => q.calm && q.when(s)).map((q) => q.id);
+  take(calmIds.filter((id) => !recent.has(id)), total, pick);
+  take(calmIds.filter((id) => !pick.includes(id)), total, pick);
+  // 상황 질문을 섞어서 앞에만 몰리지 않게
+  for (let i = pick.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.next() * (i + 1));
+    [pick[i], pick[j]] = [pick[j], pick[i]];
+  }
   m.seed = rng.seed;
   m.press = { qs: pick, i: 0, got: [] };
+  m.recent = [...(m.recent ?? []).filter((id) => !pick.includes(id)), ...pick].slice(-PRESS_RECENT);
   return { ...s, media: m };
 }
 /** 정치 스탯 배율(좋은 효과만 키움) */
 export const pressMult = (s: GameState) => Math.max(0.8, Math.min(1.6, 0.75 + (s.officer.stats['정치'] ?? 8) / 40)) + ministryPower(s, 'kocis') * 0.1;
 
+const PRESS_WHY = '🎙️ 기자회견';
+/** 기자회견 지지도 효과 합계 한도 */
+export const PRESS_APPROVAL_CAP = 8;
+/** 기자회견 분야 점수 효과(분야마다) 합계 한도 */
+export const PRESS_FIELD_CAP = 10;
+function mergePresMod(s: GameState, v: number): GameState {
+  const p = presOf(s);
+  const live = p.mods.filter((x) => x.untilMs > s.worldMs);
+  const old = live.find((x) => x.why === PRESS_WHY);
+  const nv = Math.round(Math.max(-PRESS_APPROVAL_CAP, Math.min(PRESS_APPROVAL_CAP, (old?.v ?? 0) + v)) * 10) / 10;
+  if (!old) return addPresMod(s, PRESS_WHY, nv, 24);
+  return { ...s, pres: { ...p, mods: live.map((x) => (x === old ? { ...x, v: nv, untilMs: s.worldMs + 24 * H } : x)) } };
+}
+function mergeFieldMod(m: MediaState, now: number, field: FieldId, v: number) {
+  const old = m.mods.find((x) => x.untilMs > now && x.field === field && x.why === PRESS_WHY);
+  if (!old) return addMod(m, now, field, Math.max(-PRESS_FIELD_CAP, Math.min(PRESS_FIELD_CAP, v)), 24, PRESS_WHY);
+  old.v = Math.round(Math.max(-PRESS_FIELD_CAP, Math.min(PRESS_FIELD_CAP, old.v + v)) * 10) / 10;
+  old.untilMs = now + 24 * H;
+}
 export function answerPress(s: GameState, n: number): GameState {
   const m0 = mediaOf(s);
   if (!m0.press) return s;
@@ -247,7 +372,8 @@ export function answerPress(s: GameState, n: number): GameState {
   const k = pressMult(s);
   const up = (v: number) => (v > 0 ? v * k : v);
   let ns: GameState = s;
-  if (a.approval) ns = addPresMod(ns, '🎙️ 기자회견', up(a.approval), 24);
+  // 질문이 7~10개라 효과는 회견 하나에 한 줄로 합치고 한도를 둠(다른 효과 줄을 밀어내지 않게)
+  if (a.approval) ns = mergePresMod(ns, up(a.approval));
   if (a.trust) ns = withOfficer(ns, (o) => void (o.trust = clamp(o.trust + up(a.trust!))));
   if (a.rival)
     ns = withOfficer(ns, (o) =>
@@ -272,7 +398,7 @@ export function answerPress(s: GameState, n: number): GameState {
     }
   }
   const m = structuredClone(mediaOf(ns));
-  if (a.field) addMod(m, s.worldMs, a.field[0], up(a.field[1]), 24, '🎙️ 기자회견');
+  if (a.field) mergeFieldMod(m, s.worldMs, a.field[0], up(a.field[1]));
   const press = m.press!;
   press.got = [...press.got, `${a.text} → ${a.sum}`];
   press.i++;
