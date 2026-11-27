@@ -1,5 +1,6 @@
 // 외교 → 파병: 내가 만든 부대를 연합국·친한 나라로 보냄(game/deploy.ts)
 // 11-26: 다른 나라·바다의 파병 요청(자주 옴) · 파병 중 교전(병과에 맞는 3D 전투 40가지)
+import { specialBuffs } from '../game/losses';
 import { BoostBar } from './BoostBar';
 import { useState } from 'react';
 import { COUNTRIES, countryById } from '../data/world';
@@ -125,7 +126,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
                     onClick={() => {
                       const plan = clashPlan(x);
                       if (!plan) return;
-                      const r = autoField(plan.stages[0]);
+                      const r = autoField(plan.stages[0], { usBuff: specialBuffs(x.units) });
                       const text = actions.applyWith((s) => {
                         const o = settleClash(s, x.id, r.win, Math.min(2, r.stars), '맡김');
                         return { state: o.state, out: o.text };

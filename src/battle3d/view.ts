@@ -20,7 +20,7 @@ export interface Battle3DOptions {
   /** 공성전: 이 막의 전장 · 넘어온 부대 · 예산 · 시작 지휘력 · 적 체력 배수 · 위에 보일 막 이름 */
   stage?: unknown; preset?: unknown[]; budget?: number; cp0?: number; foeHp?: number; actLabel?: string; naval?: number;
   /** 11-26 훈련 전장: 배치 고정(카드 없이 바로 개시) · 병과 숙련 배수 · 전투 중 땅을 누르면(집중 사격·정찰) · 오른쪽 막대 · 끝 글 */
-  lockDeploy?: boolean; usBuff?: Record<string, number>;
+  lockDeploy?: boolean; usBuff?: Record<string, number>; foeBuff?: Record<string, number>;
   onTap?(S: unknown, x: number, z: number, u: unknown): string | void;
   bar?(S: unknown): { label: string; pct: number; txt: string };
   endText?(S: unknown, win: boolean, timeout: boolean): string;
@@ -1220,7 +1220,7 @@ function placeAt(i){
 function setupDeploy(useDefault){
   clearUnits(); fx.splice(0).forEach(f=>scene.remove(f.o)); vq.length=0; lastResult=null;
   const prev=useDefault?capPicks(opts.preset?(URBAN&&!opts.lockDeploy&&!ST.drill?fillReinf(opts.preset,BUDGET_NOW):opts.preset):autoDeploy(BUDGET_NOW)):deploy.map(d=>({kind:d.kind,tile:d.tile,hp:d.hp,carried:d.carried}));
-  const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp,usBuff:opts.usBuff}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
+  const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp,usBuff:opts.usBuff,foeBuff:opts.foeBuff}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
   depTiles.forEach(t=>{t.m.visible=t.e.visible=true;});
   $("#deployUI").hidden=false;$("#battleUI").hidden=true;$("#end").hidden=true;$("#aim").hidden=true;
   if(opts.lockDeploy){$("#tabs").hidden=true;$("#cards").hidden=true;$("#clear").hidden=true;$("#dhint").textContent="부대가 정해진 훈련이에요 · 시점을 보고 '작전 개시'";}

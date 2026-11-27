@@ -5,6 +5,8 @@ import type { GameState } from './state';
 import { baseUnit } from '../data/forces';
 import { DEF, type Kind } from '../battle3d/sim';
 import { SPECIAL_POWER } from '../data/economy';
+import { specialsOf } from '../data/specials';
+import { COUNTRIES } from '../data/world';
 
 /** 부대 묶음에서 쓰러진 만큼 빼기. 돌려주는 것: 남은 묶음 · 실제로 뺀 것 */
 export function subtractDead(units: Record<string, number>, dead: Record<string, number> | undefined): { units: Record<string, number>; taken: Record<string, number> } {
@@ -68,4 +70,21 @@ export function mulBuffs(a: Partial<Record<Kind, number>>, b: Partial<Record<Kin
   const out: Partial<Record<Kind, number>> = { ...a };
   for (const [k, v] of Object.entries(b) as Array<[Kind, number]>) out[k] = Math.round((out[k] ?? 1) * v * 1000) / 1000;
   return out;
+}
+
+/** 11-27 적 나라 특별 병과: AI 나라는 그 병과를 모두 특별 병과로 냄 → 3D 전투에서 그 병과 적은 체력·공격 ×1.3 */
+export function foeBuffs(country: string | null | undefined): Partial<Record<Kind, number>> {
+  if (!country) return {};
+  const bases = new Set(specialsOf(country).map((d) => d.base));
+  const out: Partial<Record<Kind, number>> = {};
+  for (const [kind, d] of Object.entries(DEF) as Array<[Kind, { name: string }]>) if (bases.has(d.name)) out[kind] = SPECIAL_POWER;
+  return out;
+}
+
+/** 이 전투의 적 나라: 적 이름(예: 중국군) → 없으면 대상 도시 주인(내 도시면 없음) */
+export function foeCountryOf(s: GameState, spec: { enemy?: string; city?: string }): string | null {
+  const byName = spec.enemy ? COUNTRIES.find((c) => spec.enemy === `${c.name}군` || spec.enemy === c.name) : undefined;
+  if (byName && byName.id !== s.player.countryId) return byName.id;
+  const own = spec.city ? s.world.owner[spec.city] : undefined;
+  return own && own !== s.player.countryId ? own : null;
 }
