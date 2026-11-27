@@ -1465,6 +1465,29 @@ button.big { min-height: 64px; font-size: 18px; }
 .sns-tag { color: #fb923c; font-weight: 700; }
 .sns-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
 .sns-act button { font-size: 12px; padding: 5px 10px; }
+/* 내 글 쓰기(11-27) */
+.sns-write { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px; border-radius: 14px; font-weight: 800; }
+.sns-write small { font-weight: 500; font-size: 11px; opacity: 0.85; }
+.sns-compose { display: flex; flex-direction: column; gap: 6px; background: #17212b; border: 1px solid #14b8a655; border-radius: 14px; padding: 8px; }
+.sns-c-head { display: flex; justify-content: space-between; align-items: center; }
+.sns-tones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.sns-tones button { color: inherit; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 11px; padding: 5px 2px; border-radius: 10px; background: #1e2833; border: 1px solid #ffffff1a; white-space: nowrap; }
+.sns-tones button span { font-size: 20px; line-height: 1.1; }
+.sns-tones button.t-good.on { background: #14b8a6; color: #04201d; border-color: #14b8a6; font-weight: 800; }
+.sns-tones button.t-bad.on { background: #f97316; color: #2a1102; border-color: #f97316; font-weight: 800; }
+.sns-tones button.t-self.on { background: #ffb020; color: #2a1d02; border-color: #ffb020; font-weight: 800; }
+.sns-targets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; max-height: 132px; overflow-y: auto; }
+.sns-targets button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 3px 1px; border-radius: 8px; background: #1e2833; border: 1px solid #ffffff14; font-size: 18px; }
+.sns-targets button small { font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.sns-targets button i { position: absolute; top: 0; right: 1px; font-size: 10px; font-style: normal; }
+.sns-targets button.on { border-color: #14b8a6; background: #14b8a633; }
+.sns-input { width: 100%; box-sizing: border-box; resize: none; font: inherit; font-size: 13px; background: #0d141b; color: inherit; border: 1px solid #ffffff22; border-radius: 10px; padding: 6px 8px; }
+.sns-c-row { display: flex; justify-content: space-between; align-items: center; }
+.sns-pv { margin: 0; line-height: 1.5; background: #0d141b; border-radius: 10px; padding: 6px 8px; }
+.sns-pv .up { color: #5eead4; }
+.sns-pv .down { color: #fb923c; }
+.sns-tag.mine { color: #5eead4; }
+.sns-re-btn { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: transparent; border: 1px solid #ffffff22; }
 
 /* 11-27 4막 구조 */
 .hq.act-hq { border: 1px solid var(--hud, #3fb8c9); background: #3d5566; }
