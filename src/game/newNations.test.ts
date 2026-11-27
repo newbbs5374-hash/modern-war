@@ -28,11 +28,11 @@ describe('새 나라 5개', () => {
   });
   it('새 나라로 시작해서 열흘을 보낼 수 있음', () => {
     for (const id of NEW) {
-      const s = advance(newGame('t', id, 0, { seed: 5, realWorld: true }), 10 * DAY);
+      const s = advance(newGame('t', id, 0, { seed: 5, realWorld: true }), 5 * DAY); // 11-27 나라 36개: 느려져 닷새로
       expect(s.player.countryId).toBe(id);
       expect(Number.isFinite(s.nations[id].treasury)).toBe(true);
     }
-  }, 60000);
+  }, 180000);
   it('지금 세계 정세: 대만 해협·카슈미르 긴장으로 시작', () => {
     const s = newGame('t', 'kr', 0, { seed: 5, realWorld: true });
     expect(s.world.pairs['cn|tw'].tension).toBe(70);

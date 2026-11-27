@@ -5,6 +5,7 @@
 // 계산: game/nation.ts(applyNation·nationEff). 그림 자리: src/assets/dom/trait-<나라>-<1~3>.webp(없으면 이모지).
 import type { MinistryId } from './cabinet';
 import type { OfficeId, PostEff, PostId } from './staff';
+import { NEW_GOV } from './nations2';
 
 /** 나라 특징 효과: 대통령실 효과와 같은 종류 + 자원 생산(res) */
 export type NationEffKey = PostEff | 'res';
@@ -614,6 +615,8 @@ export const NATION_GOV: Record<string, NationGov> = {
       T('🏜️', '석유 의존 경제', '사회 점수 −4 · 인구 성장 −3%', { soc: -4, growth: -0.03 }, true),
     ],
   },
+  // 11-27 새 나라 18개(nations2.ts)
+  ...NEW_GOV,
 };
 
 export const nationGov = (id: string): NationGov => NATION_GOV[id] ?? NATION_GOV.kr;

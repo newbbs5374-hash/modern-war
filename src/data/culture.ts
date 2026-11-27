@@ -244,6 +244,7 @@ export const cultureEventById = (id: CultureEventId) => CULTURE_EVENTS.find((e) 
 export const CULTURE_BASE: Record<string, number> = {
   us: 1.35, uk: 1.2, jp: 1.2, de: 1.05, kr: 1.15, cn: 1.15, in: 1.05, ru: 0.95, tr: 1.0, il: 0.85, ir: 0.85, ua: 0.8, kp: 0.45,
   tw: 1.0, pl: 0.9, ph: 0.85, pk: 0.75, sa: 0.8,
+  eg: 1.0, ng: 0.95, za: 0.9, et: 0.7, dz: 0.75, br: 1.15, ar: 1.0, co: 0.95, ve: 0.75, cl: 0.85, au: 1.1, ca: 1.1, mx: 1.05, fr: 1.3, it: 1.25, es: 1.15, gr: 1.0, fi: 0.9,
 };
 /** 나라별 문화 특기: 이 시설 관광·문화 +30% */
 export const CULTURE_SPECIAL: Record<string, { venue: VenueId; text: string }> = {
@@ -265,6 +266,25 @@ export const CULTURE_SPECIAL: Record<string, { venue: VenueId; text: string }> =
   ph: { venue: 'stage', text: '노래 대회와 노래방' },
   pk: { venue: 'stadium', text: '크리켓 열기' },
   sa: { venue: 'heritage', text: '사막의 옛 오아시스 도시' },
+  // 11-27 새 나라 18개
+  eg: { venue: 'heritage', text: '피라미드와 신전' },
+  ng: { venue: 'studio', text: '놀리우드 영화' },
+  za: { venue: 'stadium', text: '럭비와 축구' },
+  et: { venue: 'heritage', text: '바위 교회와 옛 왕국' },
+  dz: { venue: 'heritage', text: '사하라 옛 도시' },
+  br: { venue: 'stage', text: '삼바 축제' },
+  ar: { venue: 'stage', text: '탱고' },
+  co: { venue: 'stage', text: '쿰비아 음악' },
+  ve: { venue: 'stage', text: '미인 대회' },
+  cl: { venue: 'park', text: '파타고니아 국립공원' },
+  au: { venue: 'park', text: '산호초와 사막' },
+  ca: { venue: 'park', text: '로키산맥과 호수' },
+  mx: { venue: 'heritage', text: '마야·아스테카 유적' },
+  fr: { venue: 'museum', text: '루브르와 패션' },
+  it: { venue: 'museum', text: '르네상스 미술' },
+  es: { venue: 'stadium', text: '축구 명문 구단' },
+  gr: { venue: 'heritage', text: '신전과 올림픽' },
+  fi: { venue: 'studio', text: '게임 회사와 사우나' },
 };
 export const SPECIAL_BONUS = 0.3;
 

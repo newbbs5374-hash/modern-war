@@ -115,7 +115,7 @@ describe('나라 열기 · 유산', () => {
     expect(one).toHaveLength(6);
     for (const id of ['kp', 'jp', 'cn', 'tw', 'ph']) expect(one).toContain(id);
     expect(unlockedNations([{ country: '일본' }, { country: '한국' }]).length).toBe(11);
-    expect(unlockedNations([], true).length).toBe(18);
+    expect(unlockedNations([], true).length).toBe(36);
   });
   it('유산은 이긴 횟수만큼(5번까지) 시작 보너스', () => {
     expect(legacyOf([])).toEqual({ wins: 0, ruby: 0, boosts: 0 });

@@ -36,6 +36,25 @@ const BASE: Record<string, { cpi: number; growth: number; rate: number }> = {
   ph: { cpi: 3.5, growth: 5.5, rate: 6 },
   pk: { cpi: 12, growth: 2.5, rate: 15 },
   sa: { cpi: 2, growth: 3.5, rate: 5.5 },
+  // 11-27 새 나라 18개
+  eg: { cpi: 20, growth: 4, rate: 25 },
+  ng: { cpi: 25, growth: 3, rate: 27 },
+  za: { cpi: 4.5, growth: 1, rate: 8 },
+  et: { cpi: 18, growth: 6.5, rate: 15 },
+  dz: { cpi: 6, growth: 3.5, rate: 3 },
+  br: { cpi: 4.5, growth: 2.5, rate: 11 },
+  ar: { cpi: 60, growth: 3, rate: 40 },
+  co: { cpi: 5, growth: 2, rate: 9.5 },
+  ve: { cpi: 50, growth: 2, rate: 55 },
+  cl: { cpi: 4, growth: 2.5, rate: 5.5 },
+  au: { cpi: 3, growth: 2, rate: 4 },
+  ca: { cpi: 2.5, growth: 1.5, rate: 3 },
+  mx: { cpi: 4, growth: 1.5, rate: 9.5 },
+  fr: { cpi: 2, growth: 1, rate: 3 },
+  it: { cpi: 1.5, growth: 0.8, rate: 3 },
+  es: { cpi: 2.5, growth: 2.5, rate: 3 },
+  gr: { cpi: 3, growth: 2, rate: 3 },
+  fi: { cpi: 1.5, growth: 0.8, rate: 3 },
 };
 export const baseOf = (s: GameState) => BASE[s.player.countryId] ?? BASE.kr;
 /** 나라마다 금리 폭이 다름(튀르키예 40% 등) → '중립 금리'를 기준으로 계산 */

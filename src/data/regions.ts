@@ -22,6 +22,11 @@ export const REGION_OF: Record<string, string> = {
   cn: 'asia', jp: 'asia', kr: 'asia', kp: 'asia', tw: 'asia', ph: 'asia', in: 'asia', pk: 'asia',
   ru: 'europe', de: 'europe', uk: 'europe', ua: 'europe', pl: 'europe',
   tr: 'mideast', il: 'mideast', ir: 'mideast', sa: 'mideast',
+  // 11-27 새 나라 18개. 호주는 오세아니아에 혼자라 아시아·태평양 패권을 함께 다툼
+  ca: 'americas', mx: 'americas', br: 'americas', ar: 'americas', co: 'americas', ve: 'americas', cl: 'americas',
+  eg: 'africa', ng: 'africa', za: 'africa', et: 'africa', dz: 'africa',
+  fr: 'europe', it: 'europe', es: 'europe', gr: 'europe', fi: 'europe',
+  au: 'asia',
 };
 
 export const regionOf = (id: string): string => REGION_OF[id] ?? countryById(id).continent;

@@ -55,6 +55,25 @@ export const COUNTRY_COLORS: Record<string, string> = {
   ph: "#d946ef",
   pk: "#15803d",
   sa: "#c2410c",
+  // 11-27 새 나라 18개
+  eg: "#eab308",
+  ng: "#16a34a",
+  za: "#0d9488",
+  et: "#b45309",
+  dz: "#4d7c0f",
+  br: "#10b981",
+  ar: "#7dd3fc",
+  co: "#fde047",
+  ve: "#be123c",
+  cl: "#2563eb",
+  au: "#0ea5e9",
+  ca: "#dc2626",
+  mx: "#65a30d",
+  fr: "#1d4ed8",
+  it: "#059669",
+  es: "#f59e0b",
+  gr: "#60a5fa",
+  fi: "#e0f2fe",
 };
 
 export const REL_COLORS: Record<Relation | "나", string> = {

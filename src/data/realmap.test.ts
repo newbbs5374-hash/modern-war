@@ -29,7 +29,8 @@ describe("현실 세계지도", () => {
       if (isLand(c.x, c.y)) land++;
     }
     // 11-26 새 나라: 작은 섬(마궁·바스코)·바닷가(다바오·삼보앙가·지잔)는 거친 땅 모양 밖일 수 있음
-    expect(land).toBeGreaterThanOrEqual(CITIES.length - 12);
+    // 11-27 새 나라 18개: 바닷가·섬 도시(후르가다·더반·툴롱·팔마·로도스 등 19곳)도 거친 땅 모양 밖일 수 있음
+    expect(land).toBeGreaterThanOrEqual(CITIES.length - 34);
   });
   it("분쟁 지역·성지는 바다 위(다른 나라 땅과 겹치지 않음)", () => {
     for (const id of Object.keys(ISLAND_LONLAT)) {

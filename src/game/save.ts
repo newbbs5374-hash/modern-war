@@ -167,7 +167,7 @@ function addNewNations(s: GameState): void {
         ? { rel: now.rel, tension: now.tension, weariness: now.weariness }
         : { rel, tension: rel === '중립' ? (isRival(a.id, b.id) ? 25 : 5) : 0, weariness: 0 };
     }
-  w.events.unshift({ t: s.worldMs, kind: '외교', text: '🌏 새 나라 5개(대만·폴란드·필리핀·파키스탄·사우디아라비아)가 세계 무대에 나왔어요.', mine: false });
+  w.events.unshift({ t: s.worldMs, kind: '외교', text: `🌏 새 나라 ${add.length}개(${add.map((c) => c.name).join('·')})가 세계 무대에 나왔어요.`, mine: false });
 }
 
 export function saveGame(s: GameState, st: Storage | null = storage()): boolean {
