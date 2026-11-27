@@ -10,6 +10,7 @@ import { occAdminTick } from './occAdmin';
 import type { OccAdminState } from './occAdmin';
 import { pressureTick, tariffMult, type PressureState } from './pressure';
 import { surrenderTick, vassalMult, type VassalState } from './surrender';
+import { hegemonyMult, hegemonyTick, type HegemonyState } from './hegemony';
 import { applyOrigin, type OriginId } from './origin';
 import type { LeaderLook } from '../data/looks';
 import { START_SANCTIONS } from '../data/conflicts';
@@ -72,6 +73,7 @@ import { actsTick } from './acts';
 import { counterTick, type CounterState } from './counter';
 import { finaleTick, type FinaleState } from './finale';
 import { sagaTick, type SagaState } from './saga';
+import type { TourState } from './tour';
 import type { CampaignState } from './campaign';
 
 export interface NationState {
@@ -172,6 +174,8 @@ export interface GameState {
   finale?: FinaleState;
   /** 11-27 연속 위기 이야기 */
   saga?: SagaState;
+  /** 11-27 지방 순방 */
+  tour?: TourState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
@@ -180,6 +184,8 @@ export interface GameState {
   pressure?: PressureState;
   /** 속국 항복(11-26). 없으면 속국 없음 */
   vassal?: VassalState;
+  /** 11-27 대륙 패권·제재·약탈 계약·도움 요청(hegemony.ts). 없으면 처음 판단 때 채움 */
+  hegemony?: HegemonyState;
   /** 내정 새 콘텐츠 8가지(11-26: 선거·경제 지표·재난·감사·지사·인구·개헌·연설). 없으면 처음 쓸 때 채움 */
   polity?: PolityState;
 }
@@ -273,7 +279,7 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 /** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId);
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind * (BUDGET_BONUS[countryId] ?? 1);
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
@@ -377,7 +383,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore))))));
+    cur = hegemonyTick(surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))));
     cur = sagaTick(counterTick(finaleTick(actsTick(cur))));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;

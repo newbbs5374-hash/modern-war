@@ -343,20 +343,24 @@ export function canSummit(s: GameState, id: string): string | null {
   if (!summitTargets(s).some((c) => c.id === id)) return '전쟁 중인 나라와는 만날 수 없어요';
   return null;
 }
-export function holdSummit(s: GameState, id: string, ag: Agenda): { state: GameState; text: string } {
+/** opt.ok = 3단계 대화 결과로 성패를 정함(없으면 확률), opt.big = 큰 협정(호감·명성 1.5배) */
+export function holdSummit(s: GameState, id: string, ag: Agenda, opt?: { ok: boolean; big?: boolean }): { state: GameState; text: string } {
   if (canSummit(s, id)) return { state: s, text: '' };
   const m = structuredClone(mediaOf(s));
   const rng = new Rng(m.seed);
-  const ok = rng.chance(summitChance(s, id));
+  const ok = opt ? (rng.next(), opt.ok) : rng.chance(summitChance(s, id));
   m.seed = rng.seed;
+  const big = !!opt?.big;
+  const fav = Math.round((ag === 'peace' ? 16 : 12) * (big ? 1.5 : 1));
+  const fame = big ? 35 : 20;
   m.summitMs = s.worldMs + SUMMIT_GAP_MS;
   const name = COUNTRIES.find((c) => c.id === id)!.name;
   let ns: GameState = { ...s, media: m };
   let text: string;
   if (ok) {
     m.summits++;
-    ns = addFavorNote(ns, id, `🤝 정상회담(${AGENDAS[ag].name})`, ag === 'peace' ? 16 : 12);
-    ns = { ...ns, officer: { ...ns.officer, fame: ns.officer.fame + 20 } };
+    ns = addFavorNote(ns, id, `🤝 정상회담(${AGENDAS[ag].name})`, fav);
+    ns = { ...ns, officer: { ...ns.officer, fame: ns.officer.fame + fame } };
     let extra = '';
     if (ag === 'trade') {
       const got = Math.round(budgetPerDay(s, me(s)) * 0.5);
@@ -377,7 +381,7 @@ export function holdSummit(s: GameState, id: string, ag: Agenda): { state: GameS
       extra = '외교 +6';
     }
     ns = { ...ns, media: m };
-    text = `🤝 ${name} 정상회담 성공! 호감 +${ag === 'peace' ? 16 : 12} · 명성 +20 · ${extra}`;
+    text = `🤝 ${name} 정상회담 ${big ? '큰 협정!' : '성공!'} 호감 +${fav} · 명성 +${fame} · ${extra}`;
   } else {
     ns = addFavorNote(ns, id, '😶 정상회담 결렬', -4);
     ns = addPresMod({ ...ns, media: m }, '😶 정상회담 결렬', -2, 12);

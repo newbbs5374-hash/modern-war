@@ -8,6 +8,8 @@ import { COUNTRIES, countryById, startingRelation, type Relation } from '../data
 import {
   ALLY_DEFEND_SHARE,
   ALLY_JOIN_CHANCE,
+  ALLY_JOIN_ME,
+  ME_MAX_FRONTS,
   HOMELAND_DEFENSE,
   LAST_STAND_DEFENSE,
   LOSING_PEACE_MULT,
@@ -332,6 +334,11 @@ export const ga = (w: string) => w + (hasBatchim(w) ? '이' : '가');
 export const eul = (w: string) => w + (hasBatchim(w) ? '을' : '를');
 export const gwa = (w: string) => w + (hasBatchim(w) ? '과' : '와');
 
+/** 내 나라가 지금 싸우는 나라 수 */
+export function playerFronts(w: WorldState, player: string): number {
+  return COUNTRIES.filter((c) => c.id !== player && isAlive(w, c.id) && relationOf(w, player, c.id) === '전쟁').length;
+}
+
 function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
   // 11-27 1장(취임 100일): 내 나라는 전쟁에 휘말리지 않음(나라를 키우는 때)
   if (ctx.w.act === 1 && (attacker === ctx.player || defender === ctx.player)) {
@@ -352,9 +359,10 @@ function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
       if (ally === side || ally === enemy || !isAlive(ctx.w, ally)) continue;
       if (ctx.w.act === 1 && (ally === ctx.player || enemy === ctx.player)) continue;
       if (relationOf(ctx.w, ally, side) !== '연합') continue;
+      if (enemy === ctx.player && playerFronts(ctx.w, ctx.player) >= ME_MAX_FRONTS) continue; // 11-27 한꺼번에 몰려오지 않게
       const q = ctx.w.pairs[pairKey(ally, enemy)];
       if (q.rel !== '중립') continue;
-      if (!ctx.rng.chance(ALLY_JOIN_CHANCE)) continue;
+      if (!ctx.rng.chance(ally === ctx.player ? ALLY_JOIN_ME : ALLY_JOIN_CHANCE)) continue;
       q.rel = '전쟁';
       q.tension = 0;
       q.weariness = 0;

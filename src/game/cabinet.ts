@@ -71,6 +71,8 @@ export interface Person {
   post?: PostId;
   pals: number[];
   foes: number[];
+  /** 지방 순방에서 만난 인재의 출신 도시(11-27) */
+  home?: string;
   pay: number;
   /** 들어온 시각(인재 명단에 올라온 시각) */
   sinceMs: number;
