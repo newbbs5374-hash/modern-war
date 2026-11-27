@@ -25,6 +25,7 @@ import {
   ENVOY_COST,
   ERAS,
   GOVS,
+  type Gov,
   GOV_CHANGE_COST,
   GOV_CHAOS_MS,
   ISLAND_LEAD_MIN,
@@ -640,7 +641,40 @@ function PolicyNow({ state }: { state: ScreenProps['state'] }) {
 
 function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => void }) {
   const c = C.civOf(state);
+  const basics = GOVS.filter((g) => !g.needs);
+  const later = GOVS.filter((g) => g.needs);
+  const chip = (g: Gov) => (
+    <span key={g.id} className={`gt-node ${c.gov === g.id ? 'on' : g.needs && !C.hasTech(state, g.needs) ? 'locked' : 'open'}`}>
+      <ArtIcon k={govArtKey(g.id)} emoji={g.icon} alt={g.name} />
+      <small>{g.name}</small>
+    </span>
+  );
   return (
+    <>
+    {/* 11-27 화면 4: 체제 나무 — 처음부터 고르는 넷 + 사회 연구로 열리는 넷. 잠긴 연구를 누르면 연구 목표로 찍음 */}
+    <div className="gov-tree">
+      <b className="gt-root">🏛️ 나라 체제</b>
+      <svg className="gt-lines" viewBox="0 0 400 20" preserveAspectRatio="none" aria-hidden>
+        {[50, 150, 250, 350].map((x) => (
+          <path key={x} d={`M200 0 C200 12 ${x} 8 ${x} 20`} />
+        ))}
+      </svg>
+      <div className="gt-row">{basics.map(chip)}</div>
+      <div className="gt-row gt-tech">
+        {later.map((g) => {
+          const tech = techById(g.needs!)!;
+          const done = C.hasTech(state, tech.id);
+          const goal = c.goal?.soc === tech.id;
+          return (
+            <button key={g.id} className={`gt-need ${done ? 'done' : goal ? 'goal' : ''}`} disabled={done} onClick={() => actions.apply((s) => C.setTechGoal(s, 'soc', tech.id))} title="누르면 연구 목표로 찍어요">
+              {done ? '✓' : goal ? '🎯' : '🔬'} {tech.name}
+            </button>
+          );
+        })}
+      </div>
+      <div className="gt-row">{later.map(chip)}</div>
+      <small className="muted">아랫줄 체제는 위에 적힌 사회 연구를 끝내면 열려요. 연구 이름을 누르면 연구 목표로 찍혀요.</small>
+    </div>
     <div className="civ-gov-pick">
       {GOVS.map((g) => {
         const why = C.canSetGov(state, g.id as GovId);
@@ -684,6 +718,7 @@ function GovChooser({ state, actions, onDone }: ScreenProps & { onDone: () => vo
         );
       })}
     </div>
+    </>
   );
 }
 
