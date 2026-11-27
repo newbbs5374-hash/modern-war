@@ -97,6 +97,8 @@ export interface EconomyState {
   log: string[];
   /** 정기 무역 계약(매시간 자동으로 사고팖) */
   contracts?: Contract[];
+  /** 11/28 장관 무역 추천 실행 횟수(하루 단위) · 맡기기 스위치 */
+  advice?: { day: number; n: number; auto?: boolean; autoDay?: number; autoN?: number };
   /** 복합소재 만들기(공업 구역). 없으면 켜짐 */
   composite?: boolean;
   /** 특수강·정밀부품 만들기(공업 구역). 없으면 켜짐 */

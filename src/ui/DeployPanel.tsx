@@ -23,6 +23,7 @@ import {
   REQ_MAX,
   DEPLOY_FAVOR,
   DEPLOY_MAX,
+  deployMax,
   canDeploy,
   canHost,
   deployHelp,
@@ -68,7 +69,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
         <div className="row">
           <b>🪖 해외 파병</b>
           <small className="muted">
-            {d.list.length}/{DEPLOY_MAX}곳 · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
+            {d.list.filter((x) => !x.returnMs).length}/{deployMax(state)}곳 · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
           </small>
           <Help title="해외 파병">
             <p>
@@ -85,6 +86,32 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
               <b>⚔️ 파병 교전</b>: 파병 중인 부대에 해적·반군·정체불명 함대 같은 교전이 생겨요(40가지). 보낸 병과에 맞는 공중전·해상전·육상전·해상-육상전·해상-공중전·육상-공중전이 3D 전장에서 벌어져요. 직접 싸우거나 맡길 수 있고, 4시간 안에 고르지 않으면 현지 부대가 알아서 싸워요(지면 부대 2개를 잃음).
             </p>
           </Help>
+        </div>
+        {/* 11/28 디자인 개편 6단계: 파병 칸 7개(처음 5칸 · 2막 6칸 · 3막 7칸) */}
+        <div className="gx-slots">
+          {Array.from({ length: DEPLOY_MAX }, (_, i) => {
+            const live = d.list.filter((x) => !x.returnMs);
+            const x = live[i];
+            const lock = i >= deployMax(state);
+            return (
+              <span key={i} className={`gx-slot ${x ? 'on' : ''} ${lock ? 'lock' : ''}`} title={lock ? `${i === DEPLOY_MAX - 1 ? 3 : 2}막에서 열려요` : x ? placeName(x.to) : '빈 칸'}>
+                {lock ? (
+                  <>
+                    🔒<small>{i === DEPLOY_MAX - 1 ? 3 : 2}막</small>
+                  </>
+                ) : x ? (
+                  <>
+                    {FLAG[x.to] ?? regionById(x.to)?.icon}
+                    <small>{placeName(x.to).slice(0, 4)}</small>
+                  </>
+                ) : (
+                  <>
+                    ＋<small>빈 칸</small>
+                  </>
+                )}
+              </span>
+            );
+          })}
         </div>
       </section>
 
@@ -270,6 +297,27 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
                 </div>
               );
             })}
+          </div>
+        )}
+        {unitsCount(pick) > 0 && (
+          <div className="gx-gain">
+            <small className="rec-sub">돌아올 이득(예상)</small>
+            <span className="gx-chips">
+              {req && reqKind ? (
+                <>
+                  <span className="gx-chip up">💰 +{reqKind.money.toLocaleString('ko-KR')}</span>
+                  <span className="gx-chip up">★ 명성 +{reqKind.fame}</span>
+                  {reqRegion?.friend && <span className="gx-chip up">{FLAG[reqRegion.friend]} 호감↑</span>}
+                </>
+              ) : (
+                <>
+                  <span className="gx-chip up">{FLAG[to]} 호감 +15</span>
+                  <span className="gx-chip up">🛡️ 그 나라 방어 +{Math.round(Math.min(0.4, unitsPower(pick) / 150) * 100)}%</span>
+                  <span className="gx-chip te">전쟁 중이면 명성↑</span>
+                </>
+              )}
+              <span className="gx-chip dn">⛨ 유지비 우리 부담</span>
+            </span>
           </div>
         )}
         <button

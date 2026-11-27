@@ -1,3 +1,4 @@
+import { artTabs } from './tabArt';
 import { Safe } from './Safe';
 // 🎭 문화 탭(11-23): 시설 · 걸작 · 스타 · 관광 · 행사 · 세계(스타·관광은 11-25) (승리 조건은 11-24 개인 → 승리로 옮김)
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
@@ -60,14 +61,14 @@ export function cultureTabs(props: ScreenProps): TabDef<CultureTab>[] {
   const { state } = props;
   const c = cultureOf(state);
   const evOn = c.event && state.worldMs < c.event.endMs;
-  return [
+  return artTabs('culture', [
     { id: 'venue', label: '시설', icon: '🏛️', badge: c.builds.length || null },
     { id: 'works', label: '걸작', icon: '🏺', badge: WORK_KINDS.some((k) => !canAddWork(state, k.id)) ? '!' : null },
     { id: 'stars', label: '스타', icon: '🌟', badge: STAR_KINDS.some((k) => !canRecruit(state, k.id)) ? '!' : starsOf(c).filter((x) => x.job).length || null },
     { id: 'tour', label: '관광', icon: '✈️', badge: coursesOf(c).length || null },
     { id: 'event', label: '행사', icon: '🎉', badge: evOn ? '●' : null },
     { id: 'world', label: '세계', icon: '🌏' },
-  ];
+  ]);
 }
 
 export function CultureScreen(props: ScreenProps) {

@@ -9,7 +9,7 @@ import { COUNTRIES } from '../data/world';
 import { cabinetOf, fitPct, type Person } from '../game/cabinet';
 import { statTotal } from '../game/cabinetOps';
 import type { GameState } from '../game/state';
-import { PersonFace } from './CabinetUI';
+import { PersonFace, RARITY_NAME, rarityOf } from './CabinetUI';
 import { Flag } from './flag';
 
 /** 인물 카드(2열용): 얼굴 · 이름·나이 · 자리 · 출신 · 등급 · 상위 스탯 3 · 성향 · 충성 */
@@ -19,7 +19,8 @@ export function PersonCard({ state, p, onOpen, badge }: { state: GameState; p: P
   const hearing = cabinetOf(state).hearing?.pid === p.id;
   const o = PERSON_ORIGINS[p.origin];
   return (
-    <button className={`pcard ${p.seat || p.post ? 'on' : ''}`} onClick={onOpen}>
+    <button className={`pcard rare-${rarityOf(p)} ${p.seat || p.post ? 'on' : ''}`} onClick={onOpen}>
+      <span className="rare-tag">{RARITY_NAME[rarityOf(p)]}</span>
       <span className="pcard-face">
         <PersonFace p={p} size={52} />
         <span className="pcard-grade">{GRADES[p.grade].icon}</span>
