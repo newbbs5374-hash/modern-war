@@ -10,6 +10,7 @@ import { lawEff, lawRows } from './laws';
 import { splitBuild, splitEco, splitFavor, splitLoyalty, splitOf } from './policy';
 import { CITIES, cityById, isCoastalCity, type City } from '../data/cities';
 import { UNITS } from '../data/catalog';
+import { SPECIALS } from '../data/specials';
 import {
   AGENDAS,
   AGREES,
@@ -72,8 +73,9 @@ import {
   type EurekaKey,
   type GovId,
   type Tech,
+  AI_GOV_EFF,
 } from '../data/civ';
-import { BASIC_RES, CITY_RES, COMPOSITE_PER_INDUSTRY, LUXURIES, PROCESSED, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
+import { UNIT_COST, BASIC_RES, CITY_RES, COMPOSITE_PER_INDUSTRY, LUXURIES, PROCESSED, LUXURY_LOYALTY, OCCUPIED_RES, RESOURCES, RES_ICON, type Res } from '../data/economy';
 import { HEX_DIRS, PIONEER_ISLANDS, hexKey } from '../data/hexmap';
 import { cityMap, isSeaCell, type CityTile } from '../data/cityMap';
 import { CITY_EFF_CAP, HOME_BELT, HOMETOWNS, HOMETOWN_LOYALTY, KR_CITY_INFO, MARK_KIND, MARK_MAX, MARK_SCALE, homeBuildCost, isHometown, type CityEff, type Landmark } from '../data/krCities';
@@ -233,6 +235,66 @@ export function civEffects(s: GameState): Eff[] {
     const t = techById(id);
     if (t?.eff) out.push(t.eff);
   }
+  out.push(...policyEffects(s));
+  out.push(...facilityEffects(s));
+  return out;
+}
+/** 11-27 AI 나라 체제 효과(세계 전투 계산에 넘김). 내 나라는 빠짐 */
+export function aiGovEff(s: GameState): Record<string, { power?: number; overseas?: number; defense?: number }> {
+  const c = civOf(s);
+  const out: Record<string, { power?: number; overseas?: number; defense?: number }> = {};
+  for (const [id, g] of Object.entries(c.aiGov ?? {})) {
+    if (id === s.player.countryId || !AI_GOV_EFF[g]) continue;
+    const { power, overseas, defense } = AI_GOV_EFF[g];
+    if (power || overseas || defense) out[id] = { power, overseas, defense };
+  }
+  return out;
+}
+/** AI 나라 체제 예산 배율 */
+export function aiGovBudget(s: GameState, id: string): number {
+  if (id === s.player.countryId) return 1;
+  const g = civOf(s).aiGov?.[id];
+  return 1 + ((g && AI_GOV_EFF[g]?.budget) || 0);
+}
+/** 11-27 체제·카드·회의 결과를 합친 지금 효과(체제 화면 요약) [아이콘·이름, 값] */
+export function policySummary(s: GameState): Array<[string, string]> {
+  const list = policyEffects(s);
+  const sum = (k: NumKey) => list.reduce((a, e) => a + (e[k] ?? 0), 0);
+  const pct = (v: number) => `${v > 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%`;
+  const num = (v: number) => `${v > 0 ? '+' : '−'}${Math.round(Math.abs(v))}`;
+  const out: Array<[string, string]> = [];
+  const doms: Array<['육' | '해' | '공', string]> = [['육', '육군'], ['해', '해군'], ['공', '공군']];
+  for (const [k, icon, name] of [['power', '💪', '전투력'], ['build', '🔨', '모집 빠르기']] as const) {
+    const v = doms.map(([d]) => domSum(list, k, d));
+    if (v.every((x) => Math.abs(x) < 1e-9)) continue;
+    if (v[0] === v[1] && v[1] === v[2]) out.push([`${icon} ${name}`, pct(v[0])]);
+    else doms.forEach(([, n], i) => v[i] && out.push([`${icon} ${n} ${name}`, pct(v[i])]));
+  }
+  const rows: Array<[NumKey, string, (v: number) => string]> = [
+    ['research', '🔬 연구', pct],
+    ['budget', '💰 나라 예산', pct],
+    ['res', '⛏️ 자원', pct],
+    ['loyalty', '🙂 민심', num],
+    ['favor', '🤝 모든 나라 호감', num],
+    ['influence', '🕊️ 분쟁 지역 영향력', pct],
+    ['mission', '🎯 임무 성공률', (v) => `${v > 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%p`],
+    ['trade', '🚢 무역 값 이득', pct],
+    ['contracts', '🔁 정기 계약 칸', num],
+    ['votes', '🗳️ 국제 회의 표', num],
+    ['growth', '👪 도시 성장', pct],
+    ['district', '🏗️ 구역 짓는 시간', (v) => pct(-v)],
+  ];
+  for (const [k, name, f] of rows) {
+    const v = sum(k);
+    if (Math.abs(v) > 1e-9) out.push([name, f(v)]);
+  }
+  if (civOf(s).gov === 'sanctum') out.push(['🧪 갈륨 레이더 연구', '2배 빨리']);
+  return out;
+}
+/** 바꿀 수 있는 효과만(체제 + 끼운 카드 + 회의 결과). 전투력은 이 값을 지금 가진 모든 부대에 바로 씀(11-27) */
+export function policyEffects(s: GameState): Eff[] {
+  const c = civOf(s);
+  const out: Eff[] = [];
   if (c.gov) out.push(govById(c.gov).eff);
   const slots = c.gov ? govSlots(govById(c.gov), s.player.rankIndex) : [];
   c.cards.forEach((id, i) => {
@@ -241,7 +303,6 @@ export function civEffects(s: GameState): Eff[] {
     if (card) out.push(card.eff);
   });
   for (const a of c.council.active) if (a.untilMs > s.worldMs) out.push(agendaById(a.agenda).yes);
-  out.push(...facilityEffects(s));
   return out;
 }
 type NumKey = 'research' | 'budget' | 'res' | 'loyalty' | 'favor' | 'influence' | 'mission' | 'trade' | 'contracts' | 'votes' | 'growth' | 'district';
@@ -255,6 +316,27 @@ function domOf(unit: string): '육' | '해' | '공' {
 export function effDom(s: GameState, k: 'build' | 'power', dom: '육' | '해' | '공'): number {
   return civEffects(s).reduce((a, e) => a + (e[k] && (e[k]!.dom === 'all' || e[k]!.dom === dom) ? e[k]!.v : 0), 0);
 }
+const domSum = (list: Eff[], k: 'build' | 'power', dom: '육' | '해' | '공') => list.reduce((a, e) => a + (e[k] && (e[k]!.dom === 'all' || e[k]!.dom === dom) ? e[k]!.v : 0), 0);
+/** 체제·카드·회의 결과의 전투력 덤(병과별) */
+export function policyPower(s: GameState, dom: '육' | '해' | '공'): number {
+  return domSum(policyEffects(s), 'power', dom);
+}
+/**
+ * 체제·카드 전투력 배율: 지금 가진 부대 모두에 바로 붙음(바꾸면 바로 달라짐).
+ * 부대 구성(육·해·공 전투력 비중)으로 가중 평균. 부대가 없으면 육군 기준.
+ */
+export function policyPowerMult(s: GameState): number {
+  let w = 0;
+  let t = 0;
+  for (const [n, k] of Object.entries(s.economy.army)) {
+    if (!(k > 0)) continue;
+    const sp = SPECIALS.find((d) => d.name === n);
+    const base = k * Math.max(1, UNIT_COST[sp ? sp.base : n]?.power ?? 5);
+    w += base * (1 + policyPower(s, domOf(sp ? sp.base : n)));
+    t += base;
+  }
+  return Math.max(0.5, t ? w / t : 1 + policyPower(s, '육'));
+}
 
 // ── 연구 ──
 
@@ -262,8 +344,12 @@ export const hasTech = (s: GameState, id: string) => civOf(s).done.includes(id);
 /** 기술 하나는 3단계로 나눠 연구(11-24 대장: 연구 시간을 늘리려고). 단계마다 원래 시간만큼 걸림 */
 export const TECH_STAGES = 3;
 /** 한 단계에 드는 시간(점수) */
+/** 성지 회의가 2배 빨리 하는 갈륨 연구 */
+export const GALLIUM_TECHS = ['m-crystal'];
 export function techCost(s: GameState, t: Tech): number {
-  return t.hours * (TECH_ERA_MULT[t.era] ?? 1) * (civOf(s).eureka.includes(t.id) ? 0.5 : 1);
+  // 성지 회의: 갈륨 연구는 2배 빨리(11-27 실제로 넣음)
+  const gallium = civOf(s).gov === 'sanctum' && GALLIUM_TECHS.includes(t.id) ? 0.5 : 1;
+  return t.hours * (TECH_ERA_MULT[t.era] ?? 1) * (civOf(s).eureka.includes(t.id) ? 0.5 : 1) * gallium;
 }
 /** 한 단계에 드는 예산·자원(11-27) */
 export function techStagePrice(t: Tech): { money: number; res: Partial<Record<Res, number>> } {
@@ -1368,7 +1454,9 @@ export function civBuildSpeed(s: GameState, unit: string): number {
 export function civPowerMult(s: GameState, unit: string): number {
   const ce = cityEffTotal(s);
   const dom = domOf(unit);
-  return Math.max(0.5, 1 + effDom(s, 'power', dom) + facBonus(s, '우주기지') + ce.power + ce.pDom[dom]);
+  // 체제·카드 전투력은 만들 때 굳히지 않고 policyPowerMult로 지금 가진 부대 모두에 씀(11-27)
+  const fixed = domSum(civEffects(s), 'power', dom) - policyPower(s, dom);
+  return Math.max(0.5, 1 + fixed + facBonus(s, '우주기지') + ce.power + ce.pDom[dom]);
 }
 export function civMission(s: GameState): number {
   return effSum(s, 'mission') + facBonus(s, '정보본부') + instSum(s.world, s.player.countryId, 'intel') + cityEffTotal(s).mission;
