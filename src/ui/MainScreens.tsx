@@ -1,3 +1,4 @@
+import { MeetBook, meetBadge } from './MeetUI';
 import { Safe } from './Safe';
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
 // 지금 있던 기능은 하나도 빼지 않고, 맡은 분야 탭 안의 작은 탭으로 옮겼어요.
@@ -69,6 +70,7 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'win', label: '승리', icon: '🏆', badge: winBadge(state) },
     { id: 'aides', label: officeName(state.player.countryId), icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
+    { id: 'meet', label: '인맥', icon: '📒', badge: meetBadge(state) },
     { id: 'plan', label: '일정', icon: '📅', badge: state.polity?.speech.open ? '🎤' : scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
     { id: 'album', label: '사진첩', icon: '📸' },
@@ -85,6 +87,7 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'win' && <VictoryPanel {...props} />}
       {tab === 'aides' && <StaffTab {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
+      {tab === 'meet' && <MeetBook {...props} />}
       {tab === 'plan' && (
         <>
           {state.polity?.speech.open && <SpeechPanel {...props} />}

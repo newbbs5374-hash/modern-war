@@ -12,6 +12,8 @@ import { AideReport } from './ui/AideReport';
 import { PeopleProvider } from './ui/People';
 import { addReports as addReports0, dismissReport } from './game/report';
 import { trackGoals } from './game/goals';
+import { trackMeet } from './game/meet';
+import { MeetModal } from './ui/MeetUI';
 import { summarizeAway, type AwaySummary } from './game/orders';
 import { AwayModal, OrdersModal } from './ui/OrdersModal';
 import { useCloudSync } from './ui/useCloud';
@@ -22,7 +24,7 @@ import { Safe, logError } from './ui/Safe';
 const AWAY_REPORT_MS = 20 * 60e3;
 
 /** 바뀌기 전·후 비교: 부관 보고 + 매일 할 일·업적 */
-const addReports = (b: G.GameState | null, a: G.GameState) => trackGoals(b, addReports0(b, a));
+const addReports = (b: G.GameState | null, a: G.GameState) => trackMeet(b, trackGoals(b, addReports0(b, a)));
 
 const TICK_MS = 250;
 const AUTOSAVE_MS = 5000;
@@ -78,6 +80,8 @@ export function App() {
   const [state, setState] = useState<G.GameState | null>(init.state);
   if (state) applyNation(state.player.countryId); // 11-25 나라별 부처·참모 이름
   const [away, setAway] = useState<AwaySummary | null>(init.away ?? null);
+  /** 닫은 만남 카드(같은 카드는 다시 안 띄움, 인맥 수첩에서 다시 열 수 있음) */
+  const [meetSeen, setMeetSeen] = useState(-1);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [notices, setNotices] = useState<string[]>(init.notice ? [init.notice] : []);
   const setNotice = (t: string) => {
@@ -307,6 +311,7 @@ export function App() {
             {away && <AwayModal sum={away} onClose={() => setAway(null)} onOrders={() => (setAway(null), setOrdersOpen(true))} />}
             {cloud.ask && <CloudAskModal ask={cloud.ask} local={state} onPick={(p) => void cloud.choose(p)} onClose={cloud.dismiss} />}
             {ordersOpen && <OrdersModal state={state} apply={update} onClose={() => setOrdersOpen(false)} />}
+            {state.meet?.card && state.meet.card.atMs !== meetSeen && !away && <MeetModal state={state} apply={update} onClose={() => setMeetSeen(state.meet?.card?.atMs ?? -1)} />}
           </Safe>
         )
       }
