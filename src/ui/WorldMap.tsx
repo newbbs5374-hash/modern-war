@@ -2,6 +2,7 @@ import { REAL_ISLANDS } from '../data/islands';
 import {
   useEffect,
   useRef,
+  useMemo,
   useState,
   type PointerEvent as RPointerEvent,
   type WheelEvent as RWheelEvent,
@@ -16,6 +17,7 @@ import { annexedProv, landOwners, provinces } from "../game/territory";
 import { HOME_MARKS } from "./homeTerrain";
 import { useHomeGeos } from "./homeGeo";
 import { CITY_DEFENSE_MAX } from "../game/balance";
+import { strikes } from "../game/frontline";
 import { CITY_STAGES } from "../game/growth";
 import {
   GEO,
@@ -516,6 +518,9 @@ export function WorldMap({
           ? REL_COLORS["나"]
           : REL_COLORS[relationOf(world, playerCountryId, id)];
 
+  const defKey = Object.entries(world.defense).filter(([, v]) => v < CITY_DEFENSE_MAX - 2).map(([k]) => k).join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const atk = useMemo(() => (mini ? [] : strikes(world)), [mini, defKey, world.pairs, world.owner]);
   // ── 확대·이동(작은 지도는 없음) ──
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -901,6 +906,41 @@ export function WorldMap({
               </g>
             )),
           )}
+        </g>
+      )}
+      {/* 11-27 전선 지도: 공격받는 도시로 향하는 움직이는 화살표 */}
+      {!mini && atk.length > 0 && (
+        <g pointerEvents="none">
+          {atk.map((s) => {
+            const dx = s.to.x - s.from.x;
+            const dy = s.to.y - s.from.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const bend = Math.min(18, len * 0.22);
+            const mx = (s.from.x + s.to.x) / 2 - (dy / len) * bend;
+            const my = (s.from.y + s.to.y) / 2 + (dx / len) * bend - bend * 0.4;
+            // 화살촉: 도착점 바로 앞
+            const tx = s.to.x - mx;
+            const ty = s.to.y - my;
+            const tl = Math.hypot(tx, ty) || 1;
+            const ux = tx / tl;
+            const uy = ty / tl;
+            const ex = s.to.x - ux * 3.2 * zr;
+            const ey = s.to.y - uy * 3.2 * zr;
+            const hw = 3.2 * zr;
+            const d = `M${s.from.x},${s.from.y}Q${mx},${my} ${ex},${ey}`;
+            return (
+              <g key={s.to.id}>
+                <path d={d} fill="none" stroke="#7f1d1d" strokeWidth={3.4 * zr} strokeOpacity={0.55} strokeLinecap="round" />
+                <path d={d} fill="none" stroke="#fb7185" strokeWidth={1.7 * zr} strokeDasharray={`${4 * zr} ${3 * zr}`} strokeLinecap="round" className="wm-atk" style={{ ['--d' as string]: `${-7 * zr}px` }} />
+                <path
+                  d={`M${ex + ux * hw * 1.5},${ey + uy * hw * 1.5}L${ex - uy * hw},${ey + ux * hw}L${ex + uy * hw},${ey - ux * hw}Z`}
+                  fill="#fb7185"
+                  stroke="#7f1d1d"
+                  strokeWidth={0.5 * zr}
+                />
+              </g>
+            );
+          })}
         </g>
       )}
       {/* 도 이름: 화면에서 이름이 들어갈 만큼 클 때만 */}

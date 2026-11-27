@@ -1620,3 +1620,12 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .eg-sort-bins div.on { border-color: #22d3ee; background: #2d5562; }
 .eg-sort-bins span { font-size: 28px; line-height: 1; }
 .eg-sort-bins b { font-size: 12.5px; }
+
+/* 11-27 입체 지구본 */
+.gl-wrap { background: #03060c; touch-action: none; }
+.gl-wait { position: absolute; inset: 0; display: grid; place-items: center; color: #9fb4c8; font-size: 13px; }
+.gl-credit { position: absolute; right: 6px; bottom: 4px; margin: 0; font-size: 9px; color: rgba(220,232,245,.55); pointer-events: none; }
+.gl-wrap .wm-zoom { z-index: 2; }
+/* 11-27 전선 지도 화살표 */
+.wm-atk { animation: wm-atk-march 0.9s linear infinite; }
+@keyframes wm-atk-march { to { stroke-dashoffset: var(--d, -7px); } }
