@@ -25,7 +25,7 @@ function capsOf(owned: Record<string, number> | undefined, dead: Record<string, 
   return out;
 }
 
-export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned, gen }: FrameProps) {
+export function Battle3DView({ spec, onEnd, usBuff, foeBuff, onCancel, owned, gen }: FrameProps) {
   const genRef = useRef(gen);
   genRef.current = gen;
   const siege = spec.variant === 'siege';
@@ -69,6 +69,8 @@ export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned, gen }: Fram
         foeHp,
         // 11-26 안 6: 3D 훈련으로 쌓은 병과 숙련(최대 +10%)
         usBuff: usBuff as Record<string, number> | undefined,
+        // 11-27 적 나라 특별 병과 ×1.3
+        foeBuff: foeBuff as Record<string, number> | undefined,
         budget: siege ? budgetOf(act, acts[act]) : undefined,
         preset: siege && act > 0 && c ? placeCarried(c) : undefined,
         cp0: siege && act > 0 && c ? navalCp(c) : undefined,

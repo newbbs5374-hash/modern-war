@@ -5,7 +5,7 @@ import { payTreasury, registerDomRows, snap } from './domestic';
 import { econOf } from './econ';
 import { localElection } from './governors';
 import { DAY, H, bumpRival, bumpTrust, clamp, polityOf, polityLog, r1, registerPolityInit, roll, seatBonus, tell, withPolity, type Election, type Seats } from './polity';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { myCityIds } from './zones';
 import { cityById } from '../data/cities';
 import { isHometown } from '../data/krCities';
@@ -72,7 +72,7 @@ export function voteRows(s: GameState): Array<[string, number]> {
 }
 export const voteShare = (s: GameState) => clamp(voteRows(s).reduce((a, [, v]) => a + v, 0), 10, 90);
 
-export const rallyCost = (s: GameState) => Math.round(budgetPerDay(s, s.player.countryId) * 0.3);
+export const rallyCost = (s: GameState) => Math.round(priceBase(s) * 0.3);
 export function canRally(s: GameState, cityId: string): string | null {
   if (!s.polity) return '아직 준비 중이에요';
   if (!campaignOpen(s)) return '선거 2일 전부터 유세할 수 있어요';

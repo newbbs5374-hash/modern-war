@@ -8,7 +8,7 @@ import { addFavorNote } from './civ';
 import { domOf, registerDomRows, type Rows } from './domestic';
 import { pushReport } from './report';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { isAlive, isRival, relationOf } from './world';
 
 const H = 3600e3;
@@ -39,7 +39,7 @@ export interface MoleState {
   seed: number;
 }
 export const moleOf = (s: GameState): MoleState => s.mole ?? { nextMs: s.worldMs + MOLE_FIRST_MS, open: null, caught: 0, missed: 0, seed: (s.world.seed ^ 0x5bd1e995) >>> 0 };
-export const clueCost = (s: GameState) => Math.max(30, Math.round(budgetPerDay(s, s.player.countryId) * CLUE_COST));
+export const clueCost = (s: GameState) => Math.max(30, Math.round(priceBase(s) * CLUE_COST));
 
 /** 첩자를 보낼 만한 나라(전쟁 상대 · 맞수 먼저) */
 function senders(s: GameState): string[] {

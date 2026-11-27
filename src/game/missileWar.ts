@@ -10,7 +10,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { cityCiv, civOf } from './civ';
 import { pushReport } from './report';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { isAlive, relationOf } from './world';
 
 const H = 3600e3;
@@ -40,7 +40,7 @@ export function interceptRate(s: GameState, net: boolean): number {
 export function strikeChance(s: GameState): number {
   return Math.max(0.1, Math.min(0.8, 0.25 + strikeUnits(s) * 0.04 + (s.officer.stats['포격'] ?? 0) / 200));
 }
-export const netCost = (s: GameState) => Math.max(30, Math.round(budgetPerDay(s, s.player.countryId) * RAID_NET_COST));
+export const netCost = (s: GameState) => Math.max(30, Math.round(priceBase(s) * RAID_NET_COST));
 
 export function canNet(s: GameState, id: number): string | null {
   const r = raidOf(s).list.find((x) => x.id === id);
@@ -94,7 +94,7 @@ function land(s: GameState, r: Raid, rs: RaidState, rng: Rng): GameState {
   const civ = structuredClone(civOf(s));
   const cc = (civ.cities[r.city] ??= structuredClone(cityCiv(s, r.city)));
   cc.loyalty = Math.max(0, cc.loyalty - HIT_LOYALTY * hit);
-  const cost = Math.round(budgetPerDay(s, me) * HIT_COST * hit);
+  const cost = Math.round(priceBase(s) * HIT_COST * hit);
   const world = { ...s.world, defense: { ...s.world.defense, [r.city]: Math.max(0, (s.world.defense[r.city] ?? 0) - HIT_DEFENSE * hit) } };
   const ns: GameState = { ...s, civ, world, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: Math.max(0, s.nations[me].treasury - cost) } } };
   return pushReport(ns, { icon: '🚀', text: `${from} 미사일 ${r.n}발 가운데 ${hit}발이 ${city.name}에 떨어졌습니다. 민심 −${HIT_LOYALTY * hit} · 방어도 −${HIT_DEFENSE * hit} · 복구비 ${cost.toLocaleString('ko-KR')}` });

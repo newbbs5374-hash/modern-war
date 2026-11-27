@@ -5,7 +5,7 @@ import type { LawKey } from './laws';
 import { domLog, domOf, payTreasury, registerDomRows, snap, withDom, type Rows } from './domestic';
 import { registerGroupRows } from './groups';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
-import { budgetPerDay } from './state';
+import { priceBase } from './state';
 
 export interface ZoneDef {
   id: string;
@@ -36,7 +36,7 @@ export function zoneSlots(s: GameState): number {
   return Math.min(4, 1 + Math.floor(myCityIds(s).length / 3));
 }
 export function zoneCost(s: GameState): number {
-  return Math.round(budgetPerDay(s, s.player.countryId) * ZONE_COST_DAYS);
+  return Math.round(priceBase(s) * ZONE_COST_DAYS);
 }
 export function canZone(s: GameState, cityId: string, kind: string): string | null {
   const d = domOf(s);

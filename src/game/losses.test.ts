@@ -35,3 +35,37 @@ describe('가진 부대만 냄(11-26)', () => {
     expect(r.units).toEqual({ [sp.name]: 1 });
   });
 });
+
+describe('특별 병과 1.3배(11-27)', () => {
+  it('특별 병과 전투력은 같은 종류의 1.3배 이상, 3D에서는 비율만큼', async () => {
+    const { SPECIALS } = await import('../data/specials');
+    const { UNIT_COST, specialCost } = await import('../data/economy');
+    for (const d of SPECIALS) expect(specialCost(d.base, d.cost).power).toBeGreaterThanOrEqual(Math.round(UNIT_COST[d.base].power * 1.3) - 1);
+    const { specialBuffs } = await import('./losses');
+    const sp = SPECIALS.find((d) => d.base === '구축함')!;
+    expect(specialBuffs({ [sp.name]: 2 }).dd).toBe(1.3);
+    expect(specialBuffs({ [sp.name]: 1, 구축함: 1 }).dd).toBe(1.15);
+    expect(specialBuffs({ 구축함: 3 })).toEqual({});
+  });
+});
+
+describe('적 나라 특별 병과(11-27)', () => {
+  it('적 나라 특별 병과 병과는 ×1.3, 3대 중 1대', async () => {
+    const { foeBuffs } = await import('./losses');
+    const { createSim, setupDeploy, ST } = await import('../battle3d/sim');
+    expect(foeBuffs('kr').tank).toBe(1.3);
+    expect(foeBuffs(null)).toEqual({});
+    const S = createSim();
+    setupDeploy(S, [], { foeBuff: { tank: 1.3 } });
+    const tanks = S.units.filter((u) => u.side === 'foe' && u.kind === 'tank');
+    if (ST.enemy.filter(([k]) => k === 'tank').length) {
+      expect(tanks[0].special).toBe(true);
+      expect(tanks.filter((u) => u.special).length).toBe(Math.ceil(tanks.length / 3));
+    }
+  });
+  it('맡기기에도 넘어감', async () => {
+    const { autoField } = await import('../battle/auto');
+    const a = autoField({ variant: 'highland', difficulty: 1 }, { usBuff: { tank: 1.3, inf: 1.3 } });
+    expect(typeof a.win).toBe('boolean');
+  });
+});

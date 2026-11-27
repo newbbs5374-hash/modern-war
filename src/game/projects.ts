@@ -6,7 +6,7 @@ import { domLog, domOf, payTreasury, registerDomRows, snap, withDom, type Projec
 import { registerGroupRows } from './groups';
 import { addPresMod } from './approval';
 import { cityById, isCoastalCity } from '../data/cities';
-import { budgetPerDay } from './state';
+import { priceBase } from './state';
 import { myCityIds } from './zones';
 
 const H = 3600e3;
@@ -45,7 +45,7 @@ export const PROJECTS: ProjectDef[] = [
 export const projectById = (id: string) => PROJECTS.find((p) => p.id === id)!;
 
 export function stageCost(s: GameState, id: string, stage: number): number {
-  return Math.round(budgetPerDay(s, s.player.countryId) * STAGE_COST[stage] * projectById(id).scale);
+  return Math.round(priceBase(s) * STAGE_COST[stage] * projectById(id).scale);
 }
 export function stageMs(id: string, stage: number): number {
   return STAGE_HOURS[stage] * projectById(id).scale * H;

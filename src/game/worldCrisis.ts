@@ -9,7 +9,7 @@ import { goalsOf } from './goals';
 import type { LawKey } from './laws';
 import { pushReport } from './report';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { isAlive, relationOf } from './world';
 
 const DAY = 24 * 3600e3;
@@ -43,7 +43,7 @@ export interface WcState {
   seed: number;
 }
 export const wcOf = (s: GameState): WcState => s.wcrisis ?? { nextMs: s.worldMs + WC_FIRST_MS, open: null, n: 0, seed: (s.world.seed ^ 0xc2b2ae35) >>> 0 };
-export const giveCost = (s: GameState) => Math.max(50, Math.round(budgetPerDay(s, s.player.countryId) * WC_GIVE_COST));
+export const giveCost = (s: GameState) => Math.max(50, Math.round(priceBase(s) * WC_GIVE_COST));
 
 export function canSide(s: GameState): string | null {
   const o = wcOf(s).open;

@@ -12,7 +12,7 @@ import { payTreasury } from './domestic';
 import { ensureGovernors } from './governors';
 import { pushReport } from './report';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { homeOf } from './world';
 
 const H = 3600e3;
@@ -166,7 +166,7 @@ export function isEarly(s: GameState, cityId: string): boolean {
 export const capOf = (s: GameState, cityId: string) => (isEarly(s, cityId) ? CAP_EARLY : CAP_NORMAL);
 
 export function propCost(s: GameState, p: { city: string; kind: string }): number {
-  return Math.round(budgetPerDay(s, s.player.countryId) * occKind(p.kind).cost * cityById(p.city).value);
+  return Math.round(priceBase(s) * occKind(p.kind).cost * cityById(p.city).value);
 }
 
 /** 효과 설명 한 줄 */
@@ -283,7 +283,7 @@ export function approveAll(s: GameState, city?: string): { state: GameState; n: 
 }
 
 export function teamCost(s: GameState): number {
-  return Math.round(budgetPerDay(s, s.player.countryId) * TEAM_COST_DAYS * occAdminOf(s).teams.length);
+  return Math.round(priceBase(s) * TEAM_COST_DAYS * occAdminOf(s).teams.length);
 }
 export function canAddTeam(s: GameState): string | null {
   if (occAdminOf(s).teams.length >= TEAMS_MAX) return `관리단은 ${TEAMS_MAX}개까지예요`;

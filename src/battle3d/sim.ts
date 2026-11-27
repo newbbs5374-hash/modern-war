@@ -195,7 +195,7 @@ export interface Unit {
   /** 앞 막에서 넘어온 부대 */
   carried?: boolean;
   /** 11-26 훈련: 이 부대만 가는 곳 · 숨어 있음(화면에 안 보임, 찾으면 보임) · 공격 배수(병과 숙련) */
-  goal?: { x: number; z: number }; hidden?: boolean; buff?: number;
+  goal?: { x: number; z: number }; hidden?: boolean; buff?: number; /** 11-27 적 나라 특별 병과 */ special?: boolean;
   /** 제자리 지키기(goal에 서서 쏨) · 이 병과만 노림 */
   hold?: boolean; only?: Kind;
   /** 11-26 조기경보기 둘레면 사거리 배수(1초마다 다시 셈) */
@@ -242,6 +242,9 @@ export interface Sim {
   wave: number; waveT: number; reinfN: number; reinfT: number;
   /** 적 체력 배수(난이도) */
   foeHp: number;
+  foeBuff?: Partial<Record<Kind, number>>;
+  /** 적 병과별 나온 수(특별 병과는 그중 몇 대마다 한 대) */
+  foeN?: Partial<Record<Kind, number>>;
   /** 11-26 훈련: 집중 사격 대상(누른 적) · 훈련이 쓰는 숫자들 */
   focus?: number; drill?: Record<string, number>;
   /** 11-26 정해진 시각 증원이 몇 번 나왔나 */
@@ -348,13 +351,15 @@ function steer(u: Unit, vx: number, vz: number, gx: number, gz: number): [number
 }
 
 /** 배치 화면 준비: 적을 놓고(같은 순서·같은 난수), 우리 배치 목록을 다시 놓음 */
-export interface DeployOpt { cp0?: number; foeHp?: number; /** 11-26 병과 숙련: 우리 병과별 체력·공격 배수 */ usBuff?: Partial<Record<Kind, number>> }
+export interface DeployOpt { cp0?: number; foeHp?: number; /** 11-26 병과 숙련: 우리 병과별 체력·공격 배수 */ usBuff?: Partial<Record<Kind, number>>; /** 11-27 적 나라 특별 병과: 적 병과별 체력·공격 배수 */ foeBuff?: Partial<Record<Kind, number>> }
 /** 우리 배치 한 칸. hp = 앞 막에서 남은 체력 비율, carried = 앞 막에서 넘어온 부대 */
 export interface Pick3 { kind: Kind; tile: number; hp?: number; carried?: boolean; /** 11-26 훈련: 칸 대신 이 자리에 · 갈 곳 · 제자리 지키기 */ at?: [number, number]; goal?: { x: number; z: number }; hold?: boolean }
 export function setupDeploy(S: Sim, mine: Pick3[], opt: DeployOpt = {}): Unit[] {
   S.units = []; S.pending = []; S.smokes = []; S.result = null;
   S.seed = 7; S.nid = 1; S.simT = 0; S.cp = Math.min(10, opt.cp0 ?? 3); S.phase = 'deploy';
-  S.foeHp = opt.foeHp ?? 1; S.wave = 0; S.waveT = 0; S.reinfN = 0; S.reinfT = 0;
+  S.foeHp = opt.foeHp ?? 1; S.foeBuff = opt.foeBuff; S.foeN = {};
+  // 11-27 적 특별 병과가 세진 만큼 나머지 적은 조금 약하게(밸런스 4~5주 유지)
+  if (opt.foeBuff && Object.keys(opt.foeBuff).length) S.foeHp *= FOE_SPECIAL_REST; S.wave = 0; S.waveT = 0; S.reinfN = 0; S.reinfT = 0;
   S.pts = (ST.points ?? []).map((p) => ({ ...p, own: 'foe' as Side, prog: 0 })); S.tn = 0;
   ST.enemy.forEach(([k, x, z]) => { const d = DEF[k]; if (d.dom === 'sea' || d.dom === 'sub') x = Math.min(x, coastX(z) - d.r * .55 - .5); if (d.dom === 'land') x = Math.max(x, coastX(z) + .6); spawnFoe(S, k, x, z, false); });
   const out = mine.map((d) => {
@@ -366,9 +371,18 @@ export function setupDeploy(S: Sim, mine: Pick3[], opt: DeployOpt = {}): Unit[] 
   ST.setup?.(S);
   return out;
 }
+/** 적 나라 특별 병과 비율: 그 병과 N대 중 1대(1이면 모두) */
+export let FOE_SPECIAL_EVERY = 3;
+/** 적 특별 병과가 있을 때 나머지 적 체력 배수 */
+export let FOE_SPECIAL_REST = 0.96;
+export const setFoeSpecialRest = (v: number) => { FOE_SPECIAL_REST = v; };
+export const setFoeSpecialEvery = (n: number) => { FOE_SPECIAL_EVERY = Math.max(1, Math.round(n)); };
 export function spawnFoe(S: Sim, k: Kind, x: number, z: number, aggr: boolean) {
   const u = makeUnit(S, k, 'foe', x, z);
   if (S.foeHp !== 1) { u.max = Math.round(u.max * S.foeHp); u.hp = u.max; }
+  // 11-27 적 나라 특별 병과: 그 병과 적 FOE_SPECIAL_EVERY대 중 1대가 특별 병과(체력·공격 ×1.3)
+  const fb = S.foeBuff?.[k];
+  if (fb && fb !== 1) { const i = (S.foeN ??= {})[k] = ((S.foeN[k] ?? 0) + 1); if (i % FOE_SPECIAL_EVERY === 1 || FOE_SPECIAL_EVERY === 1) { u.buff = fb; u.max = Math.round(u.max * fb); u.hp = u.max; u.special = true; } }
   if (ST.id !== 'coast') { u.home = { x, z }; if (aggr || ST.foeAggr) u.aggr = true; }
   return u;
 }
@@ -660,9 +674,9 @@ export function doCmd(S: Sim, k: CmdKey, x: number, z: number, gridRef: string) 
 }
 
 /** 화면 없이 끝까지 돌리기(시험·자동 전투용) */
-export function runHeadless(mine = defaultDeploy(), maxSteps = 4000): Sim {
+export function runHeadless(mine = defaultDeploy(), maxSteps = 4000, opt: DeployOpt = {}): Sim {
   const S = createSim();
-  setupDeploy(S, mine);
+  setupDeploy(S, mine, opt);
   startBattle(S);
   for (let i = 0; i < maxSteps && S.phase === 'battle'; i++) step(S);
   return S;
