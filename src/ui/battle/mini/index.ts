@@ -23,6 +23,9 @@ import { ELiar, EPack, ERings, ESatDiff } from './easyB';
 import { EAirdrop, EBomb, EFilm, EFlare, EHill, EIntercept, ELeadShot, ERefuel, ETakedown, ETide, ETot, EWaves } from './easyC';
 import { EAirFuel, EBombSet, EClimb, ECover, EFront, ELowFly, ERadio, ERepair, EScoot, ESeaFuel, ETrace, EWheel } from './easyD';
 import { ECold, EDepot, EDisguise, EJudge, EMind, EMole, EPredict, EReview, ESchool, ESpeech } from './easyE';
+import { EDecoy, EDock, EFleet, EHide, EMlrs, EPoster, EReserve } from './easyF';
+import { EDelay, EDronePath, EMines, ENaval, EPincer, ERecSort, EShadow, EStretcher, EWindSnipe, EWing } from './easyG';
+import { EBiathlon, EChant, EEnlist, EGrid, EMatch, ENightShot, ESwim } from './easyH';
 import { EASY } from '../../../battle/easy';
 
 /** 한 손가락 미니 훈련 화면(easy.ts 의 view 이름) */
@@ -35,6 +38,10 @@ const EASY_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'e:airfuel': EAirFuel, 'e:seafuel': ESeaFuel, 'e:lowfly': ELowFly, 'e:bombset': EBombSet, 'e:cover': ECover, 'e:radio': ERadio,
   'e:wheel': EWheel, 'e:trace': ETrace, 'e:front': EFront, 'e:repair': ERepair, 'e:scoot': EScoot, 'e:climb': EClimb,
   'e:disguise': EDisguise, 'e:predict': EPredict, 'e:review': EReview, 'e:mole': EMole, 'e:mind': EMind, 'e:speech': ESpeech,
+  'e:mlrs': EMlrs, 'e:poster': EPoster, 'e:decoy': EDecoy, 'e:fleet': EFleet, 'e:hide': EHide, 'e:reserve': EReserve, 'e:dock': EDock,
+  'e:shadow': EShadow, 'e:wing': EWing, 'e:delay': EDelay, 'e:stretcher': EStretcher, 'e:dronepath': EDronePath, 'e:mines': EMines,
+  'e:pincer': EPincer, 'e:windsnipe': EWindSnipe, 'e:naval': ENaval, 'e:recsort': ERecSort,
+  'e:swim': ESwim, 'e:chant': EChant, 'e:enlist': EEnlist, 'e:biathlon': EBiathlon, 'e:match': EMatch, 'e:nightshot': ENightShot, 'e:grid': EGrid,
   'e:judge': EJudge, 'e:school': ESchool, 'e:cold': ECold, 'e:depot': EDepot,
 };
 

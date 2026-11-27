@@ -3,7 +3,7 @@ import { EASY, EASY_MAX_LV, easyLevel, easyLv, easyNextLv, easyStats } from './e
 import { MINIGAMES, minisFor } from './minigames';
 import { MINI_VIEWS } from '../ui/battle/mini';
 import { Rng } from '../game/rng';
-import { PACK_H, PACK_W, ambushKills, liarRound, packFits, packPieces, pathEval, sandBest, sandCells, sandScore } from './easyLogic';
+import { coverBest, coverScore, dockScore, dockShips, PACK_H, PACK_W, ambushKills, liarRound, packFits, packPieces, pathEval, sandBest, sandCells, sandScore } from './easyLogic';
 import { juggleScore, juggleStart, juggleStep, quizSet, type QuizKind } from './easyQuiz';
 import { TRAININGS } from '../data/catalog';
 
@@ -13,14 +13,14 @@ describe('한 손가락 미니 훈련', () => {
     for (const t of TRAININGS) expect(EASY.filter((e) => e.training === t.name).length, t.name).toBe(7);
     expect(new Set(EASY.map((e) => e.id)).size).toBe(84);
   });
-  it('열린 것은 모두 화면이 있다(훈련마다 2개 넘게)', () => {
+  it('84개 모두 열려 있고 화면이 있다(훈련마다 7개)', () => {
     const on = EASY.filter((e) => e.view);
-    expect(on.length).toBeGreaterThanOrEqual(24);
+    expect(on.length).toBe(84);
     for (const e of on) {
       expect(MINI_VIEWS[e.id], e.name).toBeTruthy();
       expect(MINIGAMES.find((m) => m.id === e.id)?.easy).toBe(e.ctl);
     }
-    for (const t of TRAININGS) expect(minisFor(t.name).filter((m) => m.easy).length, t.name).toBeGreaterThanOrEqual(2);
+    for (const t of TRAININGS) expect(minisFor(t.name).filter((m) => m.easy).length, t.name).toBe(7);
   });
   it('능력은 내 능력 9개로 바뀌고 겹치지 않는다', () => {
     for (const e of EASY) {
@@ -110,6 +110,21 @@ describe('미니 훈련 규칙', () => {
       }
       expect(j.turn).toBe(9);
       expect(juggleScore(j, 9)).toBeGreaterThan(0.5);
+    }
+  });
+  it('덮기: 가장 좋은 자리에 놓으면 1점', () => {
+    const t = [{ x: 0, z: 0, w: 1 }, { x: 1, z: 0, w: 2 }, { x: 8, z: 8, w: 1 }];
+    expect(coverBest(t, 1, 2)).toBe(3);
+    expect(coverScore(t, [[0.5, 0]], 1, 2)).toBe(1);
+    expect(coverScore(t, [[8, 8]], 1, 2)).toBeCloseTo(1 / 3);
+    expect(coverBest(t, 2, 2)).toBe(4);
+  });
+  it('항구 하역: 가장 좋은 순서는 1점, 가장 나쁜 순서는 0점', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const ships = dockShips(new Rng(seed));
+      const best = [0, 1, 2].sort((a, b) => ships[b].urgent / ships[b].hours - ships[a].urgent / ships[a].hours);
+      expect(dockScore(ships, best)).toBe(1);
+      expect(dockScore(ships, [...best].reverse())).toBe(0);
     }
   });
 });
