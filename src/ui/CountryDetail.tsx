@@ -18,6 +18,8 @@ import { cabinetOf } from '../game/cabinet';
 import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
+import { VictoryPeaceBox } from './VictoryPeaceBox';
+import { warLead } from '../game/victoryPeace';
 import { deployOf } from '../game/deploy';
 import { bullyDoctrineOf, bullyStats, coalitionsOf } from '../game/bully';
 import { regionIcon, regionName, regionOf } from '../data/regions';
@@ -329,7 +331,8 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                   )}
                 </div>
               )}
-              {top && id !== me && cedeCities(state, id).length > 0 && (
+              {top && id !== me && <VictoryPeaceBox state={state} id={id} applyWith={actions.applyWith} onMsg={setMsg} />}
+              {top && id !== me && cedeCities(state, id).length > 0 && !warLead(state, id).winning && (
                 <div className="cede-row">
                   <small className="muted" style={{ flexBasis: '100%' }}>📜 강화 조약: 전쟁을 끝내며 점령한 도시를 넘겨받아요(투표 없이 편입 · 반발 절반)</small>
                   {cedeCities(state, id).map((cid) => {

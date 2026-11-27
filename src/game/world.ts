@@ -112,11 +112,35 @@ export interface WorldState {
   from?: Record<string, string>;
   /** AI 나라 성장 단계(11-26, aiGrowth.ts). 옛 저장은 없음 */
   grow?: Record<string, AiGrow>;
+  /** 11-27 승전 강화로 받은 도시의 불안(반란 위험, unrest.ts). 옛 저장은 없음 */
+  unrest?: Record<string, UnrestCity>;
+  /** 11-27 승전 강화를 알려 준 전쟁 상대(전쟁이 끝나면 지움) */
+  peaceHint?: Record<string, true>;
   /** 11-27 4막 구조: 지금 막(1~4)과 그 막이 시작된 시각. 옛 저장은 없음(3막처럼 대접) */
   act?: number;
   actSinceMs?: number;
   /** 가장 멀리 간 장(보상은 처음 닿았을 때만) */
   actMax?: number;
+}
+
+/** 11-27 승전 강화로 받은 도시: 원래 나라 선동·내정 부실이면 반란이 날 수 있음 */
+export interface UnrestCity {
+  /** 원래 나라 */
+  from: string;
+  since: number;
+  /** 민심 60 이상을 지키기 시작한 시각(7일 지키면 안정) */
+  calmSince: number | null;
+  /** 원래 나라 선동이 끝나는 시각 */
+  inciteUntil?: number;
+  /** 선동 막기(방첩)·주둔군·민심 달래기 효과 끝나는 시각 */
+  guardUntil?: number;
+  troopsUntil?: number;
+  soothe?: number;
+  sootheUntil?: number;
+  /** 하루 판정을 마지막으로 한 시각 */
+  dayMs: number;
+  /** 시간 판정을 마지막으로 한 시각 */
+  hourMs: number;
 }
 
 /** 편입 단계: 군정(점령 직후) → 민정(치안 확보 후) → 주민투표 → 편입 */
@@ -133,7 +157,7 @@ export interface AnnexCity {
   /** 강화 조약으로 넘겨받은 도시(투표 없이 편입) */
   treaty?: boolean;
   /** 처분(11-26): 없으면 편입 길. 'puppet' = 꼭두각시 정부(공물 30%, 반란 없음, 자원·생산 없음) */
-  mode?: 'puppet';
+  mode?: 'puppet' | 'base' | 'zone';
   /** 전쟁 피해(%): 수입이 그만큼 줄고, 재건 임무·시간이 지나면 줄어듦 */
   damage?: number;
   /** 점령지 관리 임무(11-26): 잔당 소탕 효과 끝나는 시각 · 소탕 세기(별) · 선전 방송 찬성 보너스 · 임무별 다시 할 수 있는 시각 */
@@ -148,6 +172,9 @@ export interface AnnexCity {
   dayMs?: number;
 }
 /** 꼭두각시 정부를 세운 도시인가(내정 도시는 점령 도시를 따라감) */
+/** 11-27 군사 기지 처분: 세금 20% · 반란 30% */
+export const BASE_INCOME = 0.2;
+export const BASE_REBEL = 0.3;
 export const isPuppet = (w: WorldState, cityId: string) => w.annex?.[cityById(cityId).hub]?.mode === 'puppet';
 
 /** 그 도시를 '우리 땅'으로 여기는 나라: 편입했으면 편입한 나라, 아니면 처음 나라 */
@@ -258,7 +285,7 @@ export function incomeShare(w: WorldState, countryId: string, budget = false): n
     if (w.owner[c.id] !== countryId) continue;
     if (homeOf(w, c.id) === countryId) { v += c.value; continue; }
     const a = w.annex?.[c.hub];
-    const k = a?.mode === 'puppet' ? PUPPET_INCOME : a?.stage === '민정' ? (budget ? CIVIL_BUDGET : CIVIL_INCOME) : budget ? OCCUPIED_BUDGET : OCCUPIED_INCOME;
+    const k = a?.mode === 'puppet' ? PUPPET_INCOME : a?.mode === 'base' ? BASE_INCOME : a?.mode === 'zone' ? 1 : a?.stage === '민정' ? (budget ? CIVIL_BUDGET : CIVIL_INCOME) : budget ? OCCUPIED_BUDGET : OCCUPIED_INCOME;
     v += c.value * k * (1 - Math.min(90, a?.damage ?? 0) / 100);
   }
   return v / homeValue(countryId);
@@ -614,8 +641,9 @@ function rebellions(ctx: Ctx) {
     const faithDiff = countryById(occ).faith !== countryById(c.home).faith;
     const an = w.annex?.[c.id];
     if (occ === ctx.player && an?.mode === 'puppet') continue; // 꼭두각시 정부는 반란 대신 이탈(annex.ts)
+    const modeK = occ === ctx.player && an?.mode === 'base' ? BASE_REBEL : 1; // 11-27 군사 기지는 반란이 드묾
     const sweep = an?.sweepUntil && an.sweepUntil > ctx.t ? 1 - 0.25 * (an.sweepStars ?? 1) : 1;
-    const hold = occ === ctx.player ? ctx.playerHold.rebel * (an?.stage === '민정' ? CIVIL_REBEL : 1) * sweep : 1;
+    const hold = occ === ctx.player ? ctx.playerHold.rebel * (an?.mode ? modeK : an?.stage === '민정' ? CIVIL_REBEL : 1) * sweep : 1;
     if (!rng.chance(REBEL_CHANCE * (faithDiff ? REBEL_FAITH_MULT : 1) * hold)) continue;
     const revived = !isAlive(w, c.home);
     noteCapture(w, c.id, c.home);
