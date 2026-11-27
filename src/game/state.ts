@@ -6,6 +6,8 @@ import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
+import { occAdminTick } from './occAdmin';
+import type { OccAdminState } from './occAdmin';
 import { pressureTick, tariffMult, type PressureState } from './pressure';
 import { surrenderTick, vassalMult, type VassalState } from './surrender';
 import { hegemonyMult, hegemonyTick, type HegemonyState } from './hegemony';
@@ -70,6 +72,8 @@ import { growTick } from './aiGrowthTick';
 import { actsTick } from './acts';
 import { counterTick, type CounterState } from './counter';
 import { finaleTick, type FinaleState } from './finale';
+import { sagaTick, type SagaState } from './saga';
+import type { TourState } from './tour';
 import type { CampaignState } from './campaign';
 
 export interface NationState {
@@ -144,6 +148,8 @@ export interface GameState {
   cabinet?: CabinetState;
   /** 장관·장군·부관 건의와 도시 개발 계획(11-25) */
   props?: PropState;
+  /** 11-27 점령지 관리청(편입 전 점령 도시를 맡는 관리단·건의, game/occAdmin.ts) */
+  occAdmin?: OccAdminState;
   /** 인물 대화 기록(11-25) */
   chat?: ChatState;
   /** 11-27 인물 만남·인연·부탁·인맥 수첩(game/meet.ts) */
@@ -166,6 +172,10 @@ export interface GameState {
   campaign?: CampaignState;
   /** 11-27 4장 마지막 위기 진행 */
   finale?: FinaleState;
+  /** 11-27 연속 위기 이야기 */
+  saga?: SagaState;
+  /** 11-27 지방 순방 */
+  tour?: TourState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
@@ -373,8 +383,8 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = hegemonyTick(surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore))))));
-    cur = counterTick(finaleTick(actsTick(cur)));
+    cur = hegemonyTick(surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))));
+    cur = sagaTick(counterTick(finaleTick(actsTick(cur))));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }

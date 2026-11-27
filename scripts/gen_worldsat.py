@@ -9,7 +9,8 @@
 - src/assets/world/world-map.webp : 확대 1배 바탕(바다 깊이 색 + 위성 땅 + 산 그림자), 1도 = 12칸
 - src/assets/world/world-night.webp: 밤 불빛(알파), src/assets/world/world-clouds.webp: 구름(알파)
 - public/world-sat/1-x-y.webp + meta.json : 확대용 고해상 땅 조각(1도 = 60칸, 512칸 조각, 바다만 있는 조각은 없음)
-게임 좌표(src/data/realGeo.ts): 경도 -15~300, 위도 5~80, 정거원통.
+게임 좌표(src/data/realGeo.ts): 경도 -15~330, 위도 -56~80, 정거원통.
+11-27 남반구로 넓힘: OLD=1 이면 옛 범위(경도 -15~300, 위도 5~80)는 새로 받지 않고 옛 그림·조각을 그대로 붙임.
 """
 import json, math, os, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -27,7 +28,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_A = os.path.join(ROOT, 'src/assets/world')
 OUT_P = os.path.join(ROOT, 'public/world-sat')
 os.makedirs(OUT_P, exist_ok=True)
-LON0, LON1, LAT0, LAT1 = -15, 300, 5, 80
+LON0, LON1, LAT0, LAT1 = -15, 330, -56, 80
+OLD = os.environ.get('OLD') == '1'
+OLD_LON1, OLD_LAT0 = 300, 5
+old_area = lambda la, lo: OLD and lo < OLD_LON1 and la >= OLD_LAT0
 P0, P1, TILE = 12, 60, 512
 have = set(json.load(open(sys.argv[1])))
 S.have = have
@@ -47,7 +51,7 @@ for s0 in range(LON0, LON1, STRIP):
     for la in range(LAT0, LAT1):
         for lo in range(s0, s1):
             lw = ((lo + 180) % 360) - 180
-            if tname(la, lw) in have:
+            if tname(la, lw) in have and not old_area(la, lo):
                 jobs.append((la, lw, lo))
     t = time.time()
     with ThreadPoolExecutor(24) as ex:
@@ -87,7 +91,13 @@ for s0 in range(LON0, LON1, STRIP):
                 if part[..., 3].max() < 8:
                     continue
                 cur = np.zeros((min(TILE, H1 - ty), min(TILE, W1 - gx), 4), np.uint8)
-            cur[: part.shape[0], a0 - gx : a1 - gx] = part
+            if OLD:
+                # 옛 조각 위에 새 땅만 얹음(새 땅이 없는 칸은 옛 그림 그대로)
+                reg = cur[: part.shape[0], a0 - gx : a1 - gx]
+                take = part[..., 3:4] > reg[..., 3:4]
+                cur[: part.shape[0], a0 - gx : a1 - gx] = np.where(take, part, reg)
+            else:
+                cur[: part.shape[0], a0 - gx : a1 - gx] = part
             Image.fromarray(cur, 'RGBA').save(name)
     small = Image.fromarray(img8, 'RGBA').resize(((s1 - s0) * P0, H0), Image.LANCZOS)
     land0[:, (s0 - LON0) * P0 : (s1 - LON0) * P0] = np.asarray(small).astype(np.float32) / 255
@@ -116,6 +126,10 @@ base = sea_img * (1 - a) + land0[..., :3] * a
 # 산 그림자(북서쪽 빛, 과장 크게: 세계지도는 산이 작게 보임)
 dk = R.shade(el, P0, 45, 315, 35, 6) * (el > 1)
 base = base * (1 - 0.45 * dk[..., None])
+if OLD:
+    oldimg = np.asarray(Image.open(os.path.join(OUT_A, 'world-map.webp')).convert('RGB')).astype(np.float32) / 255
+    oh, ow = (80 - OLD_LAT0) * P0, (OLD_LON1 - LON0) * P0
+    base[:oh, :ow] = oldimg[:oh, :ow]
 Image.fromarray((np.clip(base, 0, 1) * 255).astype(np.uint8)).save(os.path.join(OUT_A, 'world-map.webp'), quality=80, method=6)
 print('world-map', W0, H0, flush=True)
 

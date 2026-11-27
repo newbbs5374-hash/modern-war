@@ -99,6 +99,12 @@ export function startVote(s: GameState, cityId: string): GameState {
   return setEntry({ ...s, world: { ...s.world, events: [ev, ...s.world.events] } }, cityId, { ...a, voteAt: s.worldMs + VOTE_HOURS * H });
 }
 
+/** 11-27 점령지 관리청이 편입 기록을 고칠 때 씀(군정 단축·피해 복구·선전 등) */
+export function patchEntry(s: GameState, cityId: string, patch: Partial<AnnexCity>): GameState {
+  const a = annexEntry(s, cityId);
+  return a ? setEntry(s, cityById(cityId).hub, { ...a, ...patch }) : s;
+}
+
 function setEntry(s: GameState, cityId: string, a: AnnexCity | null): GameState {
   const annex = { ...annexOf(s) };
   if (a) annex[cityId] = a;

@@ -70,3 +70,38 @@ describe('정상 SNS(11-26)', () => {
     expect(answerPost(r.state, p!.id, true).state).toBe(r.state);
   });
 });
+
+describe('SNS 내 글 쓰기(11-27)', () => {
+  it('칭찬하면 호감 오르고 숙적은 싫어함, 비판·조롱은 반대', async () => {
+    const { writePost, myCooldown, MY_COOLDOWN_MS } = await import('./leaderSns');
+    const { favorOf } = await import('./civ');
+    const s0 = advance(newGame('t', 'kr', 0, { seed: 4 }), 1 * H);
+    const r = writePost(s0, 'praise', 'us', '');
+    expect(r.text).toContain('글을 올렸어요');
+    expect(favorOf(r.state, 'us')).toBeGreaterThan(favorOf(s0, 'us'));
+    const mine = snsOf(r.state).posts.find((p) => p.kind === 'mine')!;
+    expect(mine.tone).toBe('praise');
+    expect(mine.text.includes('{')).toBe(false);
+    // 쉬는 시간
+    expect(myCooldown(r.state)).toBe(MY_COOLDOWN_MS);
+    expect(writePost(r.state, 'mock', 'jp', '').state).toBe(r.state);
+    // 조롱: 중국 호감 내림, 중국 숙적(한국 빼고) 호감 오름
+    const s1 = advance(r.state, MY_COOLDOWN_MS + 1000);
+    const rivals = archRivalsOf('cn').filter((x) => x !== 'kr');
+    const m = writePost(s1, 'mock', 'cn', '우리가 더 잘해요, 그냥 장난');
+    expect(favorOf(m.state, 'cn')).toBeLessThan(favorOf(s1, 'cn'));
+    for (const x of rivals) expect(favorOf(m.state, x)).toBeGreaterThanOrEqual(favorOf(s1, x));
+    expect(snsOf(m.state).posts.some((p) => p.kind === 'mine' && p.text.includes('그냥 장난'))).toBe(true);
+    expect(m.state.officer.fame ?? 0).toBeGreaterThan(s1.officer.fame ?? 0);
+  });
+  it('같은 나라에 자주 쓰면 효과 절반, 자랑은 상대 없이', async () => {
+    const { writePost, previewPost, MY_COOLDOWN_MS } = await import('./leaderSns');
+    const s0 = advance(newGame('t', 'kr', 0, { seed: 6 }), 1 * H);
+    const a = previewPost(s0, 'criticize', 'jp');
+    const s1 = advance(writePost(s0, 'criticize', 'jp', '').state, MY_COOLDOWN_MS + 1000);
+    expect(Math.abs(previewPost(s1, 'criticize', 'jp').favor)).toBeLessThan(Math.abs(a.favor));
+    const b = writePost(s1, 'boast', 'jp', '');
+    expect(b.text).toContain('지지도');
+    expect(snsOf(b.state).posts[0].to).toBeUndefined();
+  });
+});
