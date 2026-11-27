@@ -1,7 +1,7 @@
 // 사회 → 정계: 국회(법안 카드 3장·표결·살아 있는 법) + 재신임 국민투표. 한 화면.
 import { BoostBar } from './BoostBar';
 import { useState } from 'react';
-import { CONF_FAME, CONF_RUBY, assemblyOf, billChance, billRows, canSubmit, confChance, submitBill } from '../game/assembly';
+import { CONF_FAME, CONF_RUBY, assemblyOf, billChance, billRows, canSubmit, confChance, confRows, isOpposition, submitBill, termNo } from '../game/assembly';
 import { LAW_DAYS, LAW_MAX, billById, liveLaws, type BillId } from '../game/laws';
 import { approvalOf } from '../game/approval';
 import { titleOf } from '../game/title';
@@ -76,11 +76,26 @@ export function AssemblyPanel({ state, actions }: ScreenProps) {
           <p className="small muted">아직 통과된 법이 없어요.</p>
         )}
       </Card>
-      <Card title="재신임 국민투표" icon="🗳️">
+      <Card title={`${termNo(state)}번째 임기 · 재신임 선거`} icon="🗳️">
+        {isOpposition(state) && <p className="small asm-vote">🪑 지금은 야당 지도자예요 · {longLeft(Math.max(0, (a.oppUntilMs ?? 0) - state.worldMs))} 뒤 다시 집권해요(그동안 법안을 못 내요)</p>}
         <p className="small">
           다음 투표까지 <b>{longLeft(Math.max(0, a.confMs - state.worldMs))}</b> · 지금 지지도 {Math.round(approvalOf(state))} · 호칭 「{titleOf(state).name}」 → 통과 {pct(cc)}
         </p>
         <Meter value={cc * 100} max={100} tone={cc >= 0.7 ? 'green' : cc >= 0.4 ? 'gold' : 'red'} />
+        <ul className="kv-list">
+          {confRows(state).map(([k, v]) => (
+            <li key={k}>
+              <span>{k}</span>
+              <b className={v < 0 ? 'bad' : ''}>
+                {v >= 0 ? '+' : ''}
+                {Math.round(v * 100)}%
+              </b>
+            </li>
+          ))}
+        </ul>
+        <p className="small muted">
+          이번 임기에 지킨 공약(국정 과제) 한 건마다 +4%(많아야 +20%), 깬 공약 한 건마다 −6%. 지면 이틀 동안 야당 지도자로 지내다 다시 집권해요.
+        </p>
         <p className="small muted">
           실제 14일마다 열려요. 지지도 35면 0%, 65면 100%에 호칭(평판)이 더하거나 빼요(가장 낮은 호칭 −25%p, 가장 높은 호칭 +25%p). 통과 💎{CONF_RUBY} · 명성 +{CONF_FAME} / 실패하면 신뢰도 −15 · 명성 −100(호칭이 내려갈 수 있어요, 게임은 계속). 지금까지 {a.confWins}승 {a.confLoss}패
         </p>
