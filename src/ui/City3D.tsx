@@ -33,6 +33,8 @@ interface Props {
   /** 지방 순방 현안 표시(시청 기준 미터: 동쪽 x, 북쪽 y) */
   marks?: Array<{ x: number; y: number; icon: string; label: string; done: boolean }>;
   onMark?: (i: number) => void;
+  /** 11-27 도시 5: 전쟁의 흔적 0~1(방어도가 깎인 만큼). 그을린 자리·연기·밤엔 불빛 */
+  scars?: number;
 }
 
 const BASE = import.meta.env.BASE_URL ?? '/';
@@ -300,14 +302,16 @@ function makeCrane(): THREE.Group {
   return g;
 }
 
-export default function City3D({ file, level, night, marks, onMark }: Props) {
+export default function City3D({ file, level, night, marks, onMark, scars = 0 }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const markBox = useRef<HTMLDivElement>(null);
   const marksRef = useRef(marks);
   marksRef.current = marks;
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(true);
-  const api = useRef<{ setLook: (level: number, night: number) => void } | null>(null);
+  const api = useRef<{ setLook: (level: number, night: number) => void; setScars: (v: number) => void } | null>(null);
+  const scarsRef = useRef(scars);
+  scarsRef.current = scars;
   const levelRef = useRef(level);
   const nightRef = useRef(night);
   levelRef.current = level;
@@ -448,7 +452,7 @@ export default function City3D({ file, level, night, marks, onMark }: Props) {
       carCount = Math.min(look.cars, cars?.count ?? 0);
       if (cars) cars.count = carCount;
     };
-    api.current = { setLook };
+    api.current = { setLook, setScars: (v: number) => setScars(v) };
     if (import.meta.env.DEV) (window as unknown as { __city3d?: unknown }).__city3d = { cam, ctl, scene };
 
     loadCity3D(file)
@@ -510,8 +514,54 @@ export default function City3D({ file, level, night, marks, onMark }: Props) {
         scene.add(cars);
         setBusy(false);
         api.current?.setLook(levelRef.current, nightRef.current);
+        setScars(scarsRef.current);
       })
       .catch((e) => alive && setErr(String(e)));
+
+    // 전쟁의 흔적: 그을린 자리 + 피어오르는 연기(밤엔 불빛)
+    const smokeTex = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 64;
+      const g = cv.getContext('2d')!;
+      const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+      gr.addColorStop(0, 'rgba(255,255,255,0.9)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(cv);
+    })();
+    const smokeMat = new THREE.SpriteMaterial({ map: smokeTex, color: '#3a3a3a', transparent: true, opacity: 0.55, depthWrite: false });
+    const fireMat = new THREE.SpriteMaterial({ map: smokeTex, color: '#ff7a1a', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+    const scorchMat = new THREE.MeshBasicMaterial({ color: '#16130f', transparent: true, opacity: 0.6, depthWrite: false });
+    const scarGroup = new THREE.Group();
+    scene.add(scarGroup);
+    let puffs: Array<{ sp: THREE.Sprite; x: number; z: number; base: number; ph: number }> = [];
+    const setScars = (v: number) => {
+      for (const p of puffs) p.sp.material.dispose();
+      scarGroup.clear();
+      puffs = [];
+      if (!built || v <= 0.03) return;
+      const n = Math.min(16, Math.round(v * 16));
+      const pool = Math.min(built.order.length, 600);
+      for (let i = 0; i < n; i++) {
+        const b = built.order[(i * 37 + 11) % Math.max(1, pool)];
+        if (!b) continue;
+        const r = Math.max(30, b.r * 1.6);
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 20), scorchMat);
+        disc.rotation.x = -Math.PI / 2;
+        disc.position.set(b.x, 3.2, b.z);
+        scarGroup.add(disc);
+        const fire = new THREE.Sprite(fireMat);
+        fire.position.set(b.x, b.h + 20, b.z);
+        fire.scale.setScalar(r * 2.2);
+        scarGroup.add(fire);
+        for (let k = 0; k < 5; k++) {
+          const sp = new THREE.Sprite(smokeMat.clone());
+          scarGroup.add(sp);
+          puffs.push({ sp, x: b.x, z: b.z, base: b.h + 10, ph: (k / 5 + i * 0.13) % 1 });
+        }
+      }
+    };
 
     const tmp = new THREE.Object3D();
     let last = performance.now();
@@ -544,6 +594,15 @@ export default function City3D({ file, level, night, marks, onMark }: Props) {
           cars.setMatrixAt(i, tmp.matrix);
         }
         cars.instanceMatrix.needsUpdate = true;
+      }
+      if (puffs.length) {
+        fireMat.opacity = curNight * 0.8 + 0.12;
+        for (const p of puffs) {
+          p.ph = (p.ph + dt * 0.07) % 1;
+          p.sp.position.set(p.x + p.ph * 160, p.base + p.ph * 520, p.z + p.ph * 60);
+          p.sp.scale.setScalar(70 + p.ph * 260);
+          p.sp.material.opacity = 0.6 * (1 - p.ph) * Math.min(1, p.ph * 8);
+        }
       }
       renderer.render(scene, cam);
       // 순방 현안 표시: 3D 자리를 화면 자리로 옮김
@@ -580,7 +639,7 @@ export default function City3D({ file, level, night, marks, onMark }: Props) {
         const m = o as THREE.Mesh;
         if (m.geometry) m.geometry.dispose();
       });
-      [wallMat, roofMat, waterMat, parkMat, roadMat, carMat, lampMat, lampTex, tex.day, tex.night].forEach((x) => x.dispose());
+      [wallMat, roofMat, waterMat, parkMat, roadMat, carMat, lampMat, lampTex, tex.day, tex.night, smokeTex, smokeMat, fireMat, scorchMat].forEach((x) => x.dispose());
       renderer.dispose();
       renderer.domElement.remove();
       api.current = null;
@@ -590,6 +649,9 @@ export default function City3D({ file, level, night, marks, onMark }: Props) {
   useEffect(() => {
     api.current?.setLook(level, night);
   }, [level, night]);
+  useEffect(() => {
+    api.current?.setScars(scars);
+  }, [scars]);
 
   return (
     <div className="city3d">

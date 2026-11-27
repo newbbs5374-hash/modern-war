@@ -1716,3 +1716,14 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .tt-node.on-goal { border-color: #7dffb0; border-style: solid; opacity: 1; filter: none; box-shadow: 0 0 0 1px #7dffb0, 0 0 10px #7dffb066; }
 .tt-node.is-goal { box-shadow: 0 0 0 2px #7dffb0, 0 0 14px #7dffb0aa; }
 .tt-node.is-goal .tt-name::before { content: '🎯 '; }
+
+/* 11-27 본부 2: 도시로 빨려 들어가기 */
+.hl-dive { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(circle at 50% 45%, #ffffff00 0%, #ffffff00 18%, #0b1622cc 70%); animation: hl-dive .65s ease-in forwards; }
+@keyframes hl-dive { 0% { opacity: 0; } 60% { opacity: 1; background-color: #ffffff00; } 100% { opacity: 1; background-color: #e8f4ffcc; } }
+
+/* 11-27 세계 4: 보기 바꾸기 범례 */
+.wm-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 4px; font-size: 11px; }
+.wm-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.wm-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.seg.wm-modes { flex-wrap: nowrap; gap: 2px; }
+.seg.wm-modes button { padding: 5px 5px; font-size: 11px; white-space: nowrap; min-width: 0; }

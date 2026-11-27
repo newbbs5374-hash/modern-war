@@ -14,7 +14,7 @@ import { pendingCap, type GameState } from '../game/state';
 import { citiesOf, isAlive, relationOf } from '../game/world';
 import { Card, CountryInfo, EventList, fmt } from './common';
 import type { Screen } from './nav';
-import { COUNTRY_COLORS, REL_COLORS, WorldMap, type MapMode } from './WorldMap';
+import { COUNTRY_COLORS, MODE_LEGEND, REL_COLORS, WorldMap, modeColor, type MapMode } from './WorldMap';
 import { Globe } from './globe/Globe';
 import { Safe } from './Safe';
 import { GrandCard, MissionCard, timeLeft } from './officerScreens';
@@ -369,6 +369,21 @@ function CityModal({ state, go, id, atWar, onClose }: ScreenProps & { id: string
           ? (CITY_INST[c.name] ?? []).map((i) => `${instById(i).icon} ${instById(i).name}(${instById(i).does})`).join(' · ')
           : '없음'}
       </p>
+      {owner === state.player.countryId && (
+        <button
+          className="primary wide-btn"
+          onClick={() => {
+            try {
+              sessionStorage.setItem('city-focus', id);
+            } catch {
+              /* 무시 */
+            }
+            go(routeTo('society', 'society', 'city'));
+          }}
+        >
+          🏙️ 도시 안으로 들어가기
+        </button>
+      )}
       {st === '점령당함' && (
         <button className="primary wide-btn" onClick={() => go(routeTo('ops', 'ops', 'mission'))}>
           🏙️ 국방 → 작전에서 되찾기
@@ -473,8 +488,7 @@ function MapPanel({ state }: ScreenProps) {
       /* 저장 못 해도 그대로 */
     }
   };
-  const globeColor = (id: string) =>
-    mode === '나라' ? COUNTRY_COLORS[id] ?? '#94a3b8' : mode === '묶음' ? BLOCS[countryById(id).bloc].color : id === me ? REL_COLORS['나'] : REL_COLORS[relationOf(w, me, id)];
+  const globeColor = (id: string) => modeColor(mode, w, me, id);
   const otherWars = Object.entries(w.pairs)
     .filter(([k, p]) => p.rel === '전쟁' && !k.split('|').includes(me) && k.split('|').every((id) => isAlive(w, id)))
     .map(([k]) => k.split('|'));
@@ -484,11 +498,11 @@ function MapPanel({ state }: ScreenProps) {
         title="세계 지도"
         icon="🗺️"
         right={
-          <span className="seg">
+          <span className="seg wm-modes">
             <button className={globe ? 'on' : ''} onClick={() => setGlobe(!globe)} aria-label="지구본으로 보기">
               🌐
             </button>
-            {(['나라', '관계', '묶음'] as MapMode[]).map((m) => (
+            {(['나라', '관계', '묶음', '군사', '긴장'] as MapMode[]).map((m) => (
               <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
                 {m}
               </button>
@@ -497,6 +511,16 @@ function MapPanel({ state }: ScreenProps) {
         }
         help={<p>나라를 누르면 자세한 정보가 떠요. 두 손가락·휠·＋−로 확대하고 끌어서 옮겨요. 점선은 도(주·성) 경계예요. 주요 도시를 점령하면 공격을 시작한 도시부터 그 도시까지 길목의 땅도 함께 차지하고, 빼앗긴 땅은 점령한 나라 색에 빗금으로 보여요. 🚢✈️🛡️ 배·비행기·전차는 그 나라가 가진 병과예요(우리나라는 직접 만든 부대). 평소엔 자기 나라 둘레를 순찰하고, 전쟁이 나면 적 쪽으로 나아가요. 해외 파병(외교 → 파병) 부대는 파병 간 나라 둘레에서 움직여요. 확대할수록 자세해져요: 3배부터 실제 강·고속도로와 도시 단계 아이콘, 5배부터 철도·지방 도로. 서로 전쟁 중인 두 나라 땅이 맞닿은 곳엔 붉은 전선이 생기고, 공격받는 도시는 붉게 깜빡여요.</p>}
       >
+        {MODE_LEGEND[mode].length > 0 && (
+          <p className="wm-legend">
+            {MODE_LEGEND[mode].map(([c, n]) => (
+              <span key={n}>
+                <i style={{ background: c }} />
+                {n}
+              </span>
+            ))}
+          </p>
+        )}
         {globe ? (
           <Safe where="지구본" small>
             <Globe world={w} playerCountryId={me} selectedId={sel} onSelect={setSel} colorOf={globeColor} onFail={() => setGlobe(false)} />
