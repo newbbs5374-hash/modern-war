@@ -1,3 +1,4 @@
+import { meetBadge } from './MeetUI';
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
 import { payPreview } from '../game/payday';
 import { CITY_INST, instById } from '../data/institutions';
@@ -129,6 +130,7 @@ export function HomeScreen(props: ScreenProps) {
       { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
       { icon: '📱', label: '정상 SNS', x: 90, y: 28, on: () => setSnsOpen(true), badge: snsUnread(state) || null },
       { icon: '🧑‍✈️', label: '부관', x: 90, y: 36, on: () => goTab('officer', 'officer', 'aides'), badge: errandsDone || null },
+      { icon: '📒', label: '인맥', x: 90, y: 44, on: () => goTab('personal', 'personal', 'meet'), badge: meetBadge(state) },
       { icon: '📋', label: '명령', x: 90, y: 52, on: () => setOrdersOpen(true), badge: ORDER_INFO.filter((x) => ordersOf(state)[x.key]).length || null },
       { icon: '🛒', label: '상점', x: 90, y: 68, on: () => go('shop'), badge: goalsReady(state) || null },
       { icon: '🏙️', label: '대전투', x: 10, y: 87, on: () => goTab('ops', 'ops', 'grand'), locked: rank < OPERATION_RANK },

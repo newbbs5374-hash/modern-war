@@ -1140,3 +1140,41 @@ select.wide, button.wide { width: 100%; }
 .pol-words button.on { border-color: var(--amber); background: #5b5030; }
 .pol-wide { width: 100%; margin-top: 6px; padding: 8px; }
 .pol-sc .dom-scene { aspect-ratio: 16 / 7; margin-bottom: 4px; }
+
+/* ───────── 11-27 인물 만남 · 인맥 수첩(ui/MeetUI.tsx) ───────── */
+.meet-card { display: flex; flex-direction: column; gap: 6px; }
+.meet-scene { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); height: 180px; }
+.meet-bg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.meet-who { position: absolute; left: 8px; bottom: 0; width: 104px; height: 104px; object-fit: cover; border-radius: 12px 12px 0 0; border: 2px solid var(--amber); border-bottom: none; background: var(--panel2); }
+.meet-face-ico { display: flex; align-items: center; justify-content: center; font-size: 40px; }
+.meet-name { position: absolute; left: 120px; right: 8px; bottom: 8px; background: #000a; padding: 5px 8px; border-radius: 8px; font-size: 12px; line-height: 1.35; }
+.meet-name b { color: var(--amber); font-size: 15px; }
+.meet-name small { display: block; color: var(--muted); }
+.meet-say { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 0; font-size: 14px; line-height: 1.5; }
+.meet-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.meet-opt small { color: var(--hud); }
+.meet-bond { margin-top: 2px; }
+.meet-bond-lbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.meet-wait { display: flex; align-items: center; gap: 8px; text-align: left; }
+.meet-wait small, .meet-favor-body small { display: block; }
+.meet-mini { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex: none; background: var(--panel2); font-size: 24px; }
+.meet-favor { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.meet-favor:last-child { border-bottom: none; }
+.meet-favor-body { flex: 1; min-width: 0; }
+.meet-favor-btns { display: flex; gap: 6px; margin-top: 4px; }
+.meet-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.meet-tabs button { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); white-space: nowrap; }
+.meet-tabs button.on { border-color: var(--hud); color: var(--hud); }
+.meet-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.meet-cell { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 11px; min-width: 0; }
+.meet-cell b, .meet-cell small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meet-cell.mine { border-color: var(--amber); }
+.meet-cell.mine small { color: var(--amber); }
+.meet-cell-face { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--panel2); font-size: 28px; }
+.meet-cell.no .meet-cell-face { filter: brightness(0.15); }
+.meet-goal { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 0; font-size: 13px; }
+.meet-goal-r { display: flex; align-items: center; gap: 6px; flex: none; }
+.meet-sel { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.meet-sel-face { width: 140px; height: 140px; object-fit: cover; border-radius: 14px; border: 2px solid var(--line); }
+.meet-sel-face.no { filter: brightness(0.15); }
+.meet-sel .meet-bond { width: 100%; }

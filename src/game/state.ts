@@ -23,6 +23,7 @@ import type { Report } from './report';
 import type { PeaceState } from './peace';
 import type { GoalsState } from './goals';
 import { crisisTick, newCrisis, type CrisisState } from './crisis';
+import { meetTick, type MeetState } from './meet';
 import { remarksTick, type RemarkState } from './remarks';
 import { snsTick, type SnsState } from './leaderSns';
 import { ensureRivalRoster } from './rivals';
@@ -139,6 +140,8 @@ export interface GameState {
   props?: PropState;
   /** 인물 대화 기록(11-25) */
   chat?: ChatState;
+  /** 11-27 인물 만남·인연·부탁·인맥 수첩(game/meet.ts) */
+  meet?: MeetState;
   /** 대통령 일정(11-23) */
   schedule?: ScheduleState;
   /** 국회·법·재신임(11-23) */
@@ -349,7 +352,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
-    cur = propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))));
+    cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

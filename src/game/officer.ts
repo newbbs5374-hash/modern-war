@@ -148,6 +148,8 @@ export interface Rival {
   woo?: number;
   nextPlotMs?: number;
   watchUntil?: number;
+  /** 11-27 만남으로 인연 100: 내 사람(같은 얼굴 인물이 내각에 들어옴) */
+  mine?: boolean;
   /** 11/26: 성별·미국 갈래·얼굴 파일(그 나라 얼굴) */
   sex?: 'm' | 'f';
   eth?: string;

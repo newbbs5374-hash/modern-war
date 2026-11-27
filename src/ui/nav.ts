@@ -55,7 +55,7 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
 ];
 
 /** 새 큰 탭 안의 작은 탭 이름 */
-export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'plan' | 'agenda' | 'album';
+export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'meet' | 'plan' | 'agenda' | 'album';
 export type DefenseTab = 'ops' | 'train' | 'forces' | 'command' | 'spy' | 'tech' | 'fac';
 export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'nation' | 'press' | 'opinion';
