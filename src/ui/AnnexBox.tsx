@@ -8,6 +8,7 @@ import {
 import { occupyPlan, setPendingPlan } from '../battle/spec';
 import type { Screen } from './nav';
 import { ga, homeOf } from '../game/world';
+import { OccAdminCityBox } from './OccAdminUI';
 
 const H = 3600e3;
 const hrs = (ms: number) => {
@@ -136,6 +137,7 @@ export function AnnexBox({ state, id, apply, go }: { state: GameState; id: strin
       <p className="small">{line}</p>
       {dmg}
       {choose}
+      <OccAdminCityBox state={state} id={id} apply={apply} />
       <OccTasks state={state} id={id} go={go} />
       {!a?.treaty && a?.stage === '민정' && !a.voteAt && (
         <>
