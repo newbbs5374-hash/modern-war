@@ -98,7 +98,7 @@ describe('내정 확장', () => {
     }
     expect(domOf(s).projects[id].stage).toBe(3);
     expect(lawEff(s, 'defense')).toBeGreaterThanOrEqual(8);
-    expect(PROJECTS.length).toBe(10);
+    expect(PROJECTS.length).toBe(20); // 11-28 국가 사업 10 → 20
   });
   test('예산안 철: 안 내면 준예산, 내면 표결', () => {
     let s = fresh();
