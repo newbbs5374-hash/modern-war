@@ -14,6 +14,7 @@ import { CITY3D_FILE } from '../data/city3d';
 import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
+  TECH_PTS_PER_BOOST,
   AGENDAS,
   AGREES,
   CARDS,
@@ -136,6 +137,9 @@ export function ResearchPanel(props: ScreenProps & { fixed?: 'mil' | 'soc' }) {
           <Help title="연구">
             <p>
               <b>3단계 연구</b>: 기술 하나는 1단계 → 2단계 → 3단계로 나눠 연구해요. 3단계를 모두 끝내야 기술이 완성되고 병과·카드·구역이 열려요. 다른 연구로 바꿔도 끝낸 단계와 쌓인 점수는 그대로 남아요.
+            </p>
+            <p>
+              <b>연구 비용</b>: 연구를 시작할 때 나라 예산(2시대부터는 자원도: 군사 강철·반도체, 사회 구리·리튬)을 내요. 뒤 시대일수록 오래 걸리고 비싸요. ⏩·⚡ 가속권 한 장은 언제나 연구 {TECH_PTS_PER_BOOST}점만큼 줄여요.
             </p>
             <p>
               <b>연구 트리</b>: 왼쪽에서 오른쪽으로 갈수록 다음 시대 연구예요. 선으로 이어진 왼쪽 카드가 "먼저 해야 하는 연구"예요. 청록 선은 끝남, 주황 선은 지금 열 수 있음, 흐린 점선은 아직 멀었음. 옆으로 밀어서 보고, 카드를 누르면 자세히 보여요. 카드 아래 작은 아이콘은 그 연구가 여는 병과·카드·구역·협정이에요.
@@ -351,6 +355,11 @@ function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech
     ...(t.agree ?? []).map((a) => `${agreeById(a).icon} ${agreeById(a).name} 협정`),
   ];
   const switching = !done && !now && c.cur[t.line];
+  // 11-27 연구 비용: 시작할 때 남은 단계만큼 나라 예산·자원을 냄
+  const price = C.techPrice(state, t);
+  const payWhy = why ? null : C.techPayWhy(state, t.id);
+  const priceText = [price.money ? `💰${fmt(price.money)}` : '', ...Object.entries(price.res).map(([r, v]) => `${RES_ICON[r as keyof typeof RES_ICON] ?? ''}${r} ${v}`)].filter(Boolean).join(' ');
+  const per = C.techStagePrice(t);
   return (
     <Modal
       title={t.name}
@@ -366,10 +375,10 @@ function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech
           </span>
         ) : (
           <span className="tech-now">
-            <button className="primary wide" disabled={!!why} onClick={() => (onGo(t.id), onClose())}>
-              {why ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간`)}
+            <button className="primary wide" disabled={!!why || !!payWhy} onClick={() => (onGo(t.id), onClose())}>
+              {why ?? payWhy ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)${priceText ? ` · ${priceText}` : ''}` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간${priceText ? ` · ${priceText}` : ''}`)}
             </button>
-            {!why && <BoostBar state={state} apply={actions.apply} target={{ kind: 'tech', id: t.id }} compact />}
+            {!why && !payWhy && <BoostBar state={state} apply={actions.apply} target={{ kind: 'tech', id: t.id }} compact />}
           </span>
         )
       }
@@ -398,6 +407,13 @@ function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech
           );
         })}
       </div>
+      {!done && (
+        <p className="small tech-price">
+          💳 <b>연구 비용</b>(한 단계): 💰{fmt(per.money)}
+          {Object.entries(per.res).map(([r, v]) => ` · ${RES_ICON[r as keyof typeof RES_ICON] ?? ''}${r} ${v}`)} × {C.TECH_STAGES}단계 ·{' '}
+          {C.techPaid(state, t.id) ? <span className="good">✓ 이미 냈어요</span> : <span className="muted">시작할 때 남은 단계만큼 한꺼번에 내요</span>}
+        </p>
+      )}
       {unlocks.length > 0 && (
         <div className="chips civ-unlocks">
           {unlocks.map((u) => (

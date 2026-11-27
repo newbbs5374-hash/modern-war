@@ -398,6 +398,18 @@ export const RESEARCH_PER_POP = 0.015;
 export const RESEARCH_PER_LAB = 0.12;
 export const RESEARCH_PER_LAB_ADJ = 0.04;
 export const RESEARCH_PER_SCIENCE_PACT = 0.1;
+
+// ── 연구 비용(11-27 대장 승인: 루비만으로 너무 빨리 끝나서) ──
+/** A. 시대별 연구 시간 배율: 뒤 시대일수록 오래 걸림 */
+export const TECH_ERA_MULT: Record<number, number> = { 1: 1, 2: 1.25, 3: 1.75, 4: 2.25 };
+/** B. 한 단계에 드는 나라 예산 = 이 값 × 연구 시간 × 시대 */
+export const TECH_MONEY_K = 200;
+/** B. 한 단계에 드는 자원(2가지 각각) = 이 값 × 연구 시간 × 시대 (1시대는 자원 없음) */
+export const TECH_RES_K = 0.17;
+/** B. 줄마다 내는 자원: 군사 = 강철·반도체, 사회 = 구리·리튬 */
+export const TECH_RES = { mil: ['강철', '반도체'], soc: ['구리', '리튬'] } as const;
+/** C. ⏩·⚡ 가속권 한 장이 넣는 연구 점수(연구 속도와 상관없이 고정) */
+export const TECH_PTS_PER_BOOST = 2;
 /** 시대가 바뀌면 모든 맞수 사이 긴장 + */
 export const ERA_TENSION = 4;
 

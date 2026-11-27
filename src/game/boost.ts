@@ -4,8 +4,8 @@
 // 한 장 = 실제 30분. 가속권이 모자라면 모자란 장수만큼 루비로 냄(1장 = 💎5, 상점 값과 같음, 11-24).
 import type { GameState } from './state';
 import { hearingNow } from './cabinetOps';
-import { addResearch, canResearch, civOf, hasTech, researchRate, startResearch, techLeft } from './civ';
-import { CARD_SWAP_FREE_MS, techById } from '../data/civ';
+import { addResearch, canResearch, civOf, hasTech, startResearch, techLeft, techPayWhy } from './civ';
+import { CARD_SWAP_FREE_MS, TECH_PTS_PER_BOOST, techById } from '../data/civ';
 import { rubyOf } from './goals';
 
 export const BOOST_MS = 30 * 60e3;
@@ -13,7 +13,6 @@ export const BOOST_MS = 30 * 60e3;
 export const RUBY_PER_BOOST = 5;
 /** 새 판·옛 저장에 주는 가속권(11-26 난이도: 300 → 10장) */
 export const TEST_BOOSTS = 10;
-const H = 3600e3;
 
 export type BoostTarget =
   | { kind: 'mission' }
@@ -62,7 +61,8 @@ function endOf(s: GameState, t: BoostTarget): number | undefined {
       const id = s.civ ? civOf(s).cur[t.line] : null;
       const tech = id ? techById(id) : undefined;
       if (!tech) return undefined;
-      return s.worldMs + (techLeft(s, tech) / Math.max(0.01, researchRate(s))) * H;
+      // 11-27: 가속권 한 장 = 연구 점수 고정(연구 속도와 상관없음)
+      return s.worldMs + (techLeft(s, tech) / TECH_PTS_PER_BOOST) * BOOST_MS;
     }
     case 'district':
       return s.civ?.cities[t.city]?.districts.find((d) => d.tile === t.tile)?.doneMs;
@@ -86,8 +86,8 @@ function endOf(s: GameState, t: BoostTarget): number | undefined {
     }
     case 'tech': {
       const tech = techById(t.id);
-      if (!tech || !s.civ || canResearch(s, t.id)) return undefined;
-      return s.worldMs + (techLeft(s, tech) / Math.max(0.01, researchRate(s))) * H;
+      if (!tech || !s.civ || canResearch(s, t.id) || techPayWhy(s, t.id)) return undefined;
+      return s.worldMs + (techLeft(s, tech) / TECH_PTS_PER_BOOST) * BOOST_MS;
     }
     case 'swap': {
       if (!s.civ || !s.civ.cards.some(Boolean)) return undefined;
@@ -153,13 +153,13 @@ export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
   // 연구: 줄인 시간만큼의 연구 점수를 바로 넣음(남은 점수보다 많이 넣지 않음)
   if (t.kind === 'research') {
     const tech = techById(civOf(s).cur[t.line]!)!;
-    const pts = left - cut <= 0 ? techLeft(s, tech) : Math.min(techLeft(s, tech), (researchRate(s) * cut) / H);
+    const pts = left - cut <= 0 ? techLeft(s, tech) : Math.min(techLeft(s, tech), (cut / BOOST_MS) * TECH_PTS_PER_BOOST);
     ns = addResearch(ns, t.line, pts);
   }
   // 연구 트리 카드(11-25): 그 카드에만 점수를 넣고, 하던 연구는 그대로 둠
   if (t.kind === 'tech') {
     const tech = techById(t.id)!;
-    const pts = left - cut <= 0 ? techLeft(s, tech) : Math.min(techLeft(s, tech), (researchRate(s) * cut) / H);
+    const pts = left - cut <= 0 ? techLeft(s, tech) : Math.min(techLeft(s, tech), (cut / BOOST_MS) * TECH_PTS_PER_BOOST);
     const prev = civOf(s).cur[tech.line];
     let r = addResearch(startResearch(ns, t.id), tech.line, pts);
     if (prev !== t.id) {

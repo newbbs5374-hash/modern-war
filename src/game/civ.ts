@@ -50,6 +50,10 @@ import {
   RESEARCH_PER_LAB_ADJ,
   RESEARCH_PER_POP,
   RESEARCH_PER_SCIENCE_PACT,
+  TECH_ERA_MULT,
+  TECH_MONEY_K,
+  TECH_RES,
+  TECH_RES_K,
   START_CARDS,
   TECHS,
   agendaById,
@@ -139,6 +143,8 @@ export interface CivState {
   progress: Record<string, number>;
   /** 끝낸 단계 수(0~2, 3단계를 다 끝내면 done으로 옮김). 11-24 3단계 연구 — 옛 저장엔 없음 */
   stage?: Record<string, number>;
+  /** 비용(예산·자원)을 이미 낸 연구(11-27). 옛 저장엔 없음 — 진행 중인 연구는 낸 것으로 침 */
+  paid?: string[];
   cur: { mil: string | null; soc: string | null };
   /** 고르지 않은 동안 모인 연구 점수(다음 연구에 씀, 12시간치까지) */
   bank: { mil: number; soc: number };
@@ -257,7 +263,35 @@ export const hasTech = (s: GameState, id: string) => civOf(s).done.includes(id);
 export const TECH_STAGES = 3;
 /** 한 단계에 드는 시간(점수) */
 export function techCost(s: GameState, t: Tech): number {
-  return t.hours * (civOf(s).eureka.includes(t.id) ? 0.5 : 1);
+  return t.hours * (TECH_ERA_MULT[t.era] ?? 1) * (civOf(s).eureka.includes(t.id) ? 0.5 : 1);
+}
+/** 한 단계에 드는 예산·자원(11-27) */
+export function techStagePrice(t: Tech): { money: number; res: Partial<Record<Res, number>> } {
+  const money = Math.round(TECH_MONEY_K * t.hours * t.era);
+  const res: Partial<Record<Res, number>> = {};
+  if (t.era >= 2) for (const r of TECH_RES[t.line]) res[r as Res] = Math.max(1, Math.round(TECH_RES_K * t.hours * t.era));
+  return { money, res };
+}
+/** 이미 비용을 낸 연구인지: 낸 목록에 있거나, 이미 진행된(옛 저장 포함) 연구 */
+export function techPaid(s: GameState, id: string): boolean {
+  const c = civOf(s);
+  return !!(c.paid?.includes(id) || c.cur.mil === id || c.cur.soc === id || (c.progress[id] ?? 0) > 0 || (c.stage?.[id] ?? 0) > 0 || c.done.includes(id));
+}
+/** 시작할 때 낼 비용: 남은 단계 수만큼(이미 냈으면 0) */
+export function techPrice(s: GameState, t: Tech): { money: number; res: Partial<Record<Res, number>> } {
+  if (techPaid(s, t.id)) return { money: 0, res: {} };
+  const n = TECH_STAGES - techStage(s, t.id);
+  const p = techStagePrice(t);
+  return { money: p.money * n, res: Object.fromEntries(Object.entries(p.res).map(([r, v]) => [r, v! * n])) };
+}
+/** 비용이 모자라면 이유, 아니면 null */
+export function techPayWhy(s: GameState, id: string): string | null {
+  const t = techById(id);
+  if (!t) return '없는 연구';
+  const p = techPrice(s, t);
+  if (s.nations[s.player.countryId].treasury < p.money) return `나라 예산 ${p.money.toLocaleString()} 필요`;
+  for (const [r, v] of Object.entries(p.res)) if ((s.economy.stock[r as Res] ?? 0) < v!) return `${RES_ICON[r as Res] ?? ''}${r} ${v} 필요`;
+  return null;
 }
 /** 끝낸 단계 수(0~3) */
 export function techStage(s: GameState, id: string): number {
@@ -285,9 +319,18 @@ export function canResearch(s: GameState, id: string): string | null {
   return null;
 }
 export function startResearch(s: GameState, id: string): GameState {
-  if (canResearch(s, id)) return s;
+  if (canResearch(s, id) || techPayWhy(s, id)) return s;
   const t = techById(id)!;
-  return withCiv(s, (c) => {
+  const p = techPrice(s, t);
+  let ns = s;
+  if (p.money || Object.keys(p.res).length) {
+    const me = s.player.countryId;
+    const stock = { ...s.economy.stock };
+    for (const [r, v] of Object.entries(p.res)) stock[r as Res] -= v!;
+    ns = { ...s, economy: { ...s.economy, stock }, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - p.money } } };
+  }
+  return withCiv(ns, (c) => {
+    if (!c.paid?.includes(id)) c.paid = [...(c.paid ?? []), id];
     c.cur[t.line] = id;
   });
 }
@@ -342,6 +385,7 @@ function finishTech(ns: GameState, c: CivState, t: Tech): GameState {
   c.cur[t.line] = null;
   delete c.progress[t.id];
   if (c.stage) delete c.stage[t.id];
+  if (c.paid) c.paid = c.paid.filter((x) => x !== t.id);
   const what = [t.units?.length ? `병과 ${t.units.join('·')}` : '', t.cards?.length ? `카드 ${t.cards.length}장` : '', t.districts?.length ? `구역 ${t.districts.map((d) => districtById(d).name).join('·')}` : '', t.agree?.length ? `협정 ${t.agree.map((a) => agreeById(a).name).join('·')}` : ''].filter(Boolean).join(' · ');
   clog(c, `${t.icon} ${t.name} 연구 완료${what ? ` → ${what}` : ''}`);
   const era = eraOf(c);
@@ -1353,7 +1397,7 @@ function feedResearch(ns: GameState, c: CivState, line: 'mil' | 'soc', pts: numb
       break;
     }
     const t = techById(id)!;
-    const need = t.hours * (c.eureka.includes(id) ? 0.5 : 1) - (c.progress[id] ?? 0);
+    const need = techCost({ ...ns, civ: c }, t) - (c.progress[id] ?? 0);
     if (pts < need) {
       c.progress[id] = (c.progress[id] ?? 0) + pts;
       pts = 0;
