@@ -60,6 +60,7 @@ export const billChance = (s: GameState, id: BillId) => Math.max(0.1, Math.min(0
 
 export function canSubmit(s: GameState, id: BillId): string | null {
   const a = assemblyOf(s);
+  if (isOpposition(s)) return '야당 지도자인 동안은 법안을 못 내요';
   if (a.vote) return '표결 중인 법안이 있어요';
   if (!a.offer.includes(id)) return '지금 고를 수 없는 법안';
   if (liveLaws(s).some((l) => l.id === id)) return '이미 살아 있는 법이에요';
@@ -79,6 +80,23 @@ export function repealLaw(s: GameState, id: BillId): GameState {
   return { ...s, assembly: a };
 }
 
+/** 11-27 내정 2 임기와 선거: 이번 임기(재신임 투표 사이 14일) 동안 지킨 공약·깬 공약 */
+export const TERM_KEEP = 0.04;
+export const TERM_KEEP_MAX = 0.2;
+export const TERM_BREAK = 0.06;
+export const OPP_MS = 48 * H;
+export function termPledges(s: GameState): { kept: number; broken: number } {
+  const a = assemblyOf(s);
+  const ag = s.dom?.agenda;
+  return {
+    kept: Math.max(0, (ag?.done.length ?? 0) - (a.termDone ?? 0)),
+    broken: Math.max(0, (ag?.broken.length ?? 0) - (a.termBroken ?? 0)),
+  };
+}
+/** 지금이 몇 번째 임기인지(재신임 투표를 치른 횟수 + 1) */
+export const termNo = (s: GameState) => assemblyOf(s).confWins + assemblyOf(s).confLoss + 1;
+export const isOpposition = (s: GameState) => (assemblyOf(s).oppUntilMs ?? 0) > s.worldMs;
+
 /** 재신임 통과 확률의 까닭: 지지도(35 → 0%, 65 → 100%) + 호칭(평판, 11-24 대장 결정: 평판은 재신임에만 영향) */
 export function confRows(s: GameState): Array<[string, number]> {
   const ap = approvalOf(s);
@@ -86,6 +104,8 @@ export function confRows(s: GameState): Array<[string, number]> {
   return [
     [`지지도 ${Math.round(ap)}`, (ap - 35) / 30],
     [`호칭(평판) 「${t.name}」`, Math.round(((titleScore(s) - 100) / 400) * 100) / 100],
+    ...(termPledges(s).kept ? [[`📋 이번 임기에 지킨 공약 ${termPledges(s).kept}건`, Math.min(TERM_KEEP_MAX, termPledges(s).kept * TERM_KEEP)] as [string, number]] : []),
+    ...(termPledges(s).broken ? [[`💔 이번 임기에 깬 공약 ${termPledges(s).broken}건`, -termPledges(s).broken * TERM_BREAK] as [string, number]] : []),
     ...(amendConfBonus(s) ? [['📜 개헌 임기 연장', amendConfBonus(s)] as [string, number]] : []),
   ];
 }
@@ -129,8 +149,16 @@ export function assemblyTick(s: GameState): GameState {
     a.confWarned = true;
     notes.push(`🗳️ 내일 재신임 국민투표예요. 지금 지지도면 통과 확률 ${Math.round(confChance(ns) * 100)}%.`);
   }
+  if (a.oppUntilMs && s.worldMs >= a.oppUntilMs) {
+    a.oppUntilMs = undefined;
+    ns = addPresMod({ ...ns, assembly: a }, '🔁 다시 돌아온 지도자', 6, 48);
+    notes.push('🔁 야당 지도자에서 다시 집권했어요. 이틀 동안 지지도 +6. 새 임기에는 공약을 지켜 표를 모으세요.');
+  }
   if (s.worldMs >= a.confMs) {
     const ok = rng.chance(confChance(ns));
+    // 새 임기: 공약 셈을 다시 시작
+    a.termDone = s.dom?.agenda.done.length ?? 0;
+    a.termBroken = s.dom?.agenda.broken.length ?? 0;
     a.confMs = s.worldMs + CONF_MS;
     a.confWarned = false;
     if (ok) {
@@ -141,7 +169,8 @@ export function assemblyTick(s: GameState): GameState {
       notes.push(`🎉 재신임 국민투표 통과! 루비 +${CONF_RUBY} · 명성 +${CONF_FAME} · 이틀 동안 지지도 +5`);
     } else {
       a.confLoss++;
-      ns = demote({ ...ns, assembly: a }, '😞 재신임 국민투표에서 졌어요. 신뢰도 −15 · 명성 −100. 호칭이 내려갈 수 있어요. 게임은 계속돼요.');
+      a.oppUntilMs = s.worldMs + OPP_MS;
+      ns = demote({ ...ns, assembly: a }, '😞 재신임 국민투표에서 졌어요. 신뢰도 −15 · 명성 −100. 호칭이 내려갈 수 있어요. 이틀 동안 야당 지도자로 지내고(법안을 못 내요) 다시 집권해요.');
     }
     a.log = [ok ? '🎉 재신임 통과' : '😞 재신임 실패', ...a.log].slice(0, 20);
   }
