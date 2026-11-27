@@ -1,4 +1,4 @@
-"""도시 3D 높낮이 자료(11/27 도시 4). 한국 13곳 먼저.
+"""도시 3D 높낮이 자료(11/27 도시 4). 인자 없이 돌리면 한국 13곳, 파일 이름을 주면 그 도시만.
 AWS Terrain Tiles(terrarium, Mapzen · 공개 자료)에서 도시 중심 둘레 ±HALF m 의 높이를 N×N 칸으로 뽑아
 public/city3d/<파일>-h.json 으로 저장: {half, n, base, h:[N*N, 북서쪽부터 동쪽으로 한 줄씩, 바닥(base)보다 높은 m]}
 쓰는 법: python3 scripts/gen_city3d_terrain.py
