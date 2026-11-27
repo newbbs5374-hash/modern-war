@@ -147,6 +147,20 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
           <Tile icon="⏩" label="시간·빠르기" sub={speed === 1 ? '보통' : `×${speed}`} onClick={() => setPop('time')} />
           <Tile icon="🛠️" label="운영 시험" sub="연구·호칭·사건" onClick={() => setPop('ops')} />
           <Tile icon="🖼️" label="그림 칸" sub="사진·아이콘" onClick={() => setPop('art')} />
+          <Tile icon="💎" label="루비 +500" sub={`지금 ${fmt(goalsOf(state).ruby)}`} tone="gold" onClick={() => (actions.apply((s) => ({ ...s, goals: { ...goalsOf(s), ruby: goalsOf(s).ruby + 500 } })), say('루비 500개를 넣었어요.'))} />
+          <Tile
+            icon="💰"
+            label="예산 +10만"
+            sub={`지금 ${fmt(state.nations[state.player.countryId].treasury)}`}
+            tone="gold"
+            onClick={() =>
+              (actions.apply((s) => {
+                const id = s.player.countryId;
+                return { ...s, nations: { ...s.nations, [id]: { ...s.nations[id], treasury: s.nations[id].treasury + 100000 } } };
+              }),
+              say('나라 예산 100,000을 넣었어요.'))
+            }
+          />
         </div>
         <ErrorLog />
       </Card>
