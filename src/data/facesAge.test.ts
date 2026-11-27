@@ -37,7 +37,7 @@ describe('얼굴과 나이 맞추기(11-27)', () => {
   it('넷째 묶음(40대 얼굴): 번호가 앞 묶음 뒤에 이어 붙고, 켜기 전에는 덱 크기가 그대로', () => {
     expect(deckSize('kr', 'm', true, true, false) + deckSize('kr', 'f', true, true, false)).toBe(142);
     expect(deckSize('kr', 'm') + deckSize('kr', 'f')).toBe(190); // 11-27 그림 들어와 켜짐
-    expect(deckSize('tw', 'm') + deckSize('tw', 'f')).toBe(142); // 대만은 a1 그림 대기
+    expect(deckSize('tw', 'm') + deckSize('tw', 'f')).toBe(190);
     expect(deckSize('kr', 'm', true, true, true) + deckSize('kr', 'f', true, true, true)).toBe(190);
     expect(faceFile('kr', 'm', 89, true, true, true)).toBe('face-kr-m-40-01');
     expect(faceFile('kr', 'm', 109, true, true, true)).toBe('face-kr-m-50-49');
