@@ -2,6 +2,7 @@
 import { CITIES } from '../data/cities';
 import { PET_KINDS, canGrant, grantPetition, mediaOf, petCost } from './media';
 import { approx, registerRecs, type Rec } from './recs';
+import { GROUPS, MEET_GAIN, MEET_HOURS, canMeet, groupSat, meetGroup } from './groups';
 import type { GameState } from './state';
 
 /** 끝나 가는 청원: 예산이 넉넉하면 전부, 아니면 일부 */
@@ -28,3 +29,26 @@ export function petitionRecs(s: GameState): Rec[] {
 }
 
 registerRecs('society', petitionRecs);
+
+/** 만족도가 가장 낮은 무리 만나기 */
+export function groupRecs(s: GameState): Rec[] {
+  const low = GROUPS.map((g) => ({ g, v: groupSat(s, g.id) }))
+    .filter((x) => x.v <= 45 && !canMeet(s, x.g.id))
+    .sort((a, b) => a.v - b.v)[0];
+  if (!low) return [];
+  return [
+    {
+      id: `group:${low.g.id}`,
+      field: 'society',
+      tab: 'opinion',
+      icon: low.g.icon,
+      title: `${low.g.name} 만나기`,
+      value: 3000 + (45 - low.v) * 120,
+      gain: () => `만족도 ${Math.round(low.v)} → +${MEET_GAIN}(${MEET_HOURS}시간)`,
+      why: `만족도가 가장 낮은 무리예요${low.v <= 25 ? '. 25 아래면 시위가 날 수 있어요' : ''}.`,
+      act: (x) => meetGroup(x, low.g.id),
+      can: (x) => canMeet(x, low.g.id),
+    },
+  ];
+}
+registerRecs('society', groupRecs);
