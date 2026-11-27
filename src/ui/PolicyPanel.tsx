@@ -20,6 +20,8 @@ import {
   type Tax,
 } from '../game/policy';
 import { budgetPerDay } from '../game/state';
+import { canMoveDef, defMoveAmount, moveDefToNation } from '../game/defFund';
+import { DEF_MOVE_LOSS, DEF_MOVE_SHARE } from '../game/balance';
 import { Card, fmt } from './common';
 import { Help, Meter } from './kit';
 import type { ScreenProps } from './screens';
@@ -113,6 +115,40 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
         </div>
         {waitTax && <small className="muted">{waitTax}</small>}
       </Card>
+      <MoveDefCard state={state} actions={actions} />
     </>
+  );
+}
+
+/** 11-27 국방비 → 나라 예산 옮기기 + 나라 예산 늘리는 길 */
+function MoveDefCard({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
+  const mv = defMoveAmount(state);
+  const why = canMoveDef(state);
+  return (
+    <Card
+      title="국방비 → 나라 예산"
+      icon="💱"
+      right={
+        <Help title="나라 예산 늘리는 길">
+          <p>
+            <b>바로 들어오는 돈</b>: 도시 점령 전리품(주변 내정 도시 몫까지) · 수도를 차지하면 그 나라 국고 25% · 나라를 무너뜨리면 남은 국고 30% · 편입이 끝나면 정착 지원금 · 침공을 막으면 노획 · 봉급날·임무 수당.
+          </p>
+          <p>
+            <b>계속 들어오는 돈</b>: 가진 도시 세금(점령 60% · 민정 85% · 편입 100%) · 본토보다 커지면 🌏 나라 규모 보너스(최대 +40%) · 경제 몫·세금·군수공장·기재부·무역 계약.
+          </p>
+          <p>내정 비용은 이제 본토 크기로 매겨요. 땅이 늘어도 비용은 그대로라 넓힐수록 여유가 생겨요.</p>
+          <p>국방비가 남으면 여기서 나라 예산으로 옮길 수 있어요. 한 번에 {Math.round(DEF_MOVE_SHARE * 100)}%씩, {Math.round(DEF_MOVE_LOSS * 100)}%는 행정 비용으로 사라져요.</p>
+        </Help>
+      }
+    >
+      <div className="row">
+        <small className="muted">
+          국방비 −{fmt(mv.from)} → 나라 예산 +{fmt(mv.to)}
+        </small>
+        <button className="primary" disabled={!!why} onClick={() => actions.apply(moveDefToNation)}>
+          {why ?? '💱 옮기기'}
+        </button>
+      </div>
+    </Card>
   );
 }

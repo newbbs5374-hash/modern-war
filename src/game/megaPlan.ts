@@ -4,7 +4,7 @@
 // 세 가지를 모두 끝내면 「과학 승리」(전쟁을 안 하는 사람의 2달 목표).
 import { domLog, registerDomRows, snap, payTreasury, type Rows } from './domestic';
 import { pushReport } from './report';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import type { LawKey } from './laws';
 
 const DAY = 24 * 3600e3;
@@ -67,7 +67,7 @@ export const megaOf = (s: GameState): MegaState => s.mega ?? { lv: {}, run: null
 export const megaLv = (s: GameState, id: MegaId) => megaOf(s).lv[id] ?? 0;
 export const megaDoneAll = (s: GameState) => MEGAS.every((m) => megaLv(s, m.id) >= MEGA_STAGES);
 export const megaTotal = (s: GameState) => MEGAS.reduce((a, m) => a + megaLv(s, m.id), 0);
-export const megaCost = (s: GameState, id: MegaId) => Math.round(budgetPerDay(s, s.player.countryId) * MEGA_COST_DAYS[Math.min(megaLv(s, id), MEGA_STAGES - 1)]);
+export const megaCost = (s: GameState, id: MegaId) => Math.round(priceBase(s) * MEGA_COST_DAYS[Math.min(megaLv(s, id), MEGA_STAGES - 1)]);
 
 export function canMega(s: GameState, id: MegaId): string | null {
   const m = megaOf(s);

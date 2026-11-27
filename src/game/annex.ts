@@ -5,7 +5,7 @@
 //  강화 조약으로 넘겨받은 도시는 민정부터 시작하고 투표 없이 편입(국제 반발 절반).
 //  편입하면 원래 나라 호감 크게 ↓, 같은 진영 나라 호감 조금 ↓.
 //  상태는 world.annex(진행) · world.annexed(끝난 것). 주인이 바뀌면 territory.noteCapture가 지움.
-import { FRONT, cityById } from '../data/cities';
+import { CITIES, FRONT, cityById } from '../data/cities';
 import { COUNTRIES, countryById } from '../data/world';
 import type { GameState } from './state';
 import { addFavorNote, cityCiv, registerCityLoyaltyRows } from './civ';
@@ -16,7 +16,7 @@ import { Rng } from './rng';
 import { canDiplo, diploChance, DIPLO_COOLDOWN_HOURS } from './command';
 import { eul, homeOf, isAlive, pairKey, relationOf, sameBloc, syncFollowers, type AnnexCity, type WorldEvent } from './world';
 import { noteCapture } from './territory';
-import { REVIVE_TROOPS } from './balance';
+import { ANNEX_GRANT_PER_VALUE, REVIVE_TROOPS } from './balance';
 
 const H = 3600e3;
 /** 군정 기간(시간) */
@@ -112,6 +112,12 @@ function setEntry(s: GameState, cityId: string, a: AnnexCity | null): GameState 
   return { ...s, world: { ...s.world, annex } };
 }
 
+/** 11-27 편입 정착 지원금: (그 도시 + 따라오는 내정 도시) 값어치 × ANNEX_GRANT_PER_VALUE */
+export function annexGrant(cityId: string): number {
+  const v = CITIES.filter((x) => x.id === cityId || (!x.front && x.hub === cityId)).reduce((a, x) => a + x.value, 0);
+  return Math.round(v * ANNEX_GRANT_PER_VALUE);
+}
+
 /** 편입 마무리: 우리 땅으로 · 다른 나라 반발 · 부관 보고 */
 function finishAnnex(s: GameState, cityId: string, how: string): GameState {
   const me = s.player.countryId;
@@ -120,14 +126,17 @@ function finishAnnex(s: GameState, cityId: string, how: string): GameState {
   const k = a?.treaty ? 0.5 : 1;
   let out = setEntry(s, cityId, null);
   out = { ...out, world: { ...out.world, annexed: { ...(out.world.annexed ?? {}), [cityId]: me } } };
-  const ev: WorldEvent = { t: s.worldMs, kind: '점령', text: `🗺️ ${c.name}, ${how} 우리 영토로 편입됐어요.`, mine: true };
+  // 11-27 편입 정착 지원금(따라오는 내정 도시 값어치까지)
+  const grant = annexGrant(cityId);
+  if (out.nations[me]) out = { ...out, nations: { ...out.nations, [me]: { ...out.nations[me], treasury: out.nations[me].treasury + grant } } };
+  const ev: WorldEvent = { t: s.worldMs, kind: '점령', text: `🗺️ ${c.name}, ${how} 우리 영토로 편입됐어요. 💰 정착 지원금 나라 예산 +${grant.toLocaleString('ko-KR')}`, mine: true };
   out = { ...out, world: { ...out.world, events: [ev, ...out.world.events] } };
   if (isAlive(out.world, c.home)) out = addFavorNote(out, c.home, `🗺️ ${c.name} 편입`, ANNEX_FAVOR_HOME * k);
   for (const o of COUNTRIES) {
     if (o.id === me || o.id === c.home || !isAlive(out.world, o.id) || !sameBloc(o.id, c.home)) continue;
     out = addFavorNote(out, o.id, '🗺️ 남의 땅 편입', ANNEX_FAVOR_BLOC * k);
   }
-  return pushReport(out, { icon: '🗺️', text: `대장님, ${c.name}${hasJong(c.name) ? '이' : '가'} 오늘부터 우리 영토입니다! 세금·자원이 모두 들어오고 반란 걱정도 없습니다.` });
+  return pushReport(out, { icon: '🗺️', text: `대장님, ${c.name}${hasJong(c.name) ? '이' : '가'} 오늘부터 우리 영토입니다! 세금·자원이 모두 들어오고 반란 걱정도 없습니다. 정착 지원금 ${grant.toLocaleString('ko-KR')}도 나라 예산에 들어왔습니다.` });
 }
 
 function hasJong(w: string): boolean {

@@ -9,7 +9,7 @@ import { addPresMod } from './approval';
 import { addFavorNote } from './civ';
 import { canSummit, holdSummit, mediaOf, summitChance, type Agenda } from './media';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 
 export type Tone = 'warm' | 'deal' | 'firm';
 export type Mode = 'invite' | 'visit';
@@ -69,7 +69,7 @@ export const theirLine = (want: Tone, step: number) => THEIR[step]?.[want] ?? ''
 export const stepScore = (want: Tone, pick: Tone) => (want === pick ? 2 : pick === 'warm' ? 1 : 0);
 
 export function inviteCost(s: GameState): number {
-  return Math.round(budgetPerDay(s, s.player.countryId) * INVITE_COST);
+  return Math.round(priceBase(s) * INVITE_COST);
 }
 export function canTalk(s: GameState, to: string, mode: Mode): string | null {
   const why = canSummit(s, to);

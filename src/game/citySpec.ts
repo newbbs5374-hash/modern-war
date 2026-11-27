@@ -4,7 +4,7 @@ import { cityById } from '../data/cities';
 import type { LawKey } from './laws';
 import { domLog, domOf, payTreasury, registerDomRows, snap, withDom, type Rows } from './domestic';
 import { cityStage } from './growth';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 
 export type SpecId = 'ind' | 'sci' | 'tour' | 'mil' | 'fin';
 export interface SpecDef {
@@ -47,7 +47,7 @@ export const beltOn = (s: GameState, path: SpecId) => liveSpecs(s).filter(([, v]
 
 export function specCost(s: GameState, cityId: string, lv: number): number {
   const v = cityById(cityId)?.value ?? 1;
-  return Math.round(budgetPerDay(s, s.player.countryId) * SPEC_COST_DAYS[lv - 1] * v);
+  return Math.round(priceBase(s) * SPEC_COST_DAYS[lv - 1] * v);
 }
 /** 그 도시를 그 길로 한 단계 올릴 수 있는지(다른 길이면 1단계부터 다시) */
 export function canSpec(s: GameState, cityId: string, path: SpecId): string | null {
