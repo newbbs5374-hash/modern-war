@@ -54,6 +54,8 @@ import {
   SPOILS_PER_VALUE,
   SPOILS_TREASURY_SHARE,
   aiStrength,
+  ACT_QUALITY_SHARE,
+  actAi,
 } from './balance';
 import { Rng } from './rng';
 import { noteCapture } from './territory';
@@ -103,6 +105,9 @@ export interface WorldState {
   from?: Record<string, string>;
   /** AI 나라 성장 단계(11-26, aiGrowth.ts). 옛 저장은 없음 */
   grow?: Record<string, AiGrow>;
+  /** 11-27 4막 구조: 지금 막(1~4)과 그 막이 시작된 시각. 옛 저장은 없음(3막처럼 대접) */
+  act?: number;
+  actSinceMs?: number;
 }
 
 /** 편입 단계: 군정(점령 직후) → 민정(치안 확보 후) → 주민투표 → 편입 */
@@ -326,6 +331,11 @@ export const eul = (w: string) => w + (hasBatchim(w) ? '을' : '를');
 export const gwa = (w: string) => w + (hasBatchim(w) ? '과' : '와');
 
 function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
+  // 11-27 1장(취임 100일): 내 나라는 전쟁에 휘말리지 않음(나라를 키우는 때)
+  if (ctx.w.act === 1 && (attacker === ctx.player || defender === ctx.player)) {
+    ctx.w.pairs[pairKey(attacker, defender)].tension = 0;
+    return;
+  }
   const p = ctx.w.pairs[pairKey(attacker, defender)];
   p.rel = '전쟁';
   p.tension = 0;
@@ -338,6 +348,7 @@ function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
   ]) {
     for (const ally of COUNTRIES.map((c) => c.id)) {
       if (ally === side || ally === enemy || !isAlive(ctx.w, ally)) continue;
+      if (ctx.w.act === 1 && (ally === ctx.player || enemy === ctx.player)) continue;
       if (relationOf(ctx.w, ally, side) !== '연합') continue;
       const q = ctx.w.pairs[pairKey(ally, enemy)];
       if (q.rel !== '중립') continue;
@@ -428,7 +439,9 @@ export const DETERRENCE: Record<string, number> = { pk: 0.7 };
 function power(ctx: Ctx, country: string, troops: number, defending: boolean, overseas: boolean): number {
   const c = countryById(country);
   // 11-26 난이도: 한국을 뺀 AI 나라는 병사 한 명의 힘도 조금 셈(미국 > 중국 > 러시아)
-  const quality = (1 + (aiStrength(country, ctx.player) - 1) * AI_QUALITY_SHARE) * growQuality(ctx.w, country);
+  // 11-27 4막: 막이 오를수록 AI 나라 병사가 세짐
+  const actQ = country === ctx.player ? 1 : 1 + (actAi(ctx.w) - 1) * ACT_QUALITY_SHARE;
+  const quality = (1 + (aiStrength(country, ctx.player) - 1) * AI_QUALITY_SHARE) * growQuality(ctx.w, country) * actQ;
   const ge = ctx.govEff[country];
   let pw = troops * (0.5 + c.military / 100) * quality * (1 + (ge?.power ?? 0)) * ctx.rng.range(0.75, 1.25);
   if (defending) {
@@ -457,6 +470,7 @@ function invasions(ctx: Ctx) {
   const { w, rng, nations } = ctx;
   for (const att of COUNTRIES.map((c) => c.id)) {
     if (!isAlive(w, att)) continue;
+    if (att === ctx.player && w.act === 1) continue; // 11-27 1막: 내 나라 군은 먼저 치지 않음
     const agg = pInfo(w, att).aggression * growReach(w, att);
     const enemies = COUNTRIES.map((c) => c.id).filter(
       (b) => b !== att && isAlive(w, b) && relationOf(w, att, b) === '전쟁',

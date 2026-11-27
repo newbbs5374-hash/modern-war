@@ -1,4 +1,6 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { buyGrand, canBuyGrand, grandCapLeft, grandToday } from '../game/acts';
+import { GRAND_EXTRA_MAX, GRAND_EXTRA_RUBY } from '../game/balance';
 import { salaryPerDay } from '../game/state';
 import { playerKeys } from '../data/looks';
 import { originFits, originOf } from '../game/origin';
@@ -271,13 +273,19 @@ export function GrandCard({ state, actions }: ScreenProps) {
     </>
   );
   return (
-    <Card title="대전투 · 도시 점령" icon="🏙️" help={help} right={<small className="muted">{rank >= GRAND_RANK ? `${GRAND_COOLDOWN_HOURS}시간마다` : `${RANKS[GRAND_RANK].name}부터`}</small>}>
+    <Card title="대전투 · 도시 점령" icon="🏙️" help={help} right={<small className="muted">{rank >= GRAND_RANK ? (state.world.act != null ? `오늘 ${grandToday(state).n}/${grandToday(state).cap}번` : `${GRAND_COOLDOWN_HOURS}시간마다`) : `${RANKS[GRAND_RANK].name}부터`}</small>}>
       {rank >= GRAND_RANK && !targets.length ? (
         <WarPick state={state} actions={actions} />
       ) : rank < GRAND_RANK || why ? (
         <>
           <p className="empty">{why}</p>
-          {rank >= GRAND_RANK && <BoostBar state={state} apply={actions.apply} target={{ kind: 'grand' }} />}
+          {rank >= GRAND_RANK && grandCapLeft(state) <= 0 && state.world.act != null ? (
+            <button className="gold" disabled={!!canBuyGrand(state)} title={canBuyGrand(state) ?? ''} onClick={() => actions.apply(buyGrand)}>
+              💎 {GRAND_EXTRA_RUBY}로 오늘 한 번 더 ({grandToday(state).extra}/{GRAND_EXTRA_MAX})
+            </button>
+          ) : (
+            rank >= GRAND_RANK && <BoostBar state={state} apply={actions.apply} target={{ kind: 'grand' }} />
+          )}
         </>
       ) : (
         <div className="tiles c3">

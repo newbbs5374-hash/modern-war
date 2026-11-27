@@ -34,7 +34,7 @@ import { TRAININGS } from '../data/catalog';
 import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, SPOILS_PER_VALUE, SPOILS_TREASURY_SHARE, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
+import { GRAND_ACT_DIFF, actAi, actOf, GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, SPOILS_PER_VALUE, SPOILS_TREASURY_SHARE, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
 import { Rng } from './rng';
 import { growFort } from './aiGrowth';
 import { talkTick, type Promise_, type Talk } from './talk';
@@ -44,7 +44,8 @@ import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
 import { addPresMod } from './approval';
 import { facBonus } from './facility';
-import { citiesOf, eul, ga, isAlive, relationOf, syncFollowers, type WorldEvent } from './world';
+import { citiesOf, eul, ga, homeOf, isAlive, relationOf, syncFollowers, type WorldEvent } from './world';
+import { actAllowsTarget, grandCapLeft, grandToday, noteGrand } from './acts';
 import { RIVAL_ROLES, hasAlly, rivalTick, shiftInfluence, type RivalRole } from './rivals';
 import { addLoyalty, generalMissionBonus, loyaltyMissionBonus, loyaltyMissionMult, loyaltyRewardMult, loyaltyTick, schoolTick, touchAide } from './loyal';
 
@@ -219,6 +220,8 @@ export interface OfficerState {
   training: { name: string; seed: number } | null;
   /** 다음 대전투를 열 수 있는 시각 */
   grandReadyMs: number;
+  /** 11-27 하루 대전투 상한: 실제 날짜 번호 · 오늘 한 횟수 · 루비로 산 추가 횟수. 옛 저장은 없음 */
+  grandDay?: { key: number; n: number; extra: number };
   /** 훈련별 별 3개 받은 횟수(특기) */
   perfect: Record<string, number>;
   /** 훈련별 한 횟수(숙련) · 최고 별 */
@@ -947,7 +950,7 @@ function captureCity(ns: GameState, city: string) {
 export function grandTargets(s: GameState): string[] {
   const me = s.player.countryId;
   const w = s.world;
-  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁')
+  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁' && actAllowsTarget(s, c.id))
     .map((c) => c.id)
     .sort((a, b) => w.defense[a] - w.defense[b]);
 }
@@ -958,19 +961,24 @@ export function canGrand(s: GameState): string | null {
     const m = Math.max(1, Math.ceil((s.officer.grandReadyMs - s.worldMs) / 60e3));
     return `다음 대전투를 준비하는 중이에요 · ${m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음`;
   }
-  if (!grandTargets(s).length) return '전쟁 중인 나라가 없어요';
+  if (!grandTargets(s).length) return actOf(s.world) === 1 && s.world.act != null ? '1장(취임 100일)에는 전쟁이 없어요. 본부의 장 조건을 채우면 2장이 열려요' : '전쟁 중인 나라가 없어요';
+  // 11-27 하루 대전투 상한(우리 도시 되찾기는 언제나 가능)
+  if (grandCapLeft(s) <= 0 && !grandTargets(s).some((c) => homeOf(s.world, c) === s.player.countryId)) return `오늘 대전투 ${grandToday(s).cap}번을 다 했어요. 내일 다시 할 수 있어요`;
   return null;
 }
 export function startGrand(s: GameState, city: string, field = true): GameState {
   if (canGrand(s) || !grandTargets(s).includes(city)) return s;
+  if (grandCapLeft(s) <= 0 && homeOf(s.world, city) !== s.player.countryId) return s;
+  const grandDay = noteGrand(s, city);
   return withOfficer(s, (o, rng, ns) => {
+    o.grandDay = grandDay;
     const m = makeMission(o, rng, '대전투', city, ns.player.rankIndex);
     // 방어도가 높을수록 어려움
     // 직접 만든 부대가 많을수록 쉬워짐(6단계 생산)
     const army = Math.min(GRAND_ARMY_MAX, armyPower(ns) / GRAND_ARMY_PER);
     // 11-27 밸런스: 상대 나라가 셀수록(힘 배율·요새 성장), 수도일수록 어려움
     const foe = ns.world.owner[city];
-    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0);
+    const nation = (aiStrength(foe, ns.player.countryId) - 1) * GRAND_NATION_DIFF + (growFort(ns.world, foe) - 1) * GRAND_FORT_DIFF + (cityById(city).capital ? GRAND_CAPITAL_DIFF : 0) + (actAi(ns.world) - 1) * GRAND_ACT_DIFF;
     m.field = field;
     if (field) {
       // 연료·탄약: 창고의 석유·구리를 씀(모자라면 그만큼만 채우고 출발)

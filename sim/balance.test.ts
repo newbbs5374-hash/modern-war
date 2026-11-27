@@ -33,6 +33,7 @@ import { canVote, startVote, occupiedCities, annexedCount, canChoose, makePuppet
 import { canResearch, startResearch, civOf, hasTech } from '../src/game/civ';
 import { TECHS } from '../src/data/civ';
 import { Rng } from '../src/game/rng';
+import { actGoals } from '../src/game/acts';
 import { victoryProgress } from '../src/game/victory';
 
 const H = 3600e3;
@@ -245,12 +246,12 @@ function mkBot(seed: number) {
 test('밸런스 모의 실험', () => {
   const all: unknown[] = [];
   for (const country of env('C', 'kr').split(',')) for (const seed of env('SEEDS', '11').split(',').map(Number)) {
-    let s = newGame('sim', country, 0, { seed, realWorld: true });
+    let s = newGame('sim', country, 0, { seed, realWorld: true, acts: env('ACTS', '0') === '1' });
     const bot = mkBot(seed);
     const rows: unknown[] = [];
     const me = country;
     const total = FRONT.length;
-    const mile: Record<string, number | null> = { mil100: null, soc70: null, c25: null, win48: null, c76: null, c100: null, firstCap: null };
+    const mile: Record<string, number | null> = { mil100: null, soc70: null, c25: null, win48: null, c76: null, c100: null, firstCap: null, act2: null, act3: null, act4: null };
     let rubyEarned = 0, rubyPrev = 0;
     const t0 = Date.now();
     for (let day = 0; day < DAYS; day++) {
@@ -270,6 +271,7 @@ test('밸런스 모의 실험', () => {
       if (mile.win48 == null && mine >= p.needAlone) mile.win48 = d1;
       if (mile.c76 == null && mine >= total * 0.76) mile.c76 = d1;
       if (mile.c100 == null && mine >= total) mile.c100 = d1;
+      for (const a of [2, 3, 4]) if (mile[`act${a}`] == null && (s.world.act ?? 0) >= a) mile[`act${a}`] = d1;
       // 연구 트리 다 끝낸 날(11-27 연구 비용)
       if (mile.mil100 == null && TECHS.every((t) => t.line !== 'mil' || hasTech(s, t.id))) mile.mil100 = d1;
       if (mile.soc70 == null && TECHS.every((t) => t.line !== 'soc' || hasTech(s, t.id))) mile.soc70 = d1;
@@ -289,7 +291,8 @@ test('밸런스 모의 실험', () => {
       if (mine >= total) break;
     }
     const last = rows[rows.length - 1] as Record<string, number>;
-    console.log(`${country} seed${seed} logins${LOGINS.length} skill${SKILL} wars${WARS} | 첫 점령 d${mile.firstCap} · 25% d${mile.c25} · 정복승리조건(48%) d${mile.win48} · 76% d${mile.c76} · 100% d${mile.c100} · 연구 군사 d${mile.mil100} 사회 d${mile.soc70} | 끝 d${last.day}: 도시 ${last.mine}/${total} 편입 ${last.annexed} 대전투 ${last.grandWin}/${last.grandTry} 루비 번 것 ${last.rubyEarned} 가속권 쓴 것 ${last.boostsUsed}(+루비 ${last.rubySpent}) 신뢰 ${last.trust} 잃음(반란 ${last.lostRebel}·침공 ${last.lostInv}) | ${Math.round((Date.now() - t0) / 1000)}s`);
+    if (process.env.ACTS) console.log('  장 조건: ' + actGoals(s).map((g) => `${g.text} ${g.have}/${g.need}`).join(' · '));
+    console.log(`${country} seed${seed} logins${LOGINS.length} skill${SKILL} wars${WARS} | 첫 점령 d${mile.firstCap} · 25% d${mile.c25} · 정복승리조건(48%) d${mile.win48} · 76% d${mile.c76} · 100% d${mile.c100} · 장 2/3/4 d${mile.act2}/d${mile.act3}/d${mile.act4} · 연구 군사 d${mile.mil100} 사회 d${mile.soc70} | 끝 d${last.day}: 도시 ${last.mine}/${total} 편입 ${last.annexed} 대전투 ${last.grandWin}/${last.grandTry} 루비 번 것 ${last.rubyEarned} 가속권 쓴 것 ${last.boostsUsed}(+루비 ${last.rubySpent}) 신뢰 ${last.trust} 잃음(반란 ${last.lostRebel}·침공 ${last.lostInv}) | ${Math.round((Date.now() - t0) / 1000)}s`);
     all.push({ country, seed, logins: LOGINS, skill: SKILL, wars: WARS, mile, rows, src: bot.tally.src, bsrc: bot.tally.bsrc });
   }
   if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify(all));
