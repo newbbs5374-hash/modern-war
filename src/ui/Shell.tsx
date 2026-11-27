@@ -10,7 +10,8 @@ import { gameClock, type GameState } from '../game/state';
 import { fmt } from './common';
 import { Flag } from './flag';
 import { PersonFace } from './People';
-import { NAV, SCREEN_TITLES, type Screen } from './nav';
+import { NAV, NAV5, SCREEN_TITLES, oldMenuOn, type Screen } from './nav';
+import { todoCount } from './TreeScreen';
 import { UiIcon, fmtK } from './uiIcon';
 import { citiesOf } from '../game/world';
 import { moodLabel, presOf } from '../game/approval';
@@ -160,22 +161,39 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
       {overlay}
       {presOpen && <PresModal state={state} onClose={() => setPresOpen(false)} />}
 
-      <nav className="bottom">
-        {NAV.map((nv) => (
-          <button
-            key={nv.screen}
-            className={[screen === nv.screen ? 'active' : '', nv.main ? 'main' : '', nv.locked ? 'locked' : ''].join(' ').trim()}
-            onClick={() => go(nv.screen)}
-            aria-label={nv.locked ? `${nv.label} · ${nv.locked}` : nv.label}
-          >
-            <span className="ico">
-              <UiIcon label={nv.label} emoji={nv.icon} />
-            </span>
-            <small>{nv.label}</small>
-            {nv.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
-          </button>
-        ))}
-      </nav>
+      {oldMenuOn() ? (
+        <nav className="bottom">
+          {NAV.map((nv) => (
+            <button
+              key={nv.screen}
+              className={[screen === nv.screen ? 'active' : '', nv.main ? 'main' : '', nv.locked ? 'locked' : ''].join(' ').trim()}
+              onClick={() => go(nv.screen)}
+              aria-label={nv.locked ? `${nv.label} · ${nv.locked}` : nv.label}
+            >
+              <span className="ico">
+                <UiIcon label={nv.label} emoji={nv.icon} />
+              </span>
+              <small>{nv.label}</small>
+              {nv.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}
+            </button>
+          ))}
+        </nav>
+      ) : (
+        <nav className="bottom five">
+          {NAV5.map((nv) => {
+            const badge = nv.screen === 'shop' ? goalsReady(state) : nv.screen === 'tree' ? todoCount(state) : 0;
+            return (
+              <button key={nv.screen} className={[screen === nv.screen || nv.also?.includes(screen) ? 'active' : '', nv.main ? 'main' : ''].join(' ').trim()} onClick={() => go(nv.screen)} aria-label={nv.label}>
+                <span className="ico">
+                  <UiIcon label={nv.art} emoji={nv.icon} />
+                </span>
+                <small>{nv.label}</small>
+                {badge > 0 && <i className="badge">{badge}</i>}
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }
