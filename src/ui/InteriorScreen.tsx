@@ -76,6 +76,8 @@ import { TECHS } from '../data/civ';
 /** 고를 수 있는 연구가 있는데 비어 있는 줄이 있으면 */
 export const needPick = (s: ScreenProps['state']) => (['mil', 'soc'] as const).some((l) => !civOf(s).cur[l] && TECHS.some((t) => t.line === l && !canResearch(s, t.id)));
 import { CityPanel, GovPanel, ResearchPanel } from './CivScreens';
+import type { GameState } from '../game/state';
+import { BOND_HOURS, BOND_PAY_H, bondDebt, bondPayPerHour, bondRate, bondSize, borrow, canBorrow, forecast, treasuryPerHour } from '../game/bonds';
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const sign = (v: number) => (v >= 0 ? `+${fmt(v)}` : `−${fmt(-v)}`);
@@ -233,6 +235,7 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
         <b>{me.name}</b>
         <small className="muted">{leaderText(state, me.id)}</small>
       </div>
+      <BondCard state={state} apply={actions.apply} />
       <div className="vault2">
         <div className="vgroup">
           <small className="vgroup-title">💰 예산</small>
@@ -725,5 +728,36 @@ function BuildingModal({ state, actions, id, onClose }: ScreenProps & { id: Buil
       </p>
       {msg && <p className="small result">{msg}</p>}
     </Modal>
+  );
+}
+
+/** 11-28 금고: 12시간 뒤 예상 잔액 · 바닥 경고 · 국채 */
+function BondCard({ state, apply }: { state: GameState; apply: (f: (s: GameState) => GameState) => void }) {
+  const f12 = forecast(state, 12);
+  const per = treasuryPerHour(state) - bondPayPerHour(state);
+  const now = state.nations[state.player.countryId]?.treasury ?? 0;
+  const zeroH = per < 0 ? now / -per : null;
+  const debt = bondDebt(state);
+  const why = canBorrow(state);
+  const size = bondSize(state);
+  return (
+    <section className="card bond-card">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+        <span>
+          <b>📅 12시간 뒤 나라 예산 약 {fmt(f12)}</b>
+          <br />
+          <small className={zeroH != null && zeroH < 12 ? 'bad' : 'muted'}>
+            {zeroH != null ? `⚠️ 이대로면 ${Math.max(0, Math.round(zeroH))}시간 뒤 바닥` : `시간당 ${per >= 0 ? '+' : ''}${fmt(per)}`}
+            {debt > 0 ? ` · 국채 빚 ${fmt(debt)}(시간당 −${fmt(bondPayPerHour(state))})` : ''}
+          </small>
+        </span>
+        <button disabled={!!why} title={why ?? ''} onClick={() => apply(borrow)}>
+          🏦 국채 +{fmt(size)}
+        </button>
+      </div>
+      <small className="muted">
+        국채: 시간당 예산 {BOND_HOURS}시간치를 바로 빌리고, 이자 {Math.round(bondRate(state) * 100)}%를 붙여 {BOND_PAY_H}시간 동안 나눠 갚아요. 못 갚으면 이자가 올라요.
+      </small>
+    </section>
   );
 }
