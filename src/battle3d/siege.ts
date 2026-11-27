@@ -1,7 +1,7 @@
 // 3막 공성전 흐름: 막마다 전장을 바꾸고, 살아남은 부대(다친 그대로)를 다음 막으로 넘긴다.
 import {
   BUDGET, DEF, ST, autoDeploy, createSim, nearestTile, setupDeploy, startBattle, step, useStage,
-  type Kind, type Pick3, type Sim, type Stage,
+  type DeployOpt, type Kind, type Pick3, type Sim, type Stage,
 } from './sim';
 import { ACTS, URBAN_FILL } from './stages';
 
@@ -52,10 +52,10 @@ export function spentOf(mine: Pick3[]) { return mine.reduce((s, d) => s + (d.car
 export const budgetOf = (act: number, st?: Stage) => (act === 0 ? st?.budget ?? BUDGET : REINF_BUDGET);
 
 /** 막 하나를 화면 없이 돌림 */
-export function runAct(stage: Stage, mine: Pick3[], cp0 = 3, foeHp = 1, maxSteps = 6000): Sim {
+export function runAct(stage: Stage, mine: Pick3[], cp0 = 3, foeHp = 1, maxSteps = 6000, buffs: Pick<DeployOpt, 'usBuff' | 'foeBuff'> = {}): Sim {
   useStage(stage);
   const S = createSim();
-  setupDeploy(S, mine, { cp0, foeHp });
+  setupDeploy(S, mine, { cp0, foeHp, ...buffs });
   startBattle(S);
   for (let i = 0; i < maxSteps && S.phase === 'battle'; i++) step(S);
   return S;
@@ -87,13 +87,13 @@ export function siegeOutcome(results: ActResult[], acts: Stage[] = ACTS): { win:
 /** 막 이름(앞에 '1막 ·' 붙임) */
 export const actName = (acts: Stage[], i: number) => (/^\d막/.test(acts[i]?.name ?? '') ? acts[i].name : `${i + 1}막 · ${acts[i]?.name ?? ''}`);
 /** 맡기기: 세 막을 기본 배치로 끝까지 */
-export function runSiegeHeadless(foeHp = 1, budget = REINF_BUDGET, acts: Stage[] = ACTS): { results: ActResult[]; outcome: ReturnType<typeof siegeOutcome> } {
+export function runSiegeHeadless(foeHp = 1, budget = REINF_BUDGET, acts: Stage[] = ACTS, buffs: Pick<DeployOpt, 'usBuff' | 'foeBuff'> = {}): { results: ActResult[]; outcome: ReturnType<typeof siegeOutcome> } {
   const results: ActResult[] = [];
   let carry: Carry | null = null;
   for (let a = 0; a < acts.length; a++) {
     useStage(acts[a]);
     const mine = a === 0 ? autoDeploy() : fillReinf(placeCarried(carry!), budget);
-    const S = runAct(acts[a], mine, a === 0 ? 3 : navalCp(carry!), foeHp);
+    const S = runAct(acts[a], mine, a === 0 ? 3 : navalCp(carry!), foeHp, undefined, buffs);
     const r = actResult(S); results.push(r);
     if (!r.win) break;
     carry = carryFrom(S, carry?.naval ?? 0);

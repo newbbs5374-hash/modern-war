@@ -48,3 +48,24 @@ describe('특별 병과 1.3배(11-27)', () => {
     expect(specialBuffs({ 구축함: 3 })).toEqual({});
   });
 });
+
+describe('적 나라 특별 병과(11-27)', () => {
+  it('적 나라 특별 병과 병과는 ×1.3, 3대 중 1대', async () => {
+    const { foeBuffs } = await import('./losses');
+    const { createSim, setupDeploy, ST } = await import('../battle3d/sim');
+    expect(foeBuffs('kr').tank).toBe(1.3);
+    expect(foeBuffs(null)).toEqual({});
+    const S = createSim();
+    setupDeploy(S, [], { foeBuff: { tank: 1.3 } });
+    const tanks = S.units.filter((u) => u.side === 'foe' && u.kind === 'tank');
+    if (ST.enemy.filter(([k]) => k === 'tank').length) {
+      expect(tanks[0].special).toBe(true);
+      expect(tanks.filter((u) => u.special).length).toBe(Math.ceil(tanks.length / 3));
+    }
+  });
+  it('맡기기에도 넘어감', async () => {
+    const { autoField } = await import('../battle/auto');
+    const a = autoField({ variant: 'highland', difficulty: 1 }, { usBuff: { tank: 1.3, inf: 1.3 } });
+    expect(typeof a.win).toBe('boolean');
+  });
+});

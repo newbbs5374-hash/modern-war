@@ -4,7 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
 import { settleClash } from '../../game/deploy';
-import { loseUnits, mulBuffs, ownedByBase, specialBuffs } from '../../game/losses';
+import { foeBuffs, foeCountryOf, loseUnits, mulBuffs, ownedByBase, specialBuffs } from '../../game/losses';
 import { deployOf } from '../../game/deploy';
 import { routeTo } from '../nav';
 import { autoResult } from '../../battle/auto';
@@ -42,6 +42,8 @@ export interface FrameProps {
   onEnd: (r: Outcome) => void;
   /** 11-26 안 6: 병과 숙련 배수(3D 전투) · 배치 퍼즐 판별 별 */
   usBuff?: Partial<Record<string, number>>;
+  /** 11-27 적 나라 특별 병과 배수 */
+  foeBuff?: Partial<Record<string, number>>;
   puzzleStars?: Record<string, number>;
   /** 11-26 대장 "가진 부대만": 3D 전투에 낼 수 있는 부대(병과 이름별). 없으면 제한 없음(훈련·연습) */
   owned?: Record<string, number>;
@@ -148,7 +150,10 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) deadSoFar[k] = (deadSoFar[k] ?? 0) + v;
   const ownSrc = plan.source === 'deploy' && plan.deploy ? deployOf(state).list.find((x) => x.id === plan.deploy!.dep)?.units ?? {} : plan.source === 'training' || plan.source === 'practice' ? null : state.economy.army;
   const owned = ownSrc ? ownedByBase(ownSrc, deadSoFar) : undefined;
-  const props: FrameProps = { spec, stats, rank, owned, gen: spec.variant === 'siege' ? genSkillOf(o) : null, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: mulBuffs(unitBuffs(o.unitXp), specialBuffs(ownSrc ?? state.economy.army)), puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
+  // 11-27 특별 병과 ×1.3: 우리(가진 특별 병과 비율만큼) · 적 나라(그 병과 모두)
+  const usBuff = mulBuffs(unitBuffs(o.unitXp), specialBuffs(ownSrc ?? state.economy.army));
+  const foeBuff = plan.source === 'training' || plan.source === 'practice' ? {} : foeBuffs(foeCountryOf(state, spec));
+  const props: FrameProps = { spec, stats, rank, owned, gen: spec.variant === 'siege' ? genSkillOf(o) : null, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff, foeBuff, puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
@@ -165,7 +170,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
     setAutoUsed(false);
   };
   const delegate = () => {
-    const r = autoResult({ spec, stats, rank, aides: readyAides(o, state.worldMs) });
+    const r = autoResult({ spec, stats, rank, aides: readyAides(o, state.worldMs), usBuff, foeBuff });
     const who = o.generals[0]?.name ?? o.aides[0]?.name ?? '부대장';
     setCurrent({ ...r, stars: Math.min(2, r.stars), text: `${who}에게 맡겼어요. ${r.text}`, auto: true });
   };
