@@ -1,4 +1,5 @@
 // 11-27 4장 구조: 본부 '주요 임무' 맨 위 막 카드 + 막 설명 창(조건 진행·다음 장).
+import { canNet, canStrike, interceptRate, netCost, raidOf, raiseNet, strikeChance, strikeFirst } from '../game/missileWar';
 import { useState } from 'react';
 import type { GameState } from '../game/state';
 import { ACTS, actGoals, actInfo, neighborsOf } from '../game/acts';
@@ -140,6 +141,56 @@ export function CounterCards({ state, go }: { state: GameState; go: (s: Screen) 
             </button>
           </div>
           <p className="act-sub">막아 내면 노획 예산과 신뢰도를 얻고, 지면 도시를 다시 빼앗겨요. 부대 전투력이 높을수록 맡겨도 잘 막아요.</p>
+        </Modal>
+      )}
+    </>
+  );
+}
+
+/** 11-27 전투 6: 미사일 경보(본부). 요격망을 켜거나 발사대를 먼저 침 */
+export function RaidCards({ state, apply, applyWith }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; applyWith: <T>(f: (s: GameState) => { state: GameState; out: T }) => T | undefined }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const [msg, setMsg] = useState('');
+  const list = raidOf(state).list;
+  const r = list.find((x) => x.id === open) ?? null;
+  if (!list.length && !msg) return null;
+  return (
+    <>
+      {list.map((x) => (
+        <button key={x.id} className="hq hot counter-hq" onClick={() => (setMsg(''), setOpen(x.id))}>
+          <span>🚀</span>
+          <span className="hq-main">
+            <b>
+              미사일 경보 · {cityById(x.city).name} · {x.n}발
+            </b>
+            <small>
+              {countryById(x.from).name} · 떨어지기까지 {leftText(x.dueMs - state.worldMs)}
+              {x.net ? ' · 요격망 켬' : ''}
+            </small>
+          </span>
+        </button>
+      ))}
+      {(r || msg) && open != null && (
+        <Modal title={r ? `${cityById(r.city).name} 미사일 경보` : '미사일 경보'} icon="🚀" onClose={() => (setOpen(null), setMsg(''))}>
+          {r ? (
+            <>
+              <p className="act-sub">
+                {countryById(r.from).name}이(가) {cityById(r.city).name}(으)로 미사일·드론 <b>{r.n}발</b>을 쏘려 해요. 떨어지기까지 <b>{leftText(r.dueMs - state.worldMs)}</b>. 지금 요격률 {Math.round(interceptRate(state, r.net) * 100)}%.
+              </p>
+              <div className="counter-pick">
+                <button className="primary" disabled={!!canNet(state, r.id)} onClick={() => apply((s) => raiseNet(s, r.id))}>
+                  <b>🛡️ 요격망 가동</b>
+                  <small>{canNet(state, r.id) ?? `나라 예산 −${netCost(state).toLocaleString('ko-KR')} · 요격률 ${Math.round(interceptRate(state, true) * 100)}%로`}</small>
+                </button>
+                <button disabled={!!canStrike(state, r.id)} onClick={() => setMsg(applyWith((s) => { const o = strikeFirst(s, r.id); return { state: o.state, out: o.text }; }) ?? '')}>
+                  <b>🎯 발사대 선제 타격</b>
+                  <small>{canStrike(state, r.id) ?? `성공 ${Math.round(strikeChance(state) * 100)}% · 성공하면 공습 취소`}</small>
+                </button>
+              </div>
+              <p className="act-sub">맞은 발마다 그 도시 민심과 방어도가 깎이고 복구비가 나가요. 방공 부대가 많을수록 요격률이, 미사일·공군 부대가 많을수록 선제 타격 성공률이 올라요.</p>
+            </>
+          ) : null}
+          {msg && <p className="small sch-msg">{msg}</p>}
         </Modal>
       )}
     </>

@@ -1,6 +1,7 @@
 // 외교 → 국가정보 → 나라 누르면 열리는 큰 팝업(11-24 대장 요청 4번).
 // 위: 그 나라 실제 지도(도·도시·점령·분쟁 지역·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
 import { campaignArt } from './scenes';
+import { GOALS, goalById, goalMet, setGoal, settleWar, takenIn, warGoalOf } from '../game/warGoal';
 import { useMemo, useState } from 'react';
 import { CITIES, cityById } from '../data/cities';
 import { COUNTRY_FACTS } from '../data/countryFacts';
@@ -204,6 +205,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
       ) : (
         iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />
       )}
+      {id !== me && relationOf(w, me, id) === '전쟁' && <WarGoalBox state={state} actions={actions} id={id} />}
       <div className="cdetail">
         <CountryMap state={state} id={id} />
         <div className="cdetail-side">
@@ -578,6 +580,45 @@ function AiGrowBox({ state, id }: { state: GameState; id: string }) {
         })}
       </div>
       <p className="small muted">남는 나라 예산을 성향대로 써서 단계를 올려요. 전쟁 중엔 군비·요새, 땅을 잃으면 되찾기에 힘을 몰아요.</p>
+    </div>
+  );
+}
+
+/** 11-27 전투 4: 전쟁 목표 고르기 · 목표를 이루면 협상으로 끝내기 */
+function WarGoalBox({ state, actions, id }: Pick<ScreenProps, 'state' | 'actions'> & { id: string }) {
+  const g = warGoalOf(state, id);
+  const [msg, setMsg] = useState('');
+  if (!g)
+    return (
+      <div className="wargoal">
+        <b className="small">🎯 이 전쟁의 목표를 정하세요</b>
+        <div className="wargoal-opts">
+          {GOALS.map((d) => (
+            <button key={d.id} onClick={() => actions.apply((s) => setGoal(s, id, d.id))}>
+              <span>{d.icon}</span>
+              <b>{d.name}</b>
+              <small>{d.need}</small>
+              <small className="muted">{d.reward}</small>
+            </button>
+          ))}
+        </div>
+        <small className="muted">목표를 이루면 확률 없이 협상으로 전쟁을 끝낼 수 있어요. 목표보다 더 차지하면 다른 나라들이 경계해요.</small>
+      </div>
+    );
+  const d = goalById(g.goal);
+  const met = goalMet(state, id);
+  return (
+    <div className="wargoal">
+      <b className="small">
+        🎯 전쟁 목표: {d.icon} {d.name} · 차지한 본토 도시 {takenIn(state, id)}곳
+      </b>
+      <small className="muted"> {d.id === 'total' ? '끝까지 싸워요.' : met ? '목표를 이뤘어요!' : `조건: ${d.need}`}</small>
+      {d.id !== 'total' && (
+        <button className="gold wide" disabled={!met} onClick={() => setMsg(actions.applyWith((s) => { const r = settleWar(s, id); return { state: r.state, out: r.text }; }) ?? '')}>
+          🕊️ 협상으로 끝내기 <small>· {d.reward}</small>
+        </button>
+      )}
+      {msg && <p className="small sch-msg">{msg}</p>}
     </div>
   );
 }

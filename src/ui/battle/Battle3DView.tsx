@@ -25,7 +25,9 @@ function capsOf(owned: Record<string, number> | undefined, dead: Record<string, 
   return out;
 }
 
-export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned }: FrameProps) {
+export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned, gen }: FrameProps) {
+  const genRef = useRef(gen);
+  genRef.current = gen;
   const siege = spec.variant === 'siege';
   const acts = useMemo(() => (siege ? actsFor(spec.seed, spec.city ? isCoastalCity(spec.city) : undefined) : []), [siege, spec.seed, spec.city]);
   // 11-26 고침: spec은 화면이 다시 그려질 때마다 새로 만들어짐. 파병 전투(병과·예산 덮어쓰기)는 stageFor가 매번 새 전장을 돌려줘서
@@ -71,6 +73,7 @@ export function Battle3DView({ spec, onEnd, usBuff, onCancel, owned }: FrameProp
         preset: siege && act > 0 && c ? placeCarried(c) : undefined,
         cp0: siege && act > 0 && c ? navalCp(c) : undefined,
         naval: c?.naval ?? 0,
+        gen: genRef.current ?? undefined,
         actLabel: siege ? actName(acts, act) : undefined,
         endLabel: siege && act < 2 ? '다음 막으로' : '결과 보기',
         onEnd: (r) => {
