@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXTRA2_READY, YOUNG_PLAN, YOUNG_READY, allFaceFiles, allYoungFiles, deckSize, faceFile, faceTag, isYoungFace, youngFile } from './faces';
+import { EXTRA2_READY, YOUNG_PLAN, YOUNG_READY, allFaceFiles, allYoungFiles, deckSize, faceFile, faceTag, isYoungFace, youngFile, EXTRA3_READY } from './faces';
 import { SECRETARY } from './secretary';
 import { COUNTRIES } from './world';
 import { newGame } from '../game/state';
@@ -55,20 +55,20 @@ describe('셋째 얼굴 묶음(나라별 80장 더)', () => {
   it('켜진 나라(그림 옴)는 142장 그림이 모두 있음(11-25 13개국 모두 켜짐)', () => {
     for (const c of EXTRA2_READY) {
       const tags = c === 'us' ? ['us-we', 'us-bl', 'us-hi', 'us-as'] : [c];
-      expect(tags.reduce((a, t) => a + deckSize(t, 'm') + deckSize(t, 'f'), 0)).toBe(142);
+      expect(tags.reduce((a, t) => a + deckSize(t, 'm') + deckSize(t, 'f'), 0)).toBe(EXTRA3_READY.includes(c) ? 190 : 142);
       for (const t of tags) for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(t, sex); i++) expect(have.has(faceFile(t, sex, i))).toBe(true);
     }
     expect(EXTRA2_READY.length).toBe(18);
-    expect(deckSize('ir', 'm') + deckSize('ir', 'f')).toBe(142);
+    expect(deckSize('ir', 'm', true, true, false) + deckSize('ir', 'f', true, true, false)).toBe(142);
   });
   it('켜면 142장이고 번호는 이어 붙음', () => {
-    expect(deckSize('kr', 'm', true, true) + deckSize('kr', 'f', true, true)).toBe(142);
+    expect(deckSize('kr', 'm', true, true, false) + deckSize('kr', 'f', true, true, false)).toBe(142);
     const us = ['us-we', 'us-bl', 'us-hi', 'us-as'];
-    expect(us.reduce((a, t) => a + deckSize(t, 'm', true, true) + deckSize(t, 'f', true, true), 0)).toBe(142);
+    expect(us.reduce((a, t) => a + deckSize(t, 'm', true, true, false) + deckSize(t, 'f', true, true, false), 0)).toBe(142);
     for (let i = 0; i < 39; i++) expect(faceFile('kr', 'm', i, true, true)).toBe(faceFile('kr', 'm', i, true, false));
     expect(faceFile('kr', 'm', 39, true, true)).toBe('face-kr-m-50-22');
     expect(faceFile('kr', 'm', 39 + 27, true, true)).toBe('face-kr-m-60-19');
-    const all = allFaceFiles(true, true);
+    const all = allFaceFiles(true, true, false);
     expect(all.length).toBe(18 * 142);
     expect(new Set(all).size).toBe(all.length);
   });
