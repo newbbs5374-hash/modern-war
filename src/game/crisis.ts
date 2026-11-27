@@ -261,7 +261,10 @@ export const CRISES: CrisisDef[] = [
 ];
 /** 일반 사건 + 출신 전용 사건 */
 export const ALL_CRISES: CrisisDef[] = [...CRISES, ...ORIGIN_CRISES];
-export const crisisById = (id: string): CrisisDef => ALL_CRISES.find((c) => c.id === id) ?? PRESSURES.find((c) => c.id === id)!;
+/** 11-27 마지막 위기 카드(finale.ts)는 여기 등록만 하고 평소 사건에는 안 섞임 */
+const EXTRA_CRISES: CrisisDef[] = [];
+export const registerCrises = (list: CrisisDef[]) => { for (const d of list) if (!EXTRA_CRISES.some((x) => x.id === d.id)) EXTRA_CRISES.push(d); };
+export const crisisById = (id: string): CrisisDef => ALL_CRISES.find((c) => c.id === id) ?? EXTRA_CRISES.find((c) => c.id === id) ?? PRESSURES.find((c) => c.id === id)!;
 /** 이 지도자에게 나올 수 있는 사건 */
 export const crisesFor = (s: GameState) => ALL_CRISES.filter((d) => !d.origin || d.origin === s.player.origin);
 

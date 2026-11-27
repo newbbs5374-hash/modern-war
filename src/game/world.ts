@@ -108,6 +108,8 @@ export interface WorldState {
   /** 11-27 4막 구조: 지금 막(1~4)과 그 막이 시작된 시각. 옛 저장은 없음(3막처럼 대접) */
   act?: number;
   actSinceMs?: number;
+  /** 가장 멀리 간 장(보상은 처음 닿았을 때만) */
+  actMax?: number;
 }
 
 /** 편입 단계: 군정(점령 직후) → 민정(치안 확보 후) → 주민투표 → 편입 */

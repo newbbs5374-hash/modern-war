@@ -1,6 +1,7 @@
 import { claimPay } from './game/payday';
 import { applyNation } from './game/nation';
-import { checkVictory } from './game/victory';
+import { checkVictory, loadHall } from './game/victory';
+import { applyLegacy } from './game/unlock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as G from './game/state';
 import { deleteSave, exportCode, importCode, loadGame, saveGame } from './game/save';
@@ -214,7 +215,7 @@ export function App() {
     return (
       <StartScreen
         onStart={(name, countryId, pick) => {
-          const s = G.newGame(name, countryId, Date.now(), { ...pick, acts: true }); // 11-26 난이도: 새 판은 시험판 자원 지급 없이 적게 시작
+          const s = applyLegacy(G.newGame(name, countryId, Date.now(), { ...pick, acts: true }), loadHall()); // 11-26 난이도: 새 판은 시험판 자원 지급 없이 적게 시작
           saveGame(s);
           stateRef.current = s;
           setState(s);

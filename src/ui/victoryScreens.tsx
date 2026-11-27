@@ -30,6 +30,7 @@ export function VictoryCard({ state, actions }: ScreenProps) {
         ① 연합 승리: 우리 + 연합국 도시 {p.allied} / {p.needAllied}
         <Meter have={p.allied} need={p.needAllied} />
         ② 정복 승리: 우리 도시 {p.mine} / {p.needAlone}
+        {p.capsNeed > 0 && ` · 강대국 수도 ${p.capsHave} / ${p.capsNeed}`}
         <Meter have={p.mine} need={p.needAlone} />
       </div>
       <PeacePart state={state} onPropose={() => actions.apply(proposePeace)} />
@@ -184,14 +185,14 @@ export function winLines(s: ScreenProps['state']) {
   const pr = peaceProgress(s);
   const cp = cultureProgress(s);
   const hold = holdLeft(s);
-  const conquerOn = hold !== null && p.mine >= p.needAlone;
+  const conquerOn = hold !== null && p.mine >= p.needAlone && p.capsOk;
   const alliedOn = hold !== null && !conquerOn;
   const pl = peaceLeft(s);
   const cl = cultureWinLeft(s);
   const r = (a: number, b: number) => Math.max(0, Math.min(1, a / Math.max(1, b)));
   const names: Record<WinId, Ending['kind']> = { conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리' };
   return ([
-    { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)`, now: `${p.mine} / ${p.needAlone}`, pct: r(p.mine, p.needAlone), left: conquerOn ? hold : null },
+    { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)${p.capsNeed ? ' + 강대국 수도 3곳' : ''}`, now: `${p.mine} / ${p.needAlone}${p.capsNeed ? ` · 수도 ${p.capsHave}/${p.capsNeed}` : ''}`, pct: r(p.mine + p.capsHave * 4, p.needAlone + p.capsNeed * 4), left: conquerOn ? hold : null },
     { id: 'allied' as WinId, icon: '🤝', name: '연합 승리', goal: `우리+연합국 도시 ${p.needAllied}개`, now: `${p.allied} / ${p.needAllied}`, pct: r(p.allied, p.needAllied), left: alliedOn ? hold : null },
     { id: 'peace' as WinId, icon: '🕊️', name: '평화 승리', goal: `평화 헌장 서명 ${pr.need}나라`, now: `${pr.have} / ${pr.need}`, pct: pl !== null ? 1 : r(pr.have, pr.need), left: pl },
     {
@@ -252,6 +253,15 @@ export function VictoryPanel(props: ScreenProps) {
           <div className="small">
             우리 도시 {p.mine} / {p.needAlone} <span className="muted">(세계 {p.total}개)</span>
             <Meter have={p.mine} need={p.needAlone} />
+            {p.capsNeed > 0 && (
+              <div className="caps-row">
+                {p.caps.map((c) => (
+                  <span key={c.id} className={c.held ? 'on' : ''}>
+                    {c.held ? '✅' : '⬜'} {c.name} 수도 {c.city}
+                  </span>
+                ))}
+              </div>
+            )}
             {p.captured.length ? <>점령한 도시: {p.captured.join(', ')}</> : <span className="muted">아직 점령한 도시가 없어요.</span>}
           </div>
           <p className="small muted">국방 → 작전에서 대전투로 적 도시를 차지하세요. 점령지는 가끔 반란이 일어나니 부대와 복지로 지키세요.</p>

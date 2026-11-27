@@ -33,14 +33,15 @@ function capDist(a: string, b: string): number {
   const dx = Math.min(Math.abs(x1 - x2), 360 - Math.abs(x1 - x2)) * Math.cos((((y1 + y2) / 2) * Math.PI) / 180);
   return Math.hypot(dx, y1 - y2);
 }
-const NEIGH: Record<string, string[]> = {};
-/** 이웃 나라: 수도가 가까운 순서로 5개 */
-export function neighborsOf(me: string): string[] {
-  return (NEIGH[me] ??= COUNTRIES.map((c) => c.id)
+const NEAR: Record<string, string[]> = {};
+/** 다른 나라 모두, 수도가 가까운 순서 */
+export function nearestOf(me: string): string[] {
+  return (NEAR[me] ??= COUNTRIES.map((c) => c.id)
     .filter((id) => id !== me)
-    .sort((a, b) => capDist(me, a) - capDist(me, b))
-    .slice(0, ACT2_NEIGHBORS));
+    .sort((a, b) => capDist(me, a) - capDist(me, b)));
 }
+/** 이웃 나라: 수도가 가까운 순서로 5개 */
+export const neighborsOf = (me: string): string[] => nearestOf(me).slice(0, ACT2_NEIGHBORS);
 
 /** 내가 굴복시킨 나라: 처음 거점을 내가(또는 내 속국이) 모두 가졌거나, 내 속국이 됨 */
 export function subdued(s: GameState): string[] {
@@ -127,17 +128,24 @@ export function buyGrand(s: GameState): GameState {
 export function actsTick(s: GameState): GameState {
   if (s.world.act == null) return s;
   const act = s.world.act;
-  if (act >= 4) return s;
+  if (act >= 4) {
+    // 승리 조건을 놓치면 3장으로 돌아감(다시 채우면 마지막 위기가 다시 옴)
+    if (holding(s)) return s;
+    const text = '⏪ 승리 조건을 놓쳐 3장 「세계 대전」으로 돌아갔어요.';
+    return { ...s, world: { ...s.world, act: 3, actSinceMs: s.worldMs, events: [{ t: s.worldMs, kind: '점령' as const, text, mine: true }, ...s.world.events].slice(0, EVENT_LOG_MAX) } };
+  }
   const since = s.world.actSinceMs ?? 0;
   const ok = act === 2 ? subdued(s).length >= ACT2_SUBDUE || s.worldMs - since >= ACT2_MAX_HOURS * H : actGoals(s).every((g) => g.done) || (act === 1 && s.worldMs - since >= ACT1_MAX_HOURS * H);
   if (!ok) return s;
   const nx = ACTS[act];
-  const rw = ACT_REWARD[act];
+  // 보상은 그 장에 처음 닿았을 때만
+  const first = (s.world.actMax ?? act) <= act;
+  const rw = first ? ACT_REWARD[act] : { ruby: 0, boosts: 0 };
   const text = `${nx.icon} ${nx.n}장 「${nx.name}」이 올랐어요. ${nx.text}`;
   const ev = { t: s.worldMs, kind: '점령' as const, text, mine: true };
-  let out: GameState = { ...s, world: { ...s.world, act: act + 1, actSinceMs: s.worldMs, events: [ev, ...s.world.events].slice(0, EVENT_LOG_MAX) } };
+  let out: GameState = { ...s, world: { ...s.world, act: act + 1, actMax: Math.max(s.world.actMax ?? 1, act + 1), actSinceMs: s.worldMs, events: [ev, ...s.world.events].slice(0, EVENT_LOG_MAX) } };
   const g = goalsOf(out);
   out = { ...out, goals: { ...g, ruby: g.ruby + rw.ruby } };
   out = { ...out, officer: { ...out.officer, boosts: (out.officer.boosts ?? 0) + rw.boosts } };
-  return pushReport(out, { icon: nx.icon, text: `${nx.n}장 「${nx.name}」이 시작됐습니다. ${nx.text} (💎 +${rw.ruby} · 🎫 +${rw.boosts})` });
+  return pushReport(out, { icon: nx.icon, text: `${nx.n}장 「${nx.name}」이 시작됐습니다. ${nx.text} ${first ? `(💎 +${rw.ruby} · 🎫 +${rw.boosts})` : ''}` });
 }

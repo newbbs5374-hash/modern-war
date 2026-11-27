@@ -9,6 +9,7 @@ import { routeTo } from '../nav';
 import { autoResult } from '../../battle/auto';
 import { FRAME_NAMES, getPendingPlan, nextDifficulty, planForMission, planOutcome, setPendingPlan, type BattlePlan, type BattleSpec } from '../../battle/spec';
 import { Card } from '../common';
+import { settleCounter } from '../../game/counter';
 import { Tile } from '../kit';
 import { FRAME_ICON } from '../icons';
 import { COUNTRIES, countryById } from '../../data/world';
@@ -148,7 +149,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
 
   const leave = () => {
     setPendingPlan(null);
-    go(plan.source === 'mission' ? 'ops' : plan.source === 'occupy' ? 'home' : plan.source === 'deploy' ? routeTo('diplo', 'diplo', 'deploy') : 'training');
+    go(plan.source === 'mission' ? 'ops' : plan.source === 'occupy' || plan.source === 'counter' ? 'home' : plan.source === 'deploy' ? routeTo('diplo', 'diplo', 'deploy') : 'training');
   };
   const nextStage = () => {
     if (!current) return;
@@ -179,6 +180,13 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
         return { state: r.state, out: r.text };
       });
       setClaimed(`${lose(text)}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
+    } else if (plan.source === 'counter' && plan.counter != null) {
+      const id = plan.counter;
+      const text = actions.applyWith((s) => {
+        const r = settleCounter(s, id, final.win, allAuto ? Math.min(2, final.stars) : final.stars, '직접');
+        return { state: r.state, out: r.text };
+      });
+      setClaimed(lose(text));
     } else if (plan.source === 'deploy' && plan.deploy) {
       const dep = plan.deploy.dep;
       const text = actions.applyWith((s) => {
@@ -294,8 +302,8 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
                   결과 받기
                 </button>
               ) : (
-                <button className="primary" onClick={() => go(plan.source === 'training' ? 'training' : plan.source === 'occupy' ? 'home' : plan.source === 'deploy' ? routeTo('diplo', 'diplo', 'deploy') : 'ops')}>
-                  {plan.source === 'training' ? '훈련 화면으로' : plan.source === 'occupy' ? '본부로' : plan.source === 'deploy' ? '파병 화면으로' : '작전 화면으로'}
+                <button className="primary" onClick={() => go(plan.source === 'training' ? 'training' : plan.source === 'occupy' || plan.source === 'counter' ? 'home' : plan.source === 'deploy' ? routeTo('diplo', 'diplo', 'deploy') : 'ops')}>
+                  {plan.source === 'training' ? '훈련 화면으로' : plan.source === 'occupy' || plan.source === 'counter' ? '본부로' : plan.source === 'deploy' ? '파병 화면으로' : '작전 화면으로'}
                 </button>
               )}
             </div>

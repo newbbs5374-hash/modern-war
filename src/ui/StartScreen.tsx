@@ -12,6 +12,7 @@ import { conflictsOf, otherSide, NOW_CONFLICTS } from '../data/conflicts';
 import { LEADER_LOOKS, lookName, playerKeys, type LeaderLook } from '../data/looks';
 import { Face } from './Portrait';
 import { CloudStartCard } from './CloudUI';
+import { legacyOf, setUnlockAll, unlockAllOn, unlockedNations, UNLOCK_PER_WIN } from '../game/unlock';
 
 export interface StartPick {
   randomLeaders: boolean;
@@ -31,6 +32,7 @@ interface Props {
 export function StartScreen({ onStart, onImport, onCloud }: Props) {
   const [name, setName] = useState('');
   const [pick, setPick] = useState<string | null>(null);
+  const [allOpen, setAllOpen] = useState(unlockAllOn);
   const [code, setCode] = useState('');
   const [err, setErr] = useState('');
   const [randomLeaders, setRandomLeaders] = useState(false);
@@ -41,6 +43,8 @@ export function StartScreen({ onStart, onImport, onCloud }: Props) {
   const [realWorld, setRealWorld] = useState(true);
   const [origin, setOrigin] = useState<OriginId>('econ');
   const hall = loadHall();
+  const unlocked = unlockedNations(hall, allOpen);
+  const legacy = legacyOf(hall);
 
   if (step === 'origin' && pick) {
     const o = ORIGINS.find((x) => x.id === origin)!;
@@ -149,10 +153,29 @@ export function StartScreen({ onStart, onImport, onCloud }: Props) {
         지도자 이름
         <input value={name} maxLength={12} placeholder="예: 김철수" onChange={(e) => setName(e.target.value)} />
       </label>
+      <p className="small start-unlock">
+        🔓 고를 수 있는 나라 {unlocked.length}/{COUNTRIES.length} · 한 판 이길 때마다 가까운 나라 {UNLOCK_PER_WIN}곳이 열려요.
+        {legacy.wins > 0 && (
+          <>
+            <br />
+            🏅 유산: 지난 승리 {legacy.wins}번 → 시작할 때 💎 +{legacy.ruby} · 🎫 +{legacy.boosts}
+          </>
+        )}
+      </p>
       <div className="country-list" role="list">
-        {COUNTRIES.map((c) => {
+        {[...COUNTRIES].sort((a, b) => Number(unlocked.includes(b.id)) - Number(unlocked.includes(a.id))).map((c) => {
           const isOpen = open === c.id;
           const L = LEADERS[c.id];
+          if (!unlocked.includes(c.id))
+            return (
+              <div key={c.id} role="listitem" className="country-line locked" style={{ borderLeftColor: BLOCS[c.bloc].color }}>
+                <div className="cl-head">
+                  <Flag id={c.id} size={0.9} />
+                  <b>{c.name}</b>
+                  <small className="muted cl-bloc">🔒 승리하면 열려요</small>
+                </div>
+              </div>
+            );
           return (
             <div key={c.id} role="listitem" className={`country-line ${pick === c.id ? 'picked' : ''} ${isOpen ? 'open' : ''}`} style={{ borderLeftColor: BLOCS[c.bloc].color }}>
               <button
@@ -215,6 +238,18 @@ export function StartScreen({ onStart, onImport, onCloud }: Props) {
       <label className="check" title={NOW_CONFLICTS.map((x) => `${x.icon} ${x.name}`).join('\n')}>
         <input type="checkbox" checked={realWorld} onChange={(e) => setRealWorld(e.target.checked)} />
         지금 세계 정세로 시작 (러-우 전쟁 중 · 끄면 모두 평화)
+      </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={allOpen}
+          onChange={(e) => {
+            setUnlockAll(e.target.checked);
+            setAllOpen(e.target.checked);
+            if (!e.target.checked && pick && !unlockedNations(hall).includes(pick)) setPick(null);
+          }}
+        />
+        🧪 시험용: 모든 나라 열기
       </label>
       <label className="check">
         <input type="checkbox" checked={randomLeaders} onChange={(e) => setRandomLeaders(e.target.checked)} />

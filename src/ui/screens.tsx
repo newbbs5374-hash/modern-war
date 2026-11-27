@@ -44,7 +44,7 @@ import { routeTo } from './nav';
 import { SettingsScreen } from './SettingsScreen';
 import { UiIcon } from './uiIcon';
 import { SnsPhone } from './SnsPhone';
-import { ActCard } from './ActsUI';
+import { ActCard, CounterCards } from './ActsUI';
 import { snsUnread } from '../game/leaderSns';
 
 export interface GameActions {
@@ -168,6 +168,7 @@ export function HomeScreen(props: ScreenProps) {
         <div className="home-quests">
           <b className="hq-title">📌 주요 임무</b>
           <ActCard state={state} />
+          <CounterCards state={state} go={go} />
           {gstep && !guideOf(state).hidden && (
             <div className="guide-hq">
               <button

@@ -1480,3 +1480,18 @@ button.big { min-height: 64px; font-size: 18px; }
 .act-goal-main b { font-size: 12px; font-weight: 600; }
 .act-bar { display: block; height: 6px; border-radius: 3px; background: #2b3540; overflow: hidden; }
 .act-bar i { display: block; height: 100%; background: var(--hud, #3fb8c9); }
+
+/* 11-27 반격 경보 */
+.counter-hq { border-color: #ff6b5a !important; }
+.counter-pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 10px 0; }
+.counter-pick button { display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; text-align: center; }
+.counter-pick small { font-size: 11px; opacity: 0.85; line-height: 1.35; }
+
+.caps-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 6px 0; }
+.caps-row span { padding: 6px 4px; border: 1px solid var(--line, #5b6b7c); text-align: center; font-size: 12px; opacity: 0.7; }
+.caps-row span.on { opacity: 1; border-color: var(--hud, #3fb8c9); }
+
+/* 11-27 나라 열기 */
+.start-unlock { margin: 6px 0; padding: 8px 10px; border: 1px solid var(--hud, #3fb8c9); line-height: 1.5; }
+.country-line.locked { opacity: 0.5; }
+.country-line.locked .cl-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }

@@ -67,6 +67,8 @@ export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타
 import { growBudget, growTroop } from './aiGrowth';
 import { growTick } from './aiGrowthTick';
 import { actsTick } from './acts';
+import { counterTick, type CounterState } from './counter';
+import { finaleTick, type FinaleState } from './finale';
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -156,6 +158,10 @@ export interface GameState {
   policy?: PolicyState;
   /** 해외 파병(11-24). 없으면 파병 없음 */
   deploy?: DeployState;
+  /** 11-27 AI 반격(빼앗은 도시를 되찾으러 옴) */
+  counter?: CounterState;
+  /** 11-27 4장 마지막 위기 진행 */
+  finale?: FinaleState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
@@ -202,7 +208,12 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
   }
   const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
   if (opt.realWorld) applyNowConflicts(world, countryId);
-  if (opt.acts) { world.act = 1; world.actSinceMs = 0; }
+  if (opt.acts) {
+    world.act = 1;
+    world.actSinceMs = 0;
+    // 1장에는 내 나라가 전쟁을 하지 않음: 시작부터 전쟁 중인 나라(러·우)는 잠깐 휴전으로 출발
+    for (const [key, p] of Object.entries(world.pairs)) if (p.rel === '전쟁' && key.split('|').includes(countryId)) { p.rel = '휴전'; p.tension = 0; }
+  }
   const s: GameState = {
     version: SAVE_VERSION,
     worldMs: 0,
@@ -357,7 +368,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
-    cur = actsTick(cur);
+    cur = counterTick(finaleTick(actsTick(cur)));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }

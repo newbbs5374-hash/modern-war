@@ -251,7 +251,7 @@ test('밸런스 모의 실험', () => {
     const rows: unknown[] = [];
     const me = country;
     const total = FRONT.length;
-    const mile: Record<string, number | null> = { mil100: null, soc70: null, c25: null, win48: null, c76: null, c100: null, firstCap: null, act2: null, act3: null, act4: null };
+    const mile: Record<string, number | null> = { mil100: null, soc70: null, c25: null, win48: null, c76: null, c100: null, firstCap: null, act2: null, act3: null, act4: null, won: null };
     let rubyEarned = 0, rubyPrev = 0;
     const t0 = Date.now();
     for (let day = 0; day < DAYS; day++) {
@@ -287,10 +287,12 @@ test('밸런스 모의 실험', () => {
         growAvg: Math.round((ai.reduce((a, c) => a + Object.values(s.world.grow?.[c.id]?.lv ?? {}).reduce((x, y) => x + y, 0), 0) / Math.max(1, ai.length)) * 10) / 10,
       });
       rubyPrev = rubyEarned;
+      if (s.ending && mile.won == null) mile.won = day;
       if (s.ending) s = { ...s, ending: null, wins: [...(s.wins ?? []), s.ending] };
       if (mine >= total) break;
     }
     const last = rows[rows.length - 1] as Record<string, number>;
+    if (process.env.ACTS) console.log(`  승리 d${mile.won} · 반격 막음 ${s.counter?.won ?? 0} 뺏김 ${s.counter?.lost ?? 0} · 수도 ${victoryProgress(s).capsHave}/3`);
     if (process.env.ACTS) console.log('  장 조건: ' + actGoals(s).map((g) => `${g.text} ${g.have}/${g.need}`).join(' · '));
     console.log(`${country} seed${seed} logins${LOGINS.length} skill${SKILL} wars${WARS} | 첫 점령 d${mile.firstCap} · 25% d${mile.c25} · 정복승리조건(48%) d${mile.win48} · 76% d${mile.c76} · 100% d${mile.c100} · 장 2/3/4 d${mile.act2}/d${mile.act3}/d${mile.act4} · 연구 군사 d${mile.mil100} 사회 d${mile.soc70} | 끝 d${last.day}: 도시 ${last.mine}/${total} 편입 ${last.annexed} 대전투 ${last.grandWin}/${last.grandTry} 루비 번 것 ${last.rubyEarned} 가속권 쓴 것 ${last.boostsUsed}(+루비 ${last.rubySpent}) 신뢰 ${last.trust} 잃음(반란 ${last.lostRebel}·침공 ${last.lostInv}) | ${Math.round((Date.now() - t0) / 1000)}s`);
     all.push({ country, seed, logins: LOGINS, skill: SKILL, wars: WARS, mile, rows, src: bot.tally.src, bsrc: bot.tally.bsrc });
