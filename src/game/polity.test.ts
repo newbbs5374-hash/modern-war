@@ -181,5 +181,5 @@ describe('내정 새 콘텐츠 8가지', () => {
     expect(Number.isFinite(econOf(s).cpi)).toBe(true);
     expect(p.log.length).toBeGreaterThan(10);
     console.log(p.log.slice(0, 12).join('\n'));
-  }, 60000);
+  }, 180000); // 11-28 전체 시험을 한꺼번에 돌리면 60초를 넘을 때가 있음
 });

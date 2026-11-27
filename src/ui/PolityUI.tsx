@@ -13,7 +13,7 @@ import { LOOK } from '../data/names';
 import { cityById } from '../data/cities';
 import { polityOf } from '../game/polity';
 import { CAMPAIGN_MS, MAJORITY, RALLY_PER_DAY, SEATS, TWO_THIRDS, campaignOpen, canRally, electionName, electionOf, rally, rallyCost, voteRows, voteShare } from '../game/seats';
-import { RATE_WAIT_MS, baseOf, canSetRate, econOf, econTargets, rateStep, setRate } from '../game/econ';
+import { RATE_WAIT_MS, baseOf, canSetRate, econOf, econTargets, overheat, rateStep, setRate } from '../game/econ';
 import { DISASTERS, RESPONDERS, STAGE_NAMES, canRespond, disasterKind, respond, responderById, responderPower, responseChance, responseRows } from '../game/disaster';
 import { AUDIT_QS, answerAudit, answerScandal, auditChance, auditQ, canProbeRival, probePower, probeRival, rivalProbeChance, rivalProbeCost, scandalChance, scandalPerson, seatName, type AuditPick, type ScandalPick } from '../game/probe';
 import { DEMANDS, answerDemand, canAnswer, demandCost, demandDef, localChance, myGovernors } from '../game/governors';
@@ -646,6 +646,22 @@ export function MacroPanel({ state, actions }: ScreenProps) {
   return (
     <>
       {e.crisis && <p className="pol-alert">📉 {e.crisis.kind === 'bank' ? '금융위기' : '집값 거품 붕괴'} · {timeLeft(e.crisis.untilMs - state.worldMs)} 남음 · 성장률 −3 · 지지도 −5</p>}
+      {!e.crisis && (() => {
+        const o = overheat(state);
+        const pct = Math.min(100, (o.stress / o.at) * 100);
+        return (
+          <Card title={`과열 게이지 ${Math.round(o.stress)}/${o.at}`} icon="🌡️" help={<p>물가가 나라 기본보다 3%p 넘게 높거나 집값이 25% 넘게 오르면 과열이 쌓여요. {o.at}이 되면 금융위기·집값 폭락이 터져요(이틀 동안 성장률 −3, 지지도 −5, 주가 −25%). 금리를 올리거나 전쟁·관세를 줄이면 내려가요.</p>}>
+            <div className="g-bar" style={{ height: 10, background: '#22303a', borderRadius: 5, overflow: 'hidden' }}>
+              <i style={{ display: 'block', height: '100%', width: `${pct}%`, background: pct > 66 ? '#d9472f' : pct > 33 ? '#f0a040' : '#3fb6c4' }} />
+            </div>
+            <p className="small">
+              {o.hoursLeft !== null ? <b className="warn">⚠️ 이대로면 약 {o.hoursLeft < 1 ? '1시간 안' : `${Math.round(o.hoursLeft)}시간 뒤`} 경제 위기</b> : o.stress > 0 ? '과열이 식고 있어요' : '과열 없음'}
+              {o.why.length > 0 && <> · 원인: {o.why.join(' · ')}</>}
+            </p>
+            {o.hoursLeft !== null && <p className="small muted">막는 법: 기준금리 올리기(물가↓) · 전쟁·관세 줄이기 · 경제 예산 조정</p>}
+          </Card>
+        );
+      })()}
       <Card title="경제 상황판" icon="📈" right={<button className="pol-mini" onClick={() => setWhy(true)}>근거</button>} help={<p>15분마다 숫자가 목표 쪽으로 움직여요. 물가가 나라 기본({b.cpi}%)보다 1%p 넘게 높으면 지지도가 깎이고, 성장률이 높으면 나라 예산이 늘어요. 물가·집값 과열이 오래가면 금융위기·집값 폭락이 터져요. 환율 100 = 보통.</p>}>
         <div className="pol-kpis">
           {kpis.map(([n, v, tone]) => (

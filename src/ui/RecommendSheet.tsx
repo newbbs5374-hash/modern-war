@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import type { GameState } from '../game/state';
 import { advisorOf, adviceAccuracy, adviceSeed, canFollow, followAdvice, pickAdvice, tone, type AdviceField } from '../game/advice';
-import { adviceTips } from './AdviceBar';
+import { RecCards, adviceTips } from './AdviceBar';
 import { ADVICE_PER_DAY, ADVICE_RESET_H, adviceLeft, adviceResetIn, autoOn, canRunTip, runTip, setAuto, sortTips, tradeTips, type TipSort, type TradeTip } from '../game/tradeAdvice';
 import { countryById } from '../data/world';
 import { Modal } from './kit';
@@ -64,6 +64,7 @@ export function RecommendSheet({
         </div>
       </div>
 
+      {field !== 'economy' && <RecCards state={state} apply={apply} field={field} go={onGo} />}
       {field === 'economy' && (
         <>
           <div className="rec-sorts">

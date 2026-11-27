@@ -72,6 +72,10 @@ import {
   projectCities,
   stageCost,
   startProject,
+  projectLost,
+  moveCost,
+  canMoveProject,
+  moveProject,
 } from "../game/projects";
 import {
   PLANS,
@@ -515,7 +519,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
             <p>
               한꺼번에 {PROJECT_MAX}개까지. 완공하면 판 끝까지 효과가 남고
               지지도·명성이 올라요. 공사 중인 도시는 본부 지도에 크레인이
-              보여요. 사업을 지은 도시를 빼앗기면 효과가 사라져요.
+              보여요. 사업을 지은 도시를 빼앗기면 공사·효과가 멈춰요. 되찾거나 다른 도시로 옮겨 다시 지을 수 있어요.
             </p>
           </Help>
         }
@@ -538,7 +542,9 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
                 <DomIco k={`proj-${p.id}`} icon={p.icon} />
                 <b>{p.name}</b>
                 <small>
-                  {st >= 3
+                  {pr && projectLost(state, p.id)
+                    ? "⚠️ 도시 잃음"
+                    : st >= 3
                     ? "✅ 완공"
                     : st >= 0
                       ? `${STAGES[st]} ${ready ? "끝" : timeLeft(pr!.endMs - state.worldMs)}`
@@ -622,7 +628,31 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
                     </button>
                   </>
                 )}
-                {pr && pr.stage < 3 && (
+                {pr && projectLost(state, pick) && (
+                  <>
+                    <p className="small warn">
+                      ⚠️ {cityById(pr.cityId)?.name}을(를) 잃어 {pr.stage >= 3 ? "완공 효과가 멈췄어요" : "공사가 멈췄어요"}. 도시를 되찾으면 그대로 이어지고, 다른 도시로 옮기면{" "}
+                      {STAGES[Math.min(2, pr.stage)]}부터 다시 해요(💵{fmt(moveCost(state, pick))}).
+                    </p>
+                    <select value={projectCities(state, pick).includes(city) ? city : projectCities(state, pick)[0] ?? ""} onChange={(e) => setCity(e.target.value)} className="wide">
+                      {projectCities(state, pick).map((c) => (
+                        <option key={c} value={c}>
+                          {cityById(c)?.name}
+                        </option>
+                      ))}
+                    </select>
+                    {(() => {
+                      const to = projectCities(state, pick).includes(city) ? city : projectCities(state, pick)[0] ?? "";
+                      const why = canMoveProject(state, pick, to);
+                      return (
+                        <button className="gold wide" disabled={!!why} onClick={() => actions.apply((s) => moveProject(s, pick, to))}>
+                          🚚 옮겨 다시 짓기 {why ? `(${why})` : ""}
+                        </button>
+                      );
+                    })()}
+                  </>
+                )}
+                {pr && pr.stage < 3 && !projectLost(state, pick) && (
                   <>
                     <p className="small">
                       📍 {cityById(pr.cityId)?.name} · 지금 {STAGES[pr.stage]}{" "}
@@ -646,7 +676,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
                     </button>
                   </>
                 )}
-                {pr && pr.stage >= 3 && (
+                {pr && pr.stage >= 3 && !projectLost(state, pick) && (
                   <p className="center">
                     ✅ {cityById(pr.cityId)?.name}에 완공
                   </p>

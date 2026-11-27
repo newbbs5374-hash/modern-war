@@ -1755,3 +1755,24 @@ html[data-map-still] .homeland *:not(.hl-dive),
 html[data-map-still] .wm-wrap *,
 html[data-map-still] .hl-wx i { animation: none !important; }
 .map-zoom button.off { opacity: .75; }
+
+/* 11-28 담당 장관 한 줄(부처 큰 카드는 내정 → 부처·시설 한곳) */
+.min-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px; }
+.min-strip > small { flex-basis: 100%; }
+.min-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; border-radius: 999px; min-width: 0; }
+.min-chip small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 9em; }
+.min-chip.empty { opacity: 0.75; border-style: dashed; }
+.min-chip .min-card-noface { width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 50%; }
+
+/* 11-28 장관 추천 카드 */
+.mrec-box { background: rgba(20, 40, 55, 0.55); border: 1px solid rgba(90, 200, 200, 0.35); border-radius: 10px; padding: 6px 8px; margin: 0 0 6px; display: flex; flex-direction: column; gap: 4px; }
+.mrec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12px; }
+.mrec-card { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 6px; align-items: center; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 4px 6px; }
+.mrec-ic { font-size: 18px; text-align: center; }
+.mrec-txt { display: flex; flex-direction: column; min-width: 0; font-size: 12px; }
+.mrec-txt small { opacity: 0.75; font-size: 10.5px; line-height: 1.3; }
+.mrec-act { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; }
+.mrec-act .good { color: #6fe3a5; }
+.mrec-act .bad { color: #ffb070; }
+.mrec-act button { padding: 2px 10px; font-size: 12px; }
+.mrec-auto { display: flex; gap: 6px; align-items: flex-start; opacity: 0.85; font-size: 10.5px; }

@@ -48,6 +48,8 @@ export interface SpyMission {
   target: string;
   startMs: number;
   endMs: number;
+  /** 시작 때 성공률(11-28: 끝날 때 다시 재지 않음) */
+  chance?: number;
 }
 export interface SpyState {
   active: SpyMission[];
@@ -101,7 +103,7 @@ export function startSpy(s: GameState, op: SpyOpId, target: string): GameState {
   const d = spyOpById(op);
   const me = s.player.countryId;
   const sp = spyOf(s);
-  const m: SpyMission = { id: sp.nextId, op, target, startMs: s.worldMs, endMs: s.worldMs + d.hours * H };
+  const m: SpyMission = { id: sp.nextId, op, target, startMs: s.worldMs, endMs: s.worldMs + d.hours * H, chance: spyChance(s, op, target) };
   return {
     ...s,
     nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - d.money } },
@@ -127,7 +129,7 @@ function finish(s: GameState, m: SpyMission): GameState {
   const me = s.player.countryId;
   const name = countryById(m.target).name;
   const rng = new Rng((m.id * 2654435761 + s.world.seed + m.startMs) >>> 0);
-  const ok = rng.next() < spyChance(s, m.op, m.target);
+  const ok = rng.next() < (m.chance ?? spyChance(s, m.op, m.target)); // 11-28 시작 때 보여 준 확률 그대로
   let ns = s;
   let text: string;
   if (ok) {

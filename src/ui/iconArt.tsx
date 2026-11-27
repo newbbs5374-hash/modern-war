@@ -116,6 +116,7 @@ export const RES_KEY: Record<Res, string> = {
   강철: 'steel', 석유: 'oil', 알루미늄: 'aluminum', 티타늄: 'titanium', 희토류: 'rare-earth', 리튬: 'lithium', 반도체: 'chip',
   구리: 'copper', 우라늄: 'uranium', 복합소재: 'composite', 갈륨: 'gallium', 향신료: 'spice', 진주: 'pearl', 차잎: 'tea', 산호: 'coral',
   니켈: 'nickel', 텅스텐: 'tungsten', 코발트: 'cobalt', 특수강: 'special-steel', 정밀부품: 'precision-parts', 게르마늄: 'germanium', 헬륨: 'helium', 커피: 'coffee', 비단: 'silk',
+  천연가스: 'natural-gas', 석탄: 'coal', 마그네슘: 'magnesium', 망간: 'manganese', 크롬: 'chromium', 바나듐: 'vanadium', 몰리브덴: 'molybdenum', 백금: 'platinum', 인듐: 'indium', 금: 'gold', 와인: 'wine', 카카오: 'cocoa',
 };
 export const resArtUrl = (r: Res): string | null => iconArt(`icon-res-${RES_KEY[r]}`);
 /** 자원 아이콘. inline = 글 사이에 끼는 작은 크기 */

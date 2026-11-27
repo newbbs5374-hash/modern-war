@@ -1,0 +1,89 @@
+// 11-28 장관 추천·은혜 장부·파병 7곳
+import { describe, expect, test } from 'vitest';
+import { newGame, type GameState } from './state';
+import { allRecs, morningBrief, pickRecs, recLogOf, recTick, runRec, setAuto } from './recs';
+import { DEPLOY_MAX, deployMax, oweOf } from './deploy';
+import { buyCost, oweCut, producesOf, sellGain, tradePartners } from './economy';
+
+const rich = (s: GameState): GameState => ({ ...s, nations: { ...s.nations, [s.player.countryId]: { ...s.nations[s.player.countryId], treasury: 1e8 } } });
+const base = () => rich(newGame('t', 'kr', 0, { seed: 5, realWorld: true }));
+
+describe('장관 추천', () => {
+  test('남는 자원이 있으면 팔기 추천, 실행하면 돈이 늘고 자원이 줆', () => {
+    let s = base();
+    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 희토류: 200 } } };
+    const r = allRecs(s, 'economy').find((x) => x.id === 'trade:sell-희토류');
+    expect(r).toBeTruthy();
+    const t0 = s.nations.kr.treasury;
+    const ns = runRec(s, 'economy', r!.id);
+    expect(ns.nations.kr.treasury).toBeGreaterThan(t0);
+    expect(ns.economy.stock.희토류).toBeLessThan(200);
+    expect(Object.values(recLogOf(ns).score)[0].n).toBe(1);
+  });
+  test('중계 무역 추천은 실제로 이득', () => {
+    const s = base();
+    const r = allRecs(s, 'economy').find((x) => x.id.startsWith('trade:flip-'));
+    if (!r) return; // 값 차이가 없는 판도 있음
+    const ns = runRec(s, 'economy', r.id);
+    expect(ns.nations.kr.treasury).toBeGreaterThan(s.nations.kr.treasury);
+  });
+  test('장관이 없으면 비서실 1개만', () => {
+    const s = base();
+    const v = pickRecs(s, 'economy', 3);
+    if (!v.advisor) expect(v.list.length).toBeLessThanOrEqual(1);
+    expect(morningBrief(s, 5).length).toBeLessThanOrEqual(5);
+  });
+  test('분야 맡기기는 처음엔 꺼짐, 켜면 1시간마다 실행', () => {
+    let s = base();
+    s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 희토류: 200 } } };
+    expect(recLogOf(s).auto.defense).toBeFalsy();
+    expect(recTick(s)).toBe(s);
+    s = setAuto(s, 'defense', true);
+    const ns = recTick(s);
+    expect(ns.recLog!.autoMs.defense).toBe(s.worldMs);
+  });
+});
+
+describe('파병 7곳 · 은혜', () => {
+  test('막에 따라 5→7곳', () => {
+    const s = base();
+    expect(deployMax({ ...s, world: { ...s.world, act: 1 } })).toBe(5);
+    expect(deployMax({ ...s, world: { ...s.world, act: 3 } })).toBe(DEPLOY_MAX);
+  });
+  test('은혜만큼 살 때만 싸지고 팔 때 값은 그대로', () => {
+    const s = base();
+    const id = tradePartners(s).find((x) => producesOf(s, x).length)!;
+    const r = producesOf(s, id)[0];
+    const s2: GameState = { ...s, deploy: { list: [], next: 1, owe: { [id]: 5 } } };
+    expect(oweOf(s2, id)).toBe(5);
+    expect(oweCut(s2, id)).toBeCloseTo(0.95);
+    expect(buyCost(s2, id, r, 10)).toBeLessThan(buyCost(s, id, r, 10));
+    expect(sellGain(s2, id, r, 10)).toBe(sellGain(s, id, r, 10));
+  });
+});
+
+import { vaultRecs, macroRecs, facRecs, projectRecs } from './recsEcon';
+import { islandRecs, agreeRecs, talkRecs } from './recsDiplo';
+import { produceRecs, researchRecs, defFacRecs, spyRecs } from './recsDefense';
+import { requestRecs, tiredRecs } from './recsDeploy';
+import { tradeRecs, pausedContractRecs } from './recsTrade';
+import { venueRecs, starRecs, courseRecs } from './recsCulture';
+
+describe('분야별 추천 만들기', () => {
+  test('모든 추천이 오류 없이 만들어지고, 실행할 수 있는 건 실제로 바뀜', () => {
+    let s = base();
+    s = { ...s, player: { ...s.player, rankIndex: 6 }, economy: { ...s.economy, stock: Object.fromEntries(Object.entries(s.economy.stock).map(([k, v]) => [k, (v as number) + 50])) as typeof s.economy.stock } };
+    const gens = [venueRecs, starRecs, courseRecs, researchRecs('mil'), researchRecs('soc'), defFacRecs, spyRecs, vaultRecs, macroRecs, facRecs, projectRecs, islandRecs, agreeRecs, talkRecs, produceRecs, requestRecs, tiredRecs, tradeRecs, pausedContractRecs];
+    let ran = 0;
+    for (const g of gens)
+      for (const r of g(s)) {
+        expect(r.value).toBeGreaterThan(0);
+        expect(r.gain(1)).toBeTruthy();
+        if (r.act && !(r.can && r.can(s))) {
+          expect(r.act(s)).not.toBe(s);
+          ran++;
+        }
+      }
+    expect(ran).toBeGreaterThan(2);
+  });
+});

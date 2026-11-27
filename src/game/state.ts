@@ -93,6 +93,14 @@ import { wcTick, type WcState } from './worldCrisis';
 import { secTick, type SecState } from './security';
 import type { BattleLogState } from './battleLog';
 import type { CampaignState } from './campaign';
+import { recTick, type RecLog } from './recs';
+import './resPerks'; // 11-28 새 자원 비축 효과
+import './recsTrade'; // 11-28 무역 장관 추천
+import './recsDeploy'; // 11-28 파병 추천
+import './recsDefense'; // 11-28 국방 추천
+import './recsEcon'; // 11-28 경제 추천
+import './recsDiplo'; // 11-28 외교 추천
+import './recsCulture'; // 11-28 문화 추천
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -152,6 +160,8 @@ export interface GameState {
   crisis?: CrisisState;
   /** 미리 명령(자리 비운 동안 부관이 지키는 규칙) */
   orders?: OrdersState;
+  /** 11-28 장관 추천 성적표·분야 맡기기 */
+  recLog?: RecLog;
   /** 첩보·특수 작전 */
   spy?: SpyState;
   /** 함대 충돌 관전 기록 */
@@ -436,7 +446,7 @@ export function advance(s: GameState, ms: number): GameState {
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
-    cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
+    cur = recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

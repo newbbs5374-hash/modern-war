@@ -1,5 +1,6 @@
 // 인물·부처 화면(11-23): 인재 명단·내 사람·인물 도감 / 부처 카드·부처 정보창 / 인물 창 / 사람을 장군으로.
 // 웬만하면 한 화면: 목록은 한 줄 카드, 자세한 건 팝업.
+import { routeTo } from './nav';
 import { officeName } from '../game/nation';
 import { Fragment, useState } from 'react';
 import { ProposalBox, TalkPanel } from './TalkUI';
@@ -419,9 +420,35 @@ function FactionLine({ state }: { state: GameState }) {
 
 /* ───────── 부처 카드 · 정보창 ───────── */
 
-export function MinistryCards({ state, actions, ids, title = '부처' }: Pick<ScreenProps, 'state' | 'actions'> & { ids: MinistryId[]; title?: string }) {
+export function MinistryCards({ state, actions, ids, title = '부처', compact, go }: Pick<ScreenProps, 'state' | 'actions'> & { ids: MinistryId[]; title?: string; compact?: boolean; go?: ScreenProps['go'] }) {
   const [open, setOpen] = useState<MinistryId | null>(null);
   const c = cabinetOf(state);
+  // 11-28 점검 오류 12: 부처 카드가 여러 탭에 흩어져 있던 것 → 큰 카드는 내정 → 부처·시설(내각 한눈에) 한곳, 다른 탭은 담당 장관 한 줄
+  if (compact)
+    return (
+      <>
+        <div className="min-strip">
+          <small className="muted">{title}</small>
+          {ids.map((id) => {
+            const mn = ministerOf(c, id);
+            return (
+              <button key={id} className={`min-chip${mn ? '' : ' empty'}`} onClick={() => setOpen(id)} title={ministryById(id).name}>
+                {mn ? <PersonFace p={mn} size={24} /> : <span className="min-card-noface">?</span>}
+                <small>
+                  {ministryById(id).short} {mn ? mn.name : '장관 없음'}
+                </small>
+              </button>
+            );
+          })}
+          {go && (
+            <button className="mini" onClick={() => go(routeTo('society', 'society', 'mins'))}>
+              🏛️ 내각 전체
+            </button>
+          )}
+        </div>
+        {open && <MinistryModal state={state} actions={actions} id={open} onClose={() => setOpen(null)} />}
+      </>
+    );
   return (
     <>
       <Card title={title} icon="🏛️" right={<small className="muted">장관 {ministerCount(c)}/{ministerSlots(state.player.rankIndex)}석</small>}>

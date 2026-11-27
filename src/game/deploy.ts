@@ -15,6 +15,7 @@ import { subtractDead, takenText } from './losses';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { addDef } from './defFund';
+import { priceBase } from './state';
 import { actOf } from './balance';
 import { isAlive, relationOf, type WorldEvent } from './world';
 
@@ -23,6 +24,15 @@ const HOUR = 3600e3;
 export const DEPLOY_MAX = 7;
 export const DEPLOY_BASE = 5;
 export const deployMax = (s: GameState) => Math.min(DEPLOY_MAX, DEPLOY_BASE + (actOf(s.world) >= 2 ? 1 : 0) + (actOf(s.world) >= 3 ? 1 : 0));
+/** 은혜: 실제 이만큼 머물 때마다 그 나라에 +1(최대 OWE_MAX) */
+export const OWE_EVERY = 6 * 3600e3;
+export const OWE_MAX = 10;
+/** 은혜 1마다 그 나라 무역 값 −1% */
+export const OWE_TRADE = 0.01;
+/** 재건 계약: 전쟁이 끝나면 은혜 × 나라 기준값 × 이만큼 */
+export const REBUILD_MULT = 0.6;
+/** 실제 이만큼 넘게 머물면 지쳐서 도시 방어 도움이 절반(교대하면 회복) */
+export const TIRED_MS = 48 * 3600e3;
 /** 연합이 아니면 이만큼 호감이 있어야 받아 줌 */
 export const DEPLOY_FAVOR = 30;
 /** AI 판단(15분)마다 유지비: 부대 값의 0.04%(11-26 대장 "1/10로") */
@@ -48,6 +58,12 @@ export interface Deployment {
   clash?: { id: string; untilMs: number; seed: number };
   /** 교전에서 이긴 횟수 */
   wins?: number;
+  /** 11-28 지금까지 쓴 유지비(국방비) */
+  spent?: number;
+  /** 머무는 동안 그 나라가 전쟁을 했는가(끝나면 재건 계약) */
+  warSeen?: boolean;
+  /** 은혜를 마지막으로 쌓은 시각 */
+  oweMs?: number;
 }
 /** 11-26 다른 나라·바다에서 온 파병 요청 */
 export interface DeployRequest {
@@ -60,7 +76,20 @@ export interface DeployState {
   list: Deployment[];
   next: number;
   requests?: DeployRequest[];
+  /** 11-28 은혜 장부: 나라 → 은혜(파병해 준 만큼 쌓임) */
+  owe?: Record<string, number>;
+  /** 재건 계약으로 받은 돈 합계 */
+  rebuilt?: number;
 }
+export const oweOf = (s: GameState, id: string) => deployOf(s).owe?.[id] ?? 0;
+function addOwe(s: GameState, id: string, v: number): GameState {
+  const d = deployOf(s);
+  return { ...s, deploy: { ...d, owe: { ...(d.owe ?? {}), [id]: Math.min(OWE_MAX, (d.owe?.[id] ?? 0) + v) } } };
+}
+/** 지친 파병인가(오래 머묾) */
+export const tired = (s: GameState, x: Deployment) => !x.returnMs && s.worldMs - x.arriveMs > TIRED_MS;
+/** 재건 계약 예상 돈(그 나라가 지금 전쟁 중일 때) */
+export const rebuildValue = (s: GameState, id: string) => Math.round(priceBase(s) * oweOf(s, id) * REBUILD_MULT);
 /** 한 번에 열려 있는 요청 수 · 요청이 기다리는 시간 · 판단(15분)마다 새 요청 확률 */
 export const REQ_MAX = 4;
 const REQ_WAIT = 10 * HOUR;
@@ -117,9 +146,26 @@ export const unitsPower = (units: Record<string, number>) => Object.entries(unit
 export const unitsMoney = (units: Record<string, number>) => Object.entries(units).reduce((a, [n, k]) => a + unitInfo(n).money * k, 0);
 export const unitsCount = (units: Record<string, number>) => Object.values(units).reduce((a, k) => a + k, 0);
 
+/** 파병 칸을 차지하는 곳(돌아오는 중인 부대는 빼고 셈) */
+export const activeDeploys = (s: GameState) => deployOf(s).list.filter((x) => !x.returnMs).length;
+/** 요청 지역이 지금은 정식 나라와 같은 곳이면 그 나라 id(11-28: 필리핀·폴란드·핀란드·콜롬비아 등) */
+export const REGION_NATION: Record<string, string> = { 'r-philippines': 'ph', 'r-poland': 'pl', 'r-finland': 'fi', 'r-colombia': 'co' };
+/** 이 요청 지역을 우리에게 보여 줘도 되나: 내 나라이거나, 전쟁 중인 나라 땅이면 안 됨 */
+export function regionOk(s: GameState, region: string): boolean {
+  const me = s.player.countryId;
+  const n = REGION_NATION[region];
+  if (n && (n === me || !isAlive(s.world, n) || relationOf(s.world, me, n) === '전쟁')) return false;
+  const f = regionById(region)?.friend;
+  if (f && (f === me || relationOf(s.world, me, f) === '전쟁')) return false;
+  return true;
+}
+
 /** 받아 줄 수 있는 나라인가(요청 지역은 요청이 와 있어야) */
 export function canHost(s: GameState, to: string): string | null {
-  if (isRegion(to)) return openRequests(s).some((r) => r.region === to) ? null : '파병 요청이 온 곳에만 보낼 수 있어요';
+  if (isRegion(to)) {
+    if (!regionOk(s, to)) return '지금은 보낼 수 없는 곳이에요(우리나라이거나 전쟁 중인 나라)';
+    return openRequests(s).some((r) => r.region === to) ? null : '파병 요청이 온 곳에만 보낼 수 있어요';
+  }
   const me = s.player.countryId;
   if (to === me) return '우리나라예요';
   if (!isAlive(s.world, to)) return '없어진 나라예요';
@@ -132,7 +178,7 @@ export function canDeploy(s: GameState, to: string, units: Record<string, number
   const h = canHost(s, to);
   if (h) return h;
   const d = deployOf(s);
-  if (d.list.filter((x) => !x.returnMs).length >= deployMax(s)) return `파병은 지금 한 번에 ${deployMax(s)}곳까지${deployMax(s) < DEPLOY_MAX ? ' (다음 막에서 칸이 늘어요)' : ''}`;
+  if (activeDeploys(s) >= deployMax(s)) return `파병은 지금 한 번에 ${deployMax(s)}곳까지${deployMax(s) < DEPLOY_MAX ? ' (다음 막에서 칸이 늘어요)' : ''}`;
   if (d.list.some((x) => x.to === to && !x.returnMs)) return '이미 파병 중인 곳이에요';
   if (!unitsCount(units)) return '보낼 부대를 고르세요';
   for (const [n, k] of Object.entries(units)) if ((s.economy.army[n] ?? 0) < k) return `${n}가 모자라요`;
@@ -163,7 +209,7 @@ export function deployTroops(s: GameState, to: string, units: Record<string, num
 /* ───────── 11-26 파병 요청 ───────── */
 
 /** 아직 기다리는 요청 */
-export const openRequests = (s: GameState) => (deployOf(s).requests ?? []).filter((r) => r.untilMs > s.worldMs);
+export const openRequests = (s: GameState) => (deployOf(s).requests ?? []).filter((r) => r.untilMs > s.worldMs && regionOk(s, r.region));
 
 /** 요청을 받아들일 수 있나(병과가 맞아야) */
 export function canAccept(s: GameState, reqId: number, units: Record<string, number>): string | null {
@@ -195,7 +241,7 @@ export function declineRequest(s: GameState, reqId: number): GameState {
 function newRequest(s: GameState, rng: Rng): DeployRequest | null {
   const d = deployOf(s);
   const busy = new Set([...(d.requests ?? []).map((r) => r.region), ...d.list.map((x) => x.to)]);
-  const free = REGIONS.filter((r) => !busy.has(r.id));
+  const free = REGIONS.filter((r) => !busy.has(r.id) && regionOk(s, r.id));
   if (!free.length) return null;
   const region = rng.pick(free);
   const kind = rng.pick(kindsFor(region));
@@ -310,7 +356,7 @@ export const stationed = (s: GameState) => deployOf(s).list.filter((x) => !x.ret
 /** 나라별 도시 방어 배율(파병 부대가 지켜 줌) */
 export function deployHelp(s: GameState): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const x of stationed(s)) if (!isRegion(x.to)) out[x.to] = (out[x.to] ?? 1) * (1 + Math.min(0.4, unitsPower(x.units) / 150));
+  for (const x of stationed(s)) if (!isRegion(x.to)) out[x.to] = (out[x.to] ?? 1) * (1 + Math.min(0.4, unitsPower(x.units) / 150) * (tired(s, x) ? 0.5 : 1));
   return out;
 }
 
@@ -366,7 +412,8 @@ export function deployTick(s: GameState): GameState {
       if (!x.greeted) {
         x.greeted = true;
         if (region) {
-          const f = regionById(x.to)?.friend;
+          const f0 = regionById(x.to)?.friend;
+          const f = f0 && f0 !== me && relationOf(ns.world, me, f0) !== '전쟁' ? f0 : undefined;
           if (f) ns = addFavorNote(ns, f, `${placeName(x.to)} 요청에 응해 파병함`, 8);
           ns = log(ns, `🪖 파병 부대가 ${placeName(x.to)}에 도착했어요.${f ? ` ${countryById(f).name} 호감 +8` : ''}`);
         } else {
@@ -374,7 +421,27 @@ export function deployTick(s: GameState): GameState {
           ns = log(ns, `🪖 파병 부대가 ${placeName(x.to)}에 도착했어요. 호감 +15`);
         }
       }
-      money += unitsMoney(x.units) * UPKEEP;
+      const up = unitsMoney(x.units) * UPKEEP;
+      money += up;
+      x.spent = (x.spent ?? 0) + up;
+      if (!region) {
+        // 11-28 은혜 장부 · 재건 계약
+        if (s.worldMs - (x.oweMs ?? x.arriveMs) >= OWE_EVERY) {
+          x.oweMs = s.worldMs;
+          ns = addOwe(ns, x.to, 1);
+        }
+        const war = Object.keys(s.world.pairs).some((k) => k.split('|').includes(x.to) && s.world.pairs[k].rel === '전쟁');
+        if (war) x.warSeen = true;
+        else if (x.warSeen) {
+          x.warSeen = false;
+          const pay = rebuildValue(ns, x.to);
+          if (pay > 0) {
+            ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + pay } } };
+            ns = { ...ns, deploy: { ...deployOf(ns), rebuilt: (deployOf(ns).rebuilt ?? 0) + pay } };
+            ns = log(ns, `🏗️ ${placeName(x.to)} 전쟁이 끝났어요. 함께 지켜 준 은혜로 재건 계약을 따냈어요! 나라 예산 +${pay.toLocaleString('ko-KR')}`);
+          }
+        }
+      }
       // 교전: 시간이 지나면 현지 부대가 알아서 싸움
       if (x.clash && x.clash.untilMs <= s.worldMs) later.push({ id: x.id, win: rng.chance(autoClashOdds(x)) });
       else if (!x.clash && rng.chance(CLASH_CHANCE)) {
@@ -389,9 +456,10 @@ export function deployTick(s: GameState): GameState {
       if (x.req && s.worldMs >= x.req.endMs && !x.clash) {
         const k = requestKindById(x.req.kind);
         if (k) {
-          const f = regionById(x.to)?.friend;
+          const f0 = regionById(x.to)?.friend;
+          const f = f0 && f0 !== me && relationOf(ns.world, me, f0) !== '전쟁' ? f0 : undefined;
           ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + k.money } }, officer: { ...ns.officer, fame: ns.officer.fame + k.fame } };
-          if (f) ns = addFavorNote(ns, f, `${placeName(x.to)} ${k.name} 임무를 마침`, 10);
+          if (f) ns = addOwe(addFavorNote(ns, f, `${placeName(x.to)} ${k.name} 임무를 마침`, 10), f, 2);
           ns = log(ns, `🎖️ ${placeName(x.to)} ${k.name} 임무를 마쳤어요! 나라 예산 +${k.money.toLocaleString('ko-KR')} · 명성 +${k.fame}${f ? ` · ${countryById(f).name} 호감 +10` : ''}. 부대가 돌아와요.`);
         }
         x.req = undefined;

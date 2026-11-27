@@ -1,5 +1,7 @@
 import { artTabs } from './tabArt';
 import { Safe } from './Safe';
+import { AdviceBar } from './AdviceBar';
+import { MinistryCards } from './CabinetUI';
 // 🎭 문화 탭(11-23): 시설 · 걸작 · 스타 · 관광 · 행사 · 세계(스타·관광은 11-25) (승리 조건은 11-24 개인 → 승리로 옮김)
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, startAndFinish } from '../game/boost';
@@ -98,8 +100,10 @@ export function CultureScreen(props: ScreenProps) {
           )}
         </Help>
       </div>
+      <AdviceBar state={state} apply={props.actions.apply} field="culture" go={(t) => setTab(t as CultureTab)} />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
       <Safe key={tab} where={`culture/${tab}`}>
+      {tab === 'venue' && <MinistryCards state={state} actions={props.actions} ids={['mcst']} title="문화 부처" compact go={props.go} />}
       {tab === 'venue' && <VenuePanel {...props} />}
       {tab === 'works' && <WorksPanel {...props} go={() => setTab('stars')} />}
       {tab === 'stars' && <StarsPanel {...props} />}
