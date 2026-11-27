@@ -1629,3 +1629,20 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 /* 11-27 전선 지도 화살표 */
 .wm-atk { animation: wm-atk-march 0.9s linear infinite; }
 @keyframes wm-atk-march { to { stroke-dashoffset: var(--d, -7px); } }
+/* 11-27 본부 날씨(비·눈·흐림): 보기만 */
+.hl-wx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hl-wx i { position: absolute; inset: -60px 0 0 -60px; }
+.hl-wx-gray { background: rgba(70, 80, 96, .2); }
+.hl-wx-rain { background: rgba(28, 40, 62, .26); }
+.hl-wx-rain i:nth-child(1) { background: linear-gradient(104deg, transparent 47%, rgba(214, 232, 255, .42) 50%, transparent 53%) 0 0 / 13px 52px; animation: hl-rain .42s linear infinite; }
+.hl-wx-rain i:nth-child(2) { background: linear-gradient(104deg, transparent 48%, rgba(214, 232, 255, .26) 50%, transparent 52%) 5px 9px / 23px 78px; animation: hl-rain2 .6s linear infinite; }
+@keyframes hl-rain { to { transform: translate(-13px, 52px); } }
+@keyframes hl-rain2 { to { transform: translate(-19.5px, 78px); } }
+.hl-wx-snow { background: rgba(210, 222, 236, .14); }
+.hl-wx-snow i { animation: hl-fall linear infinite; inset: -120px 0 0 -60px; }
+.hl-wx-snow i:nth-child(1) { --s: 47px; --x: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .95) 0 1.5px, transparent 1.9px) 5px 9px / 47px 47px; animation-duration: 4.6s; }
+.hl-wx-snow i:nth-child(3) { --s: 83px; --x: -26px; background: radial-gradient(circle, rgba(255, 255, 255, .85) 0 2px, transparent 2.5px) 31px 60px / 83px 83px; animation-duration: 6.4s; }
+.hl-wx-snow i:nth-child(2) { --s: 61px; --x: -9px; background: radial-gradient(circle, rgba(255, 255, 255, .8) 0 1.2px, transparent 1.6px) 40px 22px / 61px 61px; animation-duration: 7.3s; }
+.hl-wx-snow i:nth-child(4) { --s: 109px; --x: 18px; background: radial-gradient(circle, rgba(255, 255, 255, .9) 0 2.4px, transparent 3px) 70px 15px / 109px 109px; animation-duration: 9.1s; }
+@keyframes hl-fall { to { transform: translate(var(--x), var(--s)); } }
+@media (prefers-reduced-motion: reduce) { .hl-wx i { animation: none !important; } }

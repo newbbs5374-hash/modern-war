@@ -13,6 +13,7 @@ import { FLAG_DEF } from './flag';
 import { CITY_LANDMARK, LAND_ART, fieldArt, landPick } from './fieldArt';
 import type { WorldState } from '../game/world';
 import { homeTerrain } from './homeTerrain';
+import { WEATHER_ICON, weatherAt } from '../game/weather';
 import { landOwners } from '../game/territory';
 import { COUNTRY_COLORS } from './WorldMap';
 // 바닥 그림(11-23 대장 결정 "코드 실사화"): 이음새 없는 풀·들판·모래·바다 그림을 깔고 햇빛·그림자를 코드로 더함.
@@ -305,6 +306,8 @@ export function HomeLand(props: {
         })
       : [];
   // 해 방향 그림자: 실제 시각(낮 고정이면 한낮), 밤에는 사라짐
+  // 11-27 날씨: 실제 시각 기준(3시간마다 바뀜). night 가 1분마다 갱신되므로 함께 갱신됨
+  const wx = weatherAt(countryId, new Date());
   const sm = sunMix();
   const sun = dayMode === '낮' && sm.am + sm.noon + sm.pm === 0 ? { am: 0, noon: 1, pm: 0 } : sm;
   return (
@@ -759,6 +762,14 @@ export function HomeLand(props: {
           <rect x="0" y="0" width={W} height={H} fill="url(#g-sun)" pointerEvents="none" />
         </g>
       </svg>
+      {wx !== '맑음' && (
+        <div className={`hl-wx hl-wx-${wx === '비' ? 'rain' : wx === '눈' ? 'snow' : 'gray'}`} aria-hidden>
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
+      )}
       <div className="map-zoom">
         <button aria-label="확대" onClick={() => setView((v) => zoomAt(W / 2, H / 2, 1.4, v))}>
           ＋
@@ -769,7 +780,7 @@ export function HomeLand(props: {
         <button aria-label="전체 보기" onClick={() => flyTo(W / 2, H / 2 / 0.9, 1)}>
           ⤢
         </button>
-        <button aria-label={`낮·밤: ${dayMode}`} title={`낮·밤: ${dayMode}(누르면 바뀜)`} onClick={() => onDayMode(dayMode === '자동' ? '낮' : dayMode === '낮' ? '밤' : '자동')}>
+        <button aria-label={`낮·밤: ${dayMode}`} title={`낮·밤: ${dayMode}(누르면 바뀜) · 날씨 ${WEATHER_ICON[wx]} ${wx}`} onClick={() => onDayMode(dayMode === '자동' ? '낮' : dayMode === '낮' ? '밤' : '자동')}>
           {dayMode === '자동' ? '🕒' : dayMode === '낮' ? '☀️' : '🌙'}
         </button>
       </div>
