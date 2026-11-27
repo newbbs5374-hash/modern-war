@@ -21,17 +21,22 @@ export interface VassalState {
   since: Record<string, number>;
   /** 내 나라에 들어온 AI 항복 제안(나라 → 마감 시각) */
   offers: Record<string, number>;
-  /** 항복 요구를 다시 할 수 있는 시각 */
+  /** 항복 요구를 다시 할 수 있는 시각(11-27부터 안 씀) */
   demandReadyMs?: number;
+  /** 11-27 나라마다 항복 요구를 거절한 횟수(전쟁이 끝나면 지움) */
+  refused?: Record<string, number>;
 }
 
 /** 속국이 바치는 공물(나라 예산 몫) */
 export const TRIBUTE = 0.3;
 /** AI가 질 때 판단마다 항복할 확률(× 평화 성향) */
 export const SURRENDER_CHANCE = 0.03;
-/** 항복 제안이 열려 있는 시간 · 항복 요구 대기 */
-export const OFFER_HOURS = 12;
-export const DEMAND_COOLDOWN_HOURS = 6;
+/** 항복 제안이 열려 있는 시간(11-27: 전쟁이 이어지는 동안은 사라지지 않게 아주 길게) · 항복 요구 대기(11-27 대장 요청: 없앰) */
+export const OFFER_HOURS = 24 * 365;
+export const DEMAND_COOLDOWN_HOURS = 0;
+/** 11-27 대기 대신: 거절당할 때마다 다음 성공 확률이 조금씩 줄어듦(최대 STUBBORN_MAX). 전쟁이 끝나면 처음부터 */
+export const STUBBORN_STEP = 0.04;
+export const STUBBORN_MAX = 0.2;
 /** AI 속국이 독립 전쟁을 일으킬 확률(속국 병력이 주인의 80%를 넘을 때) · 속국이 된 뒤 최소 시간 */
 export const REVOLT_CHANCE = 0.004;
 export const REVOLT_MIN_HOURS = 48;
@@ -89,7 +94,7 @@ function cloneW(s: GameState): WorldState {
 }
 function cloneV(s: GameState): VassalState {
   const v = vassalOf(s);
-  return { lord: { ...v.lord }, since: { ...v.since }, offers: { ...v.offers }, demandReadyMs: v.demandReadyMs };
+  return { lord: { ...v.lord }, since: { ...v.since }, offers: { ...v.offers }, demandReadyMs: v.demandReadyMs, refused: { ...(v.refused ?? {}) } };
 }
 
 /** AI 판단마다: AI 항복·내 나라에 항복 제안·속국 독립 전쟁·주인이 망하면 풀림 */
@@ -109,6 +114,7 @@ export function surrenderTick(s: GameState): GameState {
     } else if (w.pairs[pairKey(v, l)].rel !== '연합') delete vs.lord[v]; // 독립 전쟁 등으로 관계가 바뀜
   }
   for (const [id, until] of Object.entries(vs.offers)) if (until <= t || relationOf(w, id, me) !== '전쟁') delete vs.offers[id];
+  for (const id of Object.keys(vs.refused ?? {})) if (relationOf(w, id, me) !== '전쟁') delete vs.refused![id];
 
   // 지는 나라의 항복
   for (const [key, p] of Object.entries(w.pairs)) {
@@ -124,7 +130,7 @@ export function surrenderTick(s: GameState): GameState {
       if (winner === me) {
         if (!vs.offers[loser]) {
           vs.offers[loser] = t + OFFER_HOURS * H;
-          event(w, t, `🏳️ ${ga(nm(loser))} 우리에게 항복하겠다고 해요! 나라 창에서 ${OFFER_HOURS}시간 안에 받아 주세요.`, true);
+          event(w, t, `🏳️ ${ga(nm(loser))} 우리에게 항복하겠다고 해요! 외교 → 나라 창에서 언제든 받아 주세요.`, true);
         }
       } else makeVassal(w, vs, loser, winner, t, me);
       break;
@@ -154,7 +160,8 @@ export function demandChance(s: GameState, id: string): number {
   const p = w.pairs[pairKey(me, id)];
   const took = CITIES.filter((c) => c.front && c.home === id && w.owner[c.id] === me).length;
   const stronger = (s.nations[me]?.troops ?? 0) > (s.nations[id]?.troops ?? 0) ? 0.1 : -0.1;
-  return Math.max(0.02, Math.min(0.9, 0.03 + (isLosing(w, id) ? 0.35 : 0) + took * 0.08 + (p?.weariness ?? 0) / 400 + stronger));
+  const stubborn = Math.min(STUBBORN_MAX, (vassalOf(s).refused?.[id] ?? 0) * STUBBORN_STEP);
+  return Math.max(0.02, Math.min(0.9, 0.03 + (isLosing(w, id) ? 0.35 : 0) + took * 0.08 + (p?.weariness ?? 0) / 400 + stronger - stubborn));
 }
 export function canDemand(s: GameState, id: string): string | null {
   const me = s.player.countryId;
@@ -162,26 +169,26 @@ export function canDemand(s: GameState, id: string): string | null {
   if (relationOf(s.world, me, id) !== '전쟁') return '전쟁 중일 때만';
   if (lordOf(s, me)) return '속국은 항복을 요구할 수 없어요';
   if (lordOf(s, id)) return '이미 다른 나라의 속국이에요';
-  const ready = vassalOf(s).demandReadyMs ?? 0;
-  if (s.worldMs < ready) return `다시 요구까지 ${Math.ceil((ready - s.worldMs) / 60e3)}분`;
   return null;
 }
 function finish(s: GameState, w: WorldState, vs: VassalState): GameState {
   return { ...s, world: w, vassal: vs };
 }
-/** 항복 요구(실패하면 6시간 뒤 다시) */
+/** 항복 요구(11-27: 대기 없이 바로 다시. 거절당할수록 다음 확률이 조금 줄어듦) */
 export function doDemand(s: GameState, id: string): { state: GameState; text: string } {
   if (canDemand(s, id)) return { state: s, text: '' };
   const me = s.player.countryId;
-  const ok = new Rng((s.world.seed ^ Math.floor(s.worldMs / 1000) ^ 0x5a5a) >>> 0).chance(demandChance(s, id));
+  const tries = vassalOf(s).refused?.[id] ?? 0;
+  const ok = new Rng((s.world.seed ^ Math.floor(s.worldMs / 1000) ^ 0x5a5a ^ (tries * 2654435761)) >>> 0).chance(demandChance(s, id));
   const w = cloneW(s);
   const vs = cloneV(s);
-  vs.demandReadyMs = s.worldMs + DEMAND_COOLDOWN_HOURS * H;
+  vs.demandReadyMs = undefined;
   if (ok) {
     makeVassal(w, vs, id, me, s.worldMs, me);
     return { state: finish(s, w, vs), text: `${ga(nm(id))} 항복했어요! 이제 우리 속국이에요. 공물 ${Math.round(TRIBUTE * 100)}%를 받고, 연합 승리 계산에도 들어가요.` };
   }
-  const text = `${ga(nm(id))} 항복 요구를 거절했어요. ${DEMAND_COOLDOWN_HOURS}시간 뒤 다시 요구할 수 있어요.`;
+  vs.refused = { ...(vs.refused ?? {}), [id]: tries + 1 };
+  const text = `${ga(nm(id))} 항복 요구를 거절했어요. 바로 다시 요구할 수 있지만, 거절할수록 버티는 마음이 굳어져요(다음 성공 ${Math.round(demandChance({ ...s, vassal: vs }, id) * 100)}%).`;
   event(w, s.worldMs, `📜 ${text}`, true);
   return { state: finish(s, w, vs), text };
 }

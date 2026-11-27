@@ -23,7 +23,8 @@ export const SNS_DISS_TENSION = 2;
 export const SNS_COUNTER_FAME = 3;
 export const SNS_COUNTER_TENSION = 4;
 
-export type SnsKind = 'diss' | 'reply' | 'war' | 'tariff' | 'boast' | 'ally' | 'mine';
+/** heg = 11-27 대륙 패권 글(제재·약탈 계약·도전·외면, game/hegemony.ts) */
+export type SnsKind = 'diss' | 'reply' | 'war' | 'tariff' | 'boast' | 'ally' | 'mine' | 'heg';
 export interface SnsPost {
   id: number;
   t: number;

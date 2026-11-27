@@ -46,7 +46,12 @@ describe('정상 SNS(11-26)', () => {
     const posts = snsOf(s).posts;
     expect(posts.length).toBeGreaterThanOrEqual(40);
     const diss = posts.filter((p) => p.kind === 'diss');
-    expect(diss.length).toBeGreaterThan(posts.length / 3);
+    // 11-27 대륙 패권 글(도움 요청·고마움·제재 등)과 전쟁 글이 늘어, 헐뜯기+맞받아치기가 가장 많은지로 봄
+    const byKind: Record<string, number> = {};
+    for (const p of posts) byKind[p.kind] = (byKind[p.kind] ?? 0) + 1;
+    const dissAll = diss.length + (byKind.reply ?? 0);
+    for (const [k, n] of Object.entries(byKind)) if (k !== 'diss' && k !== 'reply') expect(dissAll).toBeGreaterThan(n);
+    expect(dissAll).toBeGreaterThan(posts.length / 3);
     expect(diss.every((p) => isArchRival(p.from, p.to!))).toBe(true);
     expect(posts.some((p) => p.kind === 'reply')).toBe(true);
     expect(posts.every((p) => !p.text.includes('{'))).toBe(true);
