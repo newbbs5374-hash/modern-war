@@ -1265,3 +1265,20 @@ select.wide, button.wide { width: 100%; }
 .c3-mark.done { border-color: #4fd1a5; animation: none; opacity: 0.8; }
 .c3-mark.done::after { border-top-color: #4fd1a5; }
 @keyframes c3-bob { 0%, 100% { margin-top: 0; } 50% { margin-top: -6px; } }
+/* 11-27 법안 표 대결 */
+.whip { margin: 8px 0; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.whip-head { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+.whip-head small { margin-left: auto; }
+.whip-head .good { color: #4fd1a5; font-weight: 700; }
+.whip-bar { position: relative; display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 6px 0; gap: 1px; }
+.whip-bar i { display: block; flex-basis: 0; }
+.whip-bar u { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
+.whip-bar .whip-yes, .whip-bloc.whip-yes em { background: #2fae8a; }
+.whip-bar .whip-maybe, .whip-bloc.whip-maybe em { background: #d9a531; }
+.whip-bar .whip-no, .whip-bloc.whip-no em { background: #c9544b; }
+.whip-blocs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+.whip-bloc { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 1px; font-size: 10.5px; line-height: 1.25; }
+.whip-bloc b { font-size: 10.5px; word-break: keep-all; text-align: center; min-height: 2.5em; display: flex; align-items: center; }
+.whip-bloc em { font-style: normal; color: #fff; border-radius: 6px; padding: 0 6px; font-size: 10.5px; }
+.whip-bloc:disabled { opacity: 0.75; }
+.whip-debt button.mini { font-size: 11px; padding: 2px 6px; }

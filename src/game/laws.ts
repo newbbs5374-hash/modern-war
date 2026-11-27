@@ -49,7 +49,9 @@ export interface AssemblyState {
   /** 카드를 새로 받는 시각 */
   offerMs: number;
   /** 표결 중인 법안 */
-  vote: { id: BillId; endMs: number; chance: number } | null;
+  vote: { id: BillId; endMs: number; chance: number; whip?: { st: Array<'yes' | 'maybe' | 'no'>; used: number; base: number; first: number } } | null;
+  /** 11-27 표 대결: 약속 빚(잊히는 시각들). 하나마다 다음 법안 확률이 내려감 */
+  debts?: number[];
   laws: Law[];
   /** 다음 재신임 투표 시각 */
   confMs: number;
