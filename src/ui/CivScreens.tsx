@@ -6,6 +6,7 @@ import { govFacCity, govFacLevel } from '../game/govFac';
 import { CLAIM_INFLUENCE, REAL_ISLANDS, claimsIsland } from '../data/islands';
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, boostLeft, startAndFinish } from '../game/boost';
+import { TOUR_DONE_APPROVAL, TOUR_DONE_LOYALTY, TOUR_PAY_LOYALTY, TOUR_TALK_LOYALTY, canSolve, canTour, issueById, payCost, solveIssue, startTour, tourOf } from '../game/tour';
 import { Suspense, lazy, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 /** 3D 도시(11/26 서울 시험): 누를 때만 three.js를 불러옴 */
@@ -816,6 +817,12 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
   const [msg, setMsg] = useState('');
   const [zoom, setZoom] = useState(1);
   const [open, setOpen] = useState(false);
+  // 11-27 지방 순방
+  const [issue, setIssue] = useState<number | null>(null);
+  const tour = tourOf(state);
+  const tourHere = tour.open?.city === id ? tour.open : null;
+  const tourWhy = canTour(state, id);
+  const mine = state.world.owner[id] === state.player.countryId;
   // 그때와 지금: 취임 첫날 모습으로 잠깐 되돌려 보기
   const [then, setThen] = useState(false);
   const [dayMode, setDayMode] = useState<DayMode>('자동');
@@ -1095,6 +1102,53 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
           </div>
         )}
       </div>
+      {mine && (
+        <div className="tour-box">
+          {tourHere ? (
+            <>
+              <b>🚌 순방 중 · 현안 {tourHere.issues.filter((x) => x.done).length}/{tourHere.issues.length}</b>
+              <small className="muted"> {is3d && CITY3D_FILE[id] ? '도시 위 표시나 아래 칸을 누르세요' : '아래 칸을 누르세요'}</small>
+              <div className="tour-chips">
+                {tourHere.issues.map((x, i) => (
+                  <button key={i} className={x.done ? 'done' : ''} disabled={!!x.done} onClick={() => setIssue(i)}>
+                    {x.done ? '✅' : issueById(x.def).icon} {issueById(x.def).title}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <button className="gold wide" disabled={!!tourWhy} onClick={() => actions.apply((s) => startTour(s, id))}>
+              🚌 {city.name} 순방하기
+              <small> {tourWhy ? (state.worldMs < tour.nextMs && !tour.open ? `· 다음 순방까지 ${timeLeft(tour.nextMs - state.worldMs)}` : `· ${tourWhy}`) : `· 현안 3곳을 풀면 민심·지지도 +${TOUR_DONE_APPROVAL}·이 도시 출신 인재`}</small>
+            </button>
+          )}
+        </div>
+      )}
+      {issue != null && tourHere?.issues[issue] && !tourHere.issues[issue].done && (
+        <Modal title={`${city.name} · ${issueById(tourHere.issues[issue].def).title}`} icon={issueById(tourHere.issues[issue].def).icon} onClose={() => setIssue(null)}>
+          <div className="crisis">
+            <p>{issueById(tourHere.issues[issue].def).text}</p>
+            {(['pay', 'talk'] as const).map((how) => {
+              const why = canSolve(state, issue, how);
+              return (
+                <button
+                  key={how}
+                  className="wide crisis-opt"
+                  disabled={!!why}
+                  onClick={() => {
+                    actions.apply((s) => solveIssue(s, issue, how));
+                    setIssue(null);
+                  }}
+                >
+                  <b>{issueById(tourHere.issues[issue].def)[how]}</b>
+                  <small className="muted">{why ?? (how === 'pay' ? `💰 나라 예산 −${fmt(payCost(state))} · 민심 +${TOUR_PAY_LOYALTY}` : `무료 · 민심 +${TOUR_TALK_LOYALTY}`)}</small>
+                </button>
+              );
+            })}
+            <p className="small muted">세 곳을 모두 풀면 민심 +{TOUR_DONE_LOYALTY} · 지지도 +{TOUR_DONE_APPROVAL}(하루) · {city.name} 출신 인재 한 명. 예산으로 두 곳 이상 풀면 우수 인재가 올 수 있어요.</p>
+          </div>
+        </Modal>
+      )}
       <div className="city-zoom-bar">
         {[1, 2, 3].map((z) => (
           <button key={z} className={zoom === z ? 'on' : ''} onClick={() => setZoom(z)}>
@@ -1119,7 +1173,13 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
       {is3d && CITY3D_FILE[id] ? (
         <>
           <Suspense fallback={<div className="city3d city3d-msg">🏗️ 3D 도시 불러오는 중…</div>}>
-            <City3D file={CITY3D_FILE[id]} level={preview ?? stg.stage.lv + stg.frac} night={night} />
+            <City3D
+              file={CITY3D_FILE[id]}
+              level={preview ?? stg.stage.lv + stg.frac}
+              night={night}
+              marks={tourHere?.issues.map((x) => ({ x: x.x, y: x.y, icon: issueById(x.def).icon, label: issueById(x.def).title, done: !!x.done }))}
+              onMark={setIssue}
+            />
           </Suspense>
           <label className="city3d-preview small">
             <span>
