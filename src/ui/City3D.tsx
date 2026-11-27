@@ -66,23 +66,23 @@ const hash = (i: number) => {
 
 /** 창문 무늬(한 칸 = 가로 4m × 세로 3.3m). 낮 그림·밤 불빛 두 장 */
 function windowTextures() {
-  const W = 128;
-  const H = 128;
+  // 낮: 4×4 칸 창문. 밤(11-27 다시 만듦): 8×8 칸에 드문드문 켜진 창, 색도 여러 가지 → 멀리서 갈색 덩어리가 아니라 점점이 반짝임
   const mk = (nightMode: boolean) => {
+    const N = nightMode ? 8 : 4;
+    const W = 32 * N;
     const cv = document.createElement('canvas');
     cv.width = W;
-    cv.height = H;
+    cv.height = W;
     const g = cv.getContext('2d')!;
     g.fillStyle = nightMode ? '#000' : '#ffffff';
-    g.fillRect(0, 0, W, H);
-    // 4×4 칸
-    for (let y = 0; y < 4; y++)
-      for (let x = 0; x < 4; x++) {
+    g.fillRect(0, 0, W, W);
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
         const r = hash(y * 7 + x * 13 + 5);
         if (nightMode) {
-          if (r < 0.6) continue;
-          g.fillStyle = r > 0.85 ? '#fff1c9' : '#ffc46b';
-          g.fillRect(x * 32 + 10, y * 32 + 10, 12, 10);
+          if (r < 0.78) continue;
+          g.fillStyle = r > 0.96 ? '#dbe8ff' : r > 0.89 ? '#fff0c4' : r > 0.83 ? '#ffd58a' : '#ffb85c';
+          g.fillRect(x * 32 + 8, y * 32 + 9, 16, 13);
           continue;
         } else g.fillStyle = r < 0.5 ? '#5d7387' : '#70889c';
         g.fillRect(x * 32 + 6, y * 32 + 8, 20, 15);
@@ -91,6 +91,7 @@ function windowTextures() {
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
+    if (nightMode) t.repeat.set(0.5, 0.5); // 낮 4칸 = 밤 8칸 그림의 절반 → 창 크기는 같게
     return t;
   };
   return { day: mk(false), night: mk(true) };
@@ -338,10 +339,34 @@ export default function City3D({ file, level, night }: Props) {
     scene.add(ground);
     const tex = windowTextures();
     const wallMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, map: tex.day, emissive: '#ffffff', emissiveMap: tex.night, emissiveIntensity: 0 });
+    // 건물마다 불 켜진 정도를 다르게(어떤 건물은 거의 꺼짐, 어떤 건물은 환함)
+    wallMat.onBeforeCompile = (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+        float litB = fract(sin(dot(vColor.rgb, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+        totalEmissiveRadiance *= litB < 0.3 ? 0.12 : 0.45 + litB * 1.25;`,
+      );
+    };
     const roofMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
     const waterMat = new THREE.MeshLambertMaterial({ color: '#3d7aa8', side: THREE.DoubleSide });
     const parkMat = new THREE.MeshLambertMaterial({ color: '#5f8a4a', side: THREE.DoubleSide });
-    const roadMat = new THREE.MeshLambertMaterial({ color: '#56595e', side: THREE.DoubleSide });
+    const roadMat = new THREE.MeshLambertMaterial({ color: '#56595e', side: THREE.DoubleSide, emissive: '#ff9d45', emissiveIntensity: 0 });
+    // 가로등: 길을 따라 놓인 따뜻한 점(밤에만)
+    const lampTex = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 32;
+      const g = cv.getContext('2d')!;
+      const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+      gr.addColorStop(0, 'rgba(255,255,255,1)');
+      gr.addColorStop(0.4, 'rgba(255,255,255,.5)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 32, 32);
+      return new THREE.CanvasTexture(cv);
+    })();
+    const lampMat = new THREE.PointsMaterial({ map: lampTex, color: '#ffd9a0', size: 34, sizeAttenuation: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    let lamps: THREE.Points | null = null;
     const carMat = new THREE.MeshBasicMaterial({ color: '#ffffff' });
     let built: Built | null = null;
     let wallMesh: THREE.Mesh | null = null;
@@ -368,18 +393,29 @@ export default function City3D({ file, level, night }: Props) {
       curNight = nt;
       const look = growthLook(lv);
       // 낮밤
-      const sky = new THREE.Color('#bcd6ea').lerp(new THREE.Color('#0a1222'), nt);
+      const sky = new THREE.Color('#bcd6ea').lerp(new THREE.Color('#121c33'), nt);
       scene.background = sky;
       scene.fog = new THREE.Fog(sky, 7000, 22000);
-      hemi.intensity = 1.2 - 0.95 * nt;
-      sun.intensity = 2.2 - 2.0 * nt;
-      sun.color.set(nt > 0.5 ? '#8fa6d8' : '#fff2dc');
-      (ground.material as THREE.MeshLambertMaterial).color.set(nt > 0.5 ? '#1c201c' : '#a3a49b');
-      roadMat.color.set(nt > 0.5 ? '#2d2f33' : '#56595e');
-      wallMat.emissiveIntensity = nt * (0.5 + 0.9 * look.lights);
-      wallMat.color.set(nt > 0.5 ? '#6b7280' : '#ffffff');
-      roofMat.color.set(nt > 0.5 ? '#4b5563' : '#ffffff');
-      carMat.color.set(nt > 0.5 ? '#ffd27a' : '#f4f4f4');
+      hemi.intensity = 1.2 - 0.3 * nt;
+      hemi.color.set(nt > 0.5 ? '#a4abbb' : '#ffffff');
+      sun.intensity = 2.2 - 1.6 * nt;
+      sun.color.set(nt > 0.5 ? '#a9b6d6' : '#fff2dc');
+      (ground.material as THREE.MeshLambertMaterial).color.set(nt > 0.5 ? '#66758a' : '#a3a49b');
+      roadMat.color.set(nt > 0.5 ? '#4a4744' : '#56595e');
+      roadMat.emissiveIntensity = nt * (0.12 + 0.2 * look.lights);
+      lampMat.opacity = nt * (0.35 + 0.6 * look.lights);
+      if (lamps) lamps.visible = nt > 0.05;
+      wallMat.emissiveIntensity = nt * (0.9 + 1.5 * look.lights);
+      wallMat.color.set(nt > 0.5 ? '#a3aecb' : '#ffffff');
+      roofMat.color.set(nt > 0.5 ? '#8d99b8' : '#ffffff');
+      waterMat.color.set(nt > 0.5 ? '#2f6ea3' : '#3d7aa8');
+      parkMat.color.set(nt > 0.5 ? '#47774f' : '#5f8a4a');
+      // 차 불빛: 밤엔 오는 차는 흰 전조등, 가는 차는 빨간 미등
+      if (cars) {
+        const cc = new THREE.Color();
+        for (let i = 0; i < carState.length; i++) cars.setColorAt(i, cc.set(nt > 0.5 ? (carState[i].dir > 0 ? '#fff3d0' : '#ff4a3a') : '#f4f4f4'));
+        if (cars.instanceColor) cars.instanceColor.needsUpdate = true;
+      }
       if (!built || !wallMesh || !roofMesh) return;
       const n = Math.max(1, Math.round(built.order.length * look.show));
       wallMesh.geometry.setDrawRange(0, built.wallEnd[n - 1]);
@@ -437,6 +473,25 @@ export default function City3D({ file, level, night }: Props) {
           }
         }
         paths = rs.paths;
+        {
+          const lp: number[] = [];
+          for (const path of paths) {
+            const total = path.len[path.len.length - 1];
+            let k = 1;
+            for (let sAt = 40; sAt < total && lp.length < 3 * 9000; sAt += 110) {
+              while (k < path.len.length - 1 && path.len[k] < sAt) k++;
+              const a = path.pts[k - 1];
+              const b = path.pts[k];
+              const f = (sAt - path.len[k - 1]) / Math.max(1, path.len[k] - path.len[k - 1]);
+              lp.push(a.x + (b.x - a.x) * f, 9, a.z + (b.z - a.z) * f);
+            }
+          }
+          const lg = new THREE.BufferGeometry();
+          lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
+          lamps = new THREE.Points(lg, lampMat);
+          lamps.visible = false;
+          scene.add(lamps);
+        }
         for (let i = 0; i < 4; i++) {
           const c = makeCrane();
           cranes.push(c);
@@ -478,7 +533,7 @@ export default function City3D({ file, level, night }: Props) {
           tmp.rotation.y = Math.atan2(-(b.z - a.z), b.x - a.x);
           // 차선: 진행 방향 오른쪽으로 살짝
           tmp.translateZ(c.dir * 3);
-          tmp.scale.setScalar(curNight > 0.5 ? 1.4 : 1);
+          tmp.scale.setScalar(curNight > 0.5 ? 1.7 : 1);
           tmp.updateMatrix();
           cars.setMatrixAt(i, tmp.matrix);
         }
@@ -503,7 +558,7 @@ export default function City3D({ file, level, night }: Props) {
         const m = o as THREE.Mesh;
         if (m.geometry) m.geometry.dispose();
       });
-      [wallMat, roofMat, waterMat, parkMat, roadMat, carMat, tex.day, tex.night].forEach((x) => x.dispose());
+      [wallMat, roofMat, waterMat, parkMat, roadMat, carMat, lampMat, lampTex, tex.day, tex.night].forEach((x) => x.dispose());
       renderer.dispose();
       renderer.domElement.remove();
       api.current = null;

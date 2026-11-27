@@ -6,6 +6,8 @@ import { applyNation } from './nation';
 import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
+import { occAdminTick } from './occAdmin';
+import type { OccAdminState } from './occAdmin';
 import { pressureTick, tariffMult, type PressureState } from './pressure';
 import { surrenderTick, vassalMult, type VassalState } from './surrender';
 import { applyOrigin, type OriginId } from './origin';
@@ -143,6 +145,8 @@ export interface GameState {
   cabinet?: CabinetState;
   /** 장관·장군·부관 건의와 도시 개발 계획(11-25) */
   props?: PropState;
+  /** 11-27 점령지 관리청(편입 전 점령 도시를 맡는 관리단·건의, game/occAdmin.ts) */
+  occAdmin?: OccAdminState;
   /** 인물 대화 기록(11-25) */
   chat?: ChatState;
   /** 11-27 인물 만남·인연·부탁·인맥 수첩(game/meet.ts) */
@@ -370,7 +374,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
+    cur = surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore))))));
     cur = counterTick(finaleTick(actsTick(cur)));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
