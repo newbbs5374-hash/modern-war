@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { budgetPerDay, newGame, skip, troopsPerDay } from './state';
-import { POLICY_COOLDOWN_MS, setSplit, setTax, splitProblem, policyOf } from './policy';
+import { POLICY_COOLDOWN_MS, defConsentCap, setSplit, setTax, splitProblem, policyOf } from './policy';
 import { favorOf, loyaltyTarget } from './civ';
 import { approvalTarget } from './approval';
 import { citiesOf } from './world';
@@ -17,7 +17,9 @@ describe('예산 나누기·세금', () => {
     const city = citiesOf(s.world, 'kr')[0];
     const eco = setSplit(s, { def: 20, dip: 20, soc: 20, eco: 40 });
     expect(budgetPerDay(eco, 'kr')).toBeGreaterThan(budgetPerDay(s, 'kr'));
-    const def = setSplit(s, { def: 60, dip: 10, soc: 15, eco: 15 });
+    const strong = { ...s, officer: { ...s.officer, trust: 100 } };
+    const def = setSplit(strong, { def: 60, dip: 10, soc: 15, eco: 15 });
+    expect(policyOf(def).split.def).toBe(60);
     expect(troopsPerDay(def, 'kr')).toBeGreaterThan(troopsPerDay(s, 'kr'));
     const soc = setSplit(s, { def: 30, dip: 15, soc: 40, eco: 15 });
     expect(loyaltyTarget(soc, city)).toBeGreaterThan(loyaltyTarget(s, city));
@@ -31,5 +33,17 @@ describe('예산 나누기·세금', () => {
     expect(approvalTarget(hi)).toBeLessThan(approvalTarget(s));
     expect(policyOf(setTax(hi, 'low')).tax).toBe('high');
     expect(policyOf(setTax(skip(hi, POLICY_COOLDOWN_MS), 'low')).tax).toBe('low');
+  });
+  it('국방 몫은 국회 동의 한도까지만 늘릴 수 있고, 줄이는 건 언제나 됨', () => {
+    const s = newGame('t', 'kr', 0, { seed: 3 });
+    const cap = defConsentCap(s);
+    expect(cap).toBeGreaterThanOrEqual(policyOf(s).split.def);
+    const over = cap + 10;
+    const blocked = setSplit(s, { def: over, dip: 20, soc: 20, eco: 60 - over });
+    expect(policyOf(blocked).split.def).toBe(policyOf(s).split.def);
+    const low = setSplit(s, { def: 20, dip: 20, soc: 20, eco: 40 });
+    expect(policyOf(low).split.def).toBe(20);
+    const trusted = { ...s, officer: { ...s.officer, trust: 100 } };
+    expect(defConsentCap(trusted)).toBeGreaterThan(cap);
   });
 });
