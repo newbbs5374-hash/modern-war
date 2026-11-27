@@ -22,3 +22,19 @@ describe('국채', () => {
     expect(canBorrow(s)).toBeTruthy();
   });
 });
+
+import { fundValue, invest, withdrawFund } from './bonds';
+describe('국부 펀드', () => {
+  test('맡기면 예산이 줄고, 지수가 오르면 값이 오름', () => {
+    let s = advance(newGame('t', 'kr', 0, { seed: 2, realWorld: true }), 3600e3);
+    expect(s.polity).toBeTruthy();
+    s = { ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e6 } } };
+    s = invest(s);
+    expect(s.nations.kr.treasury).toBe(8e5);
+    const v0 = fundValue(s);
+    const up = { ...s, polity: { ...s.polity!, econ: { ...s.polity!.econ, stock: s.polity!.econ.stock * 1.1 } } };
+    expect(fundValue(up)).toBeGreaterThan(v0);
+    const out = withdrawFund(up);
+    expect(out.nations.kr.treasury).toBeGreaterThan(8e5 + v0);
+  });
+});

@@ -460,7 +460,8 @@ export function marketPressure(s: GameState, id: string, r: Res): number {
 /** 오늘 그 나라와 그 자원을 더 거래할 수 있는 개수 */
 export function marketRoom(s: GameState, id: string, r: Res): number {
   const c = s.economy.market?.[mkey(id, r)];
-  return c && c.day === dayOf(s.worldMs) ? Math.max(0, MARKET_DAY_CAP - c.vol) : MARKET_DAY_CAP;
+  const cap = Math.round(MARKET_DAY_CAP * (hasPrio(s, id) ? 1.5 : 1));
+  return c && c.day === dayOf(s.worldMs) ? Math.max(0, cap - c.vol) : cap;
 }
 /** 압력을 뺀 1개 값의 바탕(그 나라 사정·흔들림까지) */
 function priceCore(s: GameState, id: string, r: Res): number {
@@ -472,7 +473,10 @@ function priceCore(s: GameState, id: string, r: Res): number {
   return RES_PRICE[r] * mult * local * war * wob * (1 - tradeEdge(s, id));
 }
 /** 11-28 은혜 장부: 파병해 준 나라에서 살 때 은혜 1마다 1% 싸게(최대 10%). 팔 때 값은 그대로 */
-export const oweCut = (s: GameState, id: string) => 1 - Math.min(10, s.deploy?.owe?.[id] ?? 0) * 0.01;
+export const oweCut = (s: GameState, id: string) => (1 - Math.min(10, s.deploy?.owe?.[id] ?? 0) * 0.01) * (hasPrio(s, id) ? 1 - PRIO_CUT : 1);
+/** 11-28 자원 우선 구매권 협정: 살 때 6% 싸고 하루 한도 +50% */
+export const PRIO_CUT = 0.06;
+const hasPrio = (s: GameState, id: string) => (s.civ?.agreements ?? []).some((a) => a.who === id && a.kind === 'prio' && a.untilMs > s.worldMs);
 /** 1개 값(사기) */
 export function tradePrice(s: GameState, id: string, r: Res): number {
   return Math.max(1, Math.round(priceCore(s, id, r) * (1 + marketPressure(s, id, r)) * oweCut(s, id)));

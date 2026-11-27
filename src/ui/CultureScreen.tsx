@@ -12,7 +12,8 @@ import { Help, Meter, Modal, Tabs, Tile, useTab, type TabDef } from './kit';
 import { iconArt } from './iconArt';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
-import { countryById } from '../data/world';
+import { COUNTRIES, countryById } from '../data/world';
+import { isAlive, relationOf } from '../game/world';
 import { RANKS } from '../data/ranks';
 import {
   BUILD_TEAMS, CULTURE_EVENTS, CULTURE_SPECIAL, CULTURE_WIN_DAYS, CULTURE_WIN_SHARE, CULTURE_WIN_TOP, LEVEL_POWER, PACT_COST, PACT_MAX, PACT_MULT,
@@ -23,7 +24,7 @@ import {
   aiStars, addWork, canAddWork, canHost, canPact, canUpgrade, cultureLines, cultureOf, culturePerHour, cultureProgress, cultureWinLeft,
   endPact, hostEvent, signPact, tourismPerHour, upgradeCost, upgradeVenue, workSlots, TOUR_INCOME,
   baseTourism, canCreate, canOpenCourse, canRecruit, recruitMoney, starVenueOk, talentShort, closeCourse, courseBonus, courseSlots, coursesOf, gradeOdds, nextStarCost, nextStarName, nextWorkCost,
-  openCourse, recruitStar, starLevel, starsOf, startCreate, talentPerHour, themeDone, workInfo, worksPower, type CultureStar,
+  ABROAD_COST, ABROAD_HOURS, ABROAD_SPREAD, canSendAbroad, isAbroad, sendAbroad, openCourse, recruitStar, starLevel, starsOf, startCreate, talentPerHour, themeDone, workInfo, worksPower, type CultureStar,
 } from '../game/culture';
 import { RES_ICON, type Res } from '../data/economy';
 import type { StarKind } from '../data/culture';
@@ -494,6 +495,7 @@ function StarModal({ state, actions, x, onClose }: Pick<ScreenProps, 'state' | '
         </p>
       )}
       {x.job && <p className="small">⏳ 만드는 중 · {timeLeft(x.job.endMs - state.worldMs)} 남음</p>}
+      <AbroadRow state={state} actions={actions} x={x} />
     </Modal>
   );
 }
@@ -748,5 +750,29 @@ export function CultureWinPanel({ state }: Pick<ScreenProps, 'state'>) {
       </div>
       {left !== null ? <p className="small result">🎨 조건 달성! {timeLeft(left)} 더 지키면 문화 승리예요.</p> : <p className="small muted">세 조건을 모두 채운 채 {CULTURE_WIN_DAYS}일 동안 지키면 문화로 세계를 이겨요. 전쟁을 하면 그 나라엔 문화가 안 퍼지니 평화가 유리해요.</p>}
     </Card>
+  );
+}
+
+/** 11-28 스타 해외 진출: 그 나라에 우리 문화 +25%(24시간) */
+function AbroadRow({ state, actions, x }: Pick<ScreenProps, 'state' | 'actions'> & { x: CultureStar }) {
+  const me = state.player.countryId;
+  const list = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id) && relationOf(state.world, me, c.id) !== '전쟁');
+  const [to, setTo] = useState('');
+  const id = to || list[0]?.id || '';
+  if (isAbroad(state, x)) return <p className="small result">✈️ {countryById(x.abroad!.to).name}에 진출 중 · {timeLeft(x.abroad!.untilMs - state.worldMs)} 남음 (그 나라에 우리 문화 +{Math.round(ABROAD_SPREAD * 100)}%)</p>;
+  const why = id ? canSendAbroad(state, x.id, id) : '나라 없음';
+  return (
+    <div className="row" style={{ gap: 6, marginTop: 6 }}>
+      <select value={id} onChange={(e) => setTo(e.target.value)} style={{ flex: 1 }}>
+        {list.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <button disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => sendAbroad(s, x.id, id))}>
+        ✈️ 해외 진출 {ABROAD_HOURS}시간 💵{ABROAD_COST.toLocaleString('ko-KR')}
+      </button>
+    </div>
   );
 }

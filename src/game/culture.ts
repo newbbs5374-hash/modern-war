@@ -44,6 +44,8 @@ export interface CultureStar {
   made: number;
   /** 만드는 중인 걸작 */
   job?: { kind: WorkKind; endMs: number } | null;
+  /** 11-28 해외 진출 중(그 나라에 우리 문화가 더 퍼짐) */
+  abroad?: { to: string; untilMs: number } | null;
 }
 export interface CultureState {
   /** 마지막으로 계산한 세계 시각 */
@@ -168,7 +170,7 @@ export function baseTourism(s: GameState, c = cultureOf(s)): number {
 /** 지금 시간당 관광(행사 덤 포함) */
 export function tourismPerHour(s: GameState, c = cultureOf(s)): number {
   const ev = c.event && s.worldMs < c.event.endMs ? cultureEventById(c.event.id) : null;
-  return baseTourism(s, c) * (1 + (ev?.boost ?? 0) * (1 + ATHLETE_EVENT * starCount(c, 'athlete') + courseBonus(c).event));
+  return baseTourism(s, c) * (1 + (ev?.boost ?? 0) * (1 + ATHLETE_EVENT * starCount(c, 'athlete') + courseBonus(c).event)) * (1 + VISA_TOUR * visaCount(s));
 }
 /** 그 나라에 퍼지는 배율(0 = 안 퍼짐) */
 export function spreadMult(s: GameState, id: string, c = cultureOf(s)): number {
@@ -180,7 +182,40 @@ export function spreadMult(s: GameState, id: string, c = cultureOf(s)): number {
   if ((s.economy.contracts ?? []).some((x) => x.country === id)) m *= 1.15;
   if (relationOf(s.world, me, id) === '연합') m *= 1.1;
   if (favorOf(s, id) >= 20) m *= 1.1;
+  if (visaWith(s).includes(id)) m *= 1.1;
+  // 11-28 스타 해외 진출: 그 나라에 가 있는 스타마다 +25%
+  m *= 1 + ABROAD_SPREAD * starsOf(c).filter((x) => x.abroad && x.abroad.to === id && x.abroad.untilMs > s.worldMs).length;
   return m;
+}
+
+// ── 11-28 비자 면제 협정(호감·협정 탭): 관광 +6%씩, 그 나라에 문화 +10% ──
+export const VISA_TOUR = 0.06;
+const visaWith = (s: GameState) => (s.civ?.agreements ?? []).filter((a) => a.kind === 'visa' && a.untilMs > s.worldMs).map((a) => a.who);
+export const visaCount = (s: GameState) => Math.min(5, visaWith(s).length);
+
+// ── 11-28 국정 37 강화(문화·스타): 스타 해외 진출 ──
+export const ABROAD_SPREAD = 0.25;
+export const ABROAD_HOURS = 24;
+export const ABROAD_COST = 1500;
+export const isAbroad = (s: GameState, x: CultureStar) => !!x.abroad && x.abroad.untilMs > s.worldMs;
+export function canSendAbroad(s: GameState, starId: number, to: string): string | null {
+  const x = starsOf(cultureOf(s)).find((y) => y.id === starId);
+  if (!x) return '없는 스타예요';
+  if (x.job) return '작품을 만드는 중이에요';
+  if (isAbroad(s, x)) return '이미 해외에 나가 있어요';
+  if (to === s.player.countryId || !isAlive(s.world, to)) return '고를 수 없는 나라';
+  if (relationOf(s.world, s.player.countryId, to) === '전쟁') return '전쟁 중인 나라에는 못 가요';
+  if (treasury(s) < ABROAD_COST) return `나라 예산 ${ABROAD_COST.toLocaleString('ko-KR')} 필요`;
+  return null;
+}
+export function sendAbroad(s: GameState, starId: number, to: string): GameState {
+  if (canSendAbroad(s, starId, to)) return s;
+  const ns = withC(pay(s, ABROAD_COST), (c) => {
+    const x = (c.stars ?? []).find((y) => y.id === starId)!;
+    x.abroad = { to, untilMs: s.worldMs + ABROAD_HOURS * H };
+    c.log.unshift(`✈️ ${x.name}, ${countryById(to).name} 진출(${ABROAD_HOURS}시간)`);
+  });
+  return addFavorNote(ns, to, '우리 스타 방문', 2);
 }
 /** AI 나라가 스스로 쌓는 시간당 문화 */
 export function aiCulturePerHour(s: GameState, id: string): number {
@@ -323,6 +358,7 @@ export function canCreate(s: GameState, starId: number): string | null {
   const k = starKindById(x.kind).work;
   if (!k) return '걸작을 만들지 않는 스타예요';
   if (x.job) return '작품을 만드는 중이에요';
+  if (x.abroad && x.abroad.untilMs > s.worldMs) return '해외에 나가 있어요';
   const d = workKindById(k);
   if (c.works[k].length + jobsOn(c, k) >= workSlots(s, k)) return c.venues[d.venue] === 0 ? `${venueById(d.venue).name}을 먼저 지어요` : `${venueById(d.venue).name} 칸이 다 찼어요(단계를 올리면 늘어요)`;
   if (!worksLeft(s, k).length) return '이 종류 걸작을 다 모았어요';

@@ -495,6 +495,8 @@ export function researchBreakdown(s: GameState): Array<[string, number]> {
   if (lab) rows.push(['🔬 연구소 구역', lab]);
   const pacts = activeAgreements(s).filter((a) => a.kind === 'science').length;
   if (pacts) rows.push(['🔬 연구 협력 협정', pacts * RESEARCH_PER_SCIENCE_PACT]);
+  const tx = activeAgreements(s).filter((a) => a.kind === 'techx').length;
+  if (tx) rows.push(['🧪 기술 교류 협정', tx * RESEARCH_PER_SCIENCE_PACT * 0.5]);
   const eff = effSum(s, 'research');
   if (eff) rows.push(['연구·체제·카드', eff]);
   const labB = facBonus(s, '국방과학연구소');

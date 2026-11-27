@@ -44,7 +44,7 @@ import { SummitPanel } from './MediaUI';
 import { clashes, openRequests } from '../game/deploy';
 import { DeployPanel } from './DeployPanel';
 import { threatOf, wantOf } from '../game/intel';
-import { EMBASSY_COST, EMBASSY_MAX_FAVOR, canOpenEmbassy, closeEmbassy, embassyFavor, embassyOf, embassySlots, openEmbassy } from '../game/embassy';
+import { ENVOY2_COST, ENVOY2_TENSION, canSendEnvoy, sendEnvoy2, EMBASSY_COST, EMBASSY_MAX_FAVOR, canOpenEmbassy, closeEmbassy, embassyFavor, embassyOf, embassySlots, openEmbassy } from '../game/embassy';
 import { CountryDetail } from './CountryDetail';
 import { HegemonyPanel, hegemonyBadge } from './HegemonyPanel';
 import { AdviceBar } from './AdviceBar';
@@ -428,6 +428,33 @@ function EmbassyPanel({ state, actions }: ScreenProps) {
           보내기 💵{EMBASSY_COST.toLocaleString('ko-KR')}
         </button>
       </div>
+      <EnvoyRow state={state} actions={actions} />
     </section>
+  );
+}
+
+/** 11-28 특사: 긴장이 높은 나라부터 */
+function EnvoyRow({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
+  const me = state.player.countryId;
+  const list = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id) && relationOf(state.world, me, c.id) !== '전쟁').sort(
+    (a, b) => (state.world.pairs[pairKey(me, b.id)]?.tension ?? 0) - (state.world.pairs[pairKey(me, a.id)]?.tension ?? 0),
+  );
+  const [to, setTo] = useState('');
+  const id = to || list[0]?.id || '';
+  const why = id ? canSendEnvoy(state, id) : '나라 없음';
+  return (
+    <div className="row" style={{ gap: 6, marginTop: 8, alignItems: 'center' }}>
+      <small style={{ whiteSpace: 'nowrap' }}>🕴️ 특사</small>
+      <select value={id} onChange={(ev) => setTo(ev.target.value)} style={{ flex: 1 }}>
+        {list.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name} (긴장 {Math.round(state.world.pairs[pairKey(me, c.id)]?.tension ?? 0)})
+          </option>
+        ))}
+      </select>
+      <button disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => sendEnvoy2(s, id))}>
+        긴장 −{ENVOY2_TENSION} 💵{ENVOY2_COST.toLocaleString('ko-KR')}
+      </button>
+    </div>
   );
 }

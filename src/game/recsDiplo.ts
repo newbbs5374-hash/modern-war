@@ -5,7 +5,7 @@ import { PIONEER_ISLANDS } from '../data/hexmap';
 import { canAgree, canEnvoy, canFulfill, civOf, favorOf, fulfillRequest, influenceMult, islandLeader, islandRequest, makeAgreement, sendEnvoy } from './civ';
 import { canTalk } from './summitTalk';
 import { tradeTips } from './tradeAdvice';
-import { EMBASSY_COST, EMBASSY_MAX_FAVOR, canOpenEmbassy, openEmbassy } from './embassy';
+import { EMBASSY_COST, EMBASSY_MAX_FAVOR, ENVOY2_TENSION, canOpenEmbassy, canSendEnvoy, openEmbassy, sendEnvoy2 } from './embassy';
 import { pairKey } from './world';
 import { approx, registerRecs, type Rec } from './recs';
 import type { GameState } from './state';
@@ -172,3 +172,28 @@ export function embassyRecs(s: GameState): Rec[] {
   ];
 }
 registerRecs('diplo', embassyRecs);
+
+/** 긴장 50 넘는 나라에 특사 */
+export function envoyRecs(s: GameState): Rec[] {
+  const me = s.player.countryId;
+  const c = COUNTRIES.filter((x) => x.id !== me && !canSendEnvoy(s, x.id))
+    .map((x) => ({ x, t: s.world.pairs[pairKey(me, x.id)]?.tension ?? 0 }))
+    .filter((y) => y.t >= 50)
+    .sort((a, b) => b.t - a.t)[0];
+  if (!c) return [];
+  return [
+    {
+      id: `envoy:${c.x.id}`,
+      field: 'diplo',
+      tab: 'mofa',
+      icon: '🕴️',
+      title: `${c.x.name}에 특사 보내기`,
+      value: 2000 + c.t * 60,
+      gain: () => `긴장 ${Math.round(c.t)} → ${Math.round(Math.max(0, c.t - ENVOY2_TENSION))} · 호감 +3`,
+      why: '우리와 긴장이 가장 높아요. 전쟁으로 번지기 전에 식혀요.',
+      act: (x) => sendEnvoy2(x, c.x.id),
+      can: (x) => canSendEnvoy(x, c.x.id),
+    },
+  ];
+}
+registerRecs('diplo', envoyRecs);
