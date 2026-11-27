@@ -55,13 +55,12 @@ const resText = (res: Partial<Record<Res, number>>) =>
     .map(([r, n]) => `${RES_ICON[r as Res]}${r} ${n}`)
     .join(' · ');
 
-export function CultureScreen(props: ScreenProps) {
+/** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
+export function cultureTabs(props: ScreenProps): TabDef<CultureTab>[] {
   const { state } = props;
   const c = cultureOf(state);
-  const p = cultureProgress(state);
-  const [raw, setTab] = useTab<CultureTab>('culture', 'venue');
   const evOn = c.event && state.worldMs < c.event.endMs;
-  const tabs: TabDef<CultureTab>[] = [
+  return [
     { id: 'venue', label: '시설', icon: '🏛️', badge: c.builds.length || null },
     { id: 'works', label: '걸작', icon: '🏺', badge: WORK_KINDS.some((k) => !canAddWork(state, k.id)) ? '!' : null },
     { id: 'stars', label: '스타', icon: '🌟', badge: STAR_KINDS.some((k) => !canRecruit(state, k.id)) ? '!' : starsOf(c).filter((x) => x.job).length || null },
@@ -69,6 +68,14 @@ export function CultureScreen(props: ScreenProps) {
     { id: 'event', label: '행사', icon: '🎉', badge: evOn ? '●' : null },
     { id: 'world', label: '세계', icon: '🌏' },
   ];
+}
+
+export function CultureScreen(props: ScreenProps) {
+  const { state } = props;
+  const c = cultureOf(state);
+  const p = cultureProgress(state);
+  const [raw, setTab] = useTab<CultureTab>('culture', 'venue');
+  const tabs = cultureTabs(props);
   // 옛 '승리' 탭을 기억하고 있으면 첫 탭으로(승리는 개인 → 승리로 옮김)
   const tab: CultureTab = tabs.some((t) => t.id === raw) ? raw : 'venue';
   return (

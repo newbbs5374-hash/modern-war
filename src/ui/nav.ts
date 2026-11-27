@@ -8,6 +8,7 @@ export type Screen =
   | 'society'
   | 'economy'
   | 'culture'
+  | 'tree'
   // 옛 화면 이름(주소·안내에서 들어오면 새 탭으로 옮겨 줌)
   | 'ops'
   | 'officer'
@@ -29,6 +30,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   society: '사회',
   economy: '경제',
   culture: '문화',
+  tree: '국정',
   ops: '작전',
   officer: '장교',
   forces: '부대',
@@ -53,6 +55,32 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: bo
   { screen: 'culture', icon: '🎭', label: '문화' },
   { screen: 'shop', icon: '🛒', label: '상점' },
 ];
+
+/** 11-27 화면 개편: 아래 메뉴 5칸(본부·작전·국정 나무·사람·상점). art = 아이콘 그림을 빌려 올 옛 이름 */
+export const NAV5: Array<{ screen: Screen; icon: string; label: string; art: string; main?: boolean; locked?: string; also?: Screen[] }> = [
+  { screen: 'home', icon: '🏠', label: '본부', art: '본부', main: true },
+  { screen: 'defense', icon: '⚔️', label: '작전', art: '국방' },
+  { screen: 'tree', icon: '🌳', label: '국정', art: '사회', also: ['diplo', 'society', 'economy', 'culture'] },
+  { screen: 'personal', icon: '👥', label: '사람', art: '개인' },
+  { screen: 'shop', icon: '🛒', label: '상점', art: '상점' },
+];
+const MENU_KEY = 'modern-war-menu';
+/** 옛 메뉴(8칸)로 쓰는 중인가. 기본은 새 메뉴(5칸) */
+export function oldMenuOn(): boolean {
+  try {
+    return localStorage.getItem(MENU_KEY) === 'old';
+  } catch {
+    return false;
+  }
+}
+export function setOldMenu(on: boolean) {
+  try {
+    if (on) localStorage.setItem(MENU_KEY, 'old');
+    else localStorage.removeItem(MENU_KEY);
+  } catch {
+    /* 무시 */
+  }
+}
 
 /** 새 큰 탭 안의 작은 탭 이름 */
 export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'meet' | 'plan' | 'agenda' | 'album';

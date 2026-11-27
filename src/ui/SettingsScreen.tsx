@@ -20,6 +20,7 @@ import { Face, PortraitList } from './Portrait';
 import { LEADER_LOOKS, lookName, playerKeys } from '../data/looks';
 import { FieldArtList, IconArtList } from './FieldArtList';
 import type { ScreenProps } from './screens';
+import { oldMenuOn, setOldMenu } from './nav';
 import { CloudCard } from './CloudUI';
 import { ErrorLog } from './Safe';
 
@@ -54,6 +55,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 export function SettingsScreen({ state, speed, actions }: ScreenProps) {
   const [pop, setPop] = useState<Pop>(null);
+  const [oldMenu, setOldMenuState] = useState(oldMenuOn);
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
   const [artTab, setArtTab] = useState<ArtTab>('face');
@@ -111,6 +113,17 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             </span>
             <span className="set-ico">▸</span>
           </button>
+          <SwitchRow
+            icon="🌳"
+            name="새 메뉴(5칸 · 국정 나무)"
+            sub="끄면 옛 메뉴 8칸으로 돌아가요"
+            on={!oldMenu}
+            onClick={() => {
+              setOldMenu(!oldMenu);
+              setOldMenuState(!oldMenu);
+              actions.apply((s) => ({ ...s }));
+            }}
+          />
           <SwitchRow icon="📘" name="첫 판 안내" sub="본부에 다음 할 일 안내를 띄워요" on={!guideHidden} onClick={() => actions.apply((s) => hideGuide(s, !guideOf(s).hidden))} />
         </div>
       </Card>

@@ -23,7 +23,7 @@ import {
 import { citiesOf, isAlive, pairKey, relationOf } from '../game/world';
 import { RelTag, TensionBar, fmt } from './common';
 import { FLAG, Flag } from './flag';
-import { Chip, Help, Modal, Tabs, useTab } from './kit';
+import { Chip, Help, Modal, Tabs, useTab, type TabDef } from './kit';
 import { timeLeft } from './officerScreens';
 import { FieldBar } from './PresUI';
 import type { ScreenProps } from './screens';
@@ -39,19 +39,10 @@ import { CountryDetail } from './CountryDetail';
 import { AdviceBar } from './AdviceBar';
 
 type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
-export function DiplomacyScreen(props: ScreenProps) {
-  const [raw, setTab] = useTab<Tab>('diplo', 'nations');
-  const tab: Tab = (['mofa', 'nations', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
-  const [sel, setSel] = useState<string | null>(null);
+/** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
+export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
   const civ = civOf(props.state);
-  return (
-    <>
-      <FieldBar state={props.state} field="diplo" />
-      <AdviceBar state={props.state} apply={props.actions.apply} field="diplo" go={(t) => setTab(t as Tab)} />
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
+  return [
           { id: 'mofa', label: '외교부', icon: '🌐' },
           { id: 'nations', label: '국가정보', icon: '🗂️' },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
@@ -59,7 +50,21 @@ export function DiplomacyScreen(props: ScreenProps) {
           { id: 'deploy', label: '파병', icon: '🪖', badge: clashes(props.state).length ? `⚔️${clashes(props.state).length}` : openRequests(props.state).length ? `📨${openRequests(props.state).length}` : props.state.deploy?.list.length ? String(props.state.deploy.list.length) : null },
           { id: 'isle', label: '분쟁 지역', icon: '🏝️' },
           { id: 'council', label: '국제 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
-        ]}
+  ];
+}
+
+export function DiplomacyScreen(props: ScreenProps) {
+  const [raw, setTab] = useTab<Tab>('diplo', 'nations');
+  const tab: Tab = (['mofa', 'nations', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
+  const [sel, setSel] = useState<string | null>(null);
+  return (
+    <>
+      <FieldBar state={props.state} field="diplo" />
+      <AdviceBar state={props.state} apply={props.actions.apply} field="diplo" go={(t) => setTab(t as Tab)} />
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        tabs={diploTabs(props)}
       />
       <Safe key={tab} where={`diplo/${tab}`}>
       {tab === 'mofa' && (

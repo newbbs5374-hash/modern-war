@@ -45,6 +45,7 @@ import { SettingsScreen } from './SettingsScreen';
 import { UiIcon } from './uiIcon';
 import { SnsPhone } from './SnsPhone';
 import { ActCard, CounterCards } from './ActsUI';
+import { TodoCard, TreeScreen } from './TreeScreen';
 import { snsUnread } from '../game/leaderSns';
 
 export interface GameActions {
@@ -169,6 +170,7 @@ export function HomeScreen(props: ScreenProps) {
           <b className="hq-title">📌 주요 임무</b>
           <ActCard state={state} />
           <CounterCards state={state} go={go} />
+          <TodoCard state={state} go={go} />
           {gstep && !guideOf(state).hidden && (
             <div className="guide-hq">
               <button
@@ -576,6 +578,7 @@ export const SCREENS: Record<Screen, (p: ScreenProps) => React.JSX.Element> = {
   society: SocietyScreen,
   economy: EconomyScreen,
   culture: CultureScreen,
+  tree: TreeScreen,
   // 옛 이름(routeTo가 새 탭으로 옮겨 주지만, 혹시 남아 있어도 열리게)
   ops: DefenseScreen,
   officer: PersonalScreen,

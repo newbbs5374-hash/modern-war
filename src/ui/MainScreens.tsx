@@ -60,12 +60,12 @@ function pickTab<T extends string>(tabs: TabDef<T>[], v: T): T {
 }
 
 /* ───────── 👤 개인 ───────── */
-export function PersonalScreen(props: ScreenProps) {
+/** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
+export function personalTabs(props: ScreenProps): TabDef<PersonalTab>[] {
   const { state } = props;
   const o = state.officer;
-  const [raw, setTab] = useTab<PersonalTab>('personal', 'profile');
   const errandsDone = o.aides.filter((a) => a.errand && state.worldMs >= a.errand.endMs).length;
-  const tabs: TabDef<PersonalTab>[] = [
+  return [
     { id: 'profile', label: '프로필', icon: '🪪' },
     { id: 'win', label: '승리', icon: '🏆', badge: winBadge(state) },
     { id: 'aides', label: officeName(state.player.countryId), icon: '🏢', badge: errandsDone || null },
@@ -75,6 +75,12 @@ export function PersonalScreen(props: ScreenProps) {
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
     { id: 'album', label: '사진첩', icon: '📸' },
   ];
+}
+
+export function PersonalScreen(props: ScreenProps) {
+  const { state } = props;
+  const [raw, setTab] = useTab<PersonalTab>('personal', 'profile');
+  const tabs = personalTabs(props);
   const tab = pickTab(tabs, raw);
   return (
     <>
@@ -123,14 +129,14 @@ function StaffTab(props: ScreenProps) {
 }
 
 /* ───────── 🛡️ 국방 ───────── */
-export function DefenseScreen(props: ScreenProps) {
+/** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
+export function defenseTabs(props: ScreenProps): TabDef<DefenseTab>[] {
   const { state } = props;
   const o = state.officer;
   const r = state.player.rankIndex;
-  const [raw, setTab] = useTab<DefenseTab>('defense', 'ops');
   const ready = !!o.active && state.worldMs >= o.active.endMs;
   const civ = civOf(state);
-  const tabs: TabDef<DefenseTab>[] = [
+  return [
     { id: 'ops', label: '작전', icon: '🗺️', badge: ready ? '!' : null },
     { id: 'train', label: '훈련', icon: '🎯' },
     { id: 'forces', label: '부대', icon: '🪖' },
@@ -139,6 +145,14 @@ export function DefenseScreen(props: ScreenProps) {
     { id: 'tech', label: '군사 연구', icon: '⚙️', badge: !civ.cur.mil && needPick(state) ? '!' : null },
     { id: 'fac', label: '국방 시설', icon: '🛡️', badge: choreIn(props, DEFENSE_BUILDINGS) ? '!' : null },
   ];
+}
+
+export function DefenseScreen(props: ScreenProps) {
+  const { state } = props;
+  const o = state.officer;
+  const r = state.player.rankIndex;
+  const [raw, setTab] = useTab<DefenseTab>('defense', 'ops');
+  const tabs = defenseTabs(props);
   const tab = pickTab(tabs, raw);
   return (
     <>
@@ -165,12 +179,12 @@ export function DefenseScreen(props: ScreenProps) {
 }
 
 /* ───────── 👥 사회 ───────── */
-export function SocietyScreen(props: ScreenProps) {
+/** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
+export function societyTabs(props: ScreenProps): TabDef<SocietyTab>[] {
   const { state } = props;
   const o = state.officer;
   const civ = civOf(state);
-  const [raw, setTab] = useTab<SocietyTab>('society', 'city');
-  const tabs: TabDef<SocietyTab>[] = [
+  return [
     { id: 'mins', label: '부처·시설', icon: '🏛️', badge: choreIn(props, SOCIETY_BUILDINGS) ? '!' : null },
     { id: 'city', label: '도시', icon: '🏘️' },
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
@@ -180,6 +194,12 @@ export function SocietyScreen(props: ScreenProps) {
     { id: 'press', label: '언론·청원', icon: '🎙️', badge: mediaOf(state).petitions.length || (state.worldMs >= mediaOf(state).pressMs ? '!' : null) },
     { id: 'opinion', label: '여론', icon: '👥', badge: GROUPS.some((g) => groupSat(state, g.id) <= 25) ? '!' : null },
   ];
+}
+
+export function SocietyScreen(props: ScreenProps) {
+  const { state } = props;
+  const [raw, setTab] = useTab<SocietyTab>('society', 'city');
+  const tabs = societyTabs(props);
   const tab = pickTab(tabs, raw);
   return (
     <>
@@ -218,9 +238,9 @@ export function SocietyScreen(props: ScreenProps) {
 }
 
 /* ───────── 💰 경제 ───────── */
-export function EconomyScreen(props: ScreenProps) {
-  const [raw, setTab] = useTab<EconomyTab>('economy', 'vault');
-  const tabs: TabDef<EconomyTab>[] = [
+/** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
+export function economyTabs(props: ScreenProps): TabDef<EconomyTab>[] {
+  return [
     { id: 'vault', label: '금고', icon: '💰' },
     { id: 'macro', label: '경기', icon: '📈', badge: props.state.polity?.econ.crisis ? '!' : null },
     { id: 'tax', label: '예산·세금', icon: '📊' },
@@ -230,6 +250,11 @@ export function EconomyScreen(props: ScreenProps) {
     { id: 'facall', label: '시설 현황', icon: '🏗️', badge: choreDone(props) ? '!' : null },
     { id: 'proj', label: '국가 사업', icon: '🚄', badge: busyProjects(props.state).some(([, p]) => p.endMs <= props.state.worldMs) ? '!' : null },
   ];
+}
+
+export function EconomyScreen(props: ScreenProps) {
+  const [raw, setTab] = useTab<EconomyTab>('economy', 'vault');
+  const tabs = economyTabs(props);
   const tab = pickTab(tabs, raw);
   return (
     <>
