@@ -1,5 +1,6 @@
 // 외교 → 국가정보 → 나라 누르면 열리는 큰 팝업(11-24 대장 요청 4번).
 // 위: 그 나라 실제 지도(도·도시·점령·분쟁 지역·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
+import { campaignArt } from './scenes';
 import { useMemo, useState } from 'react';
 import { CITIES, cityById } from '../data/cities';
 import { COUNTRY_FACTS } from '../data/countryFacts';
@@ -193,7 +194,14 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
 
   return (
     <Modal title={c.name} icon={FLAG[id]} onClose={onClose} big>
-      {iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />}
+      {id !== me && relationOf(w, me, id) === '전쟁' && campaignArt(id) ? (
+        <div className="act-cover">
+          <img src={campaignArt(id)!} alt="" draggable={false} />
+          <b>⚔️ {c.name} 전역</b>
+        </div>
+      ) : (
+        iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />
+      )}
       <div className="cdetail">
         <CountryMap state={state} id={id} />
         <div className="cdetail-side">
