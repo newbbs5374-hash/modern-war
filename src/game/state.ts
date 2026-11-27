@@ -69,6 +69,7 @@ import { growTick } from './aiGrowthTick';
 import { actsTick } from './acts';
 import { counterTick, type CounterState } from './counter';
 import { finaleTick, type FinaleState } from './finale';
+import type { CampaignState } from './campaign';
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -160,6 +161,8 @@ export interface GameState {
   deploy?: DeployState;
   /** 11-27 AI 반격(빼앗은 도시를 되찾으러 옴) */
   counter?: CounterState;
+  /** 11-27 전역(나라별 연승 기세·보급선) */
+  campaign?: CampaignState;
   /** 11-27 4장 마지막 위기 진행 */
   finale?: FinaleState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */

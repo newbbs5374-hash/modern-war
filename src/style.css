@@ -1495,3 +1495,14 @@ button.big { min-height: 64px; font-size: 18px; }
 .start-unlock { margin: 6px 0; padding: 8px 10px; border: 1px solid var(--hud, #3fb8c9); line-height: 1.5; }
 .country-line.locked { opacity: 0.5; }
 .country-line.locked .cl-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }
+
+/* 11-27 전역 길 */
+.camp { grid-column: 1 / -1; border: 1px solid var(--line, #5b6b7c); padding: 8px; }
+.camp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.camp-head small { opacity: 0.85; font-size: 12px; }
+.camp-route { display: flex; gap: 4px; overflow-x: auto; }
+.camp-node { flex: 1 0 52px; min-width: 52px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; opacity: 0.55; }
+.camp-node i { font-style: normal; font-size: 18px; line-height: 1.2; }
+.camp-node small { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.camp-node.mine { opacity: 0.9; border-color: var(--hud, #3fb8c9); }
+.camp-node.next { opacity: 1; border-color: var(--amber, #ffb020); box-shadow: 0 0 0 1px var(--amber, #ffb020) inset; }

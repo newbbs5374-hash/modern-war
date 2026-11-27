@@ -8,6 +8,7 @@ import type { BattlePlan } from '../battle/spec';
 import { CAPTURED_DEFENSE, COUNTER_AUTO_ACT, COUNTER_AUTO_ARMY, COUNTER_AUTO_BASE, COUNTER_BOUNTY_PER_VALUE, COUNTER_CHANCE, COUNTER_MAX, COUNTER_MAX_H, COUNTER_MIN_H, COUNTER_TRUST, EVENT_LOG_MAX, actAi, actOf } from './balance';
 import { act1Power } from './acts';
 import { armyPower } from './economy';
+import { noteCampaignLoss } from './campaign';
 import { pushReport } from './report';
 import { Rng } from './rng';
 import type { GameState } from './state';
@@ -28,10 +29,11 @@ export function planCounter(ns: GameState, city: string, prev: string): void {
   const cs = counterOf(ns);
   if (prev === me || !isAlive(ns.world, prev) || relationOf(ns.world, me, prev) !== '전쟁') return;
   if (cs.list.length >= COUNTER_MAX || cs.list.some((c) => c.city === city)) return;
-  const rng = new Rng(ns.officer.seed);
+  // 임무 정산(withOfficer) 안에서 불리므로 officer를 새로 만들지 않고, 씨앗은 따로 만든다
+  const rng = new Rng((ns.officer.seed ^ Math.floor(ns.worldMs / 1000) ^ (cs.nextId * 2654435761) ^ ([...city].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) * 40503) ^ (cs.won * 97 + cs.lost * 193 + ns.officer.totalMerit)) >>> 0);
+  rng.next();
   const hit = rng.chance(COUNTER_CHANCE[act] ?? 0);
   const due = ns.worldMs + rng.range(COUNTER_MIN_H, COUNTER_MAX_H) * H;
-  ns.officer = { ...ns.officer, seed: rng.seed };
   if (!hit) return;
   ns.counter = { ...cs, list: [...cs.list, { id: cs.nextId, city, from: prev, dueMs: due }], nextId: cs.nextId + 1 };
   const text = `🚨 ${ga(countryById(prev).name)} ${eul(cityById(city).name)} 되찾으러 와요. 본부의 반격 경보에서 직접 막을 수 있어요.`;
@@ -87,7 +89,8 @@ export function settleCounter(s: GameState, id: number, win: boolean, stars: num
     ns.world.owner[c.city] = c.from;
     ns.world.defense[c.city] = CAPTURED_DEFENSE;
     syncFollowers(ns.world);
-    text = `💥 ${ga(countryById(c.from).name)} ${eul(city.name)} 되찾아 갔어요.`;
+    noteCampaignLoss(ns, c.from);
+    text = `💥 ${ga(countryById(c.from).name)} ${eul(city.name)} 되찾아 갔어요. 보급선이 끊겨 다음 전투가 어려워져요.`;
   }
   const ev: WorldEvent = { t: ns.worldMs, kind: win ? '전투' : '점령', text, mine: true };
   ns.world.events = [ev, ...ns.world.events].slice(0, EVENT_LOG_MAX);

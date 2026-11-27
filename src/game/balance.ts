@@ -196,3 +196,12 @@ export const COUNTER_AUTO_ACT = 0.4;
 /** 막아 내면 받는 것: 도시 값어치당 나라 예산 · 신뢰도 · 별 3개면 가속권 */
 export const COUNTER_BOUNTY_PER_VALUE = 40;
 export const COUNTER_TRUST = 2;
+
+// ── 11-27 종합 확장안 전투 2: 전역(나라 하나를 국경에서 수도까지 차례로) ──
+/** 연승 기세: 한 번 이길 때마다 다음 전투가 쉬워짐(최대 3번) */
+export const CAMPAIGN_STREAK_DIFF = 0.04;
+export const CAMPAIGN_STREAK_MAX = 3;
+/** 보급선이 끊기면(반격에 도시를 잃으면) 다음 전투가 어려워짐 */
+export const CAMPAIGN_CUT_DIFF = 0.15;
+/** 수도를 차지해 전역을 끝내면 받는 것 */
+export const CAMPAIGN_REWARD = { ruby: 30, boosts: 3 };
