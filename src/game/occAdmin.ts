@@ -154,7 +154,7 @@ const nm = (id: string) => cityById(id).name;
 
 /** 관리청이 맡을 도시: 아직 편입 안 된 내 점령 도시(꼭두각시 정부는 제 정부가 있어서 빼고) */
 export function adminCities(s: GameState): string[] {
-  return occupiedCities(s).filter((id) => annexEntry(s, id)?.mode !== 'puppet');
+  return occupiedCities(s).filter((id) => !annexEntry(s, id)?.mode);
 }
 export const teamOf = (s: GameState, cityId: string) => occAdminOf(s).teams.find((t) => t.city === cityById(cityId).hub) ?? null;
 export const propsOfCity = (s: GameState, cityId: string) => occAdminOf(s).list.filter((p) => p.city === cityById(cityId).hub);

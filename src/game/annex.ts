@@ -39,6 +39,8 @@ export const CIVIL_LOYALTY = 12;
 export const CEDE_RATE = 0.75;
 
 const annexOf = (s: GameState) => s.world.annex ?? {};
+/** 처분 이름(11-27 군사 기지·경제 특구 더함) */
+export const MODE_NAME: Record<NonNullable<AnnexCity['mode']>, string> = { puppet: '🎎 꼭두각시 정부', base: '🪖 군사 기지', zone: '🏭 경제 특구' };
 /** 편입 진행(내정 도시는 따라가는 점령 도시의 진행을 봄) */
 export const annexEntry = (s: GameState, cityId: string): AnnexCity | null => annexOf(s)[cityById(cityId).hub] ?? null;
 export const isAnnexed = (s: GameState, cityId: string) => s.world.annexed?.[cityId] === s.player.countryId;
@@ -80,7 +82,7 @@ export function canVote(s: GameState, cityId: string): string | null {
   const a = annexEntry(s, cityId);
   if (!cityById(cityId).front) return `${cityById(cityById(cityId).hub).name}에서 투표하면 함께 편입돼요`;
   if (!a || s.world.owner[cityId] !== s.player.countryId) return '편입할 수 있는 점령지가 아니에요';
-  if (a.mode === 'puppet') return '꼭두각시 정부 도시는 편입하지 않아요';
+  if (a.mode) return `${MODE_NAME[a.mode]} 도시는 편입하지 않아요`;
   if (a.treaty) return '조약으로 받은 도시라 투표 없이 편입돼요';
   if (a.stage === '군정') return '군정이 끝나야 해요';
   if (a.voteAt) return '투표 중이에요';
@@ -105,7 +107,7 @@ export function patchEntry(s: GameState, cityId: string, patch: Partial<AnnexCit
   return a ? setEntry(s, cityById(cityId).hub, { ...a, ...patch }) : s;
 }
 
-function setEntry(s: GameState, cityId: string, a: AnnexCity | null): GameState {
+export function setEntry(s: GameState, cityId: string, a: AnnexCity | null): GameState {
   const annex = { ...annexOf(s) };
   if (a) annex[cityId] = a;
   else delete annex[cityId];
@@ -156,13 +158,13 @@ export function annexTick(s: GameState): GameState {
     if (!a) {
       out = setEntry(out, id, freshEntry(out));
       const c0 = cityById(id);
-      out = pushReport(out, { icon: '🏳️', text: `대장님, ${c0.name}${hasJong(c0.name) ? '을' : '를'} 차지했습니다. 군정 동안 처분을 정해 주십시오: 🗺️ 편입(그대로 두면 이 길) · 🎎 꼭두각시 정부${liberateTo(out, id) ? ' · 🕊️ 해방' : ''}. 도시 창에서 고를 수 있습니다.` });
+      out = pushReport(out, { icon: '🏳️', text: `대장님, ${c0.name}${hasJong(c0.name) ? '을' : '를'} 차지했습니다. 군정 동안 처분을 정해 주십시오: 🗺️ 편입(그대로 두면 이 길) · 🎎 꼭두각시 정부${liberateTo(out, id) ? ' · 🕊️ 해방' : ''} · 🪖 군사 기지 · 🏭 경제 특구 · 🤝 연합국에 넘기기 · 💱 맞바꾸기. 도시 창에서 고를 수 있습니다.` });
       continue;
     }
     out = dailyOcc(out, id);
     if (s.world.owner[id] !== out.world.owner[id] || out.world.owner[id] !== out.player.countryId) continue;
     a = annexEntry(out, id)!;
-    if (a.mode === 'puppet') continue;
+    if (a.mode) continue;
     const c = cityById(id);
     if (a.stage === '군정' && now >= a.since + milMs(out, id)) {
       a = { ...a, stage: '민정', since: now };
@@ -206,6 +208,8 @@ registerCityLoyaltyRows((s, cityId) => {
   if (!a || s.world.owner[cityId] !== s.player.countryId) return [];
   const relief: Array<[string, number]> = a.relief && (a.reliefUntil ?? 0) > s.worldMs ? [['📦 구호품', a.relief]] : [];
   if (a.mode === 'puppet') return [['🎎 꼭두각시 정부', 6], ...relief];
+  if (a.mode === 'base') return [['🪖 군사 기지', -4], ...relief];
+  if (a.mode === 'zone') return [['🏭 경제 특구 일자리', 6], ...relief];
   if (a.stage === '군정') return [['🪖 군정', MIL_LOYALTY], ...relief];
   const rows: Array<[string, number]> = [['🏛️ 민정', CIVIL_LOYALTY], ...relief];
   const m = Math.round(Math.min(8, ministryPower(s, 'mois') * 3) * 10) / 10;
@@ -217,7 +221,7 @@ registerCityLoyaltyRows((s, cityId) => {
 
 /** 넘겨받을 수 있는 도시(그 나라 원래 땅 가운데 우리가 점령한 곳) */
 export function cedeCities(s: GameState, id: string): string[] {
-  return occupiedCities(s).filter((c) => cityById(c).home === id && !annexEntry(s, c)?.treaty && annexEntry(s, c)?.mode !== 'puppet');
+  return occupiedCities(s).filter((c) => cityById(c).home === id && !annexEntry(s, c)?.treaty && !annexEntry(s, c)?.mode);
 }
 export function cedeChance(s: GameState, id: string): number {
   return diploChance(s, id, '휴전 제안') * CEDE_RATE;
@@ -271,12 +275,12 @@ export const PUPPET_BREAK_WEAK = 0.03;
 /** 처분을 고를 수 있는지(안 되면 이유) */
 /** 아직 기록이 없는 막 점령한 도시는 군정으로 보고 고르게 함 */
 const freshEntry = (s: GameState): AnnexCity => ({ stage: '군정', since: s.worldMs, okSince: null, voteAt: null, retryMs: 0, damage: START_DAMAGE, dayMs: s.worldMs });
-const entryOrFresh = (s: GameState, cityId: string) => annexEntry(s, cityId) ?? (occupiedCities(s).includes(cityId) ? freshEntry(s) : null);
+export const entryOrFresh = (s: GameState, cityId: string) => annexEntry(s, cityId) ?? (occupiedCities(s).includes(cityId) ? freshEntry(s) : null);
 export function canChoose(s: GameState, cityId: string): string | null {
   const a = entryOrFresh(s, cityId);
   if (!cityById(cityId).front) return `${cityById(cityById(cityId).hub).name}에서 정하면 함께 따라가요`;
   if (!a || s.world.owner[cityId] !== s.player.countryId) return '점령지가 아니에요';
-  if (a.mode === 'puppet') return '이미 꼭두각시 정부를 세웠어요';
+  if (a.mode) return `이미 ${MODE_NAME[a.mode]}${a.mode === 'puppet' ? '를 세웠어요' : '로 정했어요'}`;
   if (a.treaty) return '조약으로 받은 도시예요';
   if (a.stage !== '군정') return '민정으로 넘어가서 이제 편입 길만 남았어요';
   return null;
@@ -393,9 +397,9 @@ export function canOccTask(s: GameState, cityId: string, t: OccTask): string | n
   if (!a || s.world.owner[cityId] !== s.player.countryId) return '점령지가 아니에요';
   const ready = a.taskReady?.[t] ?? 0;
   if (s.worldMs < ready) return `${Math.ceil((ready - s.worldMs) / H)}시간 뒤 다시 할 수 있어요`;
-  const puppet = a.mode === 'puppet';
-  if (t === '소탕' && (a.stage !== '군정' || puppet)) return '군정 동안만 해요';
-  if (t === '구호' && a.stage !== '민정' && !puppet) return '민정이나 꼭두각시 정부에서 해요';
+  const puppet = !!a.mode;
+  if (t === '소탕' && (a.stage !== '군정' || (puppet && a.mode !== 'base'))) return '군정 동안만 해요';
+  if (t === '구호' && a.stage !== '민정' && !puppet) return '민정이나 처분을 정한 도시에서 해요';
   if (t === '재건' && !(a.damage ?? 0)) return '고칠 피해가 없어요';
   if (t === '선전' && (a.stage !== '민정' || puppet || a.treaty)) return '편입을 기다리는 민정 도시에서 해요';
   if (t === '선전' && (a.propaganda ?? 0) >= 12) return '찬성률 보너스가 가득 찼어요';
