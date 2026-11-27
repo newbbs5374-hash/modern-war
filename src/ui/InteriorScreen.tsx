@@ -54,6 +54,7 @@ import {
   upgradeCost,
   upgradeFacility,
   isDefBuilding,
+  armyPower,
 } from '../game/economy';
 import { defConsentCap, defConsentRows, splitOf } from '../game/policy';
 import { budgetBreakdown, budgetPerDay, defPerDay, defShare, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
@@ -277,7 +278,7 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
           <VCard art="병력" emoji="🪖" name="병력" big value={`${fmt(n.troops)}명`}>
             <Tip label={`${sign(troops - troopLoss)}/시간`} title="병력 시간당" rows={tRows} total={sign(troops - troopLoss)} />
           </VCard>
-          <VCard art="전투력" emoji="💪" name="전투력" value={fmt(e.power)}>
+          <VCard art="전투력" emoji="💪" name="전투력" value={fmt(armyPower(state))}>
             <small className="muted">부대 {units} · 모집 {e.queue.length}</small>
           </VCard>
         </div>

@@ -299,6 +299,14 @@ interface Ctx {
   playerHold: { rebel: number; defense: number };
   /** 파병 부대가 지켜 주는 나라(도시 방어 배율) */
   deployHelp: Record<string, number>;
+  /** 11-27 AI 나라 체제 효과(전투력·바다 건너 공격·지킬 때) */
+  govEff: Record<string, AiGovEff>;
+}
+/** AI 나라 체제 효과(비율, 0이면 없음) */
+export interface AiGovEff {
+  power?: number;
+  overseas?: number;
+  defense?: number;
 }
 
 function log(ctx: Ctx, kind: EventKind, text: string, ...who: string[]) {
@@ -349,7 +357,7 @@ function startWar(ctx: Ctx, attacker: string, defender: string, why: string) {
 export function declareWar(w: WorldState, t: number, player: string, attacker: string, defender: string, why: string): void {
   const p = w.pairs[pairKey(attacker, defender)];
   if (!p || p.rel === '전쟁' || !isAlive(w, attacker) || !isAlive(w, defender)) return;
-  const ctx: Ctx = { w, nations: {}, rng: new Rng(w.seed), t, player, playerDefense: 1, playerHold: { rebel: 1, defense: 1 }, deployHelp: {} };
+  const ctx: Ctx = { w, nations: {}, rng: new Rng(w.seed), t, player, playerDefense: 1, playerHold: { rebel: 1, defense: 1 }, deployHelp: {}, govEff: {} };
   startWar(ctx, attacker, defender, why);
   w.seed = ctx.rng.seed;
 }
@@ -421,15 +429,17 @@ function power(ctx: Ctx, country: string, troops: number, defending: boolean, ov
   const c = countryById(country);
   // 11-26 난이도: 한국을 뺀 AI 나라는 병사 한 명의 힘도 조금 셈(미국 > 중국 > 러시아)
   const quality = (1 + (aiStrength(country, ctx.player) - 1) * AI_QUALITY_SHARE) * growQuality(ctx.w, country);
-  let pw = troops * (0.5 + c.military / 100) * quality * ctx.rng.range(0.75, 1.25);
+  const ge = ctx.govEff[country];
+  let pw = troops * (0.5 + c.military / 100) * quality * (1 + (ge?.power ?? 0)) * ctx.rng.range(0.75, 1.25);
   if (defending) {
     if (country === 'ru') pw *= 1.25; // 혹한 요새
     if (country === 'ua') pw *= 1.2; // 국토 방위 의지
     pw *= HOME_GUARD[country] ?? 1; // 11-26 새 나라: 호저 전략·동쪽 방패·섬 7천 개
     pw *= growFort(ctx.w, country); // 11-26 AI 성장: 요새
+    pw *= 1 + (ge?.defense ?? 0); // 11-27 체제
   } else if (overseas) {
     const pen = country === 'us' ? US_OVERSEAS : OVERSEAS_PENALTY;
-    pw *= pen + (1 - pen) * growOverseas(ctx.w, country); // 11-26 AI 성장: 세력이 크면 바다 건너도 덜 약해짐
+    pw *= Math.min(1, (pen + (1 - pen) * growOverseas(ctx.w, country)) * (1 + (ge?.overseas ?? 0))); // 11-26 AI 성장: 세력이 크면 바다 건너도 덜 약해짐 · 11-27 해군 통치
   }
   return pw;
 }
@@ -584,8 +594,10 @@ export function aiTick(
   playerDefense = 1,
   playerHold: { rebel: number; defense: number } = { rebel: 1, defense: 1 },
   deployHelp: Record<string, number> = {},
+  /** 11-27 AI 나라 체제 효과 */
+  govEff: Record<string, AiGovEff> = {},
 ): void {
-  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense, playerHold, deployHelp };
+  const ctx: Ctx = { w, nations, rng: new Rng(w.seed), t, player, playerDefense, playerHold, deployHelp, govEff };
   diplomacy(ctx);
   invasions(ctx);
   rebellions(ctx);

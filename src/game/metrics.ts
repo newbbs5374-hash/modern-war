@@ -2,6 +2,7 @@
 import { MIL_TECHS, SOC_TECHS } from '../data/civ';
 import { budgetPerDay, type GameState } from './state';
 import { civOf, cityTotals } from './civ';
+import { armyPower } from './economy';
 import { approvalOf, fieldValue } from './approval';
 import { domOf } from './domestic';
 import { liveZones } from './zones';
@@ -42,7 +43,7 @@ export function metric(s: GameState, id: MetricId): number {
     case 'troops':
       return s.nations[me]?.troops ?? 0;
     case 'power':
-      return s.economy.power;
+      return armyPower(s);
     case 'budget':
       return budgetPerDay(s, me);
     case 'mil':

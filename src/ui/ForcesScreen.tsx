@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { FORCE_BRANCHES, UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
-import { canProduce, produce, buildMs, QUEUE_MAX, queueName, crystalReady } from '../game/economy';
+import { armyPower, canProduce, produce, buildMs, QUEUE_MAX, queueName, crystalReady } from '../game/economy';
 import { exclusiveByName, exclusiveLock, specialsFor, specialsOf, type SpecialDef } from '../data/specials';
 import { unitTechLock } from '../game/civ';
 import { boostPrice, boostsAffordable, boostsToFinish, useBoost } from '../game/boost';
@@ -112,7 +112,7 @@ export function ForcesScreen(props: ScreenProps) {
         <div className="row">
           <div className="ichips">
             <Chip icon="🪖" value={fmt(state.nations[me.id].troops)} label="병력" />
-            <Chip icon="💪" value={e.power} label="전투력" />
+            <Chip icon="💪" value={fmt(armyPower(state))} label="전투력" />
             <Chip icon="🔨" value={`${e.queue.length}/${QUEUE_MAX}`} label="모집 줄" />
           </div>
           <Help title="부대">

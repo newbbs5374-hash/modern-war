@@ -1208,3 +1208,14 @@ select.wide, button.wide { width: 100%; }
 .home-mini.radar { width: 96px; }
 .radar-scope { width: 92px; height: 92px; }
 .radar-label { font-size: 10px !important; }
+
+/* 11-27 전투 연습장: 전투 방식별 접기 */
+.prac-group { margin-top: 6px; border: 1px solid rgba(255,255,255,.14); background: var(--panel); }
+.prac-group > summary { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; list-style: none; }
+.prac-group > summary::-webkit-details-marker { display: none; }
+.prac-group > summary::after { content: '▸'; margin-left: 4px; color: var(--hud); }
+.prac-group[open] > summary::after { content: '▾'; }
+.prac-group > summary small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prac-ico { font-size: 22px; line-height: 1; }
+.prac-n { font-style: normal; font-size: 12px; padding: 1px 7px; background: var(--hud); color: #0b1a20; border-radius: 9px; }
+.prac-group > .tiles { padding: 0 8px 8px; }

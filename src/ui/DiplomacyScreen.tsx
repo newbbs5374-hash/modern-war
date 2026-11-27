@@ -7,7 +7,7 @@ import { RESOURCES, SELL_RATE, type Res } from '../data/economy';
 import { BLOCS, COUNTRIES, countryById, type Relation } from '../data/world';
 import { COMMAND_TOP, DIPLO_COOLDOWN_HOURS, diploReady } from '../game/command';
 import {
-  CONTRACT_MAX,
+  contractMax,
   CONTRACT_QTY,
   addContract,
   canContract,
@@ -111,12 +111,12 @@ export function TradePanel({ state, actions }: ScreenProps) {
         <div className="row">
           <div className="ichips">
             <Chip icon="💰" value={fmt(state.nations[me].treasury)} label="나라 예산" />
-            <Chip icon="🔁" value={`${contracts.length}/${CONTRACT_MAX}`} label="계약" />
+            <Chip icon="🔁" value={`${contracts.length}/${contractMax(state)}`} label="계약" />
           </div>
           <Help title="무역">
             <p>전쟁 중이 아닌 나라와 자원을 사고팔아요. 값은 상대 지도자 성향에 따라 달라요(경제형 싸게, 공격형 비싸게, 연합은 10% 할인). 그 나라 도시에서 나는 자원만 살 수 있고, 팔 때는 값의 {Math.round(SELL_RATE * 100)}%를 받아요.</p>
             <p>
-              <b>정기 계약</b>은 매시간 자동으로 수입·수출해요. 전쟁이 나면 멈추고, 돈이나 팔 자원이 모자라면 있는 만큼만 해요. 최대 {CONTRACT_MAX}개.
+              <b>정기 계약</b>은 매시간 자동으로 수입·수출해요. 전쟁이 나면 멈추고, 돈이나 팔 자원이 모자라면 있는 만큼만 해요. 최대 {contractMax(state)}개(상업 연합 체제·국제 우호 카드로 +1).
             </p>
           </Help>
         </div>

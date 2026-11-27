@@ -151,12 +151,25 @@ export function nextDifficulty(base: number, results: Array<{ win: boolean }>): 
   return Math.max(0.7, base - results.filter((r) => r.win).length * 0.06 + results.filter((r) => !r.win).length * 0.04);
 }
 
+/** 11-27 연습장 묶음: 전투 방식(이기는 조건)별로 나눠 접기 */
+export const PRACTICE_GROUPS: Array<{ id: string; icon: string; name: string; text: string }> = [
+  { id: 'siege', icon: '🏰', name: '공성전 · 시가지', text: '도시를 막마다 빼앗는 전투' },
+  { id: 'hq', icon: '🎯', name: '지휘소 파괴', text: '적 지휘소를 부수고 최후 저항을 막기' },
+  { id: 'points', icon: '🚩', name: '거점 차지', text: '거점 여러 곳을 모두 차지' },
+  { id: 'all', icon: '💥', name: '섬멸전', text: '적 부대·함대를 모두 격파' },
+  { id: 'survive', icon: '🛡️', name: '방어전', text: '정해진 시간 동안 버티기' },
+  { id: 'escort', icon: '🚚', name: '호송 · 구출', text: '차량·배를 목적지까지 지키기' },
+];
+const groupOf = (st: { win?: string }): string =>
+  st.win === 'hqwaves' || st.win === 'hq' ? 'hq' : st.win ?? 'hq';
+
 /** 연습장 목록(보상 없음): 공성전 · 시험판 해안 전장 · 큰 전장 · 공성전 시가지 · 파병 전장 모두 */
-export const PRACTICE: Array<{ label: string } & Pick> = [
-  { label: '3막 공성전(막마다 전장이 바뀜)', frame: 'b3d', variant: 'siege' },
-  { label: '철벽 작전(시험판 해안 전장)', frame: 'b3d', variant: 'coast' },
-  ...[...BIG_FIELDS, ...URBAN_FIELDS].map((st) => ({ label: st.name.replace(/^\d막 · /, ''), frame: 'b3d' as Frame, variant: st.id })),
-  ...DEPLOY_FIELDS.map((st) => ({ label: `파병 · ${st.name}`, frame: 'b3d' as Frame, variant: st.id })),
+export const PRACTICE: Array<{ label: string; group: string } & Pick> = [
+  { label: '3막 공성전(막마다 전장이 바뀜)', group: 'siege', frame: 'b3d', variant: 'siege' },
+  ...URBAN_FIELDS.map((st) => ({ label: st.name.replace(/^\d막 · /, ''), group: 'siege', frame: 'b3d' as Frame, variant: st.id })),
+  { label: '철벽 작전(시험판 해안 전장)', group: 'hq', frame: 'b3d', variant: 'coast' },
+  ...BIG_FIELDS.map((st) => ({ label: st.name, group: groupOf(st), frame: 'b3d' as Frame, variant: st.id })),
+  ...DEPLOY_FIELDS.map((st) => ({ label: `파병 · ${st.name}`, group: groupOf(st), frame: 'b3d' as Frame, variant: st.id })),
 ];
 
 const PRACTICE_KEY = 'modern-war-plan';
