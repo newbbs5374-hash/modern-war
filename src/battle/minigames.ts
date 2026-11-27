@@ -3,6 +3,7 @@
 // 계산(점수 → 별)은 여기, 화면은 src/ui/battle/mini/*.
 import { Rng } from '../game/rng';
 import type { FreshFrame } from './fresh';
+import { EASY, type EasyCtl } from './easy';
 
 export interface MiniDef {
   id: string;
@@ -18,6 +19,8 @@ export interface MiniDef {
   three?: boolean;
   /** 11-26 새 훈련 틀(A 1인칭 · B 계획→재생 · C 대화 · D 관리판) */
   fresh?: FreshFrame;
+  /** 11-27 한 손가락 미니 훈련(조작 한 가지) */
+  easy?: EasyCtl;
 }
 
 export const MINIGAMES: MiniDef[] = [
@@ -94,6 +97,8 @@ export const MINIGAMES: MiniDef[] = [
   { id: 'n-sup-base', training: '보급', name: '보급 기지 운영', how: '전선 요청이 계속 들어와요. 요청을 누르면 빈 트럭이 물자를 싣고 가요(트럭 3대). 재고가 모자라면 공장에 주문(6초 뒤 도착, 예산 8). 마감 전에 많이 보내요.', secs: 80, on: true, three: true, fresh: 'D' },
   { id: 'n-lead-radio', training: '통솔', name: '동시 무전 지휘', how: '분대 5곳 무전이 한꺼번에 들어와요. 급한 것부터 맞는 지시를 골라요. 8초 안에 답하지 않으면 그 분대 사기가 떨어져요.', secs: 65, on: true, three: true, fresh: 'D' },
   { id: 'n-rec-ads', training: '모병', name: '광고 캠페인', how: '하루 예산 10을 TV·인터넷·학교·박람회에 나눠요. 채널마다 효과가 숨어 있어요. 어제 결과를 보고 고쳐요. 뉴스가 뜨면 그 채널이 2배. 7일 동안.', secs: 70, on: true, three: true, fresh: 'D' },
+  // 11-27 한 손가락 미니 훈련(화면이 만들어진 것만)
+  ...EASY.filter((e) => e.view).map((e) => ({ id: e.id, training: e.training, name: e.name, how: e.how, secs: e.secs, on: true, three: true, easy: e.ctl })),
 ];
 
 export const miniById = (id: string): MiniDef | undefined => MINIGAMES.find((m) => m.id === id);

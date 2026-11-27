@@ -60,6 +60,7 @@ import {
 } from '../game/officer';
 import { AIDE_EFFECT } from '../data/aideEffect';
 import { minisFor } from '../battle/minigames';
+import { easyById, easyLv, easyStats } from '../battle/easy';
 import { FRAME_NAME } from '../battle/fresh';
 import { UNIT_LV_AT, threeFor, unitBonusPct, unitLevel, unitName, weekLeftMs, weekOf, weeklyInfo, weeklyTraining } from '../battle3d/train3d';
 import { TEST_MODE } from '../game/balance';
@@ -979,7 +980,7 @@ function WeeklyCard({ state, onStart }: { state: ScreenProps['state']; onStart: 
 function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
   const minis = minisFor(name);
   const three = threeFor(name);
-  const [mini, setMini] = useState((minis.find((m) => m.fresh) ?? three[0] ?? minis[0])?.id);
+  const [mini, setMini] = useState((minis.find((m) => m.easy) ?? minis.find((m) => m.fresh) ?? three[0] ?? minis[0])?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;
   const t = TRAININGS.find((x) => x.name === name)!;
@@ -1008,8 +1009,9 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
       </p>
       {(
         [
+          ['👆 한 손가락 훈련', minis.filter((m) => m.easy).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: `${m.easy} · ${easyLv(o.easyLv, m.id)}단계`, sub: easyStats(easyById(m.id)!).map((x) => `${STAT_ICON[x]}${x}`).join(' ') }))],
           ['✨ 새 훈련', minis.filter((m) => m.fresh).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: FRAME_NAME[m.fresh!] }))],
-          ['🧊 3D 미니게임', minis.filter((m) => !m.fresh).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
+          ['🧊 3D 미니게임', minis.filter((m) => !m.fresh && !m.easy).map((m) => ({ id: m.id, name: m.name, how: m.how, tag: '3D' }))],
           ['🪖 3D 실전 훈련', three.map((m) => ({ id: m.id, name: m.name, how: m.how, tag: m.tag }))],
         ] as const
       )
@@ -1024,6 +1026,7 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
                     {m.name}
                     {m.tag && <i className="mg-tag">{m.tag}</i>}
                   </b>
+                  {'sub' in m && <small className="eg-sub">{m.sub}</small>}
                   <small>{m.how}</small>
                 </button>
               ))}

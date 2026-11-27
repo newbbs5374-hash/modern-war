@@ -1545,3 +1545,40 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .tree-face { width: 46px; height: 46px; }
 .tree-root { padding: 4px 14px; }
 .tree-lines { height: 26px; }
+
+/* 11-27 한 손가락 미니 훈련 */
+.eg-ctl { font-size: 12px; margin: 0; }
+.eg-ctl i { font-style: normal; font-weight: 700; color: #0b1112; background: var(--hud, #3fb8c9); border-radius: 6px; padding: 1px 7px; margin-right: 4px; }
+.mg-pick .eg-sub { color: var(--amber, #ffb020); }
+.eg-gauge { position: absolute; right: 8px; top: 10%; bottom: 14%; width: 20px; border-radius: 10px; background: #0009; border: 1px solid #fff5; pointer-events: none; }
+.eg-gauge .eg-band { position: absolute; left: 0; right: 0; background: #5dff8a88; border-radius: 6px; }
+.eg-gauge .eg-mark { position: absolute; left: -4px; right: -4px; height: 4px; margin-bottom: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 4px #000; }
+.eg-gauge small { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #fff; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.eg-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; max-width: 380px; margin: 6px auto 0; }
+.eg-chips button { min-height: 46px; padding: 3px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.eg-chips button b { font-size: 12.5px; }
+.eg-chips button small { font-size: 9.5px; color: var(--muted); line-height: 1.15; }
+.eg-chips button.on { border-color: #22d3ee; box-shadow: 0 0 0 2px #22d3ee55; }
+.eg-chips button.done b::after { content: ' ✓'; color: #5dff8a; }
+.eg-fire { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); min-height: 44px; padding: 0 18px; font-size: 15px; font-weight: 700; background: #d94a3d; color: #fff; border: 2px solid #fff; border-radius: 22px; }
+.eg-reticle { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 3px #000, inset 0 0 3px #000; pointer-events: none; }
+.eg-reticle::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: #ff5a4a; }
+.eg-sat { display: flex; flex-direction: column; gap: 2px; background: #000; }
+.eg-sat-p { position: relative; flex: 1; background-repeat: no-repeat; overflow: hidden; }
+.eg-sat-p > b { position: absolute; left: 5px; top: 3px; font-size: 10.5px; color: #fff; background: #0009; padding: 1px 6px; border-radius: 6px; z-index: 2; pointer-events: none; }
+.eg-sat-o { position: absolute; pointer-events: none; }
+.eg-sat-o i { display: block; box-shadow: 1px 1px 2px #000a; }
+.eg-sat-o.cars i { width: 17px; height: 4px; background: repeating-linear-gradient(90deg, #dfe5ea 0 4px, transparent 4px 6.5px); box-shadow: none; }
+.eg-sat-o.strip i { width: 26px; height: 3px; background: #9aa0a3; border: 1px solid #5c6063; }
+.eg-sat-o.camp i { width: 9px; height: 9px; background: #6d7a52; border: 1px solid #c9c2a0; }
+.eg-sat-o.silo i { width: 7px; height: 7px; border-radius: 50%; background: #e8e8e0; }
+.eg-sat-o.depot i { width: 13px; height: 7px; background: #b9a17a; border: 1px solid #5f5540; }
+.eg-sat-o.found::after { content: ''; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -15px; border: 2px solid #5dff8a; border-radius: 50%; }
+.eg-liar { display: flex; flex-direction: column; gap: 7px; padding: 10px; background: #26313c; }
+.eg-liar-q { margin: 0; font-size: 13px; color: #fff; }
+.eg-liar-q b { color: var(--amber, #ffb020); }
+.eg-liar button { text-align: left; min-height: 58px; padding: 8px 10px; font-size: 13px; line-height: 1.35; background: #f4efe2; color: #292524; border: 2px solid #b9ad84; border-radius: 6px; }
+.eg-liar button.good { border-color: #22c55e; background: #dcfce7; }
+.eg-liar button.bad { border-color: #ef4444; background: #fee2e2; }
+.eg-liar button.dim { opacity: .55; }
+.eg-liar-a { margin: 0; min-height: 18px; font-size: 12.5px; color: #fff; }

@@ -18,6 +18,16 @@ import { FHackNet, FTacWego } from './freshB';
 import { FInterro } from './freshC';
 import { FLeadRadio, FRecAds, FSupBase } from './freshD';
 import { M3AirFlare, M3AirIntercept, M3ArtyLead, M3SeaSonar, M3SeaTorpedo, M3ShootMoving, M3ShootPopup, M3SneakLight } from './three';
+import { EAmbush, EBreath, ECarrier, EConvoy, EHoldRun, EMarch, EParade, ERally, ERunner, ESand, ESling, ETorpedo, EWall } from './easyA';
+import { ELiar, EPack, ERings, ESatDiff } from './easyB';
+import { EASY } from '../../../battle/easy';
+
+/** 한 손가락 미니 훈련 화면(easy.ts 의 view 이름) */
+const EASY_VIEWS: Record<string, ComponentType<MiniProps>> = {
+  'e:holdrun': EHoldRun, 'e:wall': EWall, 'e:runner': ERunner, 'e:march': EMarch, 'e:sand': ESand, 'e:ambush': EAmbush,
+  'e:breath': EBreath, 'e:sling': ESling, 'e:satdiff': ESatDiff, 'e:liar': ELiar, 'e:parade': EParade, 'e:rally': ERally,
+  'e:convoy': EConvoy, 'e:pack': EPack, 'e:rings': ERings, 'e:carrier': ECarrier, 'e:torpedo': ETorpedo,
+};
 
 export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'sneak-path': SneakPath,
@@ -77,3 +87,8 @@ export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'n-lead-radio': FLeadRadio,
   'n-rec-ads': FRecAds,
 };
+// 한 손가락 미니 훈련: 새 화면이거나, 이미 있는 화면을 그대로 씀
+for (const e of EASY) {
+  const v = e.view && (EASY_VIEWS[e.view] ?? MINI_VIEWS[e.view]);
+  if (v) MINI_VIEWS[e.id] = v;
+}
