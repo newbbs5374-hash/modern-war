@@ -5,6 +5,7 @@ import { ACTS, actGoals, actInfo, neighborsOf } from '../game/acts';
 import { ACT_AI, ACT_REWARD, GRAND_EXTRA_MAX, GRAND_PER_DAY, actOf } from '../game/balance';
 import { countryById } from '../data/world';
 import { Modal } from './kit';
+import { actArt } from './scenes';
 import { cityById } from '../data/cities';
 import { counterAutoChance, counterOf, counterPlan, type Counter } from '../game/counter';
 import { setPendingPlan } from '../battle/spec';
@@ -38,9 +39,18 @@ function ActModal({ state, onClose }: { state: GameState; onClose: () => void })
   const nb = neighborsOf(state.player.countryId).map((id) => countryById(id).name).join(' · ');
   return (
     <Modal title="이번 판의 4장" icon="🎬" onClose={onClose} footer={<button onClick={onClose}>닫기</button>}>
+      {actArt(act) && (
+        <div className="act-cover">
+          <img src={actArt(act)!} alt="" draggable={false} />
+          <b>
+            {ACTS[act - 1].icon} {act}장 {ACTS[act - 1].name}
+          </b>
+        </div>
+      )}
       <div className="act-steps">
         {ACTS.map((x) => (
           <div key={x.n} className={`act-step ${x.n === act ? 'on' : x.n < act ? 'past' : ''}`}>
+            {actArt(x.n) && <img className="act-thumb" src={actArt(x.n)!} alt="" draggable={false} />}
             <b>
               {x.icon} {x.n}장 {x.name}
               {x.n < act ? ' ✓' : ''}

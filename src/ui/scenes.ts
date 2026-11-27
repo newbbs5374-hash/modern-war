@@ -35,3 +35,8 @@ const DOM_FILES = import.meta.glob('../assets/dom/*.{png,jpg,jpeg,webp}', { eage
 const DOM_URLS: Record<string, string> = {};
 for (const [p, u] of Object.entries(DOM_FILES)) DOM_URLS[p.split('/').pop()!.replace(/\.[^.]+$/, '')] = u;
 export const domArt = (key: string): string | null => DOM_URLS[key] ?? null;
+
+/** 11-27 종합 확장안 그림: 장 표지(scene-act1~4), 마지막 위기(scene-crisis-<이름>), 전역 표지(campaign-<나라>) */
+export const actArt = (n: number): string | null => URLS[`scene-act${n}`] ?? null;
+export const crisisArt = (id: 'coalition' | 'nuke' | 'coup'): string | null => URLS[`scene-crisis-${id}`] ?? null;
+export const campaignArt = (countryId: string): string | null => URLS[`campaign-${countryId}`] ?? null;
