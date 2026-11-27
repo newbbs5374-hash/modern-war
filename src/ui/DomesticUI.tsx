@@ -1,4 +1,5 @@
 // 내정 확장 화면(11/24): 국정 과제 나무(개인)·여론(사회)·기본법(사회 정계)·국가 사업과 특구(경제)·예산 국회(경제 예산·세금)·사진첩과 오늘의 뉴스(개인)
+import { MEGAS, MEGA_DAYS, MEGA_STAGES, canMega, megaCost, megaLv, megaOf, megaTotal, startMega } from '../game/megaPlan';
 import { COUNTRIES, countryById } from "../data/world";
 import { isAlive } from "../game/world";
 import { DEAL_BUDGET, FIRMS, FIRM_MAX, canDeal as canArmsDeal, canGrowFirm, dealPreview, dealSlots, firmById, firmCost, firmLv, growFirm, liveDeals, signDeal, type FirmId } from "../game/arms";
@@ -554,6 +555,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
       <ZonesCard state={state} actions={actions} />
       <SpecCard state={state} actions={actions} />
       <ArmsCard state={state} actions={actions} />
+      <MegaCard state={state} actions={actions} />
       <ChainsCard state={state} />
       {pick && (
         <Modal
@@ -910,6 +912,62 @@ function SpecCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
 }
 
 /* ───────── 내정 3 방산 기업과 수출(11-27) ───────── */
+function MegaCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
+  const m = megaOf(state);
+  return (
+    <Card
+      title={`국가 대계획 ${megaTotal(state)}/${MEGAS.length * MEGA_STAGES}단계`}
+      icon="🚀"
+      right={
+        <Help title="국가 대계획">
+          <p>여러 주에 걸쳐 4단계를 밟는 초대형 사업이에요. 한 번에 한 단계만 진행하고, 가속할 수 없어요.</p>
+          <p>단계를 끝낼 때마다 명성과 영구 효과가 붙고 사진첩에 장면이 남아요. 세 가지를 모두 완성하면 「과학 승리」예요.</p>
+        </Help>
+      }
+    >
+      {MEGAS.map((d) => {
+        const lv = megaLv(state, d.id);
+        const run = m.run?.id === d.id ? m.run : null;
+        const st = d.stages[Math.min(lv, MEGA_STAGES - 1)];
+        const no = canMega(state, d.id);
+        const art = sceneArt(st.scene, false);
+        return (
+          <div key={d.id} className={`mega ${lv >= MEGA_STAGES ? "done" : ""}`}>
+            <div className="mega-art" style={art ? { backgroundImage: `url(${art})` } : undefined}>
+              <span>{d.icon}</span>
+            </div>
+            <div className="mega-body">
+              <b>
+                {d.name} <small className="muted">{d.effText}</small>
+              </b>
+              <div className="mega-steps">
+                {d.stages.map((x, i) => (
+                  <span key={i} className={i < lv ? "on" : i === lv && run ? "run" : ""} title={x.text}>
+                    {i < lv ? "✅" : i + 1}. {x.name}
+                  </span>
+                ))}
+              </div>
+              {lv >= MEGA_STAGES ? (
+                <small className="good">완성! 영구 효과가 붙었어요.</small>
+              ) : run ? (
+                <small>
+                  ⏳ 「{st.name}」 진행 중 · {longTime(run.endMs - state.worldMs)} 남음
+                </small>
+              ) : (
+                <button className="gold" disabled={!!no} title={no ?? ""} onClick={() => actions.apply((s) => startMega(s, d.id))}>
+                  {lv + 1}단계 「{st.name}」 시작 · 💵{fmt(megaCost(state, d.id))} · {MEGA_DAYS[lv]}일
+                </button>
+              )}
+              {!run && lv < MEGA_STAGES && no && <small className="muted"> {no}</small>}
+            </div>
+          </div>
+        );
+      })}
+    </Card>
+  );
+}
+const longTime = (ms: number) => (ms >= 86400e3 ? `${Math.floor(ms / 86400e3)}일 ${Math.floor((ms % 86400e3) / 3600e3)}시간` : `${Math.max(0, Math.floor(ms / 3600e3))}시간 ${Math.max(0, Math.floor((ms % 3600e3) / 60e3))}분`);
+
 function ArmsCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
   const [sell, setSell] = useState<FirmId | null>(null);
   const me = state.player.countryId;

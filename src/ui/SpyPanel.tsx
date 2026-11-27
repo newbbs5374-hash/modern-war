@@ -8,6 +8,7 @@ import type { ScreenProps } from './screens';
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { isAlive, relationOf } from '../game/world';
+import { CATCH_FAME, CATCH_INTEL, LEAK_RESEARCH, LEAK_SPY, MOLE_SPOTS, arrest, canClue, clueCost, findClue, moleOf } from '../game/mole';
 import { SPY_OPS, canSpy, scoutView, spyChance, spyOf, spyOpById, spyTeams, startSpy } from '../game/spy';
 
 export function SpyPanel({ state, actions }: ScreenProps) {
@@ -16,8 +17,40 @@ export function SpyPanel({ state, actions }: ScreenProps) {
   const others = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id));
   const [target, setTarget] = useState<string>(() => others[0]?.id ?? '');
   const view = target ? scoutView(state, target) : null;
+  const mole = moleOf(state);
+  const [mmsg, setMmsg] = useState('');
+  const noClue = canClue(state);
   return (
     <>
+      <Card title="🛡️ 방첩" right={<small className="muted">잡음 {mole.caught} · 놓침 {mole.missed}</small>}>
+        {mole.open ? (
+          <>
+            <p className="small asm-vote">
+              🚨 부처 어딘가에 첩자가 있어요 · {timeLeft(Math.max(0, mole.open.untilMs - state.worldMs))} 뒤 달아나요 · 연구 {Math.round(LEAK_RESEARCH * 100)}% · 첩보 성공 {Math.round(LEAK_SPY * 100)}%
+            </p>
+            <div className="mole-spots">
+              {MOLE_SPOTS.map((sp2, i) => {
+                const clear = mole.open!.clear.includes(i);
+                return (
+                  <button key={sp2.name} className={clear ? 'clear' : ''} disabled={clear} onClick={() => setMmsg(actions.applyWith((s) => { const r = arrest(s, i); return { state: r.state, out: r.text }; }) ?? '')}>
+                    <span>{clear ? '✅' : sp2.icon}</span>
+                    <b>{sp2.name}</b>
+                    <small>{clear ? '결백' : '체포하기'}</small>
+                  </button>
+                );
+              })}
+            </div>
+            <button className="gold wide" disabled={!!noClue} onClick={() => setMmsg(actions.applyWith((s) => { const r = findClue(s); return { state: r.state, out: r.text }; }) ?? '')}>
+              🔎 조사하기 · 💰{fmt(clueCost(state))}
+              {noClue && state.worldMs < mole.open.clueMs ? ` · ${timeLeft(mole.open.clueMs - state.worldMs)} 뒤` : ''}
+            </button>
+            <p className="small muted">조사하면 결백한 부처가 하나씩 지워져요(4시간마다 한 번). 맞게 체포하면 정보 +{CATCH_INTEL} · 명성 +{CATCH_FAME}, 틀리면 신뢰도 −3 · 지지도 −2.</p>
+          </>
+        ) : (
+          <p className="small muted">지금은 숨어든 첩자가 없어요. 적 첩자가 들어오면 부관이 알려요.</p>
+        )}
+        {mmsg && <p className="small sch-msg">{mmsg}</p>}
+      </Card>
       <Card title="🕵️ 첩보 본부" right={<small className="muted">공작 팀 {sp.active.length}/{spyTeams(state)}</small>}>
         <p className="small">
           🕵️ 정보 점수 <b>{fmt(state.officer.intel)}</b> · 💰 나라 예산 <b>{fmt(state.nations[me].treasury)}</b>

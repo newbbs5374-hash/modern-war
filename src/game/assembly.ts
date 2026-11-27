@@ -54,6 +54,8 @@ export function billRows(s: GameState, id: BillId): Array<[string, number]> {
   if (sb) rows.push([`🏛️ 여당 의석 ${s.polity!.seats.ruling}/300`, Math.round(sb * 100) / 100]);
   const hard = billById(id).hard;
   if (hard) rows.push(['법안이 어려움', -hard]);
+  const debts = (s.assembly?.debts ?? []).filter((d) => d > s.worldMs).length;
+  if (debts) rows.push([`🤝 안 갚은 약속 ${debts}건`, -debts * 0.04]);
   return rows;
 }
 export const billChance = (s: GameState, id: BillId) => Math.max(0.1, Math.min(0.95, billRows(s, id).reduce((a, [, v]) => a + v, 0)));

@@ -1,5 +1,6 @@
 // 승리 조건 진행 카드 · 엔딩 · 명예의 전당
 import { RANKS } from '../data/ranks';
+import { MEGAS, MEGA_STAGES, megaLv, megaTotal } from '../game/megaPlan';
 import { ALLIED_SHARE, ALONE_SHARE, continueAfterWin, hasWon, HOLD_DAYS, holdLeft, loadHall, recordHall, victoryProgress, VICTORY_RANK, type Ending, type HallEntry } from '../game/victory';
 import { timeLeft } from './officerScreens';
 import { Card } from './common';
@@ -95,9 +96,9 @@ export function EndingCard({ state, actions }: ScreenProps) {
   if (!e) return null;
   return (
     <div className="ending">
-      <h2>{e.kind === '평화 승리' ? '🕊️' : e.kind === '문화 승리' ? '🎨' : '🏆'} {e.kind}!</h2>
+      <h2>{e.kind === '평화 승리' ? '🕊️' : e.kind === '문화 승리' ? '🎨' : e.kind === '과학 승리' ? '🔬' : '🏆'} {e.kind}!</h2>
       <p>
-        {e.name} 지도자가 이끈 {e.country}이(가) {e.day}일째에 {e.kind === '평화 승리' ? '세계 평화 헌장으로 전쟁 없는 세계를 열었어요' : e.kind === '문화 승리' ? '문화로 세계 사람들의 마음을 얻었어요' : '전쟁을 끝냈어요'}.
+        {e.name} 지도자가 이끈 {e.country}이(가) {e.day}일째에 {e.kind === '평화 승리' ? '세계 평화 헌장으로 전쟁 없는 세계를 열었어요' : e.kind === '문화 승리' ? '문화로 세계 사람들의 마음을 얻었어요' : e.kind === '과학 승리' ? '세 가지 국가 대계획을 이뤄 인류의 내일을 열었어요' : '전쟁을 끝냈어요'}.
       </p>
       <p className="small">
         도시 {e.cities}개{e.captured.length ? ` · 점령: ${e.captured.join(', ')}` : ''}
@@ -137,7 +138,7 @@ function WinsDone({ state, actions }: ScreenProps) {
       {wins.map((w, i) => (
         <div key={i} className="list-row small">
           <span>
-            {w.kind === '평화 승리' ? '🕊️' : w.kind === '문화 승리' ? '🎨' : '🏆'} <b>{w.kind}</b>
+            {w.kind === '평화 승리' ? '🕊️' : w.kind === '문화 승리' ? '🎨' : w.kind === '과학 승리' ? '🔬' : '🏆'} <b>{w.kind}</b>
           </span>
           <span className="muted">{w.day}일째 · 도시 {w.cities}</span>
         </div>
@@ -177,7 +178,7 @@ export function HallList({ list = loadHall() }: { list?: HallEntry[] }) {
 
 /* ───────── 👤 개인 → 🏆 승리(11-24 대장 요청: 모든 승리 조건을 한곳에서) ───────── */
 const ALONE_PCT = Math.round(ALONE_SHARE * 100);
-type WinId = 'conquer' | 'allied' | 'peace' | 'culture';
+type WinId = 'conquer' | 'allied' | 'peace' | 'culture' | 'science';
 
 /** 승리 4가지의 진행률(0~1)과 지키는 중 남은 시간 */
 export function winLines(s: ScreenProps['state']) {
@@ -190,7 +191,7 @@ export function winLines(s: ScreenProps['state']) {
   const pl = peaceLeft(s);
   const cl = cultureWinLeft(s);
   const r = (a: number, b: number) => Math.max(0, Math.min(1, a / Math.max(1, b)));
-  const names: Record<WinId, Ending['kind']> = { conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리' };
+  const names: Record<WinId, Ending['kind']> = { conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리', science: '과학 승리' };
   return ([
     { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)${p.capsNeed ? ' + 강대국 수도 3곳' : ''}`, now: `${p.mine} / ${p.needAlone}${p.capsNeed ? ` · 수도 ${p.capsHave}/${p.capsNeed}` : ''}`, pct: r(p.mine + p.capsHave * 4, p.needAlone + p.capsNeed * 4), left: conquerOn ? hold : null },
     { id: 'allied' as WinId, icon: '🤝', name: '연합 승리', goal: `우리+연합국 도시 ${p.needAllied}개`, now: `${p.allied} / ${p.needAllied}`, pct: r(p.allied, p.needAllied), left: alliedOn ? hold : null },
@@ -204,6 +205,7 @@ export function winLines(s: ScreenProps['state']) {
       pct: (r(cp.have, cp.need) + r(cp.top, cp.needTop) + (cp.rankOk ? 1 : 0)) / 3,
       left: cl,
     },
+    { id: 'science' as WinId, icon: '🔬', name: '과학 승리', goal: '국가 대계획 3가지 완성', now: `${megaTotal(s)} / ${MEGAS.length * MEGA_STAGES}단계`, pct: r(megaTotal(s), MEGAS.length * MEGA_STAGES), left: null },
   ] as const).map((l) => (hasWon(s, names[l.id]) ? { ...l, done: true, pct: 1, left: null } : { ...l, done: false }));
 }
 
@@ -222,7 +224,7 @@ export function VictoryPanel(props: ScreenProps) {
   const allies = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id) && relationOf(state.world, me, c.id) === '연합');
   return (
     <>
-      <Card title="🏆 승리 조건" right={<small className="muted">넷 중 하나만 이루면 승리</small>}>
+      <Card title="🏆 승리 조건" right={<small className="muted">다섯 중 하나만 이루면 승리</small>}>
         <p className="small">
           {ready ? (
             <span className="ok">✅ 「{RANKS[VICTORY_RANK].name}」 호칭이라 이제 승리할 수 있어요.</span>
@@ -288,6 +290,19 @@ export function VictoryPanel(props: ScreenProps) {
         </Card>
       )}
       {pick === 'culture' && <CultureWinPanel state={state} />}
+      {pick === 'science' && (
+        <Card title="🔬 과학 승리" right={<small className="muted">대계획 3가지 완성</small>}>
+          <div className="small">
+            {MEGAS.map((m) => (
+              <div key={m.id}>
+                {m.icon} {m.name} {megaLv(state, m.id)} / {MEGA_STAGES}단계
+                <Meter have={megaLv(state, m.id)} need={MEGA_STAGES} />
+              </div>
+            ))}
+          </div>
+          <p className="small muted">경제 → 국가 사업 → 국가 대계획에서 한 단계씩 진행해요. 전쟁을 하지 않아도 이길 수 있는 길이에요.</p>
+        </Card>
+      )}
       <WinsDone {...props} />
       <HallList />
     </>
