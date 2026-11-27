@@ -41,6 +41,17 @@ export const PROJECTS: ProjectDef[] = [
   { id: 'capital', icon: '🏛️', name: '행정수도 이전', text: '사회 +5 · 신뢰도 +3', scale: 1.2, eff: { society: 5, trust: 3 }, groups: { civic: 4, biz: -3 }, where: 'notCapital', scene: 'ceremony' },
   { id: 'olympic', icon: '🏟️', name: '올림픽 유치', text: '지지도 +4 · 외교 +5', scale: 1.1, eff: { approval: 4, diplo: 5 }, groups: { youth: 6, press: 3 }, where: 'any', scene: 'ceremony' },
   { id: 'shield', icon: '🛡️', name: '미사일 방어망', text: '안보 +8', scale: 1.3, eff: { defense: 8 }, groups: { mil: 4, civic: -2 }, where: 'any', scene: 'airbase' },
+  // 11-28 국정 37 강화(국가 사업 10 → 20)
+  { id: 'tunnel', icon: '🚇', name: '해저터널', text: '자원 +4% · 외교 +3', scale: 1.4, eff: { res: 0.04, diplo: 3 }, groups: { biz: 5, civic: -2 }, where: 'coastal', scene: 'groundbreak' },
+  { id: 'smart', icon: '🏙️', name: '스마트시티', text: '나라 예산 +4% · 민심 +4', scale: 1.2, eff: { budget: 0.04, loyalty: 4 }, groups: { youth: 5, biz: 3 }, where: 'notCapital', scene: 'groundbreak' },
+  { id: 'station', icon: '🛰️', name: '우주정거장', text: '연구 +8% · 첩보 +3%', scale: 1.6, eff: { research: 0.08, spy: 0.03 }, groups: { youth: 5, press: 3 }, where: 'coastal', scene: 'launch' },
+  { id: 'fusion', icon: '☀️', name: '핵융합 실험로', text: '자원 +6% · 연구 +5%', scale: 1.7, eff: { res: 0.06, research: 0.05 }, groups: { biz: 4, civic: -3 }, where: 'any', scene: 'factory' },
+  { id: 'port', icon: '⚓', name: '국제 물류 항만', text: '나라 예산 +5% · 경제 +2', scale: 1.1, eff: { budget: 0.05, economy: 2 }, groups: { labor: 4, biz: 4 }, where: 'coastal', scene: 'port' },
+  { id: 'dam', icon: '🌊', name: '다목적 댐', text: '자원 +3% · 지지도 +2', scale: 0.9, eff: { res: 0.03, approval: 2 }, groups: { labor: 3, civic: -4 }, where: 'any', scene: 'groundbreak' },
+  { id: 'aiLab', icon: '🤖', name: '국가 AI 연구원', text: '연구 +7% · 모집 +3%', scale: 1.3, eff: { research: 0.07, build: 0.03 }, groups: { youth: 6, labor: -3 }, where: 'any', scene: 'factory' },
+  { id: 'expo', icon: '🎡', name: '세계 박람회', text: '외교 +5 · 지지도 +3', scale: 1, eff: { diplo: 5, approval: 3 }, groups: { biz: 4, press: 3 }, where: 'any', scene: 'ceremony' },
+  { id: 'arsenal', icon: '🏭', name: '국가 방산 단지', text: '모집 +6% · 안보 +3', scale: 1.3, eff: { build: 0.06, defense: 3 }, groups: { mil: 6, labor: 3, civic: -3 }, where: 'notCapital', scene: 'factory' },
+  { id: 'gps', icon: '📡', name: '독자 위성항법망', text: '안보 +5 · 첩보 +4%', scale: 1.4, eff: { defense: 5, spy: 0.04 }, groups: { mil: 4, youth: 2 }, where: 'coastal', scene: 'launch' },
 ];
 export const projectById = (id: string) => PROJECTS.find((p) => p.id === id)!;
 
