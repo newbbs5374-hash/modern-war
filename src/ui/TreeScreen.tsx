@@ -22,6 +22,9 @@ import { recommendActs, runDay } from '../game/dayPlan';
 import { SLOTS, actById, doAct, scheduleOf } from '../game/schedule';
 import { routeTo, type Screen } from './nav';
 import { Face } from './Portrait';
+import { FAV_MAX, favsOf, matches, toggleFav } from './favs';
+import { BriefingModal } from './BriefingUI';
+import { OrdersModal } from './OrdersModal';
 import type { ScreenProps } from './screens';
 
 export interface Leaf { id: string; label: string; icon: ReactNode; badge?: number | string | null; locked?: boolean; screen: Screen }
@@ -67,6 +70,25 @@ export function todosOf(state: GameState): Todo[] {
   if (g > 0) out.push({ key: 'shop', icon: '🎁', text: `받을 보상 ${g}개`, sub: '상점에서 받기', screen: 'shop' });
   return out;
 }
+export interface Spot { key: string; label: string; group: string; icon: ReactNode; badge?: number | string | null; locked?: boolean; screen: Screen; tab?: string }
+/** 찾기·즐겨찾기에 쓰는 모든 칸(가지 5개 + 사람 + 그 밖) */
+export function spotsOf(state: GameState): Spot[] {
+  const out: Spot[] = [];
+  for (const b of branchesOf(state)) for (const l of b.leaves) out.push({ key: `${b.id}/${l.id}`, label: l.label, group: b.name, icon: l.icon, badge: l.badge, locked: l.locked, screen: b.id, tab: l.id });
+  for (const l of personalTabs(asProps(state))) out.push({ key: `personal/${l.id}`, label: l.label, group: '사람', icon: l.icon, badge: l.badge, locked: l.locked, screen: 'personal', tab: l.id });
+  for (const e of EXTRAS) out.push({ key: e.screen, label: e.label, group: '그 밖', icon: e.icon, screen: e.screen });
+  return out;
+}
+/** 본부에서 옮겨 온 칸 */
+const EXTRAS: Array<{ screen: Screen; label: string; icon: string }> = [
+  { screen: 'herald', label: '전령', icon: '📯' },
+  { screen: 'report', label: '보고', icon: '📨' },
+  { screen: 'codex', label: '도감', icon: '📖' },
+  { screen: 'shop', label: '상점', icon: '🛒' },
+  { screen: 'settings', label: '설정·시험', icon: '⚙️' },
+];
+export const goSpot = (sp: Spot) => (sp.tab ? routeTo(sp.screen, sp.screen, sp.tab) : sp.screen);
+
 export const todoCount = (state: GameState) => todosOf(state).length;
 
 export function TodoList({ state, go, max }: { state: GameState; go: (s: Screen) => void; max?: number }) {
@@ -160,6 +182,13 @@ export function TodoCard({ state, go, apply }: { state: GameState; go: (s: Scree
 
 export function TreeScreen({ state, go, actions }: ScreenProps) {
   const [todoOpen, setTodoOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [favs, setFavs] = useState(favsOf);
+  const [pin, setPin] = useState(false);
+  const [pop, setPop] = useState<'orders' | 'brief' | null>(null);
+  const spots = spotsOf(state);
+  const found = q.trim() ? spots.filter((sp) => matches(`${sp.group}${sp.label}`, q.trim())) : [];
+  const tap = (key: string, to: Screen) => (pin ? setFavs((f) => toggleFav(f, key)) : go(to));
   const branches = branchesOf(state);
   const n = todoCount(state);
   const act = state.world.act != null ? actInfo(state) : null;
@@ -175,6 +204,36 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
           📋 할 일 {n}
         </button>
       </div>
+      <div className="tree-find">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 기능 찾기 (예: 연구, 무역, 부관)" aria-label="기능 찾기" />
+        {q && (
+          <button className="mini" onClick={() => setQ('')} aria-label="지우기">
+            ✕
+          </button>
+        )}
+        <button className={`mini ${pin ? 'on' : ''}`} onClick={() => setPin(!pin)}>
+          {pin ? '✅ 다 골랐어요' : `⭐ 즐겨찾기 ${favs.length}/${FAV_MAX}`}
+        </button>
+      </div>
+      {pin && <p className="tree-legend">본부에 꽂을 칸을 눌러 고르세요({FAV_MAX}개까지). 다시 누르면 빠져요.</p>}
+      {q.trim() && (
+        <div className="todo-list tree-found">
+          {found.length ? (
+            found.slice(0, 12).map((sp) => (
+              <button key={sp.key} className="todo-row" onClick={() => tap(sp.key, goSpot(sp))}>
+                <span className="todo-ico">{sp.locked ? '🔒' : sp.icon}</span>
+                <b>
+                  {favs.includes(sp.key) ? '⭐ ' : ''}
+                  {sp.label}
+                </b>
+                <small>{sp.group} ▸</small>
+              </button>
+            ))
+          ) : (
+            <p className="empty">「{q.trim()}」에 맞는 기능이 없어요.</p>
+          )}
+        </div>
+      )}
       <button className="tree-root" onClick={() => go('personal')}>
         <span className="tree-face">
           <Face keys={playerKeys(state.player)} fallback="👤" />
@@ -198,7 +257,8 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
                 {hot > 0 && <i className="badge">{hot}</i>}
               </button>
               {b.leaves.map((l) => (
-                <button key={l.id} className={`tree-leaf ${l.locked ? 'locked' : ''} ${isTodo(b.id, l) ? 'hot' : ''}`} onClick={() => go(routeTo(b.id, b.id, l.id))}>
+                <button key={l.id} className={`tree-leaf ${l.locked ? 'locked' : ''} ${isTodo(b.id, l) ? 'hot' : ''}`} onClick={() => tap(`${b.id}/${l.id}`, routeTo(b.id, b.id, l.id))}>
+                  {favs.includes(`${b.id}/${l.id}`) && <i className="tree-star">⭐</i>}
                   <span className="tree-ico">{l.locked ? '🔒' : l.icon}</span>
                   <small>{l.label}</small>
                   {l.badge ? <i className="badge">{l.badge}</i> : null}
@@ -208,6 +268,26 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
           );
         })}
       </div>
+      <div className="tree-more">
+        <b>그 밖</b>
+        {EXTRAS.map((e) => (
+          <button key={e.screen} className={`tree-leaf ${favs.includes(e.screen) ? 'fav' : ''}`} onClick={() => tap(e.screen, e.screen)}>
+            {favs.includes(e.screen) && <i className="tree-star">⭐</i>}
+            <span className="tree-ico">{e.icon}</span>
+            <small>{e.label}</small>
+          </button>
+        ))}
+        <button className="tree-leaf" onClick={() => setPop('orders')}>
+          <span className="tree-ico">📋</span>
+          <small>명령</small>
+        </button>
+        <button className="tree-leaf" onClick={() => setPop('brief')}>
+          <span className="tree-ico">📰</span>
+          <small>국정 보고</small>
+        </button>
+      </div>
+      {pop === 'orders' && actions && <OrdersModal state={state} apply={actions.apply} onClose={() => setPop(null)} />}
+      {pop === 'brief' && <BriefingModal state={state} onClose={() => setPop(null)} goTab={(sc, key, tab) => (setPop(null), go(routeTo(sc, key, tab)))} />}
       <p className="tree-legend">칸을 누르면 그 화면으로 가요 · 빨간 점 = 할 일 · 🔒 = 아직 잠김 · 맨 위 얼굴 = 사람(인사·인맥)</p>
       {todoOpen && (
         <Modal title={`오늘 할 일 ${n}건`} icon="📋" onClose={() => setTodoOpen(false)}>

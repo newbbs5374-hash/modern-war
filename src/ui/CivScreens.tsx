@@ -243,6 +243,12 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
   const W = L.width + TT_PAD.x * 2;
   const Hh = L.height + TT_PAD.top + TT_PAD.bottom;
   const doneN = list.filter((t) => st[t.id] === 'done').length;
+  // 11-27 화면 4: 찍어 둔 목표까지 가는 길
+  const goal = C.techGoalOf(state, line);
+  const path = goal ? C.techPath(state, goal.id) : [];
+  const onPath = new Set(path.map((t) => t.id));
+  const goalHours = path.reduce((a, t) => a + C.techLeft(state, t), 0) / Math.max(0.01, C.researchRate(state));
+  const step = goal ? C.goalNext(state, line) : null;
   // 처음 열 때·줄을 바꿀 때: 지금 연구(없으면 열 수 있는 첫 카드)가 보이게
   useLayoutEffect(() => {
     const el = box.current;
@@ -267,6 +273,23 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
           <span className="lg-done">■ 끝남</span> <span className="lg-now">■ 연구 중</span> <span className="lg-open">■ 열 수 있음</span> <span className="lg-far">■ 아직</span>
         </span>
       </div>
+      {goal ? (
+        <div className="tt-goal">
+          <span>
+            🎯 목표 <b>{goal.name}</b> · 남은 연구 {path.length}개 · 약 {timeLeft(goalHours * H)}
+          </span>
+          {step && c.cur[line] !== step.id && (
+            <button className="mini" disabled={!!C.techPayWhy(state, step.id)} onClick={() => actions.apply((s) => C.startResearch(s, step.id))}>
+              ▶ {step.name}
+            </button>
+          )}
+          <button className="mini" onClick={() => actions.apply((s) => C.setTechGoal(s, line, null))} aria-label="목표 지우기">
+            ✕
+          </button>
+        </div>
+      ) : (
+        <p className="tt-goal muted">🎯 카드를 눌러 「목표로 찍기」를 하면 가는 길이 빛나고, 연구가 끝날 때마다 다음 걸음을 알아서 시작해요.</p>
+      )}
       <div className="tt-box" ref={box}>
         <div className="tt-board" style={{ width: W, height: Hh }}>
           {L.eras.map((e, i) => {
@@ -282,7 +305,7 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
           })}
           <svg className="tt-lines" width={W} height={Hh} viewBox={`${-TT_PAD.x} ${-TT_PAD.top} ${W} ${Hh}`} aria-hidden>
             {edges.map((e) => (
-              <path key={`${e.from}>${e.to}`} d={cardPath(e.pts)} className={e.cls} />
+              <path key={`${e.from}>${e.to}`} d={cardPath(e.pts)} className={`${e.cls}${onPath.has(e.to) && (onPath.has(e.from) || st[e.from] === 'done') ? ' goal' : ''}`} />
             ))}
           </svg>
           {list.map((t) => {
@@ -297,7 +320,7 @@ function TechTree({ state, actions, list, onPick }: ScreenProps & { list: Tech[]
             return (
               <button
                 key={t.id}
-                className={`tt-node s-${s}`}
+                className={`tt-node s-${s}${onPath.has(t.id) ? ' on-goal' : ''}${goal?.id === t.id ? ' is-goal' : ''}`}
                 data-tech={t.id}
                 style={{ left: n.x + TT_PAD.x, top: n.y + TT_PAD.top - CARD_H / 2, width: CARD_W, height: CARD_H }}
                 onClick={() => onPick(t)}
@@ -382,6 +405,9 @@ function TechModal({ state, actions, t, onClose, onGo }: ScreenProps & { t: Tech
               {why ?? payWhy ?? (switching ? `이걸로 바꾸기(하던 연구는 그대로 남아요)${priceText ? ` · ${priceText}` : ''}` : `🔬 ${C.techStage(state, t.id) ? '이어서 연구' : '연구 시작'} · ${C.TECH_STAGES}단계 ${r1(C.techLeft(state, t))}시간${priceText ? ` · ${priceText}` : ''}`)}
             </button>
             {!why && !payWhy && <BoostBar state={state} apply={actions.apply} target={{ kind: 'tech', id: t.id }} compact />}
+            <button className="wide" onClick={() => (actions.apply((s) => C.setTechGoal(s, t.line, t.id)), onClose())}>
+              {c.goal?.[t.line] === t.id ? '🎯 목표에서 빼기' : `🎯 목표로 찍기 · 먼저 할 연구까지 ${C.techPath(state, t.id).length}개`}
+            </button>
           </span>
         )
       }
