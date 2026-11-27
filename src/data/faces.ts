@@ -98,7 +98,7 @@ export const FACE_EXTRA3: Record<string, FacePlan> = {
   'us-hi': { m40: 4, f40: 2, m50: 1, m60: 1, f50: 1, f60: 1 },
   'us-as': { m40: 2, f40: 2, m50: 0, m60: 0, f50: 0, f60: 0 },
 };
-export const EXTRA3_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'pl', 'ph', 'pk', 'sa']; // 11-27 그림 들어옴(대만은 sheet-tw-a1이 빠져서 아직)
+export const EXTRA3_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'tw', 'pl', 'ph', 'pk', 'sa']; // 11-27 그림 들어옴(18개국 모두)
 const extra3On = (tag: string) => EXTRA3_READY.includes(tagCountry(tag));
 
 const BANDS: readonly FaceBand[] = ['40', '50', '60'];
