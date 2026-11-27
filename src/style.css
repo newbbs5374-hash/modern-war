@@ -1583,3 +1583,40 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .eg-liar button.dim { opacity: .55; }
 .eg-liar-a { margin: 0; min-height: 18px; font-size: 12.5px; color: #fff; }
 .eg-gauge.red .eg-fill { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #ffb020, #ff5a4a); border-radius: 0 0 9px 9px; }
+.eg-quiz { padding: 0 0 8px; gap: 6px; }
+.eg-quiz > button, .eg-quiz > p { margin-left: 10px; margin-right: 10px; }
+.eg-quiz > button { min-height: 50px; font-size: 12.5px; }
+.eg-qhead { height: 92px; background-size: cover; background-position: center 35%; display: flex; align-items: flex-end; }
+.eg-qhead b { width: 100%; padding: 14px 10px 5px; font-size: 13px; color: #fff; background: linear-gradient(0deg, #000c, transparent); }
+.eg-qme { margin: 0; font-size: 12px; color: var(--amber, #ffb020); font-weight: 700; }
+.eg-qq { margin: 0; font-size: 13px; color: #fff; line-height: 1.4; }
+.eg-jug { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 4px 10px; }
+.eg-jug button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; min-height: 0; background: #33404c; color: #fff; border: 2px solid #5a6877; border-radius: 8px; }
+.eg-jug button.on { border-color: #22d3ee; }
+.eg-jug-ic { font-size: 30px; line-height: 1; }
+.eg-jug-bar { position: relative; width: 26px; height: 92px; border-radius: 6px; background: #0008; overflow: hidden; }
+.eg-jug-bar em { position: absolute; left: 0; right: 0; bottom: 0; transition: height .25s; }
+.eg-jug small { font-size: 11px; color: #fff; }
+.eg-jug .eg-jug-next { color: #ffb020; }
+.eg-jug-act { font-size: 11.5px; font-weight: 700; color: #0b1112; background: var(--hud, #3fb8c9); border-radius: 6px; padding: 2px 6px; }
+.eg-chips.one { grid-template-columns: 1fr; }
+.eg-undo { align-self: flex-end; margin: 0 10px; min-height: 30px; font-size: 12px; background: transparent; color: #fff; border: 1px solid #fff6; border-radius: 6px; }
+.eg-quiz > .eg-undo { min-height: 30px; background: transparent; color: #fff; border: 1px solid #fff6; text-align: center; }
+.eg-wind { position: absolute; inset: 0; touch-action: none; }
+.eg-wind-t { position: absolute; left: 50%; top: 46%; width: 44%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #d94a3d 0 9%, #fff 9% 20%, #d94a3d 20% 34%, #fff 34% 48%, #26313c 48% 68%, #fff 68% 70%, transparent 70%); box-shadow: 0 2px 8px #0008; }
+.eg-wind-flag { position: absolute; left: 50%; top: 8%; height: 12px; margin-left: 0; background: #ffb020; clip-path: polygon(0 0, 100% 50%, 0 100%); transform-origin: left center; }
+.eg-wind-flag::before { content: ''; position: absolute; left: -2px; top: -2px; width: 2px; height: 30px; background: #fff; }
+.eg-wind-x { position: absolute; width: 34px; height: 34px; margin: -17px; border: 2px solid #5dff8a; border-radius: 50%; pointer-events: none; }
+.eg-wind-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; background: #5dff8a; border-radius: 50%; }
+.eg-wind-h { position: absolute; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #111; border: 2px solid #ff5a4a; pointer-events: none; }
+.eg-wind-h.ok { border-color: #ffe07a; }
+.eg-sort { background: #2c3743; touch-action: none; }
+.eg-sort-fb { position: absolute; left: 8px; right: 8px; top: 8px; margin: 0; font-size: 12.5px; color: #fff; text-align: center; }
+.eg-sort-card { position: absolute; left: 50%; top: 36%; transform: translate(-50%, -50%); width: 62%; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: #f4efe2; color: #292524; border: 2px solid #b9ad84; border-radius: 8px; box-shadow: 0 4px 10px #0008; pointer-events: none; }
+.eg-sort-card span { font-size: 34px; line-height: 1; }
+.eg-sort-card b { font-size: 14px; text-align: center; }
+.eg-sort-bins { position: absolute; left: 0; right: 0; bottom: 0; height: 36%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 4px; pointer-events: none; }
+.eg-sort-bins div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #3b4855; border: 2px dashed #7a8896; border-radius: 8px; color: #fff; }
+.eg-sort-bins div.on { border-color: #22d3ee; background: #2d5562; }
+.eg-sort-bins span { font-size: 28px; line-height: 1; }
+.eg-sort-bins b { font-size: 12.5px; }

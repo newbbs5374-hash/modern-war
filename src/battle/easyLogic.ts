@@ -179,3 +179,128 @@ export function liarRound(rng: Rng, level: number): LiarRound {
   const order = [0, 1, 2].sort(() => rng.next() - 0.5);
   return { facts: order.map((i) => facts[i]), lie: order.indexOf(2), why };
 }
+
+// ── 놓기(덮기): 원 n개로 표적을 가장 많이 덮기 ──
+export interface CoverTarget { x: number; z: number; w: number }
+export const coverSum = (targets: CoverTarget[], marks: number[][], r: number) => targets.reduce((a, t) => a + (marks.some((m) => Math.hypot(m[0] - t.x, m[1] - t.z) <= r) ? t.w : 0), 0);
+/** 욕심쟁이 방식으로 찾은 가장 좋은 덮기(표적 자리·두 표적 사이를 후보로) */
+export function coverBest(targets: CoverTarget[], n: number, r: number): number {
+  const cands: number[][] = targets.map((t) => [t.x, t.z]);
+  for (let i = 0; i < targets.length; i++) for (let j = i + 1; j < targets.length; j++) if (Math.hypot(targets[i].x - targets[j].x, targets[i].z - targets[j].z) <= r * 2) cands.push([(targets[i].x + targets[j].x) / 2, (targets[i].z + targets[j].z) / 2]);
+  const marks: number[][] = [];
+  for (let k = 0; k < n; k++) {
+    let best = cands[0], bv = -1;
+    for (const c of cands) {
+      const v = coverSum(targets, [...marks, c], r);
+      if (v > bv) { bv = v; best = c; }
+    }
+    if (best) marks.push(best);
+  }
+  return coverSum(targets, marks, r);
+}
+export const coverScore = (targets: CoverTarget[], marks: number[][], n: number, r: number) => {
+  const best = coverBest(targets, n, r);
+  return best > 0 ? Math.min(1, coverSum(targets, marks, r) / best) : 0;
+};
+
+// ── 항구 하역: 배 3척의 순서. 급한 짐일수록 기다리는 값이 큼 ──
+export interface DockShip { name: string; icon: string; hours: number; urgent: number }
+const DOCK_KINDS: Array<[string, string]> = [['탄약선', '🧨'], ['유조선', '⛽'], ['식량선', '🍞'], ['병원선', '🏥'], ['장비선', '🛠️'], ['증원 수송선', '🪖']];
+export function dockShips(rng: Rng): DockShip[] {
+  const kinds = [...DOCK_KINDS].sort(() => rng.next() - 0.5).slice(0, 3);
+  for (let guard = 0; guard < 50; guard++) {
+    const ships = kinds.map(([name, icon]) => ({ name, icon, hours: 1 + Math.floor(rng.next() * 5), urgent: 1 + Math.floor(rng.next() * 3) }));
+    // 가장 좋은 순서가 하나뿐이게(비율이 모두 다름)
+    const ratio = ships.map((s) => s.urgent / s.hours);
+    if (new Set(ratio.map((x) => x.toFixed(3))).size === 3) return ships;
+  }
+  return kinds.map(([name, icon], i) => ({ name, icon, hours: i + 1, urgent: 3 - i }));
+}
+/** 기다린 값(작을수록 좋음): 급함 × 하역이 끝난 시각 */
+export const dockCost = (ships: DockShip[], order: number[]) => {
+  let t = 0, cost = 0;
+  for (const i of order) {
+    t += ships[i].hours;
+    cost += ships[i].urgent * t;
+  }
+  return cost;
+};
+export function dockScore(ships: DockShip[], order: number[]): number {
+  const perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+  const costs = perms.map((p) => dockCost(ships, p));
+  const best = Math.min(...costs), worst = Math.max(...costs);
+  const c = dockCost(ships, order);
+  return worst === best ? 1 : 1 - (c - best) / (worst - best);
+}
+
+// ── 끌기(길 그리기) 공통 ──
+export interface Circle { x: number; z: number; r: number }
+/** 그린 길이 지나간 원들의 번호(길이 maxLen 까지만 셈) */
+export function strokeHits(pts: number[][], circles: Circle[], maxLen = Infinity): number[] {
+  const hit = new Set<number>();
+  let len = 0;
+  const test = (x: number, z: number) => circles.forEach((c, i) => Math.hypot(x - c.x, z - c.z) <= c.r && hit.add(i));
+  if (pts.length) test(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, z1] = pts[i - 1], [x2, z2] = pts[i];
+    const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.ceil(L / 0.2));
+    for (let k = 1; k <= n; k++) {
+      if (len + (L * k) / n > maxLen) return [...hit];
+      test(x1 + ((x2 - x1) * k) / n, z1 + ((z2 - z1) * k) / n);
+    }
+    len += L;
+  }
+  return [...hit];
+}
+export const strokeLen = (pts: number[][]) => pts.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
+/** 가까운 것부터 도는 길이(드론 배터리의 기준) */
+export function tourLen(start: number[], pts: Circle[]): number {
+  let cur = start, left = [...pts], len = 0;
+  while (left.length) {
+    left.sort((a, b) => Math.hypot(a.x - cur[0], a.z - cur[1]) - Math.hypot(b.x - cur[0], b.z - cur[1]));
+    const n = left.shift()!;
+    len += Math.hypot(n.x - cur[0], n.z - cur[1]);
+    cur = [n.x, n.z];
+  }
+  return len;
+}
+/** 기뢰밭: 구불구불한 안전한 길을 먼저 만들고, 그 밖에 기뢰를 깖 */
+export function mineField(rng: Rng, level: number): { start: number[]; goal: number[]; way: number[][]; mines: Circle[] } {
+  const way: number[][] = [[rng.range(-4, 4), 7.5]];
+  for (let z = 4.5; z >= -4.5; z -= 3) way.push([Math.max(-5.5, Math.min(5.5, way[way.length - 1][0] + rng.range(-4, 4))), z]);
+  way.push([way[way.length - 1][0] + rng.range(-1.5, 1.5), -7.5]);
+  const near = (x: number, z: number) => {
+    for (let i = 1; i < way.length; i++) {
+      const [x1, z1] = way[i - 1], [x2, z2] = way[i];
+      for (let k = 0; k <= 10; k++) if (Math.hypot(x1 + ((x2 - x1) * k) / 10 - x, z1 + ((z2 - z1) * k) / 10 - z) < 1.55) return true;
+    }
+    return false;
+  };
+  const mines: Circle[] = [];
+  let guard = 0;
+  const want = 16 + Math.round(level * 6);
+  while (mines.length < want && guard++ < 2000) {
+    const x = rng.range(-7, 7), z = rng.range(-6.5, 6.5);
+    if (near(x, z) || mines.some((m) => Math.hypot(m.x - x, m.z - z) < 1.1)) continue;
+    mines.push({ x, z, r: 0.7 });
+  }
+  return { start: way[0], goal: way[way.length - 1], way, mines };
+}
+
+// ── 신병 나누기 ──
+export const SORT_BINS = ['육군', '해군', '공군', '사이버'];
+const SORT_TRAITS: Array<[string, number]> = [
+  ['마라톤 완주', 0], ['산악 구조대 출신', 0], ['사격 선수', 0], ['굴착기 기사', 0], ['전차 게임 말고 진짜 정비사', 0],
+  ['수영 선수', 1], ['어선에서 3년', 1], ['잠수 자격증', 1], ['항해사 집안', 1], ['조선소 용접공', 1],
+  ['경비행기 조종', 2], ['드론 대회 우승', 2], ['항공 정비 학과', 2], ['관제탑 근무 경험', 2], ['시력 2.0 · 멀미 없음', 2],
+  ['해킹 대회 입상', 3], ['수학 올림피아드', 3], ['서버 관리자', 3], ['암호학 전공', 3], ['프로그래머 5년', 3],
+];
+export function sortRecruits(rng: Rng, n: number): Array<{ trait: string; bin: number }> {
+  const a = [...SORT_TRAITS];
+  const out: Array<{ trait: string; bin: number }> = [];
+  while (out.length < n && a.length) {
+    const [trait, bin] = a.splice(Math.floor(rng.next() * a.length), 1)[0];
+    out.push({ trait, bin });
+  }
+  return out;
+}
