@@ -1,7 +1,7 @@
 // 병과 팝업(부대 화면)과 공용 비용 표시. 내정 화면은 InteriorScreen, 무역은 DiplomacyScreen.
 import { useState } from 'react';
 import { UNITS } from '../data/catalog';
-import { type Res, type UnitCost } from '../data/economy';
+import { UNIT_COST, type Res, type UnitCost } from '../data/economy';
 import { exclusiveByName, specialById } from '../data/specials';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
@@ -27,6 +27,10 @@ export function Cost({ c, stock, money }: { c: UnitCost; stock: Record<Res, numb
   );
 }
 
+
+/** 11-28 부대 가성비: 전투력 ÷ 국방비를 모든 병과 평균과 비교 */
+const AVG_VALUE = Object.values(UNIT_COST).reduce((a, c) => a + c.power / Math.max(1, c.money), 0) / Object.values(UNIT_COST).length;
+const valueRatio = (power: number, money: number) => (power / Math.max(1, money) / AVG_VALUE).toFixed(1);
 
 export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { unit: string; onClose: () => void }) {
   const [name, spId] = unit.split('|');
@@ -69,6 +73,10 @@ export function UnitModal({ state, actions, unit, onClose }: ScreenProps & { uni
           <b>{state.economy.army[sp ? sp.name : name] ?? 0}부대</b>
           <span>열리는 호칭</span>
           <b>{RANKS[info.rank].name}</b>
+          <span>가성비</span>
+          <b title="전투력 ÷ 국방비 1,000(모든 병과 평균과 비교)">⚖️ {valueRatio(c.power, c.money)}배</b>
+          <span>파병 유지비</span>
+          <b>🛡️{fmt(c.money * 0.0016)}/시간</b>
         </div>
       </div>
       <p>
