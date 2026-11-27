@@ -201,13 +201,14 @@ describe('도시', () => {
     let s = newGame('t', 'jp', 0, { seed: 9 });
     const pop0 = C.cityCiv(s, 'jp-0').pop;
     s = advance(s, 30 * H);
-    expect(C.cityCiv(s, 'jp-0').pop).toBeGreaterThan(pop0);
-    // 11-26 난이도로 전쟁이 잦아져서, 평화일 때 민심 효과는 전쟁을 모두 멈추고 봄
+    // 11-26 난이도로 전쟁이 잦아져서(11-27 깡패 강대국도), 평화일 때 민심·인구 효과는 전쟁을 모두 멈추고 봄
     {
       const calm = { ...s.world.pairs };
       for (const k of Object.keys(calm)) if (k.includes('jp')) calm[k] = { ...calm[k], rel: '중립', weariness: 0 };
       const peace = C.civAccrue({ ...s, world: { ...s.world, pairs: calm } }, 30 * H);
       expect(C.civBudgetMult(peace)).toBeGreaterThan(1);
+      const grown = C.civAccrue(peace, 30 * H);
+      expect(C.cityCiv(grown, 'jp-0').pop).toBeGreaterThan(pop0);
     }
     // 모든 나라와 전쟁 + 큰 피로
     const pairs = { ...s.world.pairs };

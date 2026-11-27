@@ -52,7 +52,8 @@ export type Count =
   | 'deployWin' // 파병 교전 승리
   | 'appoint' // 장관·참모 자리 채우기
   | 'stat' // 스탯 오르기
-  | 'general'; // 장군 늘리기
+  | 'general' // 장군 늘리기
+  | 'bully'; // 11-27 깡패 강대국 꺾기(bully.ts)
 
 export interface DailyTask {
   id: Count;
@@ -148,6 +149,7 @@ export const SPOILS: Record<SpoilKind, { icon: string; name: string; ruby: numbe
   recruit: { icon: '🪖', name: '부대 모집 완료', ruby: 1, small: true, where: '국방' },
   stat: { icon: '💪', name: '스탯 오름', ruby: 1, small: true, where: '개인' },
   salary: { icon: '💵', name: '봉급 받기', ruby: 0, where: '본부' },
+  bully: { icon: '😈', name: '깡패 강대국 꺾기', ruby: 60, boosts: 8, where: '외교' },
 };
 /** 작은 전과 루비 하루 상한(11-26: 12 → 30) */
 export const SPOIL_SMALL_CAP = 50; // 11-26 모든 콘텐츠: 30 → 50
@@ -296,6 +298,7 @@ export function countDiff(b: GameState, a: GameState): Partial<Record<Count, num
   if (b.player.countryId === me)
     add('capture', FRONT.filter((c) => c.home !== me && a.world.owner[c.id] === me && b.world.owner[c.id] !== me).length);
   add('rank', (a.player.title ?? 0) - (b.player.title ?? 0));
+  add('bully', (a.hegemony?.bully?.beaten?.length ?? 0) - (b.hegemony?.bully?.beaten?.length ?? 0));
   add('event', (a.crisis?.solved ?? 0) - (b.crisis?.solved ?? 0));
   add('spy', (a.spy?.ok ?? 0) - (b.spy?.ok ?? 0));
   add('star3', sum(a.officer.perfect) - sum(b.officer.perfect));

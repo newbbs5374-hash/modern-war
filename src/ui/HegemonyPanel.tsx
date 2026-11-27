@@ -25,6 +25,10 @@ import {
   squeezesOn,
   type HelpMode,
 } from '../game/hegemony';
+import { ACT_ICON } from '../data/bullies';
+import { BEAT_FAME, COAL_BLOCK, MY_COAL_DAYS, actLabel, answerBully, canMyCoal, claimLine, isBeaten, makeMyCoal, myCoalCands, myCoalCost, bullyChoice, bullyStats, currentBullies } from '../game/bully';
+import type { GameState } from '../game/state';
+import type { HegAsk } from '../game/hegemony';
 import { timeLeft } from './officerScreens';
 import { FLAG } from './flag';
 import { Help, Meter } from './kit';
@@ -69,12 +73,16 @@ export function HegemonyPanel({ state, actions }: ScreenProps) {
         {said && <p className="small">{said}</p>}
       </section>
 
+      <BullyCard state={state} run={run} />
+
       {asks.length > 0 && (
         <section className="card">
           <b>📨 우리에게 온 요구·요청 {asks.length}</b>
           {asks.map((a) => (
             <div key={a.id} className="deploy-clash">
-              {a.kind === 'squeeze' ? (
+              {a.kind === 'bully' ? (
+                <BullyAskCard state={state} a={a} run={run} />
+              ) : a.kind === 'squeeze' ? (
                 <>
                   <p className="small" style={{ margin: '4px 0' }}>
                     {FLAG[a.from]} <b>{nm(a.from)}</b>: "{a.res}을(를) 우리가 정한 값에 넘기시오." · 받으면 4일 동안 나라 예산 −{pct(a.drain ?? 0)}, 거절하면 보복 제재.
@@ -180,5 +188,126 @@ export function HegemonyPanel({ state, actions }: ScreenProps) {
         )}
       </section>
     </>
+  );
+}
+
+/** 😈 대륙 깡패 강대국: 나라마다 교리·깡패짓 수·최근 깡패짓 */
+function BullyCard({ state, run }: { state: GameState; run: (f: (s: GameState) => { state: GameState; text: string }) => void }) {
+  const [open, setOpen] = useState(false);
+  const list = currentBullies(state);
+  const b = bullyStats(state);
+  const me = state.player.countryId;
+  if (!list.length) return null;
+  const log = b.log.slice(0, open ? 12 : 4);
+  return (
+    <section className="card">
+      <div className="row">
+        <b>😈 대륙 깡패 강대국</b>
+        <Help title="깡패 강대국">
+          <p>대륙마다 자국 우선주의 깡패 나라가 있어요. 동맹이든 이웃이든 관세 폭탄·방위비 청구·영토 주장·문화 우기기·대리 세력·불공정 계약으로 괴롭히고, 패권 전쟁도 더 자주 걸어요.</p>
+          <p>우리가 당하면 위 "우리에게 온 요구"에 와요. 🙇 굴복하면 돈·문화를 내주고 넘어가고, ✊ 맞서면 제재·긴장·전쟁 위험이 있지만 명성이 올라요.</p>
+          <p>🛡️ <b>반깡패 연합</b>: 깡패에게 여러 번 당한 나라들은 스스로 뭉쳐요. 우리도 깡패에게 당했거나 싸우는 중이면 연합을 이끌 수 있어요(나라 예산 5%, {MY_COAL_DAYS}일). 연합 회원에게 온 깡패짓은 {Math.round(COAL_BLOCK * 100)}% 확률로 막아 내고, 회원이 깡패와 싸우면 다른 회원이 함께 참전해요.</p>
+          <p>🏆 깡패 나라의 수도를 차지하거나 속국으로 만들면 꺾은 거예요: 명성 +{BEAT_FAME}, 지지율, 전과 보상에서 루비 60·가속권 8.</p>
+          <p>깡패 나라가 망하거나 내가 그 나라로 하면, 그 대륙 패권국이 새 깡패가 돼요. 모든 지도자는 가상 인물이에요.</p>
+        </Help>
+      </div>
+      {list.map(({ id, d, generic, region }) => (
+        <div key={id} className="deploy-clash" style={{ margin: '6px 0' }}>
+          <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 22 }}>{d.icon}</span>
+            <span style={{ flex: 1 }}>
+              <b>
+                {FLAG[id]} {nm(id)}
+              </b>{' '}
+              <small className="sns-tag">{d.name}</small> <small className="muted">· {regionIcon(region)} {regionName(region)}{generic ? ' 새 깡패' : ''}</small>
+            </span>
+            <small className="muted" style={{ whiteSpace: 'nowrap' }}>
+              깡패짓 {b.acts[id] ?? 0}
+              {b.onMe[id] ? ` · 우리에게 ${b.onMe[id]}` : ''}
+            </small>
+          </div>
+          <p className="small" style={{ margin: '3px 0' }}>
+            <i>{d.slogan}</i>
+          </p>
+          <p className="small muted" style={{ margin: 0 }}>
+            {d.desc} · {Object.keys(d.acts).map((a) => `${ACT_ICON[a as keyof typeof ACT_ICON]} ${actLabel(d, a as keyof typeof ACT_ICON)}`).join(' · ')}
+          </p>
+          <CoalRow state={state} bully={id} run={run} />
+        </div>
+      ))}
+      {log.length > 0 && (
+        <>
+          <b className="small">최근 깡패짓</b>
+          {log.map((x, i) => (
+            <p key={i} className="small" style={{ margin: '2px 0', fontWeight: x.to === me ? 700 : 400 }}>
+              {x.text}
+            </p>
+          ))}
+          {b.log.length > 4 && (
+            <button className="link" onClick={() => setOpen(!open)}>
+              {open ? '접기' : `더 보기(${Math.min(12, b.log.length)})`}
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function BullyAskCard({ state, a, run }: { state: GameState; a: HegAsk; run: (f: (s: GameState) => { state: GameState; text: string }) => void }) {
+  const ch = bullyChoice(a);
+  const d = currentBullies(state).find((x) => x.id === a.from)?.d;
+  const lab = d && a.act ? actLabel(d, a.act) : '깡패짓';
+  return (
+    <>
+      <p className="small" style={{ margin: '4px 0' }}>
+        {a.act ? ACT_ICON[a.act] : '😈'} {d?.icon} {FLAG[a.from]} <b>{nm(a.from)}</b>의 <b>{lab}</b>
+        {a.item ? <>: "{claimLine(a.item)}이다!"</> : '!'}
+        <br />
+        <small className="warn">⏳ {timeLeft(a.untilMs - state.worldMs)} 안에 답하지 않으면 맞선 것으로 쳐요(명성은 없음)</small>
+      </p>
+      <div className="buttons">
+        <button onClick={() => run((s) => answerBully(s, a.id, true))}>🙇 굴복: {ch.giveIn}</button>
+        <button className="danger" onClick={() => run((s) => answerBully(s, a.id, false))}>✊ 맞서기: {ch.resist}</button>
+      </div>
+    </>
+  );
+}
+
+/** 깡패 하나의 반깡패 연합 줄: 지금 연합 · 우리가 이끌기 */
+function CoalRow({ state, bully, run }: { state: GameState; bully: string; run: (f: (s: GameState) => { state: GameState; text: string }) => void }) {
+  const [open, setOpen] = useState(false);
+  const me = state.player.countryId;
+  const c = hegOf(state).bully?.coal?.[bully];
+  const live = c && c.untilMs > state.worldMs ? c : undefined;
+  const no = canMyCoal(state, bully);
+  const cands = myCoalCands(state, bully).slice(0, 6);
+  if (isBeaten(state, bully)) return <p className="small" style={{ margin: '4px 0 0' }}>🏆 우리가 꺾은 깡패예요.</p>;
+  return (
+    <div style={{ marginTop: 4 }}>
+      {live && (
+        <p className="small" style={{ margin: '2px 0' }}>
+          🛡️ 반깡패 연합{live.mine ? '(우리가 이끎)' : ''}: {[...(live.mine ? [me] : []), ...live.members].map((x) => `${FLAG[x]} ${nm(x)}`).join(' · ')} · {timeLeft(live.untilMs - state.worldMs)} 남음
+        </p>
+      )}
+      {!live?.mine && (
+        <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+          <button className="primary" disabled={!!no} title={no ?? ''} onClick={() => run((s) => makeMyCoal(s, bully))}>
+            🛡️ 반깡패 연합 이끌기 <small>{no ?? `💰${myCoalCost(state).toLocaleString('ko-KR')}`}</small>
+          </button>
+          {cands.length > 0 && (
+            <button className="link" onClick={() => setOpen(!open)}>
+              {open ? '접기' : `부를 나라 ${cands.length}`}
+            </button>
+          )}
+        </div>
+      )}
+      {open &&
+        cands.map((x) => (
+          <p key={x.id} className="small muted" style={{ margin: '1px 0' }}>
+            {FLAG[x.id]} {nm(x.id)} · 당한 깡패짓 {x.n} · 들어올 확률 {pct(x.chance)}
+          </p>
+        ))}
+    </div>
   );
 }

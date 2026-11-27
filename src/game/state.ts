@@ -11,6 +11,7 @@ import type { OccAdminState } from './occAdmin';
 import { pressureTick, tariffMult, type PressureState } from './pressure';
 import { surrenderTick, vassalMult, type VassalState } from './surrender';
 import { hegemonyMult, hegemonyTick, type HegemonyState } from './hegemony';
+import { bullyTick } from './bully';
 import { applyOrigin, type OriginId } from './origin';
 import type { LeaderLook } from '../data/looks';
 import { START_SANCTIONS } from '../data/conflicts';
@@ -429,7 +430,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = hegemonyTick(surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))));
+    cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
