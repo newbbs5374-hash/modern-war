@@ -15,6 +15,16 @@ export function UiIcon({ label, emoji }: { label: string; emoji: string }) {
 }
 
 /** 큰 수를 k로 짧게(대장 요청: k 단위). 12,345 → 12.3k · 200,521 → 200k · 2,004,859 → 2,004k */
+/** 11-27 맨 위 줄: 1,000 미만 그대로 · 100만 미만 k · 그 위 M (2,004,667 → 2.0M) */
+export function fmtKM(n: number): string {
+  const v = Math.floor(n);
+  const a = Math.abs(v);
+  if (a < 1000) return String(v);
+  if (a < 1_000_000) return a < 100_000 ? `${(Math.trunc(v / 100) / 10).toFixed(1).replace(/\.0$/, '')}k` : `${Math.trunc(v / 1000)}k`;
+  if (a < 100_000_000) return `${(Math.trunc(v / 100_000) / 10).toFixed(1).replace(/\.0$/, '')}M`;
+  return `${Math.trunc(v / 1_000_000).toLocaleString('en-US')}M`;
+}
+
 export function fmtK(n: number): string {
   const v = Math.floor(n);
   if (Math.abs(v) < 1000) return String(v);

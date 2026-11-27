@@ -9,6 +9,7 @@ import { strikes } from '../../game/frontline';
 import { isAlive, relationOf, type WorldState } from '../../game/world';
 import { useWorldJson } from '../worldSky';
 import type { GlobeData, GlobeHandle } from './globeScene';
+import { MapMotionButton, useMapMotion } from '../mapMotion';
 
 interface Props {
   world: WorldState;
@@ -33,6 +34,7 @@ export function Globe({ world, playerCountryId: me, selectedId, onSelect, colorO
     const owner = world.owner[id];
     if (owner) onSelect(owner);
   };
+  const [moving] = useMapMotion();
   const borders = useWorldJson<{ d: string }>('borders.json', true);
 
   useEffect(() => {
@@ -111,6 +113,9 @@ export function Globe({ world, playerCountryId: me, selectedId, onSelect, colorO
   useEffect(() => {
     if (ready) G.current?.set(data);
   }, [ready, data]);
+  useEffect(() => {
+    if (ready) G.current?.motion(moving);
+  }, [ready, moving]);
   // 나라를 고르면 그 나라 수도로 돌림
   const first = useRef(true);
   useEffect(() => {
@@ -142,6 +147,7 @@ export function Globe({ world, playerCountryId: me, selectedId, onSelect, colorO
         >
           🎯
         </button>
+        <MapMotionButton />
       </div>
       <p className="gl-credit">위성 사진: NASA Blue Marble · Black Marble</p>
     </div>

@@ -22,6 +22,7 @@ import { FieldArtList, IconArtList } from './FieldArtList';
 import type { ScreenProps } from './screens';
 import { oldMenuOn, setOldMenu } from './nav';
 import { fullHomeOn, setFullHome } from './favs';
+import { useMapMotion } from './mapMotion';
 import { CloudCard } from './CloudUI';
 import { ErrorLog } from './Safe';
 
@@ -56,6 +57,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 export function SettingsScreen({ state, speed, actions }: ScreenProps) {
   const [pop, setPop] = useState<Pop>(null);
+  const [mapMoving, setMapMoving] = useMapMotion();
   const [oldMenu, setOldMenuState] = useState(oldMenuOn);
   const [fullHome, setFullHomeState] = useState(fullHomeOn);
   const [code, setCode] = useState('');
@@ -136,6 +138,13 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
               setFullHomeState(!fullHome);
               actions.apply((s) => ({ ...s }));
             }}
+          />
+          <SwitchRow
+            icon="✈️"
+            name="지도 움직임"
+            sub="세계 지도·지구본·본부 지도의 비행기·배·차·공격선 불빛·깜빡임·구름. 끄면 멈춘 지도로 보여요(지도 위 ✈️ 버튼으로도 바꿔요)"
+            on={mapMoving}
+            onClick={() => setMapMoving(!mapMoving)}
           />
           <SwitchRow icon="📘" name="첫 판 안내" sub="본부에 다음 할 일 안내를 띄워요" on={!guideHidden} onClick={() => actions.apply((s) => hideGuide(s, !guideOf(s).hidden))} />
         </div>

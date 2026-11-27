@@ -31,6 +31,7 @@ import { Bomber, Carrier, Drone, Escort, Heli, Jet, Sub, Tank, Truck } from "./u
 import { MAP_DOMAIN, baseUnit, mapForces } from "../data/forces";
 import { unitArtUrl } from "./iconArt";
 import { Mover } from "./mover";
+import { MapMotionButton, useMapMotion } from "./mapMotion";
 import { nightPath, useNowMinute, useWorldJson, worldSatUrl, type WorldSat } from "./worldSky";
 import { polyD, seaLoop, seaRoute } from "../data/seaPath";
 
@@ -315,6 +316,7 @@ function Fleets({
   army?: Record<string, number>;
   deploys?: MapDeploy[];
 }) {
+  const [moving] = useMapMotion();
   // AI 강대국은 전쟁 중인 연합국에 전투기를 보냄(보이는 것만)
   const aiDeploys: MapDeploy[] = [];
   for (const big of ["us", "cn", "ru", "uk"]) {
@@ -451,7 +453,7 @@ function Fleets({
                   <UnitIcon name={n} s={0.8 * zr} color={color} />
                 </Mover>
               ))}
-            {target && (
+            {target && moving && (
               <circle cx={target.x} cy={target.y} r="5" fill="#f97316">
                 <animate
                   attributeName="opacity"
@@ -565,6 +567,7 @@ export function WorldMap({
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   // 화면 비율(가로/세로). 세로 화면이면 지도 높이에 맞추고 좌우로 끌어 봄
+  const [moving] = useMapMotion();
   const [ar, setAr] = useState(MW / MH);
   const kMin = Math.min(1, (MH * ar) / MW);
   const capX =
@@ -919,7 +922,7 @@ export function WorldMap({
           <g>
             <image href={CLOUD_ART} x={X0} y={Y0} width={MW} height={MH} preserveAspectRatio="none" />
             <image href={CLOUD_ART} x={X0 - MW} y={Y0} width={MW} height={MH} preserveAspectRatio="none" />
-            <animateTransform attributeName="transform" type="translate" from="0 0" to={`${MW} 0`} dur="1800s" repeatCount="indefinite" />
+            {moving && <animateTransform attributeName="transform" type="translate" from="0 0" to={`${MW} 0`} dur="1800s" repeatCount="indefinite" />}
           </g>
         </g>
       )}
@@ -1199,6 +1202,7 @@ export function WorldMap({
         >
           ⤢
         </button>
+        <MapMotionButton />
       </div>
     </div>
   );

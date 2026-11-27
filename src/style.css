@@ -1750,3 +1750,8 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .vpeace-pick small { margin-left: auto; font-size: 10.5px; opacity: 0.8; }
 .vpeace-pick.on { border-color: rgba(63, 184, 201, 0.8); background: rgba(63, 184, 201, 0.14); }
 .vpeace-pick input { margin: 0; }
+/* 11-27 지도 움직임 끄기(설정 · 지도 위 ✈️ 버튼): 지도 안 CSS 움직임을 모두 멈춤 */
+html[data-map-still] .homeland *:not(.hl-dive),
+html[data-map-still] .wm-wrap *,
+html[data-map-still] .hl-wx i { animation: none !important; }
+.map-zoom button.off { opacity: .75; }

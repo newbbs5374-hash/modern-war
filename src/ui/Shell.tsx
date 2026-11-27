@@ -2,7 +2,7 @@ import { splitOf } from '../game/policy';
 import { drillsNow } from '../game/officer';
 import { playerKeys } from '../data/looks';
 import { goalsReady, rubyOf } from '../game/goals';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CURRENCIES } from '../data/catalog';
 import { titleOf } from '../game/title';
 import { countryById } from '../data/world';
@@ -12,7 +12,7 @@ import { Flag } from './flag';
 import { PersonFace } from './People';
 import { NAV, NAV5, SCREEN_TITLES, oldMenuOn, type Screen } from './nav';
 import { todoCount } from './TreeScreen';
-import { UiIcon, fmtK } from './uiIcon';
+import { UiIcon, fmtKM } from './uiIcon';
 import { citiesOf } from '../game/world';
 import { moodLabel, presOf } from '../game/approval';
 import { PresModal } from './PresUI';
@@ -38,6 +38,19 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export function Shell({ state, screen, speed, go, back, children, overlay }: Props) {
   const [walletOpen, setWalletOpen] = useState(false);
   const [presOpen, setPresOpen] = useState(false);
+  // 11-27 대장 요청: 말풍선 밖(다른 곳)을 누르면 닫힘
+  const walletRef = useRef<HTMLButtonElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!walletOpen) return;
+    const close = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (bubbleRef.current?.contains(t) || walletRef.current?.contains(t)) return;
+      setWalletOpen(false);
+    };
+    document.addEventListener('pointerdown', close, true);
+    return () => document.removeEventListener('pointerdown', close, true);
+  }, [walletOpen]);
   const me = countryById(state.player.countryId);
   const rank = titleOf(state);
   const clock = gameClock(state.worldMs);
@@ -56,19 +69,20 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
             : 0;
   const n = state.nations[me.id];
   const pres = presOf(state);
-  // 맨 위 줄 = 주요 자원만(k 단위). 누르면 말풍선에 전부.
+  // 11-27 대장 요청: 맨 위 줄 = 지지도·신뢰도·명성·나라 예산·국방비(큰 수는 k·M). 누르면 말풍선에 전부.
   const wallet = (
-    <button className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
-      <span>💰{fmtK(n.treasury)}</span>
-      <span>🛡️{fmtK(n.def ?? 0)}</span>
-      <span>🪖{fmtK(n.troops)}</span>
-      <span>💵{fmtK(state.player.salary)}</span>
-      <span>💎{fmtK(rubyOf(state))}</span>
+    <button ref={walletRef} className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
+      <span>🙂{Math.round(pres.approval)}</span>
+      <span>🤝{Math.round(state.officer.trust)}</span>
+      <span>📣{fmtKM(state.officer.fame)}</span>
+      <span>💰{fmtKM(n.treasury)}</span>
+      <span>🛡️{fmtKM(n.def ?? 0)}</span>
     </button>
   );
   const nationRows: Array<{ icon: string; name: string; where: string; v: string; tone?: string }> = [
     { icon: '🙂', name: '지지도', where: pres.impeachMs !== null ? '⚠️ 탄핵 위기' : '국민이 나를 지지하는 정도', v: String(Math.round(pres.approval)), tone: moodLabel(pres.approval).tone },
     { icon: '🤝', name: '신뢰도', where: state.officer.dismissDeadlineMs !== null ? '⚠️ 해임 위기' : '윗선·동료가 나를 믿는 정도', v: String(Math.round(state.officer.trust)), tone: moodLabel(state.officer.trust).tone },
+    { icon: '📣', name: '명성', where: '나라 안팎에 이름이 알려진 정도(호칭 점수에 들어가요)', v: fmt(state.officer.fame) },
     { icon: '💰', name: '나라 예산', where: '시설·건물·외교·내정·문화 등 국방 말고 모두(봉급 받을 때도 들어와요)', v: fmt(n.treasury) },
     { icon: '🛡️', name: '국방비', where: `부대 만들기·국방 시설·파병 유지비에만 써요(수입의 국방 몫 ${splitOf(state).def}%)`, v: fmt(n.def ?? 0) },
     { icon: '🪖', name: '병력', where: '우리나라 전체 병력', v: fmt(n.troops) },
@@ -124,7 +138,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           </button>
         )}
         {walletOpen && (
-          <div className="bubble res-bubble" role="dialog" aria-label="자원 현황" onClick={() => setWalletOpen(false)}>
+          <div ref={bubbleRef} className="bubble res-bubble" role="dialog" aria-label="자원 현황" onClick={() => setWalletOpen(false)}>
             <b className="bubble-head">🏛️ 나라</b>
             {nationRows.map((r) => (
               <div key={r.name} className={`bubble-row ${r.tone ?? ''}`}>
