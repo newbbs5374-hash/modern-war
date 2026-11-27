@@ -28,6 +28,8 @@ export interface Outcome {
   drill?: DrillInfo;
   /** 11-26 3D 전투에서 쓰러진 우리 부대(병과 이름별) → 가진 부대에서 실제로 빠짐 */
   dead?: Record<string, number>;
+  /** 11-27 한 손가락 미니 훈련 id → 능력 여러 개·단계 */
+  easy?: string;
 }
 
 export interface FrameProps {
@@ -44,6 +46,8 @@ export interface FrameProps {
   owned?: Record<string, number>;
   /** 11-26: 싸우기 전에 나가거나 화면 오류로 나가면 결과 없이 돌아감(패배 아님) */
   onCancel?: () => void;
+  /** 11-27 한 손가락 미니 훈련 단계 */
+  easyLv?: Record<string, number>;
 }
 
 /** 자동전투·즉시완료를 썼는지(훈련은 별 최대 2개) */
@@ -141,7 +145,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) deadSoFar[k] = (deadSoFar[k] ?? 0) + v;
   const ownSrc = plan.source === 'deploy' && plan.deploy ? deployOf(state).list.find((x) => x.id === plan.deploy!.dep)?.units ?? {} : plan.source === 'training' || plan.source === 'practice' ? null : state.economy.army;
   const owned = ownSrc ? ownedByBase(ownSrc, deadSoFar) : undefined;
-  const props: FrameProps = { spec, stats, rank, owned, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d, onCancel: () => leave() };
+  const props: FrameProps = { spec, stats, rank, owned, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
@@ -196,14 +200,14 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
       setClaimed(`${text ?? ''}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}`);
     } else if (plan.source === 'training') {
       const res = actions.applyWith((s) => {
-        const r = finishTraining(s, { win: final.win, stars: final.stars, auto: allAuto, drill: results.find((x) => x.drill)?.drill });
+        const r = finishTraining(s, { win: final.win, stars: final.stars, auto: allAuto, drill: results.find((x) => x.drill)?.drill, easy: results.find((x) => x.easy)?.easy });
         return { state: r.state, out: r.result };
       });
       if (res?.ok) {
         const gains = Object.entries(res.exp)
           .map(([k, v]) => `${k} 경험치 +${v}${res.gains[k as keyof typeof res.gains] ? ` (⬆️${state.officer.stats[k as keyof typeof state.officer.stats] + (res.gains[k as keyof typeof res.gains] ?? 0)})` : ''}`)
           .join(' · ');
-        setClaimed(`${plan.training} 훈련 ${starText(res.stars)} · ${gains}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}${res.perk ? ` · 특기 "${res.perk}"!` : ''}${res.weekly ? ' · 🎖️ 주간 합동 보상 ×3' : ''}${res.unitUp ? ` · 병과 숙련 ⬆️ ${res.unitUp.map(unitName).join('·')}` : ''}`);
+        setClaimed(`${plan.training} 훈련 ${starText(res.stars)} · ${gains}${allAuto && final.win ? ' (자동은 별 최대 2개)' : ''}${res.perk ? ` · 특기 "${res.perk}"!` : ''}${res.weekly ? ' · 🎖️ 주간 합동 보상 ×3' : ''}${res.unitUp ? ` · 병과 숙련 ⬆️ ${res.unitUp.map(unitName).join('·')}` : ''}${res.easyUp ? ` · 👆 ${res.easyUp}단계로 올랐어요` : ''}`);
       } else setClaimed(res && !res.ok ? res.why : '');
     } else {
       const text = actions.applyWith((s) => {

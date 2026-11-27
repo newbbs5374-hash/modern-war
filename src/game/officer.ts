@@ -2,6 +2,7 @@
 // 전투·훈련 미니게임(4·5단계)이 생기기 전까지는 스탯으로 결과를 자동 계산한다.
 
 import { WEEKLY_MULT, unitLevel, unitName } from '../battle3d/train3d';
+import { EASY_SUB_SHARE, EASY_UNITS, EASY_UNIT_LV, easyById, easyLv, easyNextLv, easyStats } from '../battle/easy';
 import { noteCapture } from './territory';
 import { originEff } from './origin';
 import { cabMission } from './cabinet';
@@ -231,6 +232,8 @@ export interface OfficerState {
   best?: Record<string, number>;
   /** 11-26 안 6: 3D 훈련에서 병과를 쓴 별 수(숙련 단계 → 본 3D 전투 +2%씩) · 안 2: 퍼즐 판별 최고 별 · 안 5: 주간 합동 훈련을 한 주 */
   unitXp?: Record<string, number>;
+  /** 11-27 한 손가락 미니 훈련 단계(1~5) */
+  easyLv?: Record<string, number>;
   puzzle3d?: Record<string, number>;
   weekly3d?: number;
   /** 지도자 외교를 다시 할 수 있는 시각 */
@@ -371,6 +374,8 @@ export type TrainResult =
       featured?: boolean;
       masteryUp?: number;
       record?: boolean;
+      /** 한 손가락 미니 훈련이 오른 단계 */
+      easyUp?: number;
       /** 3D 훈련: 단계가 오른 병과 · 주간 합동 보상 받음 */
       unitUp?: string[];
       weekly?: boolean;
@@ -451,7 +456,7 @@ export function startTraining(s: GameState, name: string): GameState {
  */
 export function finishTraining(
   s: GameState,
-  outcome: { win: boolean; stars: number; auto: boolean; drill?: { kinds: string[]; puzzle?: { n: number; stars: number }; weekly?: number } },
+  outcome: { win: boolean; stars: number; auto: boolean; drill?: { kinds: string[]; puzzle?: { n: number; stars: number }; weekly?: number }; easy?: string },
 ): { state: GameState; result: TrainResult } {
   const cur = s.officer.training;
   if (!cur) return { state: s, result: { ok: false, why: '하고 있는 훈련이 없어요' } };
@@ -466,7 +471,9 @@ export function finishTraining(
     }
     o.trainCounts[name] = (o.trainCounts[name] ?? 0) + 1;
     const stars = outcome.win ? Math.min(outcome.auto ? 2 : 3, Math.max(1, outcome.stars)) : 0;
-    const ids = TRAINING_STATS[name];
+    // 11-27 한 손가락 미니 훈련: 능력 여러 개(첫째 온전히, 나머지 절반)
+    const ez = outcome.easy ? easyById(outcome.easy) : undefined;
+    const ids = ez ? easyStats(ez) : TRAINING_STATS[name];
     const cap = statCap(ns.player.rankIndex);
     const tired = o.trainCounts[name] >= 3 ? 0.5 : 1;
     const mastery = (o.mastery ??= {});
@@ -478,7 +485,16 @@ export function finishTraining(
     const record = stars > (best[name] ?? 0);
     if (record) best[name] = stars;
     // 11-26: 3D 훈련 기록(병과 숙련 · 퍼즐 별 · 주간 합동은 주에 한 번 보상 ×3)
-    const dr = outcome.drill;
+    let easyUp: number | undefined;
+    let dr = outcome.drill;
+    if (ez) {
+      const lvs = (o.easyLv ??= {});
+      const was = easyLv(lvs, ez.id);
+      // 3단계부터 병과 숙련도 같이
+      if (!dr && was >= EASY_UNIT_LV) dr = { kinds: EASY_UNITS[ez.training] ?? [] };
+      const now = easyNextLv(was, stars);
+      if (now > was) { lvs[ez.id] = now; easyUp = now; }
+    }
     const unitUp: string[] = [];
     let weekly = false;
     if (dr) {
@@ -492,7 +508,7 @@ export function finishTraining(
     const gains: Partial<Record<StatId, number>> = {};
     const exp: Partial<Record<StatId, number>> = {};
     for (const id of ids) {
-      exp[id] = Math.round((stars ? stars * TRAIN_EXP_PER_STAR : TRAIN_EXP_LOSE) * mult);
+      exp[id] = Math.round((stars ? stars * TRAIN_EXP_PER_STAR : TRAIN_EXP_LOSE) * mult * (ez && id !== ids[0] ? EASY_SUB_SHARE : 1));
       gains[id] = gainStatExp(o, id, exp[id]!, cap);
     }
     o.stars += stars;
@@ -512,7 +528,7 @@ export function finishTraining(
       ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], troops: ns.nations[me].troops + 500 * stars } };
     }
     if (lvAfter > lvBefore) note(ns, `${name} 훈련 숙련 ${MASTERY_NAME[lvAfter - 1]}(${lvAfter}단계)! 오르는 스탯 +${(lvAfter - 1) * 10}%`);
-    result = { ok: true, stars, gains, exp, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record, unitUp: unitUp.length ? unitUp : undefined, weekly };
+    result = { ok: true, stars, gains, exp, perk, featured, masteryUp: lvAfter > lvBefore ? lvAfter : undefined, record, unitUp: unitUp.length ? unitUp : undefined, weekly, easyUp };
   });
   const got = (result as TrainResult).ok ? ((result as { stars?: number }).stars ?? 0) : 0;
   return { state: got ? eureka(state, { kind: 'train', name, stars: got }) : state, result };

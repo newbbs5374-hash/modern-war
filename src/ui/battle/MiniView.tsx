@@ -3,10 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import { STAR_AT, autoMini, miniById, miniLevel, miniOutcome, MINIGAMES } from '../../battle/minigames';
 import { BattleBar, type FrameProps } from './BattleScreen';
 import { MINI_VIEWS } from './mini';
+import { CTL_TEXT, EASY_MAX_LV, easyById, easyLevel, easyLv as easyLvOf } from '../../battle/easy';
 
-export function MiniView({ spec, stats, rank, onEnd }: FrameProps) {
+export function MiniView({ spec, stats, rank, onEnd, easyLv }: FrameProps) {
   const def = miniById(spec.variant) ?? MINIGAMES[0];
   const Game = MINI_VIEWS[def.id];
+  const easy = def.easy ? easyById(def.id) : undefined;
+  const elv = easyLvOf(easyLv, def.id);
+  const tag = easy ? { easy: easy.id } : {};
   const [phase, setPhase] = useState<'intro' | 'play' | 'done'>('intro');
   const [left, setLeft] = useState(def.secs);
   const [shown, setShown] = useState(0);
@@ -16,7 +20,7 @@ export function MiniView({ spec, stats, rank, onEnd }: FrameProps) {
     if (ended.current) return;
     ended.current = true;
     setPhase('done');
-    onEnd(miniOutcome(s, def.name));
+    onEnd({ ...miniOutcome(s, def.name), ...tag });
   };
   useEffect(() => {
     if (phase !== 'play') return;
@@ -35,7 +39,7 @@ export function MiniView({ spec, stats, rank, onEnd }: FrameProps) {
     if (ended.current) return;
     ended.current = true;
     setPhase('done');
-    onEnd(autoMini(def.id, stats, rank, spec.seed));
+    onEnd({ ...autoMini(def.id, stats, rank, spec.seed), ...tag });
   };
   const pct = Math.round(shown * 100);
   const star = shown >= STAR_AT[2] ? 3 : shown >= STAR_AT[1] ? 2 : shown >= STAR_AT[0] ? 1 : 0;
@@ -45,6 +49,11 @@ export function MiniView({ spec, stats, rank, onEnd }: FrameProps) {
       {phase === 'intro' && (
         <div className="mg-intro">
           <b>🎮 {def.name}</b>
+          {easy && (
+            <p className="eg-ctl">
+              <i>👆 {easy.ctl}</i> {CTL_TEXT[easy.ctl]} · {elv}/{EASY_MAX_LV}단계
+            </p>
+          )}
           <p className="small">{def.how}</p>
           <p className="small muted">
             제한 {def.secs}초 · {Math.round(STAR_AT[0] * 100)}점 성공 · {Math.round(STAR_AT[1] * 100)}점 ★★ · {Math.round(STAR_AT[2] * 100)}점 ★★★
@@ -69,7 +78,7 @@ export function MiniView({ spec, stats, rank, onEnd }: FrameProps) {
           )}
         </div>
       )}
-      {phase === 'play' && Game && <Game level={miniLevel(rank)} seed={spec.seed} report={(s) => (score.current = Math.max(0, Math.min(1, s)))} finish={(s) => end(Math.max(0, Math.min(1, s)))} />}
+      {phase === 'play' && Game && <Game level={easy ? easyLevel(elv) : miniLevel(rank)} seed={spec.seed} report={(s) => (score.current = Math.max(0, Math.min(1, s)))} finish={(s) => end(Math.max(0, Math.min(1, s)))} />}
     </>
   );
 }
