@@ -65,6 +65,14 @@ export interface BullyStats {
   onMe: Record<string, number>;
   /** 최근 깡패짓(새것 먼저) */
   log: Array<{ t: number; from: string; to: string; act: import('../data/bullies').BullyAct; text: string }>;
+  /** '깡패>당한 나라' → 당한 수 · 마지막 시각(반깡패 연합 후보) */
+  hits?: Record<string, { n: number; last: number }>;
+  /** 반깡패 연합: 깡패 나라 → 회원·우리가 이끄는가·끝나는 시각 */
+  coal?: Record<string, { members: string[]; mine: boolean; untilMs: number }>;
+  /** 우리가 다시 연합을 만들 수 있는 시각 */
+  myCoalCd?: number;
+  /** 우리가 꺾은 깡패 나라(보상은 한 번) */
+  beaten?: string[];
 }
 
 // ── 숫자(밸런스) ──
@@ -256,7 +264,15 @@ export function cloneH(s: GameState): HegemonyState {
     helpCd: { ...h.helpCd },
     myHelpCd: { ...(h.myHelpCd ?? {}) },
     stats: { allies: 0, breaks: 0, helps: 0, sanctions: 0, squeezes: 0, wars: 0, ...(h.stats ?? {}) },
-    bully: { acts: { ...(h.bully?.acts ?? {}) }, onMe: { ...(h.bully?.onMe ?? {}) }, log: [...(h.bully?.log ?? [])] },
+    bully: {
+      acts: { ...(h.bully?.acts ?? {}) },
+      onMe: { ...(h.bully?.onMe ?? {}) },
+      log: [...(h.bully?.log ?? [])],
+      hits: { ...(h.bully?.hits ?? {}) },
+      coal: Object.fromEntries(Object.entries(h.bully?.coal ?? {}).filter(([, c]) => c.untilMs > t).map(([k, c]) => [k, { ...c, members: [...c.members] }])),
+      myCoalCd: h.bully?.myCoalCd,
+      beaten: [...(h.bully?.beaten ?? [])],
+    },
   };
 }
 export function put<T extends { from: string; to: string }>(list: T[], x: T) {

@@ -19,6 +19,7 @@ import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { deployOf } from '../game/deploy';
+import { bullyDoctrineOf, bullyStats, coalitionsOf } from '../game/bully';
 import { regionIcon, regionName, regionOf } from '../data/regions';
 import { regionStanding, sanctionsOn, squeezesOn } from '../game/hegemony';
 import { TRIBUTE, acceptSurrender, canAccept, canDemand, canSurrender, demandChance, doDemand, doSurrender, lordOf } from '../game/surrender';
@@ -551,7 +552,24 @@ function HegLine({ state, id }: { state: GameState; id: string }) {
       {i === 0 && st.length > 1 ? '👑' : regionIcon(rid)} {regionName(rid)} {i + 1}위 · 힘 지분 {Math.round(st[i].share * 100)}%
       {sc ? ` · 🚫 제재 ${sc}` : ''}
       {sq ? ` · ⛓️ 약탈 계약 ${sq}` : ''}
+      <BullyLine state={state} id={id} />
     </p>
+  );
+}
+
+/** 11-27 깡패 지수: 깡패 나라면 교리·깡패짓 수, 아니면 당한 깡패짓·반깡패 연합 */
+function BullyLine({ state, id }: { state: GameState; id: string }) {
+  const b = bullyStats(state);
+  const d = bullyDoctrineOf(state, id);
+  const got = Object.entries(b.hits ?? {}).filter(([k]) => k.endsWith(`>${id}`)).reduce((a, [, v]) => a + v.n, 0);
+  const coal = coalitionsOf(state, id);
+  if (!d && !got && !coal.length) return null;
+  return (
+    <>
+      <br />
+      {d ? `${d.icon} 깡패 강대국 '${d.name}' · 깡패짓 ${b.acts[id] ?? 0}${b.onMe[id] ? ` · 우리에게 ${b.onMe[id]}` : ''}` : `😈 당한 깡패짓 ${got}`}
+      {coal.length ? ` · 🛡️ 반깡패 연합(${coal.map((x) => countryById(x).name).join('·')})` : ''}
+    </>
   );
 }
 

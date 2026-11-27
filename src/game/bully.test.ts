@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { advance, budgetPerDay, newGame, type GameState } from './state';
-import { answerBully, bullyAsks, bullyStats, bullyTick, currentBullies } from './bully';
+import { answerBully, bullyAsks, bullyStats, bullyTick, canMyCoal, currentBullies, isBeaten, makeMyCoal } from './bully';
+import { CITIES } from '../data/cities';
+import { goalsOf, trackGoals } from './goals';
 import { hegOf } from './hegemony';
 import { relationOf } from './world';
 import type { BullyAct } from '../data/bullies';
@@ -62,5 +64,47 @@ describe('대륙 깡패 강대국(11-27)', () => {
     expect(bullyAsks(later).some((a) => a.id === 1)).toBe(false);
     expect(later.officer.fame ?? 0).toBe(s.officer.fame ?? 0);
     expect(relationOf(later.world, 'ru', 'kr')).toBeDefined();
+  });
+});
+
+describe('반깡패 연합·깡패 꺾기(11-27 안 B)', () => {
+  it('여러 번 당한 나라들이 반깡패 연합을 맺음', () => {
+    let s = newGame('t', 'kr', 0, { seed: 7, realWorld: true });
+    s = advance(s, 5 * 24 * H);
+    const coal = hegOf(s).bully?.coal ?? {};
+    const all = Object.values(coal);
+    expect(Object.keys(hegOf(s).bully?.hits ?? {}).length).toBeGreaterThan(3);
+    expect(all.every((c) => c.members.length >= 1)).toBe(true);
+  }, 60000);
+  it('우리가 당하면 반깡패 연합을 이끌 수 있음: 돈이 들고, 들어온 나라와 연합', () => {
+    let s = newGame('t', 'kr', 0, { seed: 9 });
+    const h = hegOf(s);
+    s = { ...s, hegemony: { ...h, bully: { acts: { cn: 3 }, onMe: { cn: 1 }, log: [], hits: { 'cn>kr': { n: 1, last: s.worldMs }, 'cn>jp': { n: 3, last: s.worldMs }, 'cn>ph': { n: 2, last: s.worldMs }, 'cn>in': { n: 2, last: s.worldMs } } } } };
+    expect(canMyCoal(s, 'cn')).toBeNull();
+    const r = makeMyCoal(s, 'cn');
+    expect(r.text).not.toBe('');
+    expect(r.state.nations.kr.treasury).toBeLessThan(s.nations.kr.treasury);
+    const c = hegOf(r.state).bully?.coal?.cn;
+    if (c) {
+      expect(c.mine).toBe(true);
+      for (const m of c.members) expect(relationOf(r.state.world, 'kr', m) === '연합' || relationOf(r.state.world, 'kr', m) === '전쟁').toBe(true);
+      expect(canMyCoal(r.state, 'cn')).not.toBeNull();
+    }
+  });
+  it('깡패 수도를 차지하면 꺾은 것: 명성·전과 보상 루비', () => {
+    let s = newGame('t', 'kr', 0, { seed: 10 });
+    const cap = CITIES.find((c) => c.home === 'cn' && c.capital)!;
+    s = { ...s, hegemony: { ...hegOf(s), bully: { acts: { cn: 2 }, onMe: {}, log: [] } } };
+    const before = s;
+    s = { ...s, world: { ...s.world, owner: { ...s.world.owner, [cap.id]: 'kr' } } };
+    expect(isBeaten(s, 'cn')).toBe(true);
+    const after = bullyTick({ ...s, worldMs: s.worldMs + 15 * 60e3 });
+    expect(hegOf(after).bully?.beaten).toContain('cn');
+    expect(after.officer.fame ?? 0).toBeGreaterThan(s.officer.fame ?? 0);
+    const g = trackGoals(before, after);
+    expect((goalsOf(g).spoils ?? []).some((x) => x.k === 'bully' && x.ruby >= 60)).toBe(true);
+    // 두 번 받지 않음
+    const again = bullyTick({ ...after, worldMs: after.worldMs + 15 * 60e3 });
+    expect(hegOf(again).bully?.beaten?.filter((x) => x === 'cn').length).toBe(1);
   });
 });
