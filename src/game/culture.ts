@@ -170,7 +170,7 @@ export function baseTourism(s: GameState, c = cultureOf(s)): number {
 /** 지금 시간당 관광(행사 덤 포함) */
 export function tourismPerHour(s: GameState, c = cultureOf(s)): number {
   const ev = c.event && s.worldMs < c.event.endMs ? cultureEventById(c.event.id) : null;
-  return baseTourism(s, c) * (1 + (ev?.boost ?? 0) * (1 + ATHLETE_EVENT * starCount(c, 'athlete') + courseBonus(c).event));
+  return baseTourism(s, c) * (1 + (ev?.boost ?? 0) * (1 + ATHLETE_EVENT * starCount(c, 'athlete') + courseBonus(c).event)) * (1 + VISA_TOUR * visaCount(s));
 }
 /** 그 나라에 퍼지는 배율(0 = 안 퍼짐) */
 export function spreadMult(s: GameState, id: string, c = cultureOf(s)): number {
@@ -182,10 +182,16 @@ export function spreadMult(s: GameState, id: string, c = cultureOf(s)): number {
   if ((s.economy.contracts ?? []).some((x) => x.country === id)) m *= 1.15;
   if (relationOf(s.world, me, id) === '연합') m *= 1.1;
   if (favorOf(s, id) >= 20) m *= 1.1;
+  if (visaWith(s).includes(id)) m *= 1.1;
   // 11-28 스타 해외 진출: 그 나라에 가 있는 스타마다 +25%
   m *= 1 + ABROAD_SPREAD * starsOf(c).filter((x) => x.abroad && x.abroad.to === id && x.abroad.untilMs > s.worldMs).length;
   return m;
 }
+
+// ── 11-28 비자 면제 협정(호감·협정 탭): 관광 +6%씩, 그 나라에 문화 +10% ──
+export const VISA_TOUR = 0.06;
+const visaWith = (s: GameState) => (s.civ?.agreements ?? []).filter((a) => a.kind === 'visa' && a.untilMs > s.worldMs).map((a) => a.who);
+export const visaCount = (s: GameState) => Math.min(5, visaWith(s).length);
 
 // ── 11-28 국정 37 강화(문화·스타): 스타 해외 진출 ──
 export const ABROAD_SPREAD = 0.25;
