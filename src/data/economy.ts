@@ -142,7 +142,9 @@ export const UNIT_COST: Record<string, UnitCost> = {
   '레이저 방공함': { money: 8000, res: { 강철: 12, 반도체: 4, 갈륨: 4, 헬륨: 2 }, hours: 14, power: 42, troops: 300 },
 };
 
-/** 특화 유닛 = 기본 병과보다 조금 비싸고(×1.15) 세고(×1.25) 고유 능력이 있음. 특화마다 값을 따로 조절(data/specials.ts) */
+/** 특화 유닛 = 기본 병과보다 조금 비싸고(×1.15) 세고(×1.3) 고유 능력이 있음. 특화마다 값을 따로 조절(data/specials.ts)
+ *  11-27 대장 "나라 특유 유닛은 같은 종류보다 1.3배쯤 세게": 전투력은 적어도 ×1.3(더 센 것은 그대로) */
+export const SPECIAL_POWER = 1.3;
 export function specialCost(base: string, k: { money?: number; hours?: number; power?: number } = {}): UnitCost {
   const b = UNIT_COST[base];
   const m = k.money ?? 1.15;
@@ -152,7 +154,7 @@ export function specialCost(base: string, k: { money?: number; hours?: number; p
     money: Math.round(b.money * m),
     res,
     hours: Math.max(0.5, Math.round(b.hours * (k.hours ?? 1.1) * 10) / 10),
-    power: Math.round(b.power * (k.power ?? 1.25)),
+    power: Math.round(b.power * Math.max(SPECIAL_POWER, k.power ?? SPECIAL_POWER)),
     troops: Math.round(b.troops * 1.1),
   };
 }
