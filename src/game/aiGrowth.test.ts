@@ -12,7 +12,7 @@ describe('AI 나라 성장(11-26)', () => {
     s = advance(s, 3600e3 * 24 * 5);
     expect(s.world.grow?.kr).toBeUndefined();
     expect(growTotal(s.world, 'cn')).toBeGreaterThan(5);
-    expect(budgetPerDay(s, 'cn')).toBeGreaterThan(b0 * 0.9);
+    expect(budgetPerDay(s, 'cn')).toBeGreaterThan(b0 * 0.8); // 11-27 나라 36개: 숙적·제재가 늘어 조금 덜 오름
     expect(troopsPerDay(s, 'ru')).toBeGreaterThan(0);
     void t0;
   }, 30000);

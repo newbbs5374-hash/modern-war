@@ -43,7 +43,7 @@ describe('평화 승리', () => {
     expect(peaceOf(s).last).toMatch(/부결/);
     expect(canProposePeace(s)).toMatch(/잠시/);
     s = { ...s, worldMs: s.worldMs + 13 * 3600e3 };
-    s = liked(s, 12);
+    s = liked(s, 26); // 11-27 나라 36개: 2/3 = 24곳
     const pr = peaceProgress(s);
     expect(pr.have).toBeGreaterThanOrEqual(pr.need);
     s = proposePeace(s);
@@ -62,7 +62,7 @@ describe('평화 승리', () => {
   });
 
   it('헌장 중 전쟁에 휘말리면 깨짐', () => {
-    let s = liked(setRank(withTech(calmWorld(newGame('t', 'kr', 0, { seed: 6 }))), VICTORY_RANK), 12);
+    let s = liked(setRank(withTech(calmWorld(newGame('t', 'kr', 0, { seed: 6 }))), VICTORY_RANK), 26);
     s = proposePeace(s);
     expect(peaceOf(s).sinceMs).not.toBeNull();
     const k = pairKey('kr', 'kp');

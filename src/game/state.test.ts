@@ -10,8 +10,8 @@ import { exportCode, importCode, loadGame, parseSave, saveGame, type Storage } f
 const HOUR = 60 * 60 * 1000;
 
 describe('세계 데이터', () => {
-  it('나라 18개(11-26 새 나라 5개), 도시 8~13개·점령 도시 5~6개(11-25, 11-26 미국·중국·러시아는 더 많음), 대륙 5개 안', () => {
-    expect(COUNTRIES).toHaveLength(18);
+  it('나라 36개(11-27 새 나라 18개), 도시 8~13개·점령 도시 5~6개(11-25, 11-26 미국·중국·러시아는 더 많음), 대륙 8개', () => {
+    expect(COUNTRIES).toHaveLength(36);
     const big: Record<string, [number, number]> = { us: [20, 8], cn: [16, 7], ru: [15, 6] };
     for (const c of COUNTRIES) {
       const front = CITIES.filter((x) => x.home === c.id && x.front).length;
@@ -26,7 +26,7 @@ describe('세계 데이터', () => {
       expect(front, c.id).toBeLessThanOrEqual(6);
     }
     expect(CITIES.filter((c) => c.home === 'kr' && c.front).map((c) => c.name)).toEqual(['서울', '부산', '대전', '전주', '강릉', '여수']);
-    expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(5);
+    expect(new Set(COUNTRIES.map((c) => c.continent)).size).toBe(8);
   });
   it('시작 구도', () => {
     // 새 세계관: 모두 평화로 시작(같은 협약은 연합)

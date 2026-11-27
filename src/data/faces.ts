@@ -36,12 +36,17 @@ export const US_ETH_WEIGHT: Record<UsEth, number> = { we: 0.5, bl: 0.2, hi: 0.2,
 
 /** 사람의 얼굴 묶음 이름 */
 export const faceTag = (country: string, eth?: string): string =>
-  country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : FACE_BORROW[country] ? faceTag(FACE_BORROW[country]) : 'us-we';
+  country === 'us' ? `us-${eth && (US_ETH as readonly string[]).includes(eth) ? eth : 'we'}` : FACE_PLAN[country] ? country : FACE_BORROW[country] ? (FACE_BORROW[country].startsWith('us-') ? FACE_BORROW[country] : faceTag(FACE_BORROW[country])) : 'us-we';
 /**
  * 11-26 새 나라 5개: 얼굴 그림이 오기 전까지 가까운 나라 얼굴을 빌려 씀(이름은 그 나라 이름표에서 뽑음).
  * 그림이 들어오면 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2·YOUNG_READY에 그 나라를 넣고 여기서 지우면 돼요.
  */
-export const FACE_BORROW: Record<string, string> = {}; // 11-27 새 나라 5개 얼굴이 들어와서 빌리지 않음
+export const FACE_BORROW: Record<string, string> = {
+  // 11-27 새 나라 18개: 그림이 오기 전까지 비슷한 얼굴을 빌림(us-bl·us-hi·us-we는 미국 얼굴 갈래)
+  eg: 'ir', dz: 'sa', ng: 'us-bl', za: 'us-bl', et: 'us-bl',
+  br: 'us-hi', ar: 'us-hi', co: 'us-hi', ve: 'us-hi', cl: 'us-hi', mx: 'us-hi',
+  au: 'uk', ca: 'us-we', fr: 'de', it: 'de', es: 'us-hi', gr: 'tr', fi: 'pl',
+};
 
 /**
  * 추가 얼굴(11-24 대장 결정 "나라별 더"): 나라마다 22장(남 13 · 여 9) → 모두 62장.
@@ -421,6 +426,34 @@ export function faceSheetsExtra3(): FaceSheet[] {
       for (const sex of ['m', 'f'] as const)
         for (let i = deckSize(tag, sex, true, true, false); i < deckSize(tag, sex, true, true, true); i++) cells.push({ file: faceFile(tag, sex, i, true, true, true), tag, sex, band: deckSlot(tag, sex, i, true, true, true).band });
     out.push(...cut16(c, cells, 1, 'a'));
+  }
+  return out;
+}
+
+/* ───────── 11-27 새 나라 18개(아프리카·남미·호주·캐나다·멕시코·유럽 5) 얼굴 그림 ───────── */
+// 처음부터 40대까지 넣어 넷째 묶음과 같은 수: 남 40대 20 · 50대 52 · 60대 45, 여 40대 12 · 50대 37 · 60대 24 = 190명
+// + 남는 2칸(40대 남녀 1명씩) = 192명 → 4×4 열두 장(sheet-eg-1 ~ 12) + 젊은 부관 두 장(sheet-eg-y1·y2) + 수행비서 한 장.
+// 그림이 들어오기 전까지는 FACE_BORROW의 비슷한 얼굴을 써요.
+export const NEW_FACE_COUNTRIES2 = ['eg', 'ng', 'za', 'et', 'dz', 'br', 'ar', 'co', 've', 'cl', 'au', 'ca', 'mx', 'fr', 'it', 'es', 'gr', 'fi'];
+export function newNationSheets2(): FaceSheet[] {
+  const out: FaceSheet[] = [];
+  const sum = (k: keyof FacePlan) => [STD, STD2, STD3, STD4].reduce((a, p) => a + (p[k] ?? 0), 0);
+  for (const c of NEW_FACE_COUNTRIES2) {
+    out.push({ sheet: `secretary-${c}`, country: c, grid: 1, cells: [{ file: `secretary-${c}`, tag: c, sex: 'f', band: '20' }] });
+    const cells: FaceSheet['cells'] = [];
+    const add = (sex: 'm' | 'f', band: FaceBand, n: number) => {
+      for (let i = 1; i <= n; i++) cells.push({ file: `face-${c}-${sex}-${band}-${pad2(i)}`, tag: c, sex, band });
+    };
+    add('m', '40', sum('m40') + 1);
+    add('m', '50', sum('m50'));
+    add('m', '60', sum('m60'));
+    add('f', '40', sum('f40') + 1);
+    add('f', '50', sum('f50'));
+    add('f', '60', sum('f60'));
+    out.push(...cut16(c, cells, 1));
+    const young: FaceSheet['cells'] = [];
+    for (const sex of ['m', 'f'] as const) for (let i = 0; i < YOUNG_PLAN.kp[sex]; i++) young.push({ file: youngFile(c, sex, i), tag: c, sex, band: '30' });
+    out.push(...cut16(c, young, 1, 'y'));
   }
   return out;
 }

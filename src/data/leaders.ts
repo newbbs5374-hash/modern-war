@@ -46,6 +46,25 @@ export const LEADERS: Record<string, { name: string; title: string; personality:
   ph: { name: '마리셀 산토스', title: '대통령', personality: '기회주의' },
   pk: { name: '타리크 잔주아', title: '총리', personality: '공격형' },
   sa: { name: '파이살 알라시드', title: '국왕', personality: '경제형' },
+  // 11-27 새 나라 18개
+  eg: { name: '하젬 엘바라위', title: '대통령', personality: '공격형' },
+  ng: { name: '올루세군 아데예미', title: '대통령', personality: '기회주의' },
+  za: { name: '시폰도 은들로부', title: '대통령', personality: '경제형' },
+  et: { name: '데레제 게브레메스켈', title: '총리', personality: '공격형' },
+  dz: { name: '무라드 벤아이사', title: '대통령', personality: '방어형' },
+  br: { name: '조르지 카르발류', title: '대통령', personality: '기회주의' },
+  ar: { name: '세바스티안 로메로', title: '대통령', personality: '공격형' },
+  co: { name: '안드레스 카마초', title: '대통령', personality: '방어형' },
+  ve: { name: '라파엘 우르다네타', title: '대통령', personality: '공격형' },
+  cl: { name: '카롤리나 베가', title: '대통령', personality: '방어형' },
+  au: { name: '제임스 하그리브스', title: '총리', personality: '경제형' },
+  ca: { name: '로랑 트랑블레', title: '총리', personality: '방어형' },
+  mx: { name: '알레한드라 몬테스', title: '대통령', personality: '기회주의' },
+  fr: { name: '마티외 베르니에', title: '대통령', personality: '기회주의' },
+  it: { name: '조르조 마르케티', title: '총리', personality: '경제형' },
+  es: { name: '마르코스 이바녜스', title: '총리', personality: '방어형' },
+  gr: { name: '스타브로스 니콜라이디스', title: '총리', personality: '방어형' },
+  fi: { name: '안티 비르타넨', title: '대통령', personality: '방어형' },
 };
 
 export const PERSONALITY_LIST = Object.keys(PERSONALITIES) as Personality[];

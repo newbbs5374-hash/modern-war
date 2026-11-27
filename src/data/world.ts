@@ -3,7 +3,7 @@
 // 지도는 게임용으로 줄인 세계지도(지역 5개). 지도자는 실제 같은 가상 인물(data/leaders.ts).
 // 나라 id(us, kr…)는 그림 파일 이름(leader-kr.png 등)에도 쓰므로 바꾸지 않는다.
 
-export type ContinentId = 'eurona' | 'norga' | 'sahar' | 'asien' | 'amern';
+export type ContinentId = 'eurona' | 'norga' | 'sahar' | 'asien' | 'amern' | 'namer' | 'afric' | 'samer';
 export type BlocId = 'pacific' | 'continental' | 'europe' | 'independent';
 export type FaithId = 'covenant' | 'blade' | 'polaris' | 'pantheon' | 'secular';
 export type Difficulty = '쉬움' | '보통' | '어려움' | '매우 어려움';
@@ -56,6 +56,10 @@ export const CONTINENTS: Continent[] = [
   { id: 'asien', name: '아시아', shapes: [{ x: 276, y: 186, w: 272, h: 222 }], label: { x: 286, y: 200 } },
   { id: 'sahar', name: '중동', shapes: [{ x: 64, y: 306, w: 196, h: 156 }], label: { x: 72, y: 458 } },
   { id: 'amern', name: '태평양', shapes: [{ x: 596, y: 156, w: 142, h: 284 }], label: { x: 604, y: 170 } },
+  // 11-27 새 나라 18개: 북미(미국·캐나다·멕시코)·아프리카·남미. 태평양은 일본·필리핀·호주
+  { id: 'namer', name: '북미', shapes: [{ x: 860, y: 20, w: 220, h: 520 }], label: { x: 870, y: 34 } },
+  { id: 'afric', name: '아프리카', shapes: [{ x: 20, y: 480, w: 300, h: 400 }], label: { x: 30, y: 494 } },
+  { id: 'samer', name: '남미', shapes: [{ x: 900, y: 540, w: 220, h: 300 }], label: { x: 910, y: 554 } },
 ];
 
 export const BLOCS: Record<BlocId, { name: string; color: string }> = {
@@ -83,7 +87,7 @@ const C = (o: Omit<Country, 'label'> & { label?: { x: number; y: number } }): Co
 
 export const COUNTRIES: Country[] = [
   C({
-    id: 'us', name: '미국', continent: 'amern', intro: '세계 최강의 해군과 항공모함을 가진 부유한 나라',
+    id: 'us', name: '미국', continent: 'namer', intro: '세계 최강의 해군과 항공모함을 가진 부유한 나라',
     cities: ['워싱턴', '뉴욕', '샌프란시스코', '호놀룰루', '덴버', '피닉스', '피츠버그', '휴스턴', '로스앤젤레스', '시카고', '시애틀', '보스턴', '애틀랜타', '마이애미', '댈러스', '샌디에이고', '필라델피아', '디트로이트', '노퍽', '샌안토니오'],
     economy: 100, budget: 100, military: 100, difficulty: '쉬움',
     bloc: 'pacific', faith: 'covenant', faithStrength: '중',
@@ -245,6 +249,175 @@ export const COUNTRIES: Country[] = [
     specialUnit: { name: '왕실 공군 편대', base: '전투기', effect: '공격 +20% · 체력 +20% · 값이 비쌈' },
     ability: { name: '오일 머니', effect: '나라 예산 +20%(석유 수출)' },
     shapes: [{ x: 254, y: 630, w: 30, h: 30 }],
+  }),
+  // 11-27 대장 결정 "아프리카·남미·북미·유럽·호주 새 나라 18개"(18→36개국)
+  // shapes = 육각 칸 지도(도시·전투 화면용) 자리. 세계지도 자리는 실제 위치(realmap.ts)
+  // ── 아프리카 ──
+  C({
+    id: 'eg', name: '이집트', continent: 'afric', intro: '수에즈 운하를 쥔 아프리카의 맹주. 아프리카에서 가장 큰 기갑 부대',
+    cities: ['카이로', '알렉산드리아', '수에즈', '포트사이드', '아스완', '룩소르', '후르가다', '마르사마트루흐', '아시우트'],
+    economy: 18, budget: 15, military: 32, difficulty: '보통',
+    bloc: 'independent', faith: 'blade', faithStrength: '중',
+    specialUnit: { name: '나일 기갑 사단', base: '전차', effect: '평지·사막에서 공격 +20% · 체력 +15%' },
+    ability: { name: '수에즈 운하', effect: '나라 예산 +10%(운하 통행세)' },
+    shapes: [{ x: 190, y: 500, w: 60, h: 40 }],
+  }),
+  C({
+    id: 'ng', name: '나이지리아', continent: 'afric', intro: '아프리카에서 사람이 가장 많은 석유 대국. 서아프리카의 맏형',
+    cities: ['아부자', '라고스', '카노', '포트하커트', '이바단', '카두나', '베닌시티', '마이두구리', '칼라바르'],
+    economy: 16, budget: 11, military: 22, difficulty: '어려움',
+    bloc: 'independent', faith: 'covenant', faithStrength: '강',
+    specialUnit: { name: '델타 강습대', base: '특수부대', effect: '해안·강가에서 공격 +30% · 숨어서 첫 공격 +30%' },
+    ability: { name: '인구 대국', effect: '병력 +20%' },
+    shapes: [{ x: 70, y: 630, w: 50, h: 40 }],
+  }),
+  C({
+    id: 'za', name: '남아프리카공화국', continent: 'afric', intro: '아프리카 최고의 공업국. 금·백금·광물이 땅속에 가득',
+    cities: ['프리토리아', '요하네스버그', '케이프타운', '더반', '그케베하', '블룸폰테인', '이스트런던', '폴로콰네', '리처즈베이'],
+    economy: 22, budget: 15, military: 17, difficulty: '보통',
+    bloc: 'independent', faith: 'covenant', faithStrength: '중',
+    specialUnit: { name: '케이프 공격헬기 대대', base: '공격헬기', effect: '전차 상대 공격 +30% · 체력 +10%' },
+    ability: { name: '광물 왕국', effect: '나라 예산 +10%(광물 수출)' },
+    shapes: [{ x: 150, y: 830, w: 60, h: 40 }],
+  }),
+  C({
+    id: 'et', name: '에티오피아', continent: 'afric', intro: '아프리카의 지붕 고원 나라. 나일강 큰 댐을 두고 이집트와 맞섬',
+    cities: ['아디스아바바', '디레다와', '메켈레', '바히르다르', '곤다르', '하와사', '지마', '아소사', '데시에'],
+    economy: 9, budget: 6, military: 21, difficulty: '매우 어려움',
+    bloc: 'independent', faith: 'polaris', faithStrength: '강',
+    specialUnit: { name: '고원 산악 보병', base: '보병', effect: '산·고지에서 공격 +30% · 받는 피해 −10%' },
+    ability: { name: '고원 요새', effect: '자기 땅 방어 때 힘 +25%' },
+    shapes: [{ x: 260, y: 700, w: 40, h: 40 }],
+  }),
+  C({
+    id: 'dz', name: '알제리', continent: 'afric', intro: '아프리카에서 가장 넓은 나라. 사하라 가스와 아프리카 최대 국방비',
+    cities: ['알제', '오랑', '콘스탄틴', '안나바', '하시메사우드', '타만라세트', '베샤르', '세티프', '아드라르'],
+    economy: 13, budget: 14, military: 27, difficulty: '보통',
+    bloc: 'independent', faith: 'blade', faithStrength: '강',
+    specialUnit: { name: '사하라 기병대', base: '기갑병', effect: '사막·평지에서 빠름(−25%) · 시야 +1' },
+    ability: { name: '사하라 가스', effect: '나라 예산 +10%(가스 수출)' },
+    shapes: [{ x: 50, y: 510, w: 70, h: 50 }],
+  }),
+  // ── 남미 ──
+  C({
+    id: 'br', name: '브라질', continent: 'samer', intro: '남미의 거인. 아마존 숲과 비행기 공장, 땅속 자원이 넘침',
+    cities: ['브라질리아', '상파울루', '리우데자네이루', '마나우스', '살바도르', '헤시피', '포르투알레그리', '벨렝', '벨루오리존치', '포르탈레자'],
+    economy: 40, budget: 22, military: 34, difficulty: '쉬움',
+    bloc: 'independent', faith: 'covenant', faithStrength: '강',
+    specialUnit: { name: '아마존 정글 여단', base: '보병', effect: '숲에서 공격 +35% · 숨어서 첫 공격 +30%' },
+    ability: { name: '남미의 거인', effect: '나라 예산 +10% · 병력 +10%' },
+    shapes: [{ x: 1000, y: 620, w: 90, h: 100 }],
+  }),
+  C({
+    id: 'ar', name: '아르헨티나', continent: 'samer', intro: '팜파스 곡창과 리튬의 나라. 남쪽 섬들을 되찾겠다는 꿈',
+    cities: ['부에노스아이레스', '코르도바', '로사리오', '멘도사', '바이아블랑카', '우수아이아', '마르델플라타', '네우켄', '살타', '코모도로리바다비아'],
+    economy: 20, budget: 12, military: 15, difficulty: '어려움',
+    bloc: 'independent', faith: 'covenant', faithStrength: '중',
+    specialUnit: { name: '팜파스 기갑대', base: '전차', effect: '평지에서 공격 +20% · 빠름(−15%)' },
+    ability: { name: '남쪽 끝 요새', effect: '자기 땅 방어 때 힘 +15%' },
+    shapes: [{ x: 970, y: 740, w: 40, h: 90 }],
+  }),
+  C({
+    id: 'co', name: '콜롬비아', continent: 'samer', intro: '오랜 내전을 이겨 낸 군대. 정글과 산이 많은 미국의 친구',
+    cities: ['보고타', '메데인', '칼리', '바랑키야', '쿠쿠타', '카르타헤나', '부카라망가', '산타마르타', '레티시아'],
+    economy: 14, budget: 9, military: 20, difficulty: '어려움',
+    bloc: 'pacific', faith: 'secular', faithStrength: '중',
+    specialUnit: { name: '정글 특수부대', base: '특수부대', effect: '숲·산에서 공격 +30% · 숨어서 첫 공격 +40%' },
+    ability: { name: '싸워 본 군대', effect: '병력 +10%' },
+    shapes: [{ x: 930, y: 570, w: 40, h: 40 }],
+  }),
+  C({
+    id: 've', name: '베네수엘라', continent: 'samer', intro: '세계에서 석유가 가장 많이 묻힌 나라. 제재에 시달리며 러시아 무기를 씀',
+    cities: ['카라카스', '마라카이보', '마라카이', '바르키시메토', '시우다드과야나', '마투린', '산크리스토발', '푸에르토라크루스'],
+    economy: 8, budget: 10, military: 18, difficulty: '매우 어려움',
+    bloc: 'continental', faith: 'secular', faithStrength: '중',
+    specialUnit: { name: '볼리바르 민병대', base: '보병', effect: '값 −35% · 모집이 빠름 · 대신 공격 −10%' },
+    ability: { name: '석유 매장 1위', effect: '나라 예산 +15%(석유)' },
+    shapes: [{ x: 980, y: 545, w: 40, h: 30 }],
+  }),
+  C({
+    id: 'cl', name: '칠레', continent: 'samer', intro: '안데스와 태평양 사이 긴 나라. 구리·리튬 세계 1위, 남미 최강 해군',
+    cities: ['산티아고', '발파라이소', '안토파가스타', '콘셉시온', '푼타아레나스', '이키케', '아리카', '푸에르토몬트', '칼라마'],
+    economy: 16, budget: 11, military: 13, difficulty: '어려움',
+    bloc: 'independent', faith: 'secular', faithStrength: '약',
+    specialUnit: { name: '피오르 잠수전대', base: '잠수함', effect: '들키는 거리 줄어듦 · 숨어서 하는 첫 공격 +60%' },
+    ability: { name: '안데스 장벽', effect: '자기 땅 방어 때 힘 +20%' },
+    shapes: [{ x: 930, y: 700, w: 24, h: 110 }],
+  }),
+  // ── 태평양(오세아니아) ──
+  C({
+    id: 'au', name: '호주', continent: 'amern', intro: '대륙 하나가 나라. 철광석·리튬이 넘치고 미국·영국과 핵잠수함 동맹',
+    cities: ['캔버라', '시드니', '멜버른', '퍼스', '다윈', '브리즈번', '애들레이드', '타운즈빌', '호바트', '포트헤들랜드'],
+    economy: 30, budget: 22, military: 20, difficulty: '보통',
+    bloc: 'pacific', faith: 'secular', faithStrength: '약',
+    specialUnit: { name: '오커스 잠수전대', base: '잠수함', effect: '체력 +30% · 공격 +20% · 숨어서 다가감' },
+    ability: { name: '자원 대륙', effect: '나라 예산 +15%(광물 수출)' },
+    shapes: [{ x: 760, y: 760, w: 100, h: 70 }],
+  }),
+  // ── 북미 ──
+  C({
+    id: 'ca', name: '캐나다', continent: 'namer', intro: '세계에서 두 번째로 넓은 나라. 북극 바다와 석유·우라늄을 가진 미국의 이웃',
+    cities: ['오타와', '토론토', '몬트리올', '밴쿠버', '캘거리', '에드먼턴', '핼리팩스', '위니펙', '퀘벡', '이칼루이트'],
+    economy: 33, budget: 20, military: 14, difficulty: '보통',
+    bloc: 'pacific', faith: 'secular', faithStrength: '약',
+    specialUnit: { name: '북극 레인저', base: '보병', effect: '눈·숲·산에서 공격 +20% · 받는 피해 −15%' },
+    ability: { name: '북쪽 땅', effect: '자기 땅 방어 때 힘 +20%(추위)' },
+    shapes: [{ x: 890, y: 30, w: 170, h: 90 }],
+  }),
+  C({
+    id: 'mx', name: '멕시코', continent: 'namer', intro: '미국 바로 아래 공장 나라. 석유와 자동차, 마약 조직과의 싸움',
+    cities: ['멕시코시티', '과달라하라', '몬테레이', '티후아나', '베라크루스', '칸쿤', '메리다', '치와와', '아카풀코'],
+    economy: 28, budget: 14, military: 18, difficulty: '보통',
+    bloc: 'independent', faith: 'covenant', faithStrength: '강',
+    specialUnit: { name: '국가방위대', base: '보병', effect: '값 −15% · 우리 땅을 지킬 때 +35%' },
+    ability: { name: '공장 이웃', effect: '나라 예산 +10%(미국으로 수출)' },
+    shapes: [{ x: 890, y: 460, w: 70, h: 40 }],
+  }),
+  // ── 유럽 ──
+  C({
+    id: 'fr', name: '프랑스', continent: 'eurona', intro: '핵무기와 항공모함을 가진 유럽의 군사 강국. 아프리카에도 입김',
+    cities: ['파리', '마르세유', '리옹', '툴루즈', '브레스트', '보르도', '릴', '스트라스부르', '툴롱'],
+    economy: 45, budget: 30, military: 38, difficulty: '쉬움',
+    bloc: 'europe', faith: 'secular', faithStrength: '중',
+    specialUnit: { name: '라팔 타격 편대', base: '전투기', effect: '공격 +25% · 체력 +10% · 값이 비쌈' },
+    ability: { name: '핵 억지', effect: '다른 나라가 침공을 걸 확률 −25%' },
+    shapes: [{ x: 110, y: 230, w: 40, h: 40 }],
+  }),
+  C({
+    id: 'it', name: '이탈리아', continent: 'eurona', intro: '지중해 한가운데 장화 반도. 항공모함 두 척과 정밀 공업',
+    cities: ['로마', '밀라노', '나폴리', '토리노', '팔레르모', '타란토', '베네치아', '제노바', '칼리아리'],
+    economy: 35, budget: 22, military: 25, difficulty: '보통',
+    bloc: 'europe', faith: 'covenant', faithStrength: '강',
+    specialUnit: { name: '지중해 항모 전단', base: '항공모함', effect: '체력 +10% · 값 −10%' },
+    ability: { name: '반도 방어', effect: '자기 땅 방어 때 힘 +10%' },
+    shapes: [{ x: 170, y: 280, w: 30, h: 40 }],
+  }),
+  C({
+    id: 'es', name: '스페인', continent: 'eurona', intro: '지중해와 대서양을 잇는 나라. 지브롤터 해협을 두고 영국과 다툼',
+    cities: ['마드리드', '바르셀로나', '발렌시아', '세비야', '빌바오', '카디스', '사라고사', '라코루냐', '팔마'],
+    economy: 30, budget: 18, military: 20, difficulty: '보통',
+    bloc: 'europe', faith: 'covenant', faithStrength: '중',
+    specialUnit: { name: '해병 상륙대', base: '상륙장갑차', effect: '해안에서 공격 +30% · 체력 +10%' },
+    ability: { name: '관광 대국', effect: '나라 예산 +10%(관광)' },
+    shapes: [{ x: 30, y: 300, w: 50, h: 30 }],
+  }),
+  C({
+    id: 'gr', name: '그리스', continent: 'eurona', intro: '섬 6천 개의 바다 나라. 에게해 섬을 두고 튀르키예와 맞섬',
+    cities: ['아테네', '테살로니키', '파트라스', '헤라클리온', '로도스', '라리사', '알렉산드루폴리스', '이오아니나', '미틸레네'],
+    economy: 12, budget: 10, military: 16, difficulty: '어려움',
+    bloc: 'europe', faith: 'polaris', faithStrength: '강',
+    specialUnit: { name: '에게해 고속정대', base: '구축함', effect: '값 −25% · 빠른 배(−30%)' },
+    ability: { name: '섬의 바다', effect: '자기 땅 방어 때 힘 +20%' },
+    shapes: [{ x: 220, y: 300, w: 30, h: 30 }],
+  }),
+  C({
+    id: 'fi', name: '핀란드', continent: 'eurona', intro: '러시아와 1,340km를 맞댄 숲과 호수의 나라. 국민 모두가 예비군',
+    cities: ['헬싱키', '탐페레', '투르쿠', '오울루', '라펜란타', '로바니에미', '쿠오피오', '바사', '이발로'],
+    economy: 18, budget: 12, military: 17, difficulty: '보통',
+    bloc: 'europe', faith: 'secular', faithStrength: '약',
+    specialUnit: { name: '설원 스키 저격대', base: '특수부대', effect: '숲·산에서 공격 +35% · 숨어서 첫 공격 +50%' },
+    ability: { name: '총동원 예비군', effect: '병력 +30%' },
+    shapes: [{ x: 200, y: 40, w: 30, h: 50 }],
   }),
 ];
 
