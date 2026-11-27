@@ -102,7 +102,7 @@ import './recsEcon'; // 11-28 경제 추천
 import './recsDiplo'; // 11-28 외교 추천
 import './recsCulture';
 import './recsSociety'; // 11-28 내정 추천
-import { bondTick, type BondState } from './bonds';
+import { bondTick, type BondState, type FundState } from './bonds';
 import { embassyTick, type EmbassyState } from './embassy'; // 11-28 문화 추천
 
 export interface NationState {
@@ -167,6 +167,8 @@ export interface GameState {
   recLog?: RecLog;
   /** 11-28 국채 */
   bonds?: BondState;
+  /** 11-28 국부 펀드 */
+  fund?: FundState;
   /** 11-28 대사관 */
   embassy?: EmbassyState;
   /** 첩보·특수 작전 */

@@ -80,3 +80,34 @@ export function bondTick(s: GameState): GameState {
   missed = fail ? Math.min(5, missed + hours) : Math.max(0, missed - hours / 24);
   return { ...s, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: money } }, bonds: { ...b, list, missed, lastMs: s.worldMs } };
 }
+
+// ── 11-28 국부 펀드: 남는 나라 예산을 주식 지수에 맡김 → 지수가 오르면 이익, 위기면 손실(꺼낼 때 수수료 2%) ──
+export const FUND_FEE = 0.02;
+export interface FundState {
+  units: number;
+  /** 넣은 돈 합계 */
+  cost: number;
+}
+const stockIdx = (s: GameState) => Math.max(1, s.polity?.econ.stock ?? 2500);
+export const fundOf = (s: GameState): FundState => s.fund ?? { units: 0, cost: 0 };
+export const fundValue = (s: GameState) => Math.round(fundOf(s).units * stockIdx(s));
+/** 한 번에 넣는 양: 나라 예산의 20% */
+export const fundChunk = (s: GameState) => Math.floor(Math.max(0, s.nations[s.player.countryId]?.treasury ?? 0) * 0.2);
+export function canInvest(s: GameState): string | null {
+  if (!s.polity) return '경기 지표가 아직 없어요';
+  if (fundChunk(s) < 1000) return '맡길 나라 예산이 모자라요';
+  return null;
+}
+export function invest(s: GameState): GameState {
+  if (canInvest(s)) return s;
+  const me = s.player.countryId;
+  const amt = fundChunk(s);
+  const f = fundOf(s);
+  return { ...s, fund: { units: f.units + amt / stockIdx(s), cost: f.cost + amt }, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - amt } } };
+}
+export function withdrawFund(s: GameState): GameState {
+  const v = fundValue(s);
+  if (v <= 0) return s;
+  const me = s.player.countryId;
+  return { ...s, fund: { units: 0, cost: 0 }, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury + Math.round(v * (1 - FUND_FEE)) } } };
+}

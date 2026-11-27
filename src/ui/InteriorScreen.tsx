@@ -77,7 +77,7 @@ import { TECHS } from '../data/civ';
 export const needPick = (s: ScreenProps['state']) => (['mil', 'soc'] as const).some((l) => !civOf(s).cur[l] && TECHS.some((t) => t.line === l && !canResearch(s, t.id)));
 import { CityPanel, GovPanel, ResearchPanel } from './CivScreens';
 import type { GameState } from '../game/state';
-import { BOND_HOURS, BOND_PAY_H, bondDebt, bondPayPerHour, bondRate, bondSize, borrow, canBorrow, forecast, treasuryPerHour } from '../game/bonds';
+import { canInvest, fundChunk, fundOf, fundValue, invest, withdrawFund, BOND_HOURS, BOND_PAY_H, bondDebt, bondPayPerHour, bondRate, bondSize, borrow, canBorrow, forecast, treasuryPerHour } from '../game/bonds';
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const sign = (v: number) => (v >= 0 ? `+${fmt(v)}` : `−${fmt(-v)}`);
@@ -755,8 +755,25 @@ function BondCard({ state, apply }: { state: GameState; apply: (f: (s: GameState
           🏦 국채 +{fmt(size)}
         </button>
       </div>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 6, marginTop: 6 }}>
+        <span>
+          <b>📈 국부 펀드 {fmt(fundValue(state))}</b>
+          <br />
+          <small className={fundValue(state) >= fundOf(state).cost ? 'muted' : 'bad'}>
+            {fundOf(state).cost ? `넣은 돈 ${fmt(fundOf(state).cost)} · ${fundValue(state) >= fundOf(state).cost ? '+' : ''}${fmt(fundValue(state) - fundOf(state).cost)}` : '남는 예산을 주식 지수에 맡겨요'}
+          </small>
+        </span>
+        <span className="row" style={{ gap: 4 }}>
+          <button className="mini" disabled={!!canInvest(state)} title={canInvest(state) ?? ''} onClick={() => apply(invest)}>
+            +{fmt(fundChunk(state))}
+          </button>
+          <button className="mini" disabled={fundValue(state) <= 0} onClick={() => apply(withdrawFund)}>
+            모두 꺼내기
+          </button>
+        </span>
+      </div>
       <small className="muted">
-        국채: 시간당 예산 {BOND_HOURS}시간치를 바로 빌리고, 이자 {Math.round(bondRate(state) * 100)}%를 붙여 {BOND_PAY_H}시간 동안 나눠 갚아요. 못 갚으면 이자가 올라요.
+        국부 펀드: 나라 예산 20%씩 맡기면 경기의 주식 지수만큼 오르내려요(꺼낼 때 수수료 2%). 국채: 시간당 예산 {BOND_HOURS}시간치를 바로 빌리고, 이자 {Math.round(bondRate(state) * 100)}%를 붙여 {BOND_PAY_H}시간 동안 나눠 갚아요. 못 갚으면 이자가 올라요.
       </small>
     </section>
   );
