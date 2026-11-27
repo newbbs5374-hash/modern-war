@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FORCE_BRANCHES, UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
+import { PRESETS, canPreset, presetPlan, producePreset } from '../game/presets';
 import { armyPower, canProduce, produce, buildMs, QUEUE_MAX, queueName, crystalReady } from '../game/economy';
 import { exclusiveByName, exclusiveLock, specialsFor, specialsOf, type SpecialDef } from '../data/specials';
 import { unitTechLock } from '../game/civ';
@@ -156,6 +157,18 @@ export function ForcesScreen(props: ScreenProps) {
                   ⚡<small>{priceText(boostPrice(state, need))}</small>
                 </button>
               </div>
+            );
+          })}
+        </div>
+        <div className="row preset-row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+          <small className="muted">편성 묶음:</small>
+          {PRESETS.map((p) => {
+            const why = canPreset(state, p);
+            const plan = why ? [] : presetPlan(state, p);
+            return (
+              <button key={p.id} className="mini" disabled={!!why} title={why ?? `${p.text} · ${plan.join('·')}`} onClick={() => (actions.apply((s) => producePreset(s, p)), setMsg(`${p.icon} ${p.name} 묶음: ${plan.join('·')} 모집`))}>
+                {p.icon} {p.name}
+              </button>
             );
           })}
         </div>

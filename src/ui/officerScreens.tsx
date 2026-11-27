@@ -55,6 +55,9 @@ import {
   sendAide,
   startGrand,
   startMission,
+  queueSlots,
+  enqueueMission,
+  dequeueMission,
   startTraining,
   trainAide,
   type Aide,
@@ -184,6 +187,7 @@ export function MissionCard({ state, actions, go }: ScreenProps) {
           {o.board.length === 0 && <p className="empty">지금은 맡을 임무가 없어요.</p>}
         </div>
       )}
+      {a && <QueueBox state={state} actions={actions} />}
       {msg && <p className="small result">{msg}</p>}
       {pick && (
         <Modal
@@ -1137,6 +1141,38 @@ function GrandPreview({ state, city }: { state: GameState; city: string }) {
       <p className="small" style={{ margin: '4px 0' }}>
         ❌ <b>지면</b>: 데려간 부대 일부를 잃고 명성·지지도가 떨어져요. 다음 대전투까지 기다려야 해요.
       </p>
+    </div>
+  );
+}
+
+/** 11-28 임무 예약 줄: 지금 임무 결과를 받으면 다음 임무가 저절로 시작 */
+function QueueBox({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
+  const o = state.officer;
+  const q = o.queue ?? [];
+  return (
+    <div className="queue-box">
+      <small className="muted">
+        📋 다음 임무 예약 {q.length}/{queueSlots(state)}칸 · 결과를 받으면 다음 임무가 바로 시작돼요
+      </small>
+      {q.map((m, i) => (
+        <div key={m.id} className="row" style={{ gap: 6, alignItems: 'center' }}>
+          <small style={{ flex: 1 }}>
+            {i + 1}. {MISSION_ICON[m.kind]} {cityById(m.city).name} · {m.kind} · {m.hours}시간 · 성공 {pct(missionChance(state, m))}
+          </small>
+          <button className="mini" onClick={() => actions.apply((s) => dequeueMission(s, m.id))}>
+            빼기
+          </button>
+        </div>
+      ))}
+      {q.length < queueSlots(state) && o.board.length > 0 && (
+        <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+          {o.board.slice(0, 6).map((m) => (
+            <button key={m.id} className="mini" onClick={() => actions.apply((s) => enqueueMission(s, m.id))}>
+              + {MISSION_ICON[m.kind]} {cityById(m.city).name} {pct(missionChance(state, m))}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

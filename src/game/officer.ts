@@ -210,6 +210,8 @@ export interface OfficerState {
   trainDay: number;
   trainCounts: Record<string, number>;
   board: Mission[];
+  /** 11-28 임무 예약 줄(앞 임무가 끝나 결과를 받으면 다음 임무가 저절로 시작) */
+  queue?: Mission[];
   boardMs: number;
   active: ActiveMission | null;
   examReadyMs: number;
@@ -830,7 +832,45 @@ export interface BattleOutcome {
   stars: number;
 }
 
+/** 11-28 임무 예약 칸: 처음 1칸, 호칭 4단계 2칸, 8단계 3칸 */
+export const queueSlots = (s: GameState) => 1 + (s.player.rankIndex >= 4 ? 1 : 0) + (s.player.rankIndex >= 8 ? 1 : 0);
+export function canEnqueue(s: GameState, missionId: number): string | null {
+  const o = s.officer;
+  if (!o.active) return '지금 하는 임무가 없어요. 바로 시작하세요';
+  if (!o.board.some((x) => x.id === missionId)) return '없는 임무';
+  if ((o.queue ?? []).length >= queueSlots(s)) return `예약은 ${queueSlots(s)}칸까지(호칭이 오르면 늘어요)`;
+  return null;
+}
+export function enqueueMission(s: GameState, missionId: number): GameState {
+  if (canEnqueue(s, missionId)) return s;
+  const m = s.officer.board.find((x) => x.id === missionId)!;
+  return withOfficer(s, (o2) => {
+    o2.board = o2.board.filter((x) => x.id !== missionId);
+    o2.queue = [...(o2.queue ?? []), m];
+  });
+}
+export function dequeueMission(s: GameState, missionId: number): GameState {
+  return withOfficer(s, (o2) => {
+    o2.queue = (o2.queue ?? []).filter((x) => x.id !== missionId);
+  });
+}
+/** 결과를 받은 뒤 예약 줄 맨 앞 임무를 시작 */
+function startQueued(s: GameState): GameState {
+  const q = s.officer.queue ?? [];
+  if (s.officer.active || !q.length) return s;
+  const [m, ...rest] = q;
+  return withOfficer(s, (o2, _rng, ns) => {
+    o2.queue = rest;
+    o2.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
+  });
+}
 export function claimMission(s: GameState, outcome?: BattleOutcome): { state: GameState; text: string | null } {
+  const r = claimMission0(s, outcome);
+  if (r.state === s) return r;
+  const n = startQueued(r.state);
+  return n === r.state ? r : { state: n, text: r.text ? `${r.text} · 다음 예약 임무 시작` : r.text };
+}
+function claimMission0(s: GameState, outcome?: BattleOutcome): { state: GameState; text: string | null } {
   const a = s.officer.active;
   if (!a || s.worldMs < a.endMs) return { state: s, text: null };
   let text = '';
