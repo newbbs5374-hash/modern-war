@@ -60,7 +60,39 @@ export function projectCities(s: GameState, id: string): string[] {
   });
 }
 export function busyProjects(s: GameState): Array<[string, ProjectState]> {
-  return Object.entries(domOf(s).projects).filter(([, p]) => p.stage < 3);
+  return Object.entries(domOf(s).projects).filter(([, p]) => p.stage < 3 && s.world.owner[p.cityId] === s.player.countryId);
+}
+/** 11-28 사업 도시를 잃었나(공사 중이면 멈춤, 완공이면 효과 없음) — 되찾거나 다른 도시로 옮기면 다시 이어 감 */
+export function projectLost(s: GameState, id: string): boolean {
+  const pr = domOf(s).projects[id];
+  return !!pr && s.world.owner[pr.cityId] !== s.player.countryId;
+}
+/** 옮겨 짓는 단계(완공했던 사업은 마무리부터 다시) */
+const moveStage = (pr: ProjectState) => Math.min(2, pr.stage);
+export const moveCost = (s: GameState, id: string) => {
+  const pr = domOf(s).projects[id];
+  return pr ? stageCost(s, id, moveStage(pr)) : 0;
+};
+export function canMoveProject(s: GameState, id: string, cityId: string): string | null {
+  if (!projectLost(s, id)) return '사업 도시를 잃지 않았어요';
+  const pr = domOf(s).projects[id];
+  if (pr.stage < 3 && busyProjects(s).length >= PROJECT_MAX) return `한꺼번에 ${PROJECT_MAX}개까지 할 수 있어요`;
+  if (!projectCities(s, id).includes(cityId)) return projectById(id).where === 'coastal' ? '바닷가 도시만 돼요' : '이 도시엔 지을 수 없어요';
+  const me = s.nations[s.player.countryId];
+  if (!me || me.treasury < moveCost(s, id)) return '나라 예산이 모자라요';
+  return null;
+}
+/** 다른 도시로 옮겨 다시 짓기: 지금 단계를 처음부터(완공했던 사업은 마무리부터) */
+export function moveProject(s: GameState, id: string, cityId: string): GameState {
+  if (canMoveProject(s, id, cityId)) return s;
+  const paid = payTreasury(s, moveCost(s, id));
+  if (!paid) return s;
+  const d = domOf(paid);
+  const pr = d.projects[id];
+  const st = moveStage(pr);
+  const p = projectById(id);
+  const ns = withDom(paid, { projects: { ...d.projects, [id]: { stage: st, endMs: s.worldMs + stageMs(id, st), cityId } } });
+  return domLog(ns, `${p.icon} ${p.name}을(를) ${cityById(cityId)?.name ?? ''}(으)로 옮겨 ${STAGES[st]}부터 다시 시작`);
 }
 export function canStartProject(s: GameState, id: string, cityId: string): string | null {
   if (domOf(s).projects[id]) return '이미 시작한 사업이에요';
@@ -84,6 +116,7 @@ export function startProject(s: GameState, id: string, cityId: string): GameStat
 export function canAdvanceProject(s: GameState, id: string): string | null {
   const pr = domOf(s).projects[id];
   if (!pr || pr.stage >= 3) return '진행 중인 사업이 아니에요';
+  if (projectLost(s, id)) return '공사 도시를 잃어 멈췄어요. 되찾거나 다른 도시로 옮기세요';
   if (pr.endMs > s.worldMs) return '지금 단계가 아직 안 끝났어요';
   if (pr.stage === 2) return null;
   const me = s.nations[s.player.countryId];

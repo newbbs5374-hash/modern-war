@@ -185,7 +185,7 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
               aria-label={nv.locked ? `${nv.label} · ${nv.locked}` : nv.label}
             >
               <span className="ico">
-                <UiIcon label={nv.label} emoji={nv.icon} />
+                <UiIcon label={nv.art ?? nv.label} emoji={nv.icon} />
               </span>
               <small>{nv.label}</small>
               {nv.screen === 'shop' && goalsReady(state) > 0 && <i className="badge">{goalsReady(state)}</i>}

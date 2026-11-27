@@ -113,9 +113,26 @@ export const unitsPower = (units: Record<string, number>) => Object.entries(unit
 export const unitsMoney = (units: Record<string, number>) => Object.entries(units).reduce((a, [n, k]) => a + unitInfo(n).money * k, 0);
 export const unitsCount = (units: Record<string, number>) => Object.values(units).reduce((a, k) => a + k, 0);
 
+/** 파병 칸을 차지하는 곳(돌아오는 중인 부대는 빼고 셈) */
+export const activeDeploys = (s: GameState) => deployOf(s).list.filter((x) => !x.returnMs).length;
+/** 요청 지역이 지금은 정식 나라와 같은 곳이면 그 나라 id(11-28: 필리핀·폴란드·핀란드·콜롬비아 등) */
+export const REGION_NATION: Record<string, string> = { 'r-philippines': 'ph', 'r-poland': 'pl', 'r-finland': 'fi', 'r-colombia': 'co' };
+/** 이 요청 지역을 우리에게 보여 줘도 되나: 내 나라이거나, 전쟁 중인 나라 땅이면 안 됨 */
+export function regionOk(s: GameState, region: string): boolean {
+  const me = s.player.countryId;
+  const n = REGION_NATION[region];
+  if (n && (n === me || !isAlive(s.world, n) || relationOf(s.world, me, n) === '전쟁')) return false;
+  const f = regionById(region)?.friend;
+  if (f && (f === me || relationOf(s.world, me, f) === '전쟁')) return false;
+  return true;
+}
+
 /** 받아 줄 수 있는 나라인가(요청 지역은 요청이 와 있어야) */
 export function canHost(s: GameState, to: string): string | null {
-  if (isRegion(to)) return openRequests(s).some((r) => r.region === to) ? null : '파병 요청이 온 곳에만 보낼 수 있어요';
+  if (isRegion(to)) {
+    if (!regionOk(s, to)) return '지금은 보낼 수 없는 곳이에요(우리나라이거나 전쟁 중인 나라)';
+    return openRequests(s).some((r) => r.region === to) ? null : '파병 요청이 온 곳에만 보낼 수 있어요';
+  }
   const me = s.player.countryId;
   if (to === me) return '우리나라예요';
   if (!isAlive(s.world, to)) return '없어진 나라예요';
@@ -128,7 +145,7 @@ export function canDeploy(s: GameState, to: string, units: Record<string, number
   const h = canHost(s, to);
   if (h) return h;
   const d = deployOf(s);
-  if (d.list.filter((x) => !x.returnMs).length >= DEPLOY_MAX) return `파병은 한 번에 ${DEPLOY_MAX}곳까지`;
+  if (activeDeploys(s) >= DEPLOY_MAX) return `파병은 한 번에 ${DEPLOY_MAX}곳까지`;
   if (d.list.some((x) => x.to === to && !x.returnMs)) return '이미 파병 중인 곳이에요';
   if (!unitsCount(units)) return '보낼 부대를 고르세요';
   for (const [n, k] of Object.entries(units)) if ((s.economy.army[n] ?? 0) < k) return `${n}가 모자라요`;
@@ -159,7 +176,7 @@ export function deployTroops(s: GameState, to: string, units: Record<string, num
 /* ───────── 11-26 파병 요청 ───────── */
 
 /** 아직 기다리는 요청 */
-export const openRequests = (s: GameState) => (deployOf(s).requests ?? []).filter((r) => r.untilMs > s.worldMs);
+export const openRequests = (s: GameState) => (deployOf(s).requests ?? []).filter((r) => r.untilMs > s.worldMs && regionOk(s, r.region));
 
 /** 요청을 받아들일 수 있나(병과가 맞아야) */
 export function canAccept(s: GameState, reqId: number, units: Record<string, number>): string | null {
@@ -191,7 +208,7 @@ export function declineRequest(s: GameState, reqId: number): GameState {
 function newRequest(s: GameState, rng: Rng): DeployRequest | null {
   const d = deployOf(s);
   const busy = new Set([...(d.requests ?? []).map((r) => r.region), ...d.list.map((x) => x.to)]);
-  const free = REGIONS.filter((r) => !busy.has(r.id));
+  const free = REGIONS.filter((r) => !busy.has(r.id) && regionOk(s, r.id));
   if (!free.length) return null;
   const region = rng.pick(free);
   const kind = rng.pick(kindsFor(region));
@@ -362,7 +379,8 @@ export function deployTick(s: GameState): GameState {
       if (!x.greeted) {
         x.greeted = true;
         if (region) {
-          const f = regionById(x.to)?.friend;
+          const f0 = regionById(x.to)?.friend;
+          const f = f0 && f0 !== me && relationOf(ns.world, me, f0) !== '전쟁' ? f0 : undefined;
           if (f) ns = addFavorNote(ns, f, `${placeName(x.to)} 요청에 응해 파병함`, 8);
           ns = log(ns, `🪖 파병 부대가 ${placeName(x.to)}에 도착했어요.${f ? ` ${countryById(f).name} 호감 +8` : ''}`);
         } else {
@@ -385,7 +403,8 @@ export function deployTick(s: GameState): GameState {
       if (x.req && s.worldMs >= x.req.endMs && !x.clash) {
         const k = requestKindById(x.req.kind);
         if (k) {
-          const f = regionById(x.to)?.friend;
+          const f0 = regionById(x.to)?.friend;
+          const f = f0 && f0 !== me && relationOf(ns.world, me, f0) !== '전쟁' ? f0 : undefined;
           ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + k.money } }, officer: { ...ns.officer, fame: ns.officer.fame + k.fame } };
           if (f) ns = addFavorNote(ns, f, `${placeName(x.to)} ${k.name} 임무를 마침`, 10);
           ns = log(ns, `🎖️ ${placeName(x.to)} ${k.name} 임무를 마쳤어요! 나라 예산 +${k.money.toLocaleString('ko-KR')} · 명성 +${k.fame}${f ? ` · ${countryById(f).name} 호감 +10` : ''}. 부대가 돌아와요.`);

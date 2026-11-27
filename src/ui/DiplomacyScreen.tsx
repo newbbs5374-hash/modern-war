@@ -19,6 +19,13 @@ import {
   trade,
   tradePartners,
   tradePrice,
+  buyCost,
+  sellGain,
+  sellPrice,
+  marketRoom,
+  LOCAL_CHEAP,
+  LOCAL_DEAR,
+  MARKET_DAY_CAP,
 } from '../game/economy';
 import { citiesOf, isAlive, pairKey, relationOf } from '../game/world';
 import { RelTag, TensionBar, fmt } from './common';
@@ -56,8 +63,8 @@ export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
 }
 
 export function DiplomacyScreen(props: ScreenProps) {
-  const [raw, setTab] = useTab<Tab>('diplo', 'nations');
-  const tab: Tab = (['mofa', 'nations', 'heg', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
+  const [raw, setTab] = useTab<Tab>('diplo', 'mofa');
+  const tab: Tab = (['mofa', 'nations', 'heg', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'mofa';
   const [sel, setSel] = useState<string | null>(null);
   return (
     <>
@@ -71,7 +78,7 @@ export function DiplomacyScreen(props: ScreenProps) {
       <Safe key={tab} where={`diplo/${tab}`}>
       {tab === 'mofa' && (
         <>
-          <MinistryCards state={props.state} actions={props.actions} ids={['mofa', 'mou']} title="외교부·통일부" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['mofa', 'mou']} title="외교부·통일부" compact go={props.go} />
           <SummitPanel {...props} />
           <ForeignPeople state={props.state} actions={props.actions} />
         </>
@@ -122,7 +129,13 @@ export function TradePanel({ state, actions }: ScreenProps) {
             <Chip icon="🔁" value={`${contracts.length}/${contractMax(state)}`} label="계약" />
           </div>
           <Help title="무역">
-            <p>전쟁 중이 아닌 나라와 자원을 사고팔아요. 값은 상대 지도자 성향에 따라 달라요(경제형 싸게, 공격형 비싸게, 연합은 10% 할인). 그 나라 도시에서 나는 자원만 살 수 있고, 팔 때는 값의 {Math.round(SELL_RATE * 100)}%를 받아요.</p>
+            <p>전쟁 중이 아닌 나라와 자원을 사고팔아요. 그 나라 도시에서 나는 자원만 살 수 있고, 팔 때는 값의 {Math.round(SELL_RATE * 100)}%쯤 받아요.</p>
+            <p>
+              <b>나라별 시세</b>: 그 나라가 만드는 자원은 싸고(×{LOCAL_CHEAP}), 못 만드는 자원은 비싸요(×{LOCAL_DEAR}). 전쟁 중인 나라는 군수 자원이 더 비싸요. 지도자 성향(경제형 싸게·공격형 비싸게)·연합 10% 할인도 붙고, 값은 6시간마다 조금씩 흔들려요.
+            </p>
+            <p>
+              많이 사면 그 나라 값이 오르고, 많이 팔면 내려가요(6시간마다 절반씩 제자리). 한 나라와 한 자원은 하루 {MARKET_DAY_CAP}개까지 거래하고, 상대 국고가 모자라면 그만큼 사 주지 못해요.
+            </p>
             <p>
               <b>정기 계약</b>은 매시간 자동으로 수입·수출해요. 전쟁이 나면 멈추고, 돈이나 팔 자원이 모자라면 있는 만큼만 해요. 최대 {contractMax(state)}개(상업 연합 체제·국제 우호 카드로 +1).
             </p>
@@ -181,7 +194,9 @@ export function TradePanel({ state, actions }: ScreenProps) {
       {pick && cur && (
         <Modal title={`${pick} 무역`} icon={<ResIcon res={pick} />} onClose={() => setPick(null)}>
           <p className="small">
-            {FLAG[cur]} {countryById(cur).name} · 1개 💰{tradePrice(state, cur, pick)} · 보유 {fmt(state.economy.stock[pick])}
+            {FLAG[cur]} {countryById(cur).name} · 살 때 1개 💰{tradePrice(state, cur, pick)} · 팔 때 💰{sellPrice(state, cur, pick)} · 보유 {fmt(state.economy.stock[pick])}
+            <br />
+            <span className="muted">많이 사면 값이 오르고 많이 팔면 내려가요(6시간마다 절반씩 제자리). 오늘 이 나라와 {pick} 남은 거래 {marketRoom(state, cur, pick)}개</span>
           </p>
           <h4 className="mini-h">한 번 사고팔기</h4>
           <span className="seg">
@@ -193,10 +208,10 @@ export function TradePanel({ state, actions }: ScreenProps) {
           </span>
           <div className="buttons" style={{ marginTop: 6 }}>
             <button className="primary" style={{ flex: 1 }} disabled={!has.includes(pick)} onClick={() => go(pick, true)}>
-              📥 사기 −💰{fmt(tradePrice(state, cur, pick) * qty)}
+              📥 사기 −💰{fmt(buyCost(state, cur, pick, qty))}
             </button>
             <button style={{ flex: 1 }} onClick={() => go(pick, false)}>
-              📤 팔기 +💰{fmt(Math.round(tradePrice(state, cur, pick) * SELL_RATE * qty))}
+              📤 팔기 +💰{fmt(sellGain(state, cur, pick, qty))}
             </button>
           </div>
           <h4 className="mini-h">정기 계약 (매시간)</h4>
@@ -212,7 +227,7 @@ export function TradePanel({ state, actions }: ScreenProps) {
               📥 수입 계약 −💰{fmt(tradePrice(state, cur, pick) * cq)}/시간
             </button>
             <button style={{ flex: 1 }} disabled={!!canContract(state, cur, pick, cq, false)} onClick={() => contract(pick, false)}>
-              📤 수출 계약 +💰{fmt(Math.round(tradePrice(state, cur, pick) * SELL_RATE * cq))}/시간
+              📤 수출 계약 +💰{fmt(sellPrice(state, cur, pick) * cq)}/시간
             </button>
           </div>
           {msg && <p className="small result">{msg}</p>}

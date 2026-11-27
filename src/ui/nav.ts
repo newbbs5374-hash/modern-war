@@ -27,7 +27,7 @@ export const SCREEN_TITLES: Record<Screen, string> = {
   personal: '개인',
   defense: '국방',
   diplo: '외교',
-  society: '사회',
+  society: '내정',
   economy: '경제',
   culture: '문화',
   tree: '국정',
@@ -45,12 +45,12 @@ export const SCREEN_TITLES: Record<Screen, string> = {
 };
 
 /** 아래 메뉴 8칸: 본부(강조) + 개인·국방·외교·사회·경제·문화(11-23 추가) + 상점 */
-export const NAV: Array<{ screen: Screen; icon: string; label: string; main?: boolean; locked?: string }> = [
+export const NAV: Array<{ screen: Screen; icon: string; label: string; art?: string; main?: boolean; locked?: string }> = [
   { screen: 'home', icon: '🏠', label: '본부', main: true },
   { screen: 'personal', icon: '👤', label: '개인' },
   { screen: 'defense', icon: '🛡️', label: '국방' },
   { screen: 'diplo', icon: '🌐', label: '외교' },
-  { screen: 'society', icon: '👥', label: '사회' },
+  { screen: 'society', icon: '👥', label: '내정', art: '사회' },
   { screen: 'economy', icon: '💰', label: '경제' },
   { screen: 'culture', icon: '🎭', label: '문화' },
   { screen: 'shop', icon: '🛒', label: '상점' },

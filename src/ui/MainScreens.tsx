@@ -1,3 +1,5 @@
+import { MINISTRIES } from '../data/cabinet';
+import { overheat } from '../game/econ';
 import { MeetBook, meetBadge } from './MeetUI';
 import { Safe } from './Safe';
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
@@ -165,7 +167,7 @@ export function DefenseScreen(props: ScreenProps) {
       {tab === 'forces' && <ForcesScreen {...props} />}
       {tab === 'command' && (
         <>
-          <MinistryCards state={state} actions={props.actions} ids={['mnd', 'nis', 'mpva']} title="국방 부처" />
+          <MinistryCards state={state} actions={props.actions} ids={['mnd', 'nis', 'mpva']} title="국방 부처" compact go={props.go} />
           {generalSlots(r) === 0 ? <p className="empty">🔒 장군 자리는 「{RANKS[5].name}」 호칭부터 열려요(최대 6자리: 합참의장 + 병과 5).</p> : <GeneralsPanel {...props} />}
           {generalSlots(r) > o.generals.length && <GeneralCandidates state={state} actions={props.actions} />}
         </>
@@ -190,7 +192,7 @@ export function societyTabs(props: ScreenProps): TabDef<SocietyTab>[] {
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
     { id: 'tech', label: '사회 연구', icon: '📜', badge: !civ.cur.soc && needPick(state) ? '!' : null },
     { id: 'politics', label: '정계', icon: '🗳️', badge: o.chiefRival || o.dismissDeadlineMs !== null || (!assemblyOf(state).vote && !liveLaws(state).length) ? '!' : null },
-    { id: 'nation', label: '국정', icon: '📋', badge: polityBadge(state) },
+    { id: 'nation', label: '국정 운영', icon: '📋', badge: polityBadge(state) },
     { id: 'press', label: '언론·청원', icon: '🎙️', badge: mediaOf(state).petitions.length || (state.worldMs >= mediaOf(state).pressMs ? '!' : null) },
     { id: 'opinion', label: '여론', icon: '👥', badge: GROUPS.some((g) => groupSat(state, g.id) <= 25) ? '!' : null },
   ];
@@ -209,8 +211,9 @@ export function SocietyScreen(props: ScreenProps) {
       <Safe key={tab} where={`society/${tab}`}>
       {tab === 'mins' && (
         <>
-          <MinistryCards state={state} actions={props.actions} ids={['mois', 'mohw', 'msit', 'kocis', 'moj', 'moe', 'mogef', 'mcst']} title="사회 부처" />
-          <MinistryCards state={state} actions={props.actions} ids={['mpm', 'moleg', 'mfds']} title="국무총리 소속 처" />
+          {/* 11-28 내각 한눈에: 모든 부처 큰 카드는 여기 한곳 */}
+          <MinistryCards state={state} actions={props.actions} ids={MINISTRIES.filter((m) => m.tab === 'society').map((m) => m.id)} title="내정 부처" />
+          <MinistryCards state={state} actions={props.actions} ids={MINISTRIES.filter((m) => m.tab !== 'society').map((m) => m.id)} title="국방·외교·경제 부처" />
           <FacilityPanel {...props} only={SOCIETY_BUILDINGS} />
         </>
       )}
@@ -242,12 +245,12 @@ export function SocietyScreen(props: ScreenProps) {
 export function economyTabs(props: ScreenProps): TabDef<EconomyTab>[] {
   return [
     { id: 'vault', label: '금고', icon: '💰' },
-    { id: 'macro', label: '경기', icon: '📈', badge: props.state.polity?.econ.crisis ? '!' : null },
+    { id: 'macro', label: '경기', icon: '📈', badge: props.state.polity?.econ.crisis || (props.state.polity && (overheat(props.state).hoursLeft ?? 99) < 6) ? '!' : null },
     { id: 'tax', label: '예산·세금', icon: '📊' },
     { id: 'res', label: '자원', icon: '⛏️' },
     { id: 'ind', label: '산업 시설', icon: '🏭', badge: choreIn(props, ECONOMY_BUILDINGS) ? '!' : null },
     { id: 'trade', label: '무역', icon: '🚢' },
-    { id: 'facall', label: '시설 현황', icon: '🏗️', badge: choreDone(props) ? '!' : null },
+    { id: 'facall', label: '공사 관리', icon: '🏗️', badge: choreDone(props) ? '!' : null },
     { id: 'proj', label: '국가 사업', icon: '🚄', badge: busyProjects(props.state).some(([, p]) => p.endMs <= props.state.worldMs) ? '!' : null },
   ];
 }
@@ -266,7 +269,7 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'tax' && (
         <>
           <BudgetSeasonCard {...props} />
-          <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel', 'mss']} title="기획재정·고용·중소기업" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel', 'mss']} title="기획재정·고용·중소기업" compact go={props.go} />
           <PolicyPanel {...props} />
         </>
       )}
@@ -274,7 +277,7 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'res' && <ResourcePanel {...props} />}
       {tab === 'ind' && (
         <>
-          <MinistryCards state={props.state} actions={props.actions} ids={['moti', 'molit', 'mofs', 'mafra', 'mcee']} title="산업·국토·해양·농업·에너지 부처" />
+          <MinistryCards state={props.state} actions={props.actions} ids={['moti', 'molit', 'mofs', 'mafra', 'mcee']} title="산업·국토·해양·농업·에너지 부처" compact go={props.go} />
           <FacilityPanel {...props} only={ECONOMY_BUILDINGS} />
         </>
       )}

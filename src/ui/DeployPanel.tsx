@@ -23,6 +23,7 @@ import {
   REQ_MAX,
   DEPLOY_FAVOR,
   DEPLOY_MAX,
+  activeDeploys,
   canDeploy,
   canHost,
   deployHelp,
@@ -68,7 +69,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
         <div className="row">
           <b>🪖 해외 파병</b>
           <small className="muted">
-            {d.list.length}/{DEPLOY_MAX}곳 · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
+            {activeDeploys(state)}/{DEPLOY_MAX}곳{d.list.length > activeDeploys(state) ? ` · 돌아오는 중 ${d.list.length - activeDeploys(state)}` : ''} · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
           </small>
           <Help title="해외 파병">
             <p>

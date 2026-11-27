@@ -6,6 +6,8 @@ import { civOf } from '../game/civ';
 import { GROUPS, groupSat } from '../game/groups';
 import { mediaOf } from '../game/media';
 import { busyProjects } from '../game/projects';
+import { canAddWork, canRecruit, cultureOf } from '../game/culture';
+import { BUILD_TEAMS, STAR_KINDS, WORK_KINDS } from '../data/culture';
 import { spyOf } from '../game/spy';
 import { pairKey } from '../game/world';
 import type { GameState } from '../game/state';
@@ -13,7 +15,7 @@ import { generalSlots } from '../data/officers';
 import { PersonFace } from './CabinetUI';
 import { needPick } from './InteriorScreen';
 
-const NAME: Record<AdviceField, string> = { defense: '국방', diplo: '외교', society: '사회', economy: '경제' };
+const NAME: Record<AdviceField, string> = { defense: '국방', diplo: '외교', society: '사회', economy: '경제', culture: '문화' };
 
 /** 내 나라와 가장 긴장이 높은 나라 */
 function hotPair(s: GameState): { id: string; name: string; tension: number; war: boolean } | null {
@@ -61,6 +63,13 @@ export function adviceTips(s: GameState, f: AdviceField): Tip[] {
     if (m.petitions.length) out.push(T('pet', `국민 청원 ${m.petitions.length}건이 답을 기다립니다.`, 'press', 3));
     else if (s.worldMs >= m.pressMs) out.push(T('press', '기자회견을 열 때가 됐습니다.', 'press', 2));
     out.push(T('i-city', '도시를 키우면 민심이 따라옵니다.', 'city', 0), T('i-mins', '사회 부처 업무를 맡겨 두시죠.', 'mins', 0), T('i-op', '여론 단체를 한번 만나 보시죠.', 'opinion', 0));
+  } else if (f === 'culture') {
+    const c = cultureOf(s);
+    if (c.builds.length < BUILD_TEAMS) out.push(T('build', `문화 시설 공사 팀 ${BUILD_TEAMS - c.builds.length}개가 놀고 있습니다. 시설을 올리시죠.`, 'venue', 3));
+    if (STAR_KINDS.some((k) => !canRecruit(s, k.id))) out.push(T('star', '지금 데려올 수 있는 스타가 있습니다.', 'stars', 3));
+    if (WORK_KINDS.some((k) => !canAddWork(s, k.id))) out.push(T('work', '걸작을 들일 수 있습니다. 문화 점수를 써 두시죠.', 'works', 3));
+    if (!(c.event && s.worldMs < c.event.endMs)) out.push(T('event', '열려 있는 문화 행사가 없습니다.', 'event', 1.5));
+    out.push(T('i-tour', '관광 코스를 늘리면 관광 수입이 들어옵니다.', 'tour', 0), T('i-world', '우리 문화가 어디까지 퍼졌는지 보시죠.', 'world', 0), T('i-venue', '문화 시설 별을 하나씩 올려 두시죠.', 'venue', 0));
   } else {
     if (s.economy.chore && s.worldMs >= s.economy.chore.endMs) out.push(T('chore', '끝난 시설 공사가 있습니다. 확인해 주세요.', 'facall', 4));
     if (busyProjects(s).some(([, p]) => p.endMs <= s.worldMs)) out.push(T('proj', '국가 사업 하나가 끝났습니다.', 'proj', 4));

@@ -130,6 +130,23 @@ export function setRate(s: GameState, dir: 1 | -1): GameState {
   return ns;
 }
 
+/** 과열이 이만큼 쌓이면 위기 */
+export const CRISIS_AT = 30;
+/** 판단(15분)마다 과열이 쌓이는 세기: 물가가 기본보다 3%p 넘게 높거나 집값이 +25% 넘으면 */
+const heatOf = (cpi: number, house: number, baseCpi: number) => Math.max(0, cpi - baseCpi - 3) + Math.max(0, house - 25) / 10;
+/** 11-28 과열 게이지(점검 오류 6: 위기가 예고 없이 터짐) — 지금 과열·쌓이는 속도·위기까지 남은 시간·원인 */
+export function overheat(s: GameState): { stress: number; at: number; perHour: number; hoursLeft: number | null; why: string[] } {
+  const e = econOf(s);
+  const b = baseOf(s);
+  const hot = heatOf(e.cpi, e.house, b.cpi);
+  const perHour = r1((hot > 0 ? hot * 0.6 : -0.5) * 4);
+  const why: string[] = [];
+  if (e.cpi - b.cpi > 3) why.push(`🛒 물가 ${e.cpi.toFixed(1)}%(기본 ${b.cpi}%보다 ${(e.cpi - b.cpi).toFixed(1)}%p 높음)`);
+  if (e.house > 25) why.push(`🏠 집값 +${Math.round(e.house)}%`);
+  const hoursLeft = e.crisis ? null : hot > 0 ? Math.max(0, (CRISIS_AT - e.stress) / (hot * 0.6 * 4)) : null;
+  return { stress: e.crisis ? 0 : e.stress, at: CRISIS_AT, perHour, hoursLeft, why };
+}
+
 /** 15분마다 */
 export function econTick(s: GameState): GameState {
   if (!s.polity) return s;
@@ -152,14 +169,14 @@ export function econTick(s: GameState): GameState {
   const th = easing(ns) * 12 + (e.growth - baseOf(ns).growth) * 3 - (e.crisis?.kind === 'house' ? 25 : 0);
   e.house = r1(clamp(e.house + (th - e.house) * 0.03, -40, 60));
   // 과열 쌓임
-  const hot = Math.max(0, e.cpi - baseOf(ns).cpi - 3) + Math.max(0, e.house - 25) / 10;
+  const hot = heatOf(e.cpi, e.house, baseOf(ns).cpi);
   e.stress = e.crisis ? 0 : r1(clamp(e.stress + (hot > 0 ? hot * 0.6 : -0.5), 0, 100));
   if (e.crisis && e.crisis.untilMs <= ns.worldMs) {
     e.crisis = null;
     ns = polityLog(ns, '📈 경제 위기가 끝났어요');
   }
   let crisisNow: 'bank' | 'house' | null = null;
-  if (!e.crisis && e.stress >= 30) {
+  if (!e.crisis && e.stress >= CRISIS_AT) {
     crisisNow = e.house > 25 ? 'house' : 'bank';
     e.crisis = { kind: crisisNow, untilMs: ns.worldMs + 2 * DAY };
     e.stress = 0;

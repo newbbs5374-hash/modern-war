@@ -145,7 +145,7 @@ export function StartScreen({ onStart, onImport, onCloud }: Props) {
       <p className="muted small start-intro">
         {realWorld
           ? '지금 세계 그대로 시작해요. 러시아와 우크라이나는 전쟁 중이고, 중동과 한반도는 불안한 휴전이에요. 나라를 골라 지도자로 취임하세요. '
-          : '가까운 미래, 13개 나라는 평화롭게 출발하지만 자원과 바닷길을 두고 긴장이 쌓여요. 나라를 골라 지도자로 취임하세요. '}
+          : `가까운 미래, ${COUNTRIES.length}개 나라는 평화롭게 출발하지만 자원과 바닷길을 두고 긴장이 쌓여요. 나라를 골라 지도자로 취임하세요. `}
         세계 시계는 실제 1시간 = 게임 하루예요.
       </p>
       <CloudStartCard onContinue={onCloud} />

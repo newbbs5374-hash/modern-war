@@ -1755,3 +1755,11 @@ html[data-map-still] .homeland *:not(.hl-dive),
 html[data-map-still] .wm-wrap *,
 html[data-map-still] .hl-wx i { animation: none !important; }
 .map-zoom button.off { opacity: .75; }
+
+/* 11-28 담당 장관 한 줄(부처 큰 카드는 내정 → 부처·시설 한곳) */
+.min-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px; }
+.min-strip > small { flex-basis: 100%; }
+.min-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; border-radius: 999px; min-width: 0; }
+.min-chip small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 9em; }
+.min-chip.empty { opacity: 0.75; border-style: dashed; }
+.min-chip .min-card-noface { width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 50%; }

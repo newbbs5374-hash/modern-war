@@ -5,7 +5,7 @@ import { countryById } from '../data/world';
 import { techById } from '../data/civ';
 import type { Res } from '../data/economy';
 import { canChoose, chooseCrisis, crisisById, crisisOf } from './crisis';
-import { canTrade, producesOf, trade, tradePartners, tradePrice } from './economy';
+import { buyCost, canTrade, producesOf, trade, tradePartners, tradePrice } from './economy';
 import type { GameState } from './state';
 import { civOf } from './civ';
 
@@ -71,7 +71,7 @@ export function ordersTick(s: GameState): GameState {
       const sellers = tradePartners(ns).filter((id) => producesOf(ns, id).includes(r));
       if (!sellers.length) continue;
       const id = sellers.sort((a, b) => tradePrice(ns, a, r) - tradePrice(ns, b, r))[0];
-      const cost = tradePrice(ns, id, r) * IMPORT_QTY;
+      const cost = buyCost(ns, id, r, IMPORT_QTY);
       if (ns.nations[me].treasury - cost < IMPORT_KEEP || canTrade(ns, id, r, IMPORT_QTY, true)) continue;
       ns = trade(ns, id, r, IMPORT_QTY, true);
       o = olog({ ...o, spent: o.spent + cost }, `🛢️ ${countryById(id).name}에서 ${r} ${IMPORT_QTY}개 자동 수입(-${cost.toLocaleString('ko-KR')})`);

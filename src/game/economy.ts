@@ -101,6 +101,14 @@ export interface EconomyState {
   composite?: boolean;
   /** 특수강·정밀부품 만들기(공업 구역). 없으면 켜짐 */
   process?: Partial<Record<Res, boolean>>;
+  /** 11-28 나라별 시세: '나라|자원' → 우리가 사고판 압력(p)·마지막 시각(t)·오늘 거래량(vol, day) */
+  market?: Record<string, MarketCell>;
+}
+export interface MarketCell {
+  p: number;
+  t: number;
+  vol: number;
+  day: number;
 }
 
 export interface Contract {
@@ -138,6 +146,7 @@ function cloneEco(e: EconomyState): EconomyState {
     contracts: (e.contracts ?? []).map((c) => ({ ...c })),
     composite: e.composite,
     process: e.process ? { ...e.process } : undefined,
+    market: e.market ? { ...e.market } : undefined,
   };
 }
 
@@ -406,38 +415,119 @@ export function tradePartners(s: GameState): string[] {
   const me = s.player.countryId;
   return COUNTRIES.map((c) => c.id).filter((id) => id !== me && isAlive(s.world, id) && relationOf(s.world, me, id) !== '전쟁');
 }
-/** 1개 값(사기) */
-export function tradePrice(s: GameState, id: string, r: Res): number {
+
+// ── 11-28 나라별 시세(대장 결정 "무역 시세 제도 넣기") ──
+// 값 = 기본값 × 성향·연합·숙적·항로 × 그 나라가 만드는가(싸다/비싸다) × 전쟁 중 군수 자원 × 6시간마다 흔들림 × 우리가 사고판 압력.
+// 많이 사면 그 나라 값이 오르고, 많이 팔면 내려가요(6시간마다 절반씩 제자리로). 한 나라·한 자원은 하루 MARKET_DAY_CAP개까지.
+// → 싸게 사서 비싸게 파는 '중계 무역'은 되지만 끝없이 돈이 불어나지는 않아요(11-27 점검 오류 1).
+const H6 = 6 * HOUR;
+/** 그 나라가 만드는 자원 · 못 만드는 자원 값 배율 */
+export const LOCAL_CHEAP = 0.85;
+export const LOCAL_DEAR = 1.2;
+/** 전쟁 중인 나라의 군수 자원 값 배율 */
+export const WAR_DEAR = 1.2;
+export const MIL_RES: ReadonlySet<Res> = new Set<Res>(['석유', '강철', '티타늄', '우라늄', '복합소재', '특수강', '정밀부품', '텅스텐']);
+/** 흔들림 폭(±) */
+export const WOBBLE = 0.12;
+/** 이만큼 사면 값이 2배(압력 +1) */
+export const MARKET_DEPTH = 150;
+export const MARKET_P_MIN = -0.5;
+export const MARKET_P_MAX = 1.5;
+/** 한 나라·한 자원 하루(실제 24시간) 거래 한도 */
+export const MARKET_DAY_CAP = 300;
+const mkey = (id: string, r: Res) => `${id}|${r}`;
+const dayOf = (ms: number) => Math.floor(ms / (24 * HOUR));
+function hash01(...xs: Array<string | number>): number {
+  let h = 2166136261;
+  for (const x of xs) for (const ch of String(x)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  h = Math.imul(h ^ (h >>> 15), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+/** 그 나라가 전쟁 중인가(누구와든) */
+export function nationAtWar(s: GameState, id: string): boolean {
+  for (const [k, p] of Object.entries(s.world.pairs)) if (p.rel === '전쟁' && k.split('|').includes(id)) return true;
+  return false;
+}
+/** 지금 압력(시간이 지나면 6시간마다 절반) */
+export function marketPressure(s: GameState, id: string, r: Res): number {
+  const c = s.economy.market?.[mkey(id, r)];
+  if (!c) return 0;
+  return c.p * Math.pow(0.5, Math.max(0, s.worldMs - c.t) / H6);
+}
+/** 오늘 그 나라와 그 자원을 더 거래할 수 있는 개수 */
+export function marketRoom(s: GameState, id: string, r: Res): number {
+  const c = s.economy.market?.[mkey(id, r)];
+  return c && c.day === dayOf(s.worldMs) ? Math.max(0, MARKET_DAY_CAP - c.vol) : MARKET_DAY_CAP;
+}
+/** 압력을 뺀 1개 값의 바탕(그 나라 사정·흔들림까지) */
+function priceCore(s: GameState, id: string, r: Res): number {
   const me = s.player.countryId;
   const mult = (TRADE_MULT[s.world.personalities[id]] ?? 1) * (relationOf(s.world, me, id) === '연합' ? ALLY_DISCOUNT : 1) * (isArchRival(me, id) ? ARCH_PRICE : 1);
-  return Math.round(RES_PRICE[r] * mult * (1 - tradeEdge(s, id)));
+  const local = producesOf(s, id).includes(r) ? LOCAL_CHEAP : LOCAL_DEAR;
+  const war = MIL_RES.has(r) && nationAtWar(s, id) ? WAR_DEAR : 1;
+  const wob = 1 + WOBBLE * (hash01(s.world.seed, id, r, Math.floor(s.worldMs / H6)) * 2 - 1);
+  return RES_PRICE[r] * mult * local * war * wob * (1 - tradeEdge(s, id));
+}
+/** 1개 값(사기) */
+export function tradePrice(s: GameState, id: string, r: Res): number {
+  return Math.max(1, Math.round(priceCore(s, id, r) * (1 + marketPressure(s, id, r))));
 }
 /** 팔 때 값 비율(항로 개방·체제 이득이면 더 비싸게 팖) */
 export function sellRate(s: GameState, id: string): number {
   const e = tradeEdge(s, id);
   return ((SELL_RATE * (1 + e)) / (1 - e)) * (isArchRival(s.player.countryId, id) ? ARCH_SELL : 1);
 }
+/** 1개 팔 때 받는 값 */
+export const sellPrice = (s: GameState, id: string, r: Res) => Math.max(1, Math.round(tradePrice(s, id, r) * sellRate(s, id)));
+const clampP = (p: number) => Math.max(MARKET_P_MIN, Math.min(MARKET_P_MAX, p));
+/** qty개 사는 데 드는 돈(사는 동안 값이 오름) */
+export function buyCost(s: GameState, id: string, r: Res, qty: number): number {
+  const p0 = marketPressure(s, id, r);
+  const p1 = clampP(p0 + qty / MARKET_DEPTH);
+  return Math.round(priceCore(s, id, r) * (1 + (p0 + p1) / 2) * qty);
+}
+/** qty개 팔아 받는 돈(파는 동안 값이 내림) */
+export function sellGain(s: GameState, id: string, r: Res, qty: number): number {
+  const p0 = marketPressure(s, id, r);
+  const p1 = clampP(p0 - qty / MARKET_DEPTH);
+  return Math.round(priceCore(s, id, r) * (1 + (p0 + p1) / 2) * sellRate(s, id) * qty);
+}
+/** 거래 뒤 시세 기록 */
+function pushMarket(e: EconomyState, s: GameState, id: string, r: Res, qty: number, buy: boolean, countVol = true): void {
+  const k = mkey(id, r);
+  const d = dayOf(s.worldMs);
+  const c = e.market?.[k];
+  const vol = countVol ? (c && c.day === d ? c.vol : 0) + qty : c && c.day === d ? c.vol : 0;
+  e.market = { ...(e.market ?? {}), [k]: { p: clampP(marketPressure(s, id, r) + (buy ? qty : -qty) / MARKET_DEPTH), t: s.worldMs, vol, day: d } };
+}
 export const contractMax = (s: GameState) => CONTRACT_MAX + extraContracts(s);
 export function canTrade(s: GameState, id: string, r: Res, qty: number, buy: boolean): string | null {
   if (s.player.rankIndex < ECON_RANK) return `${RANKS[ECON_RANK].name}부터 무역해요`;
   if (!tradePartners(s).includes(id)) return '전쟁 중인 나라와는 거래할 수 없어요';
   if (!(qty > 0)) return '수량';
+  const room = marketRoom(s, id, r);
+  if (room < qty) return room ? `오늘 ${countryById(id).name}와 ${r}은(는) ${room}개만 더 거래할 수 있어요` : `오늘 ${countryById(id).name}와 ${r} 거래 한도(${MARKET_DAY_CAP}개)를 다 썼어요`;
   if (buy) {
     if (!producesOf(s, id).includes(r)) return `${countryById(id).name}에는 ${r}이(가) 없어요`;
-    if (s.nations[s.player.countryId].treasury < tradePrice(s, id, r) * qty) return '나라 예산이 모자라요';
-  } else if ((s.economy.stock[r] ?? 0) < qty) return `${r}이(가) 모자라요`;
+    if (s.nations[s.player.countryId].treasury < buyCost(s, id, r, qty)) return '나라 예산이 모자라요';
+  } else {
+    if ((s.economy.stock[r] ?? 0) < qty) return `${r}이(가) 모자라요`;
+    if ((s.nations[id]?.treasury ?? 0) < sellGain(s, id, r, qty)) return `${countryById(id).name} 국고가 모자라 그만큼 살 수 없어요`;
+  }
   return null;
 }
 export function trade(s: GameState, id: string, r: Res, qty: number, buy: boolean): GameState {
   if (canTrade(s, id, r, qty, buy)) return s;
   const me = s.player.countryId;
   const e = cloneEco(s.economy);
-  const money = buy ? tradePrice(s, id, r) * qty : Math.round(tradePrice(s, id, r) * sellRate(s, id) * qty);
+  const money = buy ? buyCost(s, id, r, qty) : sellGain(s, id, r, qty);
   e.stock[r] += buy ? qty : -qty;
+  pushMarket(e, s, id, r, qty, buy);
   log(e, `${countryById(id).name}에 ${r} ${qty}개 ${buy ? '사기' : '팔기'} (${buy ? '-' : '+'}${money.toLocaleString()})`);
   const nations = { ...s.nations };
   nations[me] = { ...nations[me], treasury: nations[me].treasury + (buy ? -money : money) };
-  nations[id] = { ...nations[id], treasury: nations[id].treasury + (buy ? money : -money) };
+  nations[id] = { ...nations[id], treasury: Math.max(0, nations[id].treasury + (buy ? money : -money)) };
   return { ...s, economy: e, nations };
 }
 
@@ -453,8 +543,7 @@ export function contractPaused(s: GameState, c: Contract): string | null {
 }
 /** 계약 1개의 시간당 돈(수입은 −, 수출은 +) */
 export function contractMoney(s: GameState, c: Contract): number {
-  const p = tradePrice(s, c.country, c.res) * c.qty;
-  return c.buy ? -p : Math.round(p * sellRate(s, c.country));
+  return c.buy ? -tradePrice(s, c.country, c.res) * c.qty : sellPrice(s, c.country, c.res) * c.qty;
 }
 /** 돌아가는 계약들의 시간당 돈 합 */
 export function contractMoneyPerHour(s: GameState): number {
@@ -484,7 +573,7 @@ export function cancelContract(s: GameState, id: number): GameState {
   e.contracts = (e.contracts ?? []).filter((c) => c.id !== id);
   return { ...s, economy: e };
 }
-/** ms 동안 계약 반영(돈이나 수출할 자원이 모자라면 그만큼만) */
+/** ms 동안 계약 반영(돈이나 수출할 자원이 모자라면 그만큼만). 계약도 시세를 움직이고, 상대 국고가 바닥이면 그만큼만 사 줌 */
 export function applyContracts(s: GameState, ms: number): GameState {
   const list = s.economy.contracts ?? [];
   if (!list.length || !(ms > 0)) return s;
@@ -492,6 +581,7 @@ export function applyContracts(s: GameState, ms: number): GameState {
   const me = s.player.countryId;
   const stock = { ...s.economy.stock };
   const nations = { ...s.nations };
+  const e = { ...s.economy, stock };
   for (const c of list) {
     if (contractPaused(s, c)) continue;
     const price = tradePrice(s, c.country, c.res);
@@ -502,11 +592,13 @@ export function applyContracts(s: GameState, ms: number): GameState {
       nations[me] = { ...nations[me], treasury: nations[me].treasury - q * price };
       nations[c.country] = { ...nations[c.country], treasury: nations[c.country].treasury + q * price };
     } else {
-      q = Math.min(q, Math.max(0, stock[c.res]));
+      const unit = price * sellRate(s, c.country);
+      q = Math.min(q, Math.max(0, stock[c.res]), Math.max(0, nations[c.country].treasury) / unit);
       stock[c.res] -= q;
-      nations[me] = { ...nations[me], treasury: nations[me].treasury + q * price * sellRate(s, c.country) };
-      nations[c.country] = { ...nations[c.country], treasury: nations[c.country].treasury - q * price * sellRate(s, c.country) };
+      nations[me] = { ...nations[me], treasury: nations[me].treasury + q * unit };
+      nations[c.country] = { ...nations[c.country], treasury: nations[c.country].treasury - q * unit };
     }
+    if (q > 0) pushMarket(e, s, c.country, c.res, q, c.buy, false);
   }
-  return { ...s, nations, economy: { ...s.economy, stock } };
+  return { ...s, nations, economy: e };
 }

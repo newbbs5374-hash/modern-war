@@ -8,7 +8,7 @@ import { cabinetOf, fitPct, ministerOf, postHolder, type Person } from './cabine
 import { Rng } from './rng';
 import type { GameState } from './state';
 
-export type AdviceField = 'defense' | 'diplo' | 'society' | 'economy';
+export type AdviceField = 'defense' | 'diplo' | 'society' | 'economy' | 'culture';
 export interface Tip {
   id: string;
   text: string;
@@ -33,6 +33,8 @@ const ADVISOR_SEATS: Record<AdviceField, Array<{ min: MinistryId } | { post: Pos
   diplo: [{ min: 'mofa' }, { post: 'nsa1' }, { min: 'mou' }, { post: 'nsa' }],
   society: [{ min: 'mois' }, { post: 'social' }, { post: 'polit' }, { post: 'chief' }],
   economy: [{ min: 'mof' }, { post: 'econ' }, { post: 'policy' }, { min: 'moti' }],
+  // 11-28 문화도 담당 장관 조언(점검 오류 10)
+  culture: [{ min: 'mcst' }, { post: 'social' }, { post: 'chief' }],
 };
 
 export function advisorOf(s: GameState, f: AdviceField): Advisor | null {
