@@ -17,6 +17,7 @@ import { actBlocksWar } from './acts';
 import { ME_MAX_FRONTS, aiStrength } from './balance';
 import { fillSns, snsOf, SNS_MAX, type SnsKind, type SnsPost } from './leaderSns';
 import { Rng } from './rng';
+import { bullyDoctrineOf } from './bully';
 import type { GameState, NationState } from './state';
 import { isVassalPair, lordOf } from './surrender';
 import { declareWar, eul, ga, gwa, incomeShare, isAlive, isLosing, isRival, pairKey, playerFronts, relationOf, sameBloc, type WorldState } from './world';
@@ -28,8 +29,12 @@ export interface Squeeze { from: string; to: string; res: string; drain: number;
 /** 우리 나라에 온 요구·요청 */
 export interface HegAsk {
   id: number;
-  kind: 'squeeze' | 'help';
+  kind: 'squeeze' | 'help' | 'bully';
   from: string;
+  /** 깡패짓(bully.ts): 종류 · 우기는 것 · 굴복 값 */
+  act?: import('../data/bullies').BullyAct;
+  item?: string;
+  cost?: number;
   /** 도움 요청: 그 나라와 싸우는 적 */
   enemy?: string;
   res?: string;
@@ -51,6 +56,15 @@ export interface HegemonyState {
   myHelpCd?: Record<string, number>;
   /** 세계에서 일어난 일 수(화면 요약) */
   stats?: { allies: number; breaks: number; helps: number; sanctions: number; squeezes: number; wars: number };
+  /** 11-27 깡패 강대국 기록(bully.ts) */
+  bully?: BullyStats;
+}
+export interface BullyStats {
+  /** 깡패 나라 → 깡패짓 수 · 우리에게 한 수 */
+  acts: Record<string, number>;
+  onMe: Record<string, number>;
+  /** 최근 깡패짓(새것 먼저) */
+  log: Array<{ t: number; from: string; to: string; act: import('../data/bullies').BullyAct; text: string }>;
 }
 
 // ── 숫자(밸런스) ──
@@ -204,7 +218,7 @@ const SNS_TEXT: Record<string, string[]> = {
     '"@{B} 우리 연합은 여기까지입니다. {G}의 주인은 하나뿐이니까요."',
   ],
 };
-function snsPush(ns: GameState, rng: Rng, from: string, to: string | undefined, kind: SnsKind, key: string, v: Record<string, string> = {}): GameState {
+export function snsPush(ns: GameState, rng: Rng, from: string, to: string | undefined, kind: SnsKind, key: string, v: Record<string, string> = {}): GameState {
   const st = snsOf(ns);
   const vars = { A: nm(from), B: to ? nm(to) : '', ...v };
   const likes = Math.round(rng.range(0.4, 1.2) * countryById(from).economy * 700);
@@ -212,24 +226,24 @@ function snsPush(ns: GameState, rng: Rng, from: string, to: string | undefined, 
   return { ...ns, sns: { ...st, nextId: st.nextId + 1, posts: [post, ...st.posts].slice(0, SNS_MAX) } };
 }
 
-function event(w: WorldState, t: number, text: string, player: string, ...who: string[]) {
+export function event(w: WorldState, t: number, text: string, player: string, ...who: string[]) {
   w.events.unshift({ t, kind: '외교', text, mine: who.includes(player) });
   if (w.events.length > 150) w.events.length = 150;
 }
-function addTension(w: WorldState, a: string, b: string, v: number): number {
+export function addTension(w: WorldState, a: string, b: string, v: number): number {
   const p = w.pairs[pairKey(a, b)];
   if (!p || p.rel === '전쟁') return p?.tension ?? 0;
   if (p.rel === '연합' && v > 0) return p.tension;
   p.tension = Math.max(0, Math.min(100, p.tension + v));
   return p.tension;
 }
-const warsOf = (w: WorldState, id: string) => COUNTRIES.filter((c) => c.id !== id && isAlive(w, c.id) && relationOf(w, id, c.id) === '전쟁').map((c) => c.id);
-const alliesOf = (w: WorldState, id: string) => COUNTRIES.filter((c) => c.id !== id && isAlive(w, c.id) && relationOf(w, id, c.id) === '연합').map((c) => c.id);
+export const warsOf = (w: WorldState, id: string) => COUNTRIES.filter((c) => c.id !== id && isAlive(w, c.id) && relationOf(w, id, c.id) === '전쟁').map((c) => c.id);
+export const alliesOf = (w: WorldState, id: string) => COUNTRIES.filter((c) => c.id !== id && isAlive(w, c.id) && relationOf(w, id, c.id) === '연합').map((c) => c.id);
 
-function cloneW(s: GameState): WorldState {
+export function cloneW(s: GameState): WorldState {
   return { ...s.world, pairs: Object.fromEntries(Object.entries(s.world.pairs).map(([k, p]) => [k, { ...p }])), events: [...s.world.events] };
 }
-function cloneH(s: GameState): HegemonyState {
+export function cloneH(s: GameState): HegemonyState {
   const h = hegOf(s);
   const t = s.worldMs;
   return {
@@ -242,9 +256,10 @@ function cloneH(s: GameState): HegemonyState {
     helpCd: { ...h.helpCd },
     myHelpCd: { ...(h.myHelpCd ?? {}) },
     stats: { allies: 0, breaks: 0, helps: 0, sanctions: 0, squeezes: 0, wars: 0, ...(h.stats ?? {}) },
+    bully: { acts: { ...(h.bully?.acts ?? {}) }, onMe: { ...(h.bully?.onMe ?? {}) }, log: [...(h.bully?.log ?? [])] },
   };
 }
-function put<T extends { from: string; to: string }>(list: T[], x: T) {
+export function put<T extends { from: string; to: string }>(list: T[], x: T) {
   const i = list.findIndex((y) => y.from === x.from && y.to === x.to);
   if (i >= 0) list[i] = x;
   else list.push(x);
@@ -263,7 +278,7 @@ export function helpChance(w: WorldState, helper: string, asker: string, enemy: 
   return Math.max(0.02, Math.min(0.92, p));
 }
 
-interface Tick {
+export interface Tick {
   s: GameState;
   w: WorldState;
   h: HegemonyState;
@@ -272,7 +287,7 @@ interface Tick {
   t: number;
   me: string;
 }
-const live = (k: Tick): GameState => ({ ...k.s, world: k.w, nations: k.nations, hegemony: k.h });
+export const live = (k: Tick): GameState => ({ ...k.s, world: k.w, nations: k.nations, hegemony: k.h });
 
 /** AI가 도움 요청에 답함(돕거나 외면). 돌려준 글은 소식에 씀 */
 function aiAnswerHelp(k: Tick, asker: string, helper: string, enemy: string): { ok: boolean; text: string } {
@@ -366,8 +381,9 @@ export function hegemonyTick(s: GameState): GameState {
     const myWars = foesA.length;
     // 같은 적과 싸우는 나라는 먹잇감으로 삼지 않음
     const sharesFoe = (x: string, y: string) => x === a && foesA.some((f) => relationOf(w, y, f) === '전쟁');
-    const agg = per(w, a).aggression * aiStrength(a, me) ** 0.5;
-    if (myWars < PREY_MAX_WARS) {
+    const bd = bullyDoctrineOf(s, a);
+    const agg = per(w, a).aggression * aiStrength(a, me) ** 0.5 * (bd?.agg ?? 1);
+    if (myWars < PREY_MAX_WARS + (bd ? 1 : 0)) {
       // 가장 약한(힘 차이가 가장 큰) 같은 대륙 나라
       const prey = st
         .filter((x) => x.id !== a && !lordAllied(a, x.id) && relationOf(w, a, x.id) !== '전쟁' && score[a] >= x.score * PREY_RATIO && !(x.id === me && meFull) && !sharesFoe(a, x.id))
@@ -375,7 +391,7 @@ export function hegemonyTick(s: GameState): GameState {
       if (prey) {
         const v = addTension(w, a, prey.id, PREY_TENSION * agg * rng.range(0.5, 1.5));
         if (v >= 100) {
-          declareWar(w, t, me, a, prey.id, `${regionName(rid)} 패권을 노리고`);
+          declareWar(w, t, me, a, prey.id, bd ? `${bd.name}를 외치며` : `${regionName(rid)} 패권을 노리고`);
           h.stats!.wars++;
         }
       }
@@ -529,7 +545,7 @@ function refuseSqueeze(k: Tick, a: HegAsk, timeout: boolean, to = k.me) {
 
 // ── 우리 나라가 하는 일 ──
 
-function mine(s: GameState) {
+export function mine(s: GameState) {
   const rng = new Rng((s.world.seed ^ Math.floor(s.worldMs / 1000) ^ (hegOf(s).nextId * 7919) ^ 0x3c3c) >>> 0);
   return { s, w: cloneW(s), h: cloneH(s), nations: { ...s.nations }, rng, t: s.worldMs, me: s.player.countryId } as Tick;
 }

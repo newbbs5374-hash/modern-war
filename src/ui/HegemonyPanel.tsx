@@ -25,6 +25,10 @@ import {
   squeezesOn,
   type HelpMode,
 } from '../game/hegemony';
+import { ACT_ICON } from '../data/bullies';
+import { actLabel, answerBully, claimLine, bullyChoice, bullyStats, currentBullies } from '../game/bully';
+import type { GameState } from '../game/state';
+import type { HegAsk } from '../game/hegemony';
 import { timeLeft } from './officerScreens';
 import { FLAG } from './flag';
 import { Help, Meter } from './kit';
@@ -69,12 +73,16 @@ export function HegemonyPanel({ state, actions }: ScreenProps) {
         {said && <p className="small">{said}</p>}
       </section>
 
+      <BullyCard state={state} />
+
       {asks.length > 0 && (
         <section className="card">
           <b>📨 우리에게 온 요구·요청 {asks.length}</b>
           {asks.map((a) => (
             <div key={a.id} className="deploy-clash">
-              {a.kind === 'squeeze' ? (
+              {a.kind === 'bully' ? (
+                <BullyAskCard state={state} a={a} run={run} />
+              ) : a.kind === 'squeeze' ? (
                 <>
                   <p className="small" style={{ margin: '4px 0' }}>
                     {FLAG[a.from]} <b>{nm(a.from)}</b>: "{a.res}을(를) 우리가 정한 값에 넘기시오." · 받으면 4일 동안 나라 예산 −{pct(a.drain ?? 0)}, 거절하면 보복 제재.
@@ -179,6 +187,86 @@ export function HegemonyPanel({ state, actions }: ScreenProps) {
           </>
         )}
       </section>
+    </>
+  );
+}
+
+/** 😈 대륙 깡패 강대국: 나라마다 교리·깡패짓 수·최근 깡패짓 */
+function BullyCard({ state }: { state: GameState }) {
+  const [open, setOpen] = useState(false);
+  const list = currentBullies(state);
+  const b = bullyStats(state);
+  const me = state.player.countryId;
+  if (!list.length) return null;
+  const log = b.log.slice(0, open ? 12 : 4);
+  return (
+    <section className="card">
+      <div className="row">
+        <b>😈 대륙 깡패 강대국</b>
+        <Help title="깡패 강대국">
+          <p>대륙마다 자국 우선주의 깡패 나라가 있어요. 동맹이든 이웃이든 관세 폭탄·방위비 청구·영토 주장·문화 우기기·대리 세력·불공정 계약으로 괴롭히고, 패권 전쟁도 더 자주 걸어요.</p>
+          <p>우리가 당하면 위 "우리에게 온 요구"에 와요. 🙇 굴복하면 돈·문화를 내주고 넘어가고, ✊ 맞서면 제재·긴장·전쟁 위험이 있지만 명성이 올라요.</p>
+          <p>깡패 나라가 망하거나 내가 그 나라로 하면, 그 대륙 패권국이 새 깡패가 돼요. 모든 지도자는 가상 인물이에요.</p>
+        </Help>
+      </div>
+      {list.map(({ id, d, generic, region }) => (
+        <div key={id} className="deploy-clash" style={{ margin: '6px 0' }}>
+          <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 22 }}>{d.icon}</span>
+            <span style={{ flex: 1 }}>
+              <b>
+                {FLAG[id]} {nm(id)}
+              </b>{' '}
+              <small className="sns-tag">{d.name}</small> <small className="muted">· {regionIcon(region)} {regionName(region)}{generic ? ' 새 깡패' : ''}</small>
+            </span>
+            <small className="muted" style={{ whiteSpace: 'nowrap' }}>
+              깡패짓 {b.acts[id] ?? 0}
+              {b.onMe[id] ? ` · 우리에게 ${b.onMe[id]}` : ''}
+            </small>
+          </div>
+          <p className="small" style={{ margin: '3px 0' }}>
+            <i>{d.slogan}</i>
+          </p>
+          <p className="small muted" style={{ margin: 0 }}>
+            {d.desc} · {Object.keys(d.acts).map((a) => `${ACT_ICON[a as keyof typeof ACT_ICON]} ${actLabel(d, a as keyof typeof ACT_ICON)}`).join(' · ')}
+          </p>
+        </div>
+      ))}
+      {log.length > 0 && (
+        <>
+          <b className="small">최근 깡패짓</b>
+          {log.map((x, i) => (
+            <p key={i} className="small" style={{ margin: '2px 0', fontWeight: x.to === me ? 700 : 400 }}>
+              {x.text}
+            </p>
+          ))}
+          {b.log.length > 4 && (
+            <button className="link" onClick={() => setOpen(!open)}>
+              {open ? '접기' : `더 보기(${Math.min(12, b.log.length)})`}
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function BullyAskCard({ state, a, run }: { state: GameState; a: HegAsk; run: (f: (s: GameState) => { state: GameState; text: string }) => void }) {
+  const ch = bullyChoice(a);
+  const d = currentBullies(state).find((x) => x.id === a.from)?.d;
+  const lab = d && a.act ? actLabel(d, a.act) : '깡패짓';
+  return (
+    <>
+      <p className="small" style={{ margin: '4px 0' }}>
+        {a.act ? ACT_ICON[a.act] : '😈'} {d?.icon} {FLAG[a.from]} <b>{nm(a.from)}</b>의 <b>{lab}</b>
+        {a.item ? <>: "{claimLine(a.item)}이다!"</> : '!'}
+        <br />
+        <small className="warn">⏳ {timeLeft(a.untilMs - state.worldMs)} 안에 답하지 않으면 맞선 것으로 쳐요(명성은 없음)</small>
+      </p>
+      <div className="buttons">
+        <button onClick={() => run((s) => answerBully(s, a.id, true))}>🙇 굴복: {ch.giveIn}</button>
+        <button className="danger" onClick={() => run((s) => answerBully(s, a.id, false))}>✊ 맞서기: {ch.resist}</button>
+      </div>
     </>
   );
 }
