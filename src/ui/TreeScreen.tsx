@@ -17,7 +17,8 @@ import { titleOf } from '../game/title';
 import { cultureTabs } from './CultureScreen';
 import { diploTabs } from './DiplomacyScreen';
 import { defenseTabs, economyTabs, personalTabs, societyTabs } from './MainScreens';
-import { Modal, type TabDef } from './kit';
+import { Badge, Modal, type TabDef } from './kit';
+import { GovHub } from './GovHub';
 import { recommendActs, runDay } from '../game/dayPlan';
 import { SLOTS, actById, doAct, scheduleOf } from '../game/schedule';
 import { routeTo, type Screen } from './nav';
@@ -192,8 +193,24 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
   const branches = branchesOf(state);
   const n = todoCount(state);
   const act = state.world.act != null ? actInfo(state) : null;
+  // 11/28 디자인 개편: 기본은 국정 허브(부처 5칸), 🌳 전체 나무로 옛 나무 보기
+  const [view, setViewRaw] = useState<'hub' | 'tree'>(() => {
+    try {
+      return sessionStorage.getItem('gov-view') === 'tree' ? 'tree' : 'hub';
+    } catch {
+      return 'hub';
+    }
+  });
+  const setView = (v: 'hub' | 'tree') => {
+    setViewRaw(v);
+    try {
+      sessionStorage.setItem('gov-view', v);
+    } catch {
+      /* 무시 */
+    }
+  };
   return (
-    <div className="tree">
+    <div className={`tree ${view === 'hub' ? 'is-hub' : ''}`}>
       <div className="tree-top">
         {act && (
           <span className="tree-chip">
@@ -202,6 +219,9 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
         )}
         <button className={`tree-chip ${n ? 'hot' : ''}`} onClick={() => setTodoOpen(true)}>
           📋 할 일 {n}
+        </button>
+        <button className={`tree-chip ${view === 'tree' ? 'on' : ''}`} onClick={() => setView(view === 'hub' ? 'tree' : 'hub')}>
+          {view === 'hub' ? '🌳 전체 나무' : '🏛️ 부처별 보기'}
         </button>
       </div>
       <div className="tree-find">
@@ -234,40 +254,46 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
           )}
         </div>
       )}
-      <button className="tree-root" onClick={() => go('personal')}>
-        <span className="tree-face">
-          <Face keys={playerKeys(state.player)} fallback="👤" />
-        </span>
-        <b>{state.player.name}</b>
-        <small>{titleOf(state).name}</small>
-      </button>
-      <svg className="tree-lines" viewBox="0 0 500 60" preserveAspectRatio="none" aria-hidden>
-        {[50, 150, 250, 350, 450].map((x) => (
-          <path key={x} d={`M250 0 C250 34 ${x} 22 ${x} 60`} />
-        ))}
-      </svg>
-      <div className="tree-cols">
-        {branches.map((b) => {
-          const hot = b.leaves.filter((l) => isTodo(b.id, l)).length;
-          return (
-            <div key={b.id} className="tree-col">
-              <button className="tree-branch" onClick={() => go(b.id)}>
-                <span>{b.icon}</span>
-                <b>{b.name}</b>
-                {hot > 0 && <i className="badge">{hot}</i>}
-              </button>
-              {b.leaves.map((l) => (
-                <button key={l.id} className={`tree-leaf ${l.locked ? 'locked' : ''} ${isTodo(b.id, l) ? 'hot' : ''}`} onClick={() => tap(`${b.id}/${l.id}`, routeTo(b.id, b.id, l.id))}>
-                  {favs.includes(`${b.id}/${l.id}`) && <i className="tree-star">⭐</i>}
-                  <span className="tree-ico">{l.locked ? '🔒' : l.icon}</span>
-                  <small>{l.label}</small>
-                  {l.badge ? <i className="badge">{l.badge}</i> : null}
-                </button>
-              ))}
-            </div>
-          );
-        })}
-      </div>
+      {view === 'hub' ? (
+        <GovHub state={state} branches={branches} isTodo={isTodo} favs={favs} pin={pin} onLeaf={(key, br, leaf) => tap(key, routeTo(br, br, leaf))} go={go} apply={actions?.apply} />
+      ) : (
+        <>
+          <button className="tree-root" onClick={() => go('personal')}>
+            <span className="tree-face">
+              <Face keys={playerKeys(state.player)} fallback="👤" />
+            </span>
+            <b>{state.player.name}</b>
+            <small>{titleOf(state).name}</small>
+          </button>
+          <svg className="tree-lines" viewBox="0 0 500 60" preserveAspectRatio="none" aria-hidden>
+            {[50, 150, 250, 350, 450].map((x) => (
+              <path key={x} d={`M250 0 C250 34 ${x} 22 ${x} 60`} />
+            ))}
+          </svg>
+          <div className="tree-cols">
+            {branches.map((b) => {
+              const hot = b.leaves.filter((l) => isTodo(b.id, l)).length;
+              return (
+                <div key={b.id} className="tree-col">
+                  <button className="tree-branch" onClick={() => go(b.id)}>
+                    <span>{b.icon}</span>
+                    <b>{b.name}</b>
+                    {hot > 0 && <i className="badge">{hot}</i>}
+                  </button>
+                  {b.leaves.map((l) => (
+                    <button key={l.id} className={`tree-leaf ${l.locked ? 'locked' : ''} ${isTodo(b.id, l) ? 'hot' : ''}`} onClick={() => tap(`${b.id}/${l.id}`, routeTo(b.id, b.id, l.id))}>
+                      {favs.includes(`${b.id}/${l.id}`) && <i className="tree-star">⭐</i>}
+                      <span className="tree-ico">{l.locked ? '🔒' : l.icon}</span>
+                      <small>{l.label}</small>
+                      {l.badge ? <Badge v={l.badge} /> : null}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
       <div className="tree-more">
         <b>그 밖</b>
         {EXTRAS.map((e) => (
@@ -288,7 +314,7 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
       </div>
       {pop === 'orders' && actions && <OrdersModal state={state} apply={actions.apply} onClose={() => setPop(null)} />}
       {pop === 'brief' && <BriefingModal state={state} onClose={() => setPop(null)} goTab={(sc, key, tab) => (setPop(null), go(routeTo(sc, key, tab)))} />}
-      <p className="tree-legend">칸을 누르면 그 화면으로 가요 · 빨간 점 = 할 일 · 🔒 = 아직 잠김 · 맨 위 얼굴 = 사람(인사·인맥)</p>
+      <p className="tree-legend">칸을 누르면 그 화면으로 가요 · 빨간 숫자 = 급한 일 · 주황 점 = 새 소식 · 🔒 = 아직 잠김</p>
       {todoOpen && (
         <Modal title={`오늘 할 일 ${n}건`} icon="📋" onClose={() => setTodoOpen(false)}>
           <DayPlan state={state} apply={actions?.apply} go={(s) => (setTodoOpen(false), go(s))} />

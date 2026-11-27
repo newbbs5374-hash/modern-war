@@ -300,14 +300,46 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
           </div>
         )}
         {done && final && (
-          <div className={`battle-result ${final.win ? 'win' : 'lose'}`}>
-            <b>
-              {multi ? '전체 결과: ' : ''}
-              {final.win ? '🏆 승리' : '💀 패배'}
-            </b>
-            {final.win && <div className="big-stars">{starText(final.stars)}</div>}
-            {multi && <p className="small muted">꼭 이길 판 ⚑ 승리 + 절반 넘게 이기면 성공</p>}
-            {claimed !== null && <p className="small result">{claimed}</p>}
+          <div className={`battle-result gx-win ${final.win ? 'win' : 'lose'}`}>
+            {/* 11/28 디자인 개편 5단계: 승리 연출(빛줄기·별 하나씩·보상 칸) */}
+            {final.win && <i className="gx-win-rays" aria-hidden />}
+            {final.win && (
+              <div className="gx-win-stars">
+                {[0, 1, 2].map((k) => (
+                  <i key={k} className={k < final.stars ? '' : 'off'} style={{ animationDelay: `${0.15 + k * 0.25}s` }}>
+                    ★
+                  </i>
+                ))}
+              </div>
+            )}
+            <div className={`gx-win-title ${final.win ? '' : 'lose'}`}>
+              {multi ? '전체 ' : ''}
+              {final.win ? '승리' : '패배'}
+            </div>
+            {multi && <p className="small muted" style={{ position: 'relative' }}>꼭 이길 판 ⚑ 승리 + 절반 넘게 이기면 성공</p>}
+            {claimed !== null && (
+              <div className="gx-win-rewards">
+                {claimed
+                  .split(/ · |\. /)
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+                  .map((t, k) => {
+                    const m = t.match(/^(.*?)([+−-]?\s?[\d,.]+[%kM만]?)\s*(.*)$/);
+                    return (
+                      <span key={k}>
+                        {m && m[2] ? (
+                          <>
+                            <b>{m[2]}</b>
+                            <small>{`${m[1]} ${m[3]}`.trim()}</small>
+                          </>
+                        ) : (
+                          <small>{t}</small>
+                        )}
+                      </span>
+                    );
+                  })}
+              </div>
+            )}
             <div className="buttons">
               {claimed === null ? (
                 <button className="primary" onClick={claim}>

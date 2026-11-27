@@ -1,3 +1,4 @@
+import { artTabs } from './tabArt';
 import { Safe } from './Safe';
 // 외교 화면: 무역(한 번 사고팔기 · 정기 수입/수출 계약) · 국가정보(나라 카드) · 외교관계(관계도 + 목록)
 import { ResIcon } from './iconArt';
@@ -43,7 +44,7 @@ type Tab = 'mofa' | 'nations' | 'heg' | 'rel' | 'agree' | 'deploy' | 'isle' | 'c
 /** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
 export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
   const civ = civOf(props.state);
-  return [
+  return artTabs('diplo', [
           { id: 'mofa', label: '외교부', icon: '🌐' },
           { id: 'nations', label: '국가정보', icon: '🗂️' },
           { id: 'heg', label: '패권', icon: '👑', badge: hegemonyBadge(props) },
@@ -52,7 +53,7 @@ export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
           { id: 'deploy', label: '파병', icon: '🪖', badge: clashes(props.state).length ? `⚔️${clashes(props.state).length}` : openRequests(props.state).length ? `📨${openRequests(props.state).length}` : props.state.deploy?.list.length ? String(props.state.deploy.list.length) : null },
           { id: 'isle', label: '분쟁 지역', icon: '🏝️' },
           { id: 'council', label: '국제 회의', icon: '🏛️', badge: civ.council.open && civ.council.open.vote === null ? '!' : null },
-  ];
+  ]);
 }
 
 export function DiplomacyScreen(props: ScreenProps) {

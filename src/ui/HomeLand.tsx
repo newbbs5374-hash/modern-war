@@ -132,8 +132,11 @@ export function HomeLand(props: {
   cityGrowth?: Record<string, number>;
   /** 도시 위 표시: 특구·대형 사업 공사(🏗️) 아이콘 */
   cityTags?: Record<string, string>;
+  /** 11/28 개편: 도시 위 경보(붉은 원 + 글). 누르면 onAlert */
+  alerts?: Record<string, string>;
+  onAlert?: (cityId: string) => void;
 }) {
-  const { countryId, world, atWar, dayMode, onDayMode, onCity, focus, cityGrowth, cityTags } = props;
+  const { countryId, world, atWar, dayMode, onDayMode, onCity, focus, cityGrowth, cityTags, alerts, onAlert } = props;
   const geo = useHomeGeo(countryId);
   // 11-25 실제 위성 바탕·정밀 해안선·바다 깊이·해 방향 그림자(없으면 예전 그림 바닥)
   const sat = useHomeSat(countryId);
@@ -653,6 +656,24 @@ export function HomeLand(props: {
                   <text x={x} y={y - (c.capital ? 44 : 22)} textAnchor="middle" className="homeland-city small homeland-tag">
                     {cityTags[c.id]}
                   </text>
+                )}
+                {alerts?.[c.id] && (
+                  <g
+                    className="hl-alert"
+                    transform={`translate(${x},${y - (c.capital ? 56 : 34)})`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAlert?.(c.id);
+                    }}
+                  >
+                    <circle r="15" className="hl-alert-ring gx-pulse" />
+                    <circle r="11" fill="rgba(70,10,10,.85)" stroke="#ff5d5d" strokeWidth="1.6" />
+                    <text y="4.5" textAnchor="middle" fontSize="12" fill="#fff">⚠</text>
+                    <g transform="translate(0,22)">
+                      <rect x={-alerts[c.id].length * 5.4 - 6} y="-8" width={alerts[c.id].length * 10.8 + 12} height="15" rx="7.5" fill="rgba(40,8,8,.88)" stroke="#ff5d5d" strokeWidth="0.8" />
+                      <text y="3.4" textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#ff8a8a">{alerts[c.id]}</text>
+                    </g>
+                  </g>
                 )}
                 <text x={x} y={y + (c.capital ? 20 : 12)} textAnchor="middle" className={c.capital ? 'homeland-city' : 'homeland-city small'}>
                   {c.capital ? '★ ' : ''}

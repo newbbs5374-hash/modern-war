@@ -4,6 +4,7 @@ import { App } from './App';
 import { setupFrame } from './frame';
 import './style.css';
 import './theme-console.css';
+import './theme-glass.css';
 
 import { Safe, logError } from './ui/Safe';
 

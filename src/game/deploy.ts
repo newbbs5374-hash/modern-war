@@ -15,10 +15,14 @@ import { subtractDead, takenText } from './losses';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { addDef } from './defFund';
+import { actOf } from './balance';
 import { isAlive, relationOf, type WorldEvent } from './world';
 
 const HOUR = 3600e3;
-export const DEPLOY_MAX = 5;
+/** 11/28 디자인 개편 6단계: 파병 칸 7칸. 처음 5칸, 2막에 6칸, 3막에 7칸 */
+export const DEPLOY_MAX = 7;
+export const DEPLOY_BASE = 5;
+export const deployMax = (s: GameState) => Math.min(DEPLOY_MAX, DEPLOY_BASE + (actOf(s.world) >= 2 ? 1 : 0) + (actOf(s.world) >= 3 ? 1 : 0));
 /** 연합이 아니면 이만큼 호감이 있어야 받아 줌 */
 export const DEPLOY_FAVOR = 30;
 /** AI 판단(15분)마다 유지비: 부대 값의 0.04%(11-26 대장 "1/10로") */
@@ -128,7 +132,7 @@ export function canDeploy(s: GameState, to: string, units: Record<string, number
   const h = canHost(s, to);
   if (h) return h;
   const d = deployOf(s);
-  if (d.list.filter((x) => !x.returnMs).length >= DEPLOY_MAX) return `파병은 한 번에 ${DEPLOY_MAX}곳까지`;
+  if (d.list.filter((x) => !x.returnMs).length >= deployMax(s)) return `파병은 지금 한 번에 ${deployMax(s)}곳까지${deployMax(s) < DEPLOY_MAX ? ' (다음 막에서 칸이 늘어요)' : ''}`;
   if (d.list.some((x) => x.to === to && !x.returnMs)) return '이미 파병 중인 곳이에요';
   if (!unitsCount(units)) return '보낼 부대를 고르세요';
   for (const [n, k] of Object.entries(units)) if ((s.economy.army[n] ?? 0) < k) return `${n}가 모자라요`;

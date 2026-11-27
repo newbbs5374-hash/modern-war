@@ -18,8 +18,6 @@ import { COUNTRY_COLORS, MODE_LEGEND, REL_COLORS, WorldMap, modeColor, type MapM
 import { Globe } from './globe/Globe';
 import { Safe } from './Safe';
 import { GrandCard, MissionCard, timeLeft } from './officerScreens';
-import { DRILL_MAX, drillsNow } from '../game/officer';
-import { nextTitle, titleOf, titleScore } from '../game/title';
 import { BattleScreen } from './battle/BattleScreen';
 import { EndingCard, VictoryCard } from './victoryScreens';
 import { Chip, Modal, Tile, useTab } from './kit';
@@ -41,15 +39,20 @@ import { FleetWatchCard } from './FleetWatch';
 import { ORDER_INFO, ordersOf } from '../game/orders';
 import { crisisById, crisisOf } from '../game/crisis';
 import { goalsReady } from '../game/goals';
-import { GUIDE, claimGuide, guideOf, guideStep, hideGuide, rewardText } from '../game/guide';
+import { GUIDE, claimGuide, guideOf, guideStep, rewardText } from '../game/guide';
 import { DiplomacyScreen } from './DiplomacyScreen';
 import { DefenseScreen, EconomyScreen, PersonalScreen, SocietyScreen } from './MainScreens';
 import { routeTo } from './nav';
 import { SettingsScreen } from './SettingsScreen';
 import { UiIcon } from './uiIcon';
 import { SnsPhone } from './SnsPhone';
-import { ActCard, BattleLogCard, CounterCards, RaidCards, SecurityCards, WorldCrisisCard } from './ActsUI';
-import { TodoCard, TreeScreen } from './TreeScreen';
+import { ActRing, BattleLogCard, CounterCards, RaidCards, SecurityCards, WorldCrisisCard } from './ActsUI';
+import { NextCarousel, type NextItem } from './HomeNext';
+import { raidOf } from '../game/missileWar';
+import { counterOf } from '../game/counter';
+import { secOf } from '../game/security';
+import { wcById, wcOf } from '../game/worldCrisis';
+import { DayPlan, TodoList, TreeScreen, dayFree, todoCount } from './TreeScreen';
 import { snsUnread } from '../game/leaderSns';
 
 export interface GameActions {
@@ -92,10 +95,6 @@ export function HomeScreen(props: ScreenProps) {
   const fallen = !isAlive(state.world, me.id);
   const a = state.officer.active;
   const rank = state.player.rankIndex;
-  const drills = drillsNow(state.officer, state.worldMs).count;
-  const ttl = titleOf(state);
-  const ttlNext = nextTitle(state);
-  const ttlPct = ttlNext ? Math.round(Math.min(1, titleScore(state) / Math.max(1, ttlNext.title.min)) * 100) : 100;
   const errandsDone = state.officer.aides.filter((x) => x.errand && state.worldMs >= x.errand.endMs).length;
   const [endingOpen, setEndingOpen] = useState(true);
   const [cityPick, setCityPick] = useState<string | null>(null);
@@ -155,9 +154,47 @@ export function HomeScreen(props: ScreenProps) {
     : [];
   const spots = simple ? allSpots.filter((sp) => ['대화', '정상 SNS', '보고'].includes(sp.label)) : allSpots;
 
+  // 11/28 지금 할 일 카드(급한 것 → 받을 것 → 할 것 순)
+  const [pop, setPop] = useState<'urgent' | 'todo' | null>(null);
+  const urgentNames = [
+    ...raidOf(state).list.map((r) => `미사일 경보 · ${cityById(r.city).name}`),
+    ...counterOf(state).list.map((c) => `반격 경보 · ${cityById(c.city).name}`),
+    ...secOf(state).list.map((c) => `저항 조직 · ${cityById(c.city).name}`),
+    ...(wcOf(state).open && !wcOf(state).open!.side ? [`세계 위기 · ${wcById(wcOf(state).open!.def).title}`] : []),
+  ];
+  const nextItems: NextItem[] = [];
+  if (crisis)
+    nextItems.push({ key: 'crisis', tone: 'red', who: '비서실장', title: <>⚡ {crisisById(crisis.def).title}</>, chips: [['dn', `남은 ${timeLeft(crisis.untilMs - state.worldMs)}`]], act: '결정', on: () => setCrisisOpen(true) });
+  if (urgentNames.length)
+    nextItems.push({ key: 'urgent', tone: 'red', who: '합참', icon: '🚨', title: urgentNames[0], chips: urgentNames.length > 1 ? [['dn', `외 ${urgentNames.length - 1}건`]] : [['dn', '지금 막기']], act: '보기', on: () => setPop('urgent') });
+  for (const x of clashes(state).slice(0, 1))
+    nextItems.push({ key: `clash-${x.id}`, tone: 'red', who: '파병 부대', icon: clashById(x.clash!.id)?.icon ?? '⚔️', title: `${placeName(x.to)} · ${clashById(x.clash!.id)?.title ?? '교전'}`, chips: [['dn', `남은 ${timeLeft(x.clash!.untilMs - state.worldMs)}`]], act: '지휘', on: () => goTab('diplo', 'diplo', 'deploy') });
+  if (pending >= cap * 0.5)
+    nextItems.push({ key: 'pay', tone: 'amber', who: '비서실장', title: <>봉급과 나라 예산이 쌓였어요 · +{fmt(pending)}</>, chips: [['up', `예산 +${fmt(pay.budget)}`], ...(pay.ruby ? ([['am', `💎+${pay.ruby}`]] as NextItem['chips'] & object) : [])], act: '받기', on: actions.claim });
+  if (talks.length)
+    nextItems.push({ key: 'talk', tone: 'amber', who: talks[0].speaker, icon: talks[0].icon, title: talks.length > 1 ? `대화를 기다려요 (외 ${talks.length - 1}명)` : '대화를 기다려요', chips: [['', `⏱ ${timeLeft(talks[0].untilMs - state.worldMs)}`]], act: '대화', on: () => setTalkOpen(true) });
+  if (missionReady) nextItems.push({ key: 'mission', tone: 'amber', who: '작전과', icon: '✅', title: `${a!.title} · 도착했어요`, act: '전투', on: () => goTab('ops', 'ops', 'mission') });
+  if (gstep && !guideOf(state).hidden)
+    nextItems.push({ key: 'guide', tone: gready ? 'amber' : 'teal', who: '비서실장', title: <>📘 {gstep.title}</>, chips: [[gready ? 'up' : '', gready ? rewardText(gstep.reward) : `${guideOf(state).step + 1}/${GUIDE.length}`]], act: gready ? '받기' : '가기', on: () => (gready ? actions.apply(claimGuide) : goTab(gstep.go.screen, gstep.go.key ?? '', gstep.go.tab ?? '')) });
+  if (openRequests(state).length)
+    nextItems.push({ key: 'req', tone: 'teal', who: '외교부', icon: '📨', title: `파병 요청 ${openRequests(state).length}건 · ${openRequests(state).map((r) => placeName(r.region)).join(' · ')}`, act: '보기', on: () => goTab('diplo', 'diplo', 'deploy') });
+  if (!a) nextItems.push({ key: 'pick', tone: 'teal', who: '작전과', icon: '🎯', title: '게시판에 새 임무가 있어요', act: '고르기', on: () => goTab('ops', 'ops', 'mission') });
+  else if (!missionReady) nextItems.push({ key: 'mission-go', tone: 'teal', who: '작전과', icon: '⏳', title: a.title, chips: [['te', `${timeLeft(a.endMs - state.worldMs)} 남음`]], act: '보기', on: () => goTab('ops', 'ops', 'mission') });
+  if (todoCount(state) > 0 || dayFree(state) > 0)
+    nextItems.push({ key: 'todo', tone: 'teal', who: '비서실장', icon: '📋', title: `오늘 할 일 ${todoCount(state)}건`, chips: dayFree(state) ? [['', `일정 ${dayFree(state)}칸 비었어요`]] : [], act: '보기', on: () => setPop('todo') });
+  if (pending >= 1 && pending < cap * 0.5)
+    nextItems.push({ key: 'pay2', tone: 'teal', who: '비서실장', icon: '💵', title: <>봉급 받기 +{fmt(pending)}</>, chips: [['up', `예산 +${fmt(pay.budget)}`]], act: '받기', on: actions.claim });
+  // 지도 위 경보(도시 자리에 붉은 원)
+  const alerts: Record<string, string> = {};
+  for (const r of raidOf(state).list) alerts[r.city] = '미사일 경보';
+  for (const c of counterOf(state).list) alerts[c.city] = '반격 경보';
+  for (const c of secOf(state).list) alerts[c.city] ??= '저항 조직';
+  const capId = CITIES.find((c) => c.home === me.id && c.capital)?.id;
+  if (crisis && capId) alerts[capId] ??= crisisById(crisis.def).title;
+
   return (
     <div className="home-stage">
-      <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} cityGrowth={cityGrowthMap(state, me.id)} cityTags={cityTagMap(state)} />
+      <HomeLand countryId={me.id} world={state.world} atWar={wars.length > 0} dayMode={dayMode} onDayMode={setDayMode} onCity={setCityPick} cityGrowth={cityGrowthMap(state, me.id)} cityTags={cityTagMap(state)} alerts={alerts} onAlert={(id) => (crisis && id === capId && !raidOf(state).list.some((r) => r.city === id) ? setCrisisOpen(true) : setPop('urgent'))} />
       {talkOpen && <TalkModal state={state} actions={actions} onClose={() => setTalkOpen(false)} />}
       {crisisOpen && crisis && <CrisisModal state={state} apply={actions.apply} onClose={() => setCrisisOpen(false)} />}
       {snsOpen && <SnsPhone state={state} actions={actions} onClose={() => setSnsOpen(false)} />}
@@ -165,7 +202,9 @@ export function HomeScreen(props: ScreenProps) {
       {cityPick && <CityModal {...props} id={cityPick} atWar={wars.length > 0} onClose={() => setCityPick(null)} />}
       {brfOpen && <BriefingModal state={state} onClose={() => setBrfOpen(false)} goTab={goTab} />}
 
-      <div className="home-side">
+      {/* 11/28 디자인 개편 A안: 왼쪽 목록을 치우고 지도를 넓게. 왼쪽 위 = 장 진행 + 레이더, 맨 아래 = 지금 할 일 카드 하나 */}
+      <div className="home-side gx-side">
+        <ActRing state={state} />
         <button className="home-mini radar" onClick={() => goTab('ops', 'ops', 'map')} aria-label="세계 레이더(세계 지도)">
           <span className="radar-scope">
             <WorldMap world={state.world} playerCountryId={me.id} selectedId={null} onSelect={() => goTab('ops', 'ops', 'map')} mini />
@@ -175,128 +214,27 @@ export function HomeScreen(props: ScreenProps) {
             <i className="sweep" />
           </span>
           <small className={`radar-label ${wars.length > 0 || tension >= 60 ? 'hot' : ''}`}>
-            ◤ 세계 레이더 · {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
+            {wars.length > 0 ? `전쟁 ${wars.length}` : `긴장 ${tension}%`}
           </small>
         </button>
-        <div className="home-quests">
-          <b className="hq-title">📌 주요 임무</b>
-          <ActCard state={state} />
-          <CounterCards state={state} go={go} />
-          <RaidCards state={state} apply={actions.apply} applyWith={actions.applyWith} />
-          <WorldCrisisCard state={state} apply={actions.apply} />
-          <SecurityCards state={state} applyWith={actions.applyWith} />
-          <TodoCard state={state} go={go} apply={actions.apply} />
-          {gstep && !guideOf(state).hidden && (
-            <div className="guide-hq">
-              <button
-                className={`hq ${gready ? 'hot' : ''}`}
-                onClick={() => (gready ? actions.apply(claimGuide) : goTab(gstep.go.screen, gstep.go.key ?? '', gstep.go.tab ?? ''))}
-                title={gstep.say}
-              >
-                <span>{gstep.icon}</span>
-                <span className="hq-main">
-                  <b>
-                    📘 {guideOf(state).step + 1}/{GUIDE.length} {gstep.title}
-                  </b>
-                  <small>{gready ? `✅ 보상 받기 · ${rewardText(gstep.reward)}` : gstep.say}</small>
-                </span>
-              </button>
-              <button className="guide-hide" aria-label="안내 숨기기" onClick={() => actions.apply((s) => hideGuide(s, true))}>
-                ✕
-              </button>
-            </div>
-          )}
-          {crisis && (
-            <button className="hq hot crisis-hq" onClick={() => setCrisisOpen(true)}>
-              <span>{crisisById(crisis.def).icon}</span>
-              <span className="hq-main">
-                <b>⚡ {crisisById(crisis.def).title}</b>
-                <small>결정을 기다려요 · {timeLeft(crisis.untilMs - state.worldMs)}</small>
-              </span>
-            </button>
-          )}
-          {clashes(state).slice(0, 1).map((x) => (
-            <button key={x.id} className="hq hot crisis-hq" onClick={() => goTab('diplo', 'diplo', 'deploy')}>
-              <span>{clashById(x.clash!.id)?.icon ?? '⚔️'}</span>
-              <span className="hq-main">
-                <b>
-                  ⚔️ {placeName(x.to)} · {clashById(x.clash!.id)?.title}
-                  {clashes(state).length > 1 ? ` 외 ${clashes(state).length - 1}` : ''}
-                </b>
-                <small>파병 부대 교전 · {timeLeft(x.clash!.untilMs - state.worldMs)}</small>
-              </span>
-            </button>
-          ))}
-          {openRequests(state).length > 0 && (
-            <button className="hq" onClick={() => goTab('diplo', 'diplo', 'deploy')}>
-              <span>📨</span>
-              <span className="hq-main">
-                <b>파병 요청 {openRequests(state).length}건</b>
-                <small>{openRequests(state).map((r) => placeName(r.region)).join(' · ')}</small>
-              </span>
-            </button>
-          )}
-          {talks.length > 0 && (
-            <button className="hq hot talk-hq" onClick={() => setTalkOpen(true)}>
-              <span>{talks[0].icon}</span>
-              <span className="hq-main">
-                <b>
-                  {talks[0].speaker}
-                  {talks.length > 1 ? ` 외 ${talks.length - 1}` : ''}
-                </b>
-                <small>💬 대화를 기다려요 · {timeLeft(talks[0].untilMs - state.worldMs)}</small>
-              </span>
-            </button>
-          )}
-          <button className={`hq ${!a || missionReady ? 'hot' : ''}`} onClick={() => goTab('ops', 'ops', 'mission')}>
-            <span>{a ? (missionReady ? '✅' : '⏳') : '🎯'}</span>
-            <span className="hq-main">
-              <b>{a ? a.title : '임무 고르기'}</b>
-              <small>{a ? (missionReady ? '도착! 전투하기' : `${timeLeft(a.endMs - state.worldMs)} 남음`) : '게시판에 새 임무'}</small>
-            </span>
-          </button>
-          {!simple && <button className="hq" onClick={() => goTab('personal', 'personal', 'profile')}>
-            <span>{ttl.icon}</span>
-            <span className="hq-main">
-              <b>{ttl.name}</b>
-              {ttlNext ? <small>다음 호칭까지 {ttlNext.need}점</small> : <small>가장 높은 호칭</small>}
-              <span className="bar">
-                <span className="bar-fill" style={{ width: `${ttlPct}%` }} />
-              </span>
-            </span>
-          </button>}
-          {!simple && <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'defense', 'train')}>
-            <span>📅</span>
-            <span className="hq-main">
-              <b>
-                훈련 일정 {drills}/{DRILL_MAX}
-              </b>
-              <small>{drills > 0 ? '훈련할 수 있어요' : '일정이 차는 중'}</small>
-            </span>
-          </button>}
-          <button className={`hq ${pending >= cap * 0.5 ? 'hot' : ''}`} disabled={pending < 1} onClick={actions.claim}>
-            <span>💵</span>
-            <span className="hq-main">
-              <b>봉급 받기 +{fmt(pending)}</b>
-              {pay.salary > 0 && <small>💰예산 +{fmt(pay.budget)}{pay.ruby ? ` · 💎+${pay.ruby}` : ''}{pay.boosts ? ` · 🎫+${pay.boosts}` : ''}</small>}
-              <span className="bar">
-                <span className="bar-fill" style={{ width: `${Math.min(100, (pending / cap) * 100)}%` }} />
-              </span>
-            </span>
-          </button>
-          {!simple && wars.length > 0 && (
-            <div className="hq-wars">
-              <small>전쟁 중</small>
-              {wars.slice(0, 5).map((c) => (
-                <span key={c.id} title={c.name}>
-                  {FLAG[c.id]}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
       </div>
+      {pop === 'urgent' && (
+        <Modal title="급한 일" icon="🚨" onClose={() => setPop(null)}>
+          <div className="home-quests gx-in-modal">
+            <CounterCards state={state} go={go} />
+            <RaidCards state={state} apply={actions.apply} applyWith={actions.applyWith} />
+            <WorldCrisisCard state={state} apply={actions.apply} />
+            <SecurityCards state={state} applyWith={actions.applyWith} />
+          </div>
+        </Modal>
+      )}
+      {pop === 'todo' && (
+        <Modal title={`오늘 할 일 ${todoCount(state)}건`} icon="📋" onClose={() => setPop(null)}>
+          <DayPlan state={state} apply={actions.apply} go={(sc) => (setPop(null), go(sc))} />
+          <TodoList state={state} go={(sc) => (setPop(null), go(sc))} />
+        </Modal>
+      )}
+      <NextCarousel state={state} items={nextItems} />
 
       <div className="bld-col">
         {spots.map((sp) => (
@@ -318,6 +256,10 @@ export function HomeScreen(props: ScreenProps) {
             {sp.badge ? <i className="bld-badge">{sp.badge}</i> : null}
           </button>
         ))}
+        <button className="bld gx-gear" onClick={() => go('settings')} aria-label="설정">
+          <span className="bld-ico"><span className="ui-emo">⚙️</span></span>
+          <small>설정</small>
+        </button>
         {simple && (
           <button className="bld fav-add" onClick={() => go('tree')} aria-label="즐겨찾기 고르기">
             <span className="bld-ico"><span className="ui-emo">{favSpots.length ? '🌳' : '⭐'}</span></span>
