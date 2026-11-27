@@ -1,5 +1,6 @@
 // 외교 → 국가정보 → 나라 누르면 열리는 큰 팝업(11-24 대장 요청 4번).
 // 위: 그 나라 실제 지도(도·도시·점령·분쟁 지역·우리 파병) · 아래: 세부 탭 6개(요약·인물·군사·경제·관계·첩보)
+import { HELP_FAVOR, allyWars, canHelp, helpAlly, helpChance, helpLoot } from '../game/jointOps';
 import { campaignArt } from './scenes';
 import { GOALS, goalById, goalMet, setGoal, settleWar, takenIn, warGoalOf } from '../game/warGoal';
 import { useMemo, useState } from 'react';
@@ -206,6 +207,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
         iconArt(`banner-${id}`) && <img className="cdetail-banner" src={iconArt(`banner-${id}`)!} alt="" draggable={false} />
       )}
       {id !== me && relationOf(w, me, id) === '전쟁' && <WarGoalBox state={state} actions={actions} id={id} />}
+      {id !== me && relationOf(w, me, id) === '연합' && allyWars(state, id).length > 0 && <HelpAllyBox state={state} actions={actions} id={id} />}
       <div className="cdetail">
         <CountryMap state={state} id={id} />
         <div className="cdetail-side">
@@ -580,6 +582,21 @@ function AiGrowBox({ state, id }: { state: GameState; id: string }) {
         })}
       </div>
       <p className="small muted">남는 나라 예산을 성향대로 써서 단계를 올려요. 전쟁 중엔 군비·요새, 땅을 잃으면 되찾기에 힘을 몰아요.</p>
+    </div>
+  );
+}
+
+/** 11-27 전투 7: 싸우는 연합국을 도우러 가기 */
+function HelpAllyBox({ state, actions, id }: Pick<ScreenProps, 'state' | 'actions'> & { id: string }) {
+  const [msg, setMsg] = useState('');
+  const no = canHelp(state, id);
+  return (
+    <div className="wargoal">
+      <b className="small">🤝 {countryById(id).name}은(는) 지금 {allyWars(state, id).map((c) => c.name).join(' · ')}와(과) 싸우고 있어요</b>
+      <button className="wide gold" disabled={!!no} onClick={() => setMsg(actions.applyWith((s) => { const r = helpAlly(s, id); return { state: r.state, out: r.text }; }) ?? '')}>
+        ✈️ 도우러 가기 · {no ?? `성공 ${Math.round(helpChance(state) * 100)}% · 호감 +${HELP_FAVOR} · 전리품 ${helpLoot(state).toLocaleString('ko-KR')}`}
+      </button>
+      {msg && <p className="small sch-msg">{msg}</p>}
     </div>
   );
 }

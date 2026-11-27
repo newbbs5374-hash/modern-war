@@ -79,6 +79,10 @@ import { moleTick, type MoleState } from './mole';
 import type { PrepState } from './prepOps';
 import { warGoalTick, type WarGoals } from './warGoal';
 import { raidTick, type RaidState } from './missileWar';
+import type { JointState } from './jointOps';
+import { wcTick, type WcState } from './worldCrisis';
+import { secTick, type SecState } from './security';
+import type { BattleLogState } from './battleLog';
 import type { CampaignState } from './campaign';
 
 export interface NationState {
@@ -191,6 +195,14 @@ export interface GameState {
   warGoals?: WarGoals;
   /** 11-27 미사일·드론 전 */
   raid?: RaidState;
+  /** 11-27 연합 합동 작전 */
+  joint?: JointState;
+  /** 11-27 주간 세계 위기 */
+  wcrisis?: WcState;
+  /** 11-27 점령지 치안 작전 */
+  sec?: SecState;
+  /** 11-27 전투 기록관 */
+  blog?: BattleLogState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
@@ -399,7 +411,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))));
-    cur = raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur))))))));
+    cur = secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur))))))))));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }
