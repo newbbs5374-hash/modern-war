@@ -45,7 +45,7 @@ import { addDef, defOf } from './defFund';
 import { generalBuildMult, generalPowerMult, generalResMult } from './loyal';
 import { homeOf, isAlive, isPuppet, relationOf } from './world';
 import { facBonus, facEff, facNeedWhy } from './facility';
-import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, tradeEdge, unitTechLock } from './civ';
+import { civBuildSpeed, civPowerMult, civResMult, extraContracts, hasTech, policyPowerMult, tradeEdge, unitTechLock } from './civ';
 import { EXCLUSIVES, exclusiveLock, specialById, specialsOf, type SpecialDef } from '../data/specials';
 
 const HOUR = 3600e3;
@@ -378,7 +378,8 @@ export function homeDefBonus(s: GameState): number {
 
 /** 만든 부대 전투력 합(대전투가 쉬워짐) */
 export function armyPower(s: GameState): number {
-  return s.economy.power;
+  // 11-27 체제·정책 카드 전투력은 지금 가진 부대 모두에 바로 붙음
+  return Math.round(s.economy.power * policyPowerMult(s));
 }
 
 /**
@@ -387,7 +388,7 @@ export function armyPower(s: GameState): number {
  */
 export const PLAYER_REBEL_MULT = 0.25;
 export function occupyHold(s: GameState): { rebel: number; defense: number } {
-  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * buildingEff(s, '치안청')), defense: (1 + Math.min(1, s.economy.power / 1500)) * (1 + homeDefBonus(s)) * (1 + facBonus(s, '방공포대')) };
+  return { rebel: PLAYER_REBEL_MULT * (1 - 0.5 * buildingEff(s, '치안청')), defense: (1 + Math.min(1, armyPower(s) / 1500)) * (1 + homeDefBonus(s)) * (1 + facBonus(s, '방공포대')) };
 }
 
 // ── 무역(준장부터, 전쟁 중이 아닌 나라와) ──

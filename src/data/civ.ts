@@ -312,7 +312,7 @@ export const GOVS: Gov[] = [
   { id: 'assembly', name: '국민 의회', icon: '🏛️', slots: ['경제', '외교', '경제', '외교', '자유'], eff: { influence: 0.25 }, text: '분쟁 지역 영향력 +25%', play: '평화·연합 승리' },
   { id: 'navy', name: '해군 통치', icon: '⚓', slots: ['군사', '군사', '경제', '군사', '자유'], eff: { build: { dom: '해', v: 0.2 } }, text: '군함·항모 모집 +20% 빠름', play: '바다 장악, 정복' },
   { id: 'merchant', name: '상업 연합', icon: '⚖️', slots: ['경제', '경제', '외교', '경제', '자유'], eff: { trade: 0.1, contracts: 1 }, text: '무역 값 10% 이득 · 정기 계약 +1칸', play: '자원 부자' },
-  { id: 'sanctum', name: '성지 회의', icon: '🔷', slots: ['외교', '군사', '외교', '자유', '자유'], eff: { votes: 1, research: 0.1 }, text: '국제 회의 표 +1 · 연구 +10%(갈륨 연구 ×2)', play: '성소와 유적 중심' },
+  { id: 'sanctum', name: '성지 회의', icon: '🔷', slots: ['외교', '군사', '외교', '자유', '자유'], eff: { votes: 1, research: 0.1 }, text: '국제 회의 표 +1 · 연구 +10% · 갈륨 레이더 연구 2배 빨리', play: '성소와 유적 중심' },
   // 11-23 새 체제 4가지(사회 제도 연구로 열림)
   { id: 'republic', name: '대통령제', icon: '🗳️', slots: ['군사', '경제', '외교', '경제', '자유'], eff: { budget: 0.08, loyalty: 3 }, text: '나라 예산 +8% · 민심 +3', play: '고르게 키우기', needs: 's-press' },
   { id: 'junta', name: '군사 정부', icon: '🎖️', slots: ['군사', '군사', '군사', '경제', '자유'], eff: { power: { dom: 'all', v: 0.1 }, loyalty: -4 }, text: '모든 전투력 +10% · 민심 −4', play: '빠른 정복', needs: 's-reserve' },
@@ -320,6 +320,20 @@ export const GOVS: Gov[] = [
   { id: 'federation', name: '연방제', icon: '🗺️', slots: ['경제', '외교', '외교', '군사', '자유'], eff: { growth: 0.2, district: 0.15 }, text: '도시 성장 +20% · 구역 짓는 시간 −15%', play: '도시 키우기', needs: 's-transport' },
 ];
 export const govById = (id: GovId) => GOVS.find((g) => g.id === id)!;
+/**
+ * 11-27 AI 나라 체제 효과(다른 나라 체제가 그림만이 아니게). 국민 의회(분쟁 지역 영향력)·성지 회의(회의 표)는 원래 계산에 들어 있음.
+ * power 전투력 · overseas 바다 건너 공격 · defense 지킬 때 · budget 예산
+ */
+export const AI_GOV_EFF: Record<GovId, { power?: number; overseas?: number; defense?: number; budget?: number; text: string }> = {
+  assembly: { text: '분쟁 지역 영향력 +25%' },
+  navy: { overseas: 0.15, text: '바다 건너 공격 +15%' },
+  merchant: { budget: 0.06, text: '예산 +6%' },
+  sanctum: { text: '국제 회의 표 +1' },
+  republic: { budget: 0.08, text: '예산 +8%' },
+  junta: { power: 0.1, text: '전투력 +10%' },
+  technocracy: { power: 0.04, budget: 0.03, text: '전투력 +4% · 예산 +3%' },
+  federation: { defense: 0.08, text: '도시 지킬 때 +8%' },
+};
 
 /** 지도자 등급(0~10)마다 쓸 수 있는 카드 칸: 2칸에서 시작해 전설의 지도자 8칸 */
 export const slotCount = (rank: number) => Math.min(8, 2 + Math.floor((rank * 6) / 10));

@@ -15,6 +15,7 @@ import { CITIES, cityById, isCoastalCity } from '../data/cities';
 import { UNITS } from '../data/catalog';
 import {
   TECH_PTS_PER_BOOST,
+  AI_GOV_EFF,
   AGENDAS,
   AGREES,
   CARDS,
@@ -69,6 +70,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import * as C from '../game/civ';
 import { isAlive } from '../game/world';
 import { fmt, RelTag } from './common';
+import { armyPower } from '../game/economy';
 import { FLAG } from './flag';
 import { Help, Meter, Modal, Tile } from './kit';
 import { timeLeft } from './officerScreens';
@@ -482,6 +484,8 @@ export function GovPanel(props: ScreenProps) {
             <p>칸은 지도자 호칭이 오를수록 늘어요: 처음 2칸 → 전설의 지도자 8칸.</p>
             <p>카드 바꾸기는 실제 하루 1번 무료, 그 밖엔 나라 예산이 들어요. 체제 바꾸기는 국가 헌장 연구 뒤, 예산 {fmt(GOV_CHANGE_COST)}과 하루 혼란(생산·연구 −20%)이 있어요. 처음 고르는 건 무료예요.</p>
             <p>다른 나라도 체제가 있어요. 같은 체제면 호감 +5, 다르면 −3이고, 다른 체제의 맞수와는 긴장이 조금씩 올라요.</p>
+            <p>다른 나라 체제도 실제로 힘이 돼요: 군사 정부 전투력 +10%, 해군 통치 바다 건너 공격 +15%, 연방제 도시 지킬 때 +8%, 대통령제·상업 연합 예산이 더 많아요. 국기를 길게 누르면 보여요.</p>
+            <p>전투력 효과(군사 정부·정예 부대 같은 카드)는 이미 가진 부대에도 바로 붙고, 빼면 바로 없어져요.</p>
           </Help>
         </div>
         {gov && (
@@ -499,6 +503,7 @@ export function GovPanel(props: ScreenProps) {
           </div>
         )}
       </section>
+      {gov && <PolicyNow state={state} />}
       {!gov && <GovChooser {...props} onDone={() => undefined} />}
       {gov && (
         <section className="card">
@@ -533,9 +538,11 @@ export function GovPanel(props: ScreenProps) {
           <small className="stat-group-name">🌐 다른 나라의 체제</small>
           <div className="civ-govs">
             {COUNTRIES.filter((x) => x.id !== state.player.countryId && isAlive(state.world, x.id)).map((x) => (
-              <span key={x.id} className={`mini-chip ${c.aiGov[x.id] === c.gov ? 'same' : ''}`} title={x.name}>
-                {FLAG[x.id]} {govById(c.aiGov[x.id]).icon}
-              </span>
+              c.aiGov[x.id] && (
+                <span key={x.id} className={`mini-chip ${c.aiGov[x.id] === c.gov ? 'same' : ''}`} title={`${x.name} · ${govById(c.aiGov[x.id]).name}: ${AI_GOV_EFF[c.aiGov[x.id]].text}`}>
+                  {FLAG[x.id]} {govById(c.aiGov[x.id]).icon}
+                </span>
+              )
             ))}
           </div>
         </section>
@@ -572,6 +579,34 @@ export function GovPanel(props: ScreenProps) {
         </Modal>
       )}
     </>
+  );
+}
+
+/** 11-27 지금 체제·카드로 받는 효과 합계 */
+function PolicyNow({ state }: { state: ScreenProps['state'] }) {
+  const rows = C.policySummary(state);
+  const base = state.economy.power;
+  const now = armyPower(state);
+  return (
+    <section className="card">
+      <small className="stat-group-name">✅ 지금 받는 효과(체제 + 카드)</small>
+      {rows.length ? (
+        <div className="civ-govs">
+          {rows.map(([k, v]) => (
+            <span key={k} className="mini-chip">
+              {k} <b>{v}</b>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="small muted">아직 효과가 없어요. 카드를 끼워 보세요.</p>
+      )}
+      {base > 0 && now !== base && (
+        <p className="small muted">
+          💪 전투력 {fmt(base)} → <b>{fmt(now)}</b>(체제·카드가 가진 부대 모두에 바로 붙음)
+        </p>
+      )}
+    </section>
   );
 }
 

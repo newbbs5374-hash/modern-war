@@ -54,6 +54,7 @@ import {
   upgradeCost,
   upgradeFacility,
   isDefBuilding,
+  armyPower,
 } from '../game/economy';
 import { splitOf } from '../game/policy';
 import { budgetBreakdown, budgetPerDay, defPerDay, defShare, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
@@ -273,7 +274,7 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
         </div>
         <div className="vbox">
           <VaultLabel n="전투력" emoji="💪" />
-          <b>{fmt(e.power)}</b>
+          <b>{fmt(armyPower(state))}</b>
           <small className="muted">부대 {units} · 모집 중 {e.queue.length}</small>
         </div>
         <div className="vbox">
