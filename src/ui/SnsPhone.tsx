@@ -39,7 +39,7 @@ function Post({ state, p, byId, onAnswer, onReply }: { state: GameState; p: SnsP
   const me = state.player.countryId;
   const w = who(state, p.from);
   const parent = p.replyTo ? byId.get(p.replyTo) : undefined;
-  const canAnswer = p.to === me && !p.answered && (p.kind === 'diss' || p.kind === 'war' || p.kind === 'tariff');
+  const canAnswer = p.to === me && !p.answered && (p.kind === 'diss' || p.kind === 'war' || p.kind === 'tariff' || p.kind === 'heg');
   const hot = p.to === me && p.kind !== 'ally';
   return (
     <div className={`sns-post ${hot ? 'hot' : ''} ${w.mine ? 'mine' : ''}`}>
@@ -72,6 +72,7 @@ function Post({ state, p, byId, onAnswer, onReply }: { state: GameState; p: SnsP
           {isArchPost(p) && <small className="sns-tag">🔥 숙적</small>}
           {p.kind === 'tariff' && <small className="sns-tag">📦 관세</small>}
           {p.kind === 'war' && <small className="sns-tag">⚔️ 전쟁</small>}
+          {p.kind === 'heg' && <small className="sns-tag">👑 패권</small>}
           {p.tone && <small className="sns-tag mine">{toneById(p.tone).icon} {toneById(p.tone).name}</small>}
           {!w.mine && myTargets(state).includes(p.from) && (
             <button className="sns-re-btn" onClick={() => onReply(p)}>

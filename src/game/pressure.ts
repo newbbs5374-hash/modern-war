@@ -9,12 +9,12 @@ import { REAL_ISLANDS } from '../data/islands';
 import { archRivalsOf, isArchRival } from '../data/archRivals';
 import { PERSONALITIES } from '../data/leaders';
 import { COUNTRIES, countryById } from '../data/world';
-import { aiStrength } from './balance';
+import { ME_MAX_FRONTS, aiStrength } from './balance';
 import { islandLeader } from './civ';
 import { Rng } from './rng';
 import { isVassalPair } from './surrender';
 import type { GameState } from './state';
-import { declareWar, eul, ga, gwa, isAlive, isRival, pairKey, relationOf, sameBloc, type WorldState } from './world';
+import { declareWar, eul, ga, gwa, isAlive, isRival, pairKey, playerFronts, relationOf, sameBloc, type WorldState } from './world';
 
 const H = 3600e3;
 
@@ -59,7 +59,7 @@ export const ISLAND_WAR_TENSION = 1.2;
 export const RES_WAR_CHANCE = 0.006;
 export const RES_WAR_TENSION = 30;
 /** 연합 배신: 연합 한 쌍이 판단마다 깨질 확률(× 공격성) · 깨면서 바로 칠 확률 */
-export const BETRAY_CHANCE = 0.0012;
+export const BETRAY_CHANCE = 0.0025; // 11-27 대장 요청: 연합이 더 자주 깨지게(0.0012 → 0.0025)
 export const BETRAY_ATTACK = 0.3;
 
 const RES_TARGETS = ['석유 유전', '천연가스전', '희토류 광산', '리튬 광산', '곡창 지대', '물길(댐)', '반도체 공장', '항구'];
@@ -179,8 +179,9 @@ export function pressureTick(s: GameState): GameState {
   for (const a of ais) {
     if (!rng.chance(RES_WAR_CHANCE * per(w, a).aggression * aiStrength(a, me))) continue;
     const cont = countryById(a).continent;
+    const meFull = playerFronts(w, me) >= ME_MAX_FRONTS; // 11-27 내 나라가 이미 전선 3개면 새로 노리지 않음
     const targets = alive.filter((b) => {
-      if (b === a || relationOf(w, a, b) === '연합' || relationOf(w, a, b) === '전쟁' || sameBloc(a, b)) return false;
+      if (b === a || relationOf(w, a, b) === '연합' || relationOf(w, a, b) === '전쟁' || sameBloc(a, b) || (b === me && meFull)) return false;
       return countryById(b).continent === cont || isRival(a, b) || a === 'us';
     });
     const b = rng.weighted(targets, (x) => (s.nations[x]?.troops ?? 0) < (s.nations[a]?.troops ?? 0) ? (x === me ? 2 : 1) : 0.2);

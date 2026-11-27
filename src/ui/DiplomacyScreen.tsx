@@ -36,15 +36,17 @@ import { SummitPanel } from './MediaUI';
 import { clashes, openRequests } from '../game/deploy';
 import { DeployPanel } from './DeployPanel';
 import { CountryDetail } from './CountryDetail';
+import { HegemonyPanel, hegemonyBadge } from './HegemonyPanel';
 import { AdviceBar } from './AdviceBar';
 
-type Tab = 'mofa' | 'nations' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
+type Tab = 'mofa' | 'nations' | 'heg' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
 /** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
 export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
   const civ = civOf(props.state);
   return [
           { id: 'mofa', label: '외교부', icon: '🌐' },
           { id: 'nations', label: '국가정보', icon: '🗂️' },
+          { id: 'heg', label: '패권', icon: '👑', badge: hegemonyBadge(props) },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
           { id: 'agree', label: '호감·협정', icon: '🤝' },
           { id: 'deploy', label: '파병', icon: '🪖', badge: clashes(props.state).length ? `⚔️${clashes(props.state).length}` : openRequests(props.state).length ? `📨${openRequests(props.state).length}` : props.state.deploy?.list.length ? String(props.state.deploy.list.length) : null },
@@ -55,7 +57,7 @@ export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
 
 export function DiplomacyScreen(props: ScreenProps) {
   const [raw, setTab] = useTab<Tab>('diplo', 'nations');
-  const tab: Tab = (['mofa', 'nations', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
+  const tab: Tab = (['mofa', 'nations', 'heg', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'nations';
   const [sel, setSel] = useState<string | null>(null);
   return (
     <>
@@ -74,6 +76,7 @@ export function DiplomacyScreen(props: ScreenProps) {
           <ForeignPeople state={props.state} actions={props.actions} />
         </>
       )}
+      {tab === 'heg' && <HegemonyPanel {...props} />}
       {tab === 'agree' && <AgreePanel {...props} />}
       {tab === 'deploy' && <DeployPanel {...props} />}
       {tab === 'isle' && <IslandPanel {...props} />}
