@@ -508,6 +508,8 @@ void main(){
   cv.addEventListener('pointercancel', onUp);
   cv.addEventListener('wheel', onWheel, { passive: false });
 
+  // 11-27 지도 움직임 끄기: 끄면 비행기·공격선 불빛을 숨기고, 깜빡임·자동 회전을 멈춤
+  let moving = true;
   let raf = 0;
   let last = performance.now();
   let clock = 0;
@@ -540,7 +542,7 @@ void main(){
       view.lat = Math.max(-80, Math.min(80, view.lat + view.vy));
       view.vx *= 0.92;
       view.vy *= 0.92;
-      if (!touched) view.lon += dt * 1.2;
+      if (!touched && moving) view.lon += dt * 1.2;
     }
     camera.position.copy(ll(view.lon, view.lat, view.dist));
     camera.lookAt(0, 0, 0);
@@ -574,7 +576,7 @@ void main(){
       l.s.scale.set(l.w * lk, l.h * lk, 1);
     }
     for (const h of hots) {
-      const t = (clock * 1.1) % 1;
+      const t = moving ? (clock * 1.1) % 1 : 0.35;
       const z = 0.03 + t * 0.05;
       h.visible = seenAt(h.position);
       h.scale.set(z, z, 1);
@@ -583,14 +585,14 @@ void main(){
     for (const p of pulses) {
       p.t = (p.t + dt * p.v) % 1;
       p.s.position.copy(p.curve.getPoint(p.t));
-      p.s.visible = seenAt(p.s.position);
+      p.s.visible = moving && seenAt(p.s.position);
     }
     for (const u of units) {
       const a = clock * u.v + u.ph;
       const q = new THREE.Quaternion().setFromAxisAngle(u.ax, u.r);
       const p = u.c.clone().applyQuaternion(q).applyAxisAngle(u.c, a);
       u.s.position.copy(p.multiplyScalar(1.02));
-      u.s.visible = seenAt(u.s.position);
+      u.s.visible = moving && seenAt(u.s.position);
     }
     renderer.render(scene, camera);
   }
@@ -598,6 +600,10 @@ void main(){
 
   return {
     set: setData,
+    /** 움직이는 연출 켜고 끄기 */
+    motion(on: boolean) {
+      moving = on;
+    },
     /** 그 자리로 부드럽게 돌림 */
     focus(lon: number, lat: number, dist?: number, jump?: boolean) {
       if (jump) {
