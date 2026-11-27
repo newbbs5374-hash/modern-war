@@ -82,6 +82,7 @@ import { CITY_EFF_CAP, HOME_BELT, HOMETOWNS, HOMETOWN_LOYALTY, KR_CITY_INFO, MAR
 import { COUNTRIES, countryById } from '../data/world';
 import { facBonus, facilityEffects } from './facility';
 import { Rng } from './rng';
+import { embassyFavor } from './embassy';
 import type { GameState } from './state';
 import { homeOf, isAlive, isPuppet, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
@@ -655,6 +656,8 @@ export function favorReasons(s: GameState, id: string): Array<[string, number]> 
     else rows.push(['다른 체제', -3]);
   }
   for (const a of activeAgreements(s, id)) rows.push([`${agreeById(a.kind).icon} ${agreeById(a.kind).name} 협정`, AGREE_FAVOR[a.kind]]);
+  const emb = embassyFavor(s, id);
+  if (emb) rows.push(['🏢 대사관', emb]);
   const eff = effSum(s, 'favor');
   if (eff) rows.push(['연구·카드', eff]);
   for (const n of c.notes[id] ?? []) if (Math.round(n.v)) rows.push([n.text, Math.round(n.v)]);

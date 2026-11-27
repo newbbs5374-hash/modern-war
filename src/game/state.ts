@@ -102,7 +102,8 @@ import './recsEcon'; // 11-28 경제 추천
 import './recsDiplo'; // 11-28 외교 추천
 import './recsCulture';
 import './recsSociety'; // 11-28 내정 추천
-import { bondTick, type BondState } from './bonds'; // 11-28 문화 추천
+import { bondTick, type BondState } from './bonds';
+import { embassyTick, type EmbassyState } from './embassy'; // 11-28 문화 추천
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -166,6 +167,8 @@ export interface GameState {
   recLog?: RecLog;
   /** 11-28 국채 */
   bonds?: BondState;
+  /** 11-28 대사관 */
+  embassy?: EmbassyState;
   /** 첩보·특수 작전 */
   spy?: SpyState;
   /** 함대 충돌 관전 기록 */
@@ -450,7 +453,7 @@ export function advance(s: GameState, ms: number): GameState {
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
-    cur = bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))))));
+    cur = embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));
