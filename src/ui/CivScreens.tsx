@@ -819,7 +819,22 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
   // 그때와 지금: 취임 첫날 모습으로 잠깐 되돌려 보기
   const [then, setThen] = useState(false);
   const [dayMode, setDayMode] = useState<DayMode>('자동');
-  const [is3d, setIs3d] = useState(false);
+  // 11-27 도시 1: 3D 자료가 있는 도시는 3D로 먼저 열림(2D로 바꾸면 그 선택을 기억)
+  const [is3d, setIs3dRaw] = useState(() => {
+    try {
+      return localStorage.getItem('mw-city-3d') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const setIs3d = (v: boolean) => {
+    setIs3dRaw(v);
+    try {
+      localStorage.setItem('mw-city-3d', v ? '1' : '0');
+    } catch {
+      /* 저장 못 해도 그대로 */
+    }
+  };
   /** 3D 시험용: 단계 미리보기(null = 지금 인구) */
   const [preview, setPreview] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
