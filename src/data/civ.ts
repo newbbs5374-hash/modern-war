@@ -319,7 +319,8 @@ export const GOVS: Gov[] = [
   { id: 'technocracy', name: '기술 관료제', icon: '🔬', slots: ['경제', '경제', '군사', '외교', '자유'], eff: { research: 0.2 }, text: '연구 +20%', play: '연구 앞서기', needs: 's-school' },
   { id: 'federation', name: '연방제', icon: '🗺️', slots: ['경제', '외교', '외교', '군사', '자유'], eff: { growth: 0.2, district: 0.15 }, text: '도시 성장 +20% · 구역 짓는 시간 −15%', play: '도시 키우기', needs: 's-transport' },
 ];
-export const govById = (id: GovId) => GOVS.find((g) => g.id === id)!;
+/** 모르는 체제(옛 저장 등)면 첫 체제를 돌려줘 화면이 멈추지 않게 */
+export const govById = (id: GovId) => GOVS.find((g) => g.id === id) ?? GOVS[0];
 /**
  * 11-27 AI 나라 체제 효과(다른 나라 체제가 그림만이 아니게). 국민 의회(분쟁 지역 영향력)·성지 회의(회의 표)는 원래 계산에 들어 있음.
  * power 전투력 · overseas 바다 건너 공격 · defense 지킬 때 · budget 예산

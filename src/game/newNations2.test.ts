@@ -50,6 +50,7 @@ describe('새 나라 18개', () => {
     for (const id of NEW) {
       delete old.nations[id];
       delete old.world.personalities[id];
+      delete old.civ!.aiGov[id];
       for (const k of Object.keys(old.world.pairs)) if (k.split('|').includes(id)) delete old.world.pairs[k];
       for (const c of CITIES.filter((x) => x.home === id)) {
         delete old.world.owner[c.id];
@@ -60,6 +61,7 @@ describe('새 나라 18개', () => {
     expect(back).not.toBeNull();
     for (const c of COUNTRIES) expect(back!.nations[c.id], c.id).toBeTruthy();
     expect(back!.world.owner['br-0']).toBe('br');
+    for (const id of NEW) expect(back!.civ!.aiGov[id], `${id} 체제(호감·협정 탭)`).toBeTruthy();
     expect(back!.world.events[0].text).toContain('18개');
     const later = advance(back!, 1 * DAY);
     expect(later.world.pairs['ar|br']).toBeTruthy();

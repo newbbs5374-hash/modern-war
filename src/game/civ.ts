@@ -174,9 +174,16 @@ export interface CivState {
 /** AI 나라 체제: 성향마다 두 가지 중 나라 순서대로 하나(11-23 체제 8가지) */
 const AI_GOV: Record<string, [GovId, GovId]> = { 공격형: ['navy', 'junta'], 경제형: ['merchant', 'technocracy'], 방어형: ['assembly', 'federation'], 기회주의: ['sanctum', 'republic'] };
 
+/** 나라마다 AI 체제를 정해요. 이미 있는 나라는 그대로 두고 빠진 나라만 채움(11-27 새 나라 18개 옛 저장) */
+export function fillAiGov(aiGov: Record<string, GovId>, personalities: Record<string, string>): Record<string, GovId> {
+  COUNTRIES.forEach((c, i) => {
+    if (!aiGov[c.id]) aiGov[c.id] = AI_GOV[personalities[c.id]]?.[i % 2] ?? 'assembly';
+  });
+  return aiGov;
+}
+
 export function newCiv(s: Pick<GameState, 'world' | 'worldMs'>): CivState {
-  const aiGov: Record<string, GovId> = {};
-  COUNTRIES.forEach((c, i) => (aiGov[c.id] = AI_GOV[s.world.personalities[c.id]]?.[i % 2] ?? 'assembly'));
+  const aiGov = fillAiGov({}, s.world.personalities);
   const influence: Record<string, Record<string, number>> = {};
   for (const p of PIONEER_ISLANDS) influence[p.id] = {};
   return {

@@ -20,7 +20,7 @@ import { LEADERS } from '../data/leaders';
 import { startingRelation } from '../data/world';
 import { NOW_CONFLICTS } from '../data/conflicts';
 import { newOfficer } from './officer';
-import { migrateCityTiles, newCiv } from './civ';
+import { fillAiGov, migrateCityTiles, newCiv } from './civ';
 import { START_STAT, STAT_IDS, statExpNeed } from '../data/officers';
 
 export const SAVE_KEY = 'modern-war-save';
@@ -129,6 +129,7 @@ export function parseSave(text: string): GameState | null {
     // 문명식 운영(연구·체제·외교·도시)이 없는 옛 저장: 새로 채움
     if (!s.civ || !Array.isArray(s.civ.done) || !s.civ.council) s.civ = newCiv(s);
     if (s.civ.lastSwapMs === null) s.civ.lastSwapMs = -Infinity;
+    s.civ.aiGov = fillAiGov(s.civ.aiGov ?? {}, s.world.personalities); // 11-27 새 나라 18개: 옛 저장엔 체제가 없어 호감·협정 탭이 멈췄음
     if (s.cabinet?.people) migrateStats2(s.cabinet); // 11/24 스탯 18개: 옛 인물에 새 스탯 채움
     if (s.cabinet?.people) migrateBureau(s.cabinet, s.player.countryId, s.worldMs); // 11/24 관료 56명
     if (s.cabinet?.people) giveFaces(s.cabinet); // 11/27 나이를 얼굴 나이대에 맞춤(얼굴은 그대로)
