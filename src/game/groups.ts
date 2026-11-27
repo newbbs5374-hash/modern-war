@@ -8,7 +8,7 @@ import { domLog, domOf, payTreasury, registerDomRows, snap, withDom, type Rows }
 import { policyOf } from './policy';
 import { billById, liveLaws, type BillId } from './laws';
 import { atWar, codeGroupRows } from './codes';
-import { budgetPerDay } from './state';
+import { priceBase } from './state';
 
 const H = 3600e3;
 export const MEET_WAIT_MS = 6 * H;
@@ -176,7 +176,7 @@ export function meetGroup(s: GameState, g: string): GameState {
   return snap(ns, 'meeting', `${G.name} 대표 면담`, G.wants);
 }
 export function dealCost(s: GameState): number {
-  return Math.round(budgetPerDay(s, s.player.countryId) * DEAL_COST_DAYS);
+  return Math.round(priceBase(s) * DEAL_COST_DAYS);
 }
 export function canDeal(s: GameState, g: string): string | null {
   const me = s.nations[s.player.countryId];

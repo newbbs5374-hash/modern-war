@@ -36,6 +36,8 @@ import {
   CIVIL_INCOME,
   CIVIL_REBEL,
   PUPPET_INCOME,
+  OCCUPIED_BUDGET,
+  CIVIL_BUDGET,
   OVERSEAS_PENALTY,
   PLAYER_TARGET_BONUS,
   TENSION_DECAY,
@@ -55,6 +57,9 @@ import {
   DEFEND_BOUNTY,
   SPOILS_PER_VALUE,
   SPOILS_TREASURY_SHARE,
+  SPOILS_FOLLOWER_SHARE,
+  SPOILS_CAPITAL_SHARE,
+  SPOILS_FALL_SHARE,
   aiStrength,
   ACT_QUALITY_SHARE,
   actAi,
@@ -245,17 +250,35 @@ export function isAlive(w: WorldState, countryId: string): boolean {
   return FRONT.some((c) => w.owner[c.id] === countryId);
 }
 
-/** 도시 소유에 따른 수입 배율(처음 그대로면 1, 남의 도시는 절반만) */
-export function incomeShare(w: WorldState, countryId: string): number {
+/** 도시 소유에 따른 수입 배율(처음 그대로면 1, 남의 도시는 절반만).
+ *  budget=true면 나라 예산용(11-27 점령 도시 세금 군정 60%·민정 85%), 아니면 병력·자원용 */
+export function incomeShare(w: WorldState, countryId: string, budget = false): number {
   let v = 0;
   for (const c of CITIES) {
     if (w.owner[c.id] !== countryId) continue;
     if (homeOf(w, c.id) === countryId) { v += c.value; continue; }
     const a = w.annex?.[c.hub];
-    const k = a?.mode === 'puppet' ? PUPPET_INCOME : a?.stage === '민정' ? CIVIL_INCOME : OCCUPIED_INCOME;
+    const k = a?.mode === 'puppet' ? PUPPET_INCOME : a?.stage === '민정' ? (budget ? CIVIL_BUDGET : CIVIL_INCOME) : budget ? OCCUPIED_BUDGET : OCCUPIED_INCOME;
     v += c.value * k * (1 - Math.min(90, a?.damage ?? 0) / 100);
   }
   return v / homeValue(countryId);
+}
+
+/**
+ * 11-27 내가 도시를 차지했을 때 전리품(주인을 바꾼 바로 뒤, 내정 도시가 따라오기 전에 부름).
+ *  도시 값어치 × SPOILS_PER_VALUE + 따라오는 내정 도시 값어치 × 절반 + 빼앗긴 나라 금고 몫
+ *  (보통 6%, 수도 25%, 그 나라가 망하면 30%). take = 그 나라 금고에서 빠지는 돈
+ */
+export function spoilsOf(w: WorldState, cityId: string, prev: string, prevTreasury: number): { loot: number; take: number; note: string } {
+  const city = cityById(cityId);
+  const followers = CITIES.filter((c) => !c.front && c.hub === cityId && c.id !== cityId && w.owner[c.id] === prev);
+  const fv = followers.reduce((a, c) => a + c.value, 0);
+  const fell = !!prev && !isAlive(w, prev);
+  const share = fell ? SPOILS_FALL_SHARE : city.capital ? SPOILS_CAPITAL_SHARE : SPOILS_TREASURY_SHARE;
+  const take = Math.max(0, prevTreasury) * share;
+  const loot = Math.round(city.value * SPOILS_PER_VALUE + fv * SPOILS_PER_VALUE * SPOILS_FOLLOWER_SHARE + take);
+  const bits = [followers.length ? `주변 ${followers.length}곳` : '', fell ? '🏳️ 남은 국고 접수' : city.capital ? '🏛️ 국고 접수' : ''].filter(Boolean);
+  return { loot, take, note: bits.length ? ` (${bits.join(' · ')})` : '' };
 }
 
 /** 처음 도시의 반 넘게 잃었는가 */
@@ -551,15 +574,15 @@ function invasions(ctx: Ctx) {
         log(ctx, '전투', `${ga(nm(att))} ${eul(city.name)} 쳤지만 막아 냈어요! 🛡️ 노획 나라 예산 +${bounty.toLocaleString('ko-KR')}`, att, def);
       }
       if (won && w.defense[target] <= 0) {
-        if (att === ctx.player) {
-          // 11-26: 내 나라 군이 차지하면 전리품
-          const loot = Math.round(city.value * SPOILS_PER_VALUE + nd.treasury * SPOILS_TREASURY_SHARE);
-          nd.treasury = Math.max(0, nd.treasury - nd.treasury * SPOILS_TREASURY_SHARE);
-          na.treasury += loot;
-          log(ctx, '점령', `💰 ${city.name} 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}`, att, def);
-        }
         noteCapture(w, target, att);
         w.owner[target] = att;
+        if (att === ctx.player) {
+          // 11-26: 내 나라 군이 차지하면 전리품(11-27 따라오는 내정 도시·수도 국고·멸망 국고까지)
+          const sp = spoilsOf(w, target, def, nd.treasury);
+          nd.treasury = Math.max(0, nd.treasury - sp.take);
+          na.treasury += sp.loot;
+          log(ctx, '점령', `💰 ${city.name} 전리품 나라 예산 +${sp.loot.toLocaleString('ko-KR')}${sp.note}`, att, def);
+        }
         w.defense[target] = CAPTURED_DEFENSE;
         p.weariness += 4;
         const verb = city.home === att ? '되찾았어요' : '점령했어요';

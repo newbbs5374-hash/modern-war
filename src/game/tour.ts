@@ -8,7 +8,7 @@ import { cabinetOf, genPerson, giveFaces, takenNames } from './cabinet';
 import { cityCiv, civOf } from './civ';
 import { pushReport } from './report';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 
 const H = 3600e3;
 export const TOUR_GAP_MS = 20 * H;
@@ -54,7 +54,7 @@ export interface TourState {
 }
 export const tourOf = (s: GameState): TourState => s.tour ?? { nextMs: 0, open: null, count: 0, recent: [] };
 
-export const payCost = (s: GameState) => Math.max(50, Math.round(budgetPerDay(s, s.player.countryId) * TOUR_PAY));
+export const payCost = (s: GameState) => Math.max(50, Math.round(priceBase(s) * TOUR_PAY));
 
 export function canTour(s: GameState, city: string): string | null {
   const t = tourOf(s);

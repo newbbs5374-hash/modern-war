@@ -8,7 +8,7 @@ import { atWar } from './codes';
 import { domOf, payTreasury, registerDomRows, snap, withDom } from './domestic';
 import { baseOf, econOf } from './econ';
 import { DAY, H, bumpTrust, clamp, polityOf, polityLog, roll, tell, withPolity, type Audit, type Scandal } from './polity';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 import { ministryById, type MinistryId } from '../data/cabinet';
 import { postById } from '../data/staff';
 
@@ -103,7 +103,7 @@ export function answerScandal(s: GameState, pick: ScandalPick): GameState {
 }
 
 /* 정적 수사 */
-export const rivalProbeCost = (s: GameState) => Math.round(budgetPerDay(s, s.player.countryId));
+export const rivalProbeCost = (s: GameState) => Math.round(priceBase(s));
 export const rivalProbeChance = (s: GameState) => clamp(0.3 + probePower(s) * 0.3, 0.2, 0.85);
 export function canProbeRival(s: GameState, idx: number): string | null {
   if (!s.polity) return '아직 준비 중이에요';

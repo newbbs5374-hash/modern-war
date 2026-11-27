@@ -38,7 +38,7 @@ import { TRAININGS } from '../data/catalog';
 import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { GRAND_ACT_DIFF, actAi, actOf, GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, SPOILS_PER_VALUE, SPOILS_TREASURY_SHARE, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
+import { GRAND_ACT_DIFF, actAi, actOf, GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
 import { Rng } from './rng';
 import { growFort } from './aiGrowth';
 import { talkTick, type Promise_, type Talk } from './talk';
@@ -48,7 +48,7 @@ import { FIELD_AMMO_COST, FIELD_FUEL_COST } from '../data/economy';
 import { civMission, eureka } from './civ';
 import { addPresMod } from './approval';
 import { facBonus } from './facility';
-import { citiesOf, eul, ga, homeOf, isAlive, relationOf, syncFollowers, type WorldEvent } from './world';
+import { citiesOf, eul, ga, homeOf, isAlive, relationOf, spoilsOf, syncFollowers, type WorldEvent } from './world';
 import { actAllowsTarget, grandCapLeft, grandToday, noteGrand } from './acts';
 import { planCounter } from './counter';
 import { campaignDiff, campaignLocked, noteCampaignWin } from './campaign';
@@ -960,11 +960,12 @@ function captureCity(ns: GameState, city: string) {
   noteCapture(w, city, me);
   w.owner[city] = me;
   w.defense[city] = CAPTURED_DEFENSE;
+  // 11-26: 전리품(도시 값어치 + 빼앗긴 나라 금고 일부). 11-27 따라오는 내정 도시·수도 국고·멸망 국고까지
+  const sp = spoilsOf(w, city, prev, ns.nations[prev]?.treasury ?? 0);
   syncFollowers(w);
-  // 11-26: 전리품(도시 값어치 + 빼앗긴 나라 금고 일부)
-  const loot = Math.round(cityById(city).value * SPOILS_PER_VALUE + (ns.nations[prev]?.treasury ?? 0) * SPOILS_TREASURY_SHARE);
-  ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + loot }, ...(ns.nations[prev] ? { [prev]: { ...ns.nations[prev], treasury: Math.max(0, ns.nations[prev].treasury - (ns.nations[prev].treasury * SPOILS_TREASURY_SHARE)) } } : {}) };
-  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}`, mine: true };
+  const loot = sp.loot;
+  ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + loot }, ...(ns.nations[prev] ? { [prev]: { ...ns.nations[prev], treasury: Math.max(0, ns.nations[prev].treasury - sp.take) } } : {}) };
+  const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}${sp.note}`, mine: true };
   w.events.unshift(ev);
   noteCampaignWin(ns, city, prev);
   planCounter(ns, city, prev);

@@ -5,7 +5,7 @@
 import { assemblyOf } from './assembly';
 import type { AssemblyState } from './laws';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { priceBase, type GameState } from './state';
 
 const H = 3600e3;
 export const WHIP_MAX = 3;
@@ -58,9 +58,9 @@ export function whipChance(s: GameState, w: WhipState): number {
   return Math.max(0.1, Math.min(0.95, v));
 }
 export const liveDebts = (s: GameState) => (assemblyOf(s).debts ?? []).filter((d) => d > s.worldMs).length;
-export const payCostOf = (s: GameState, i: number) => Math.max(30, Math.round(budgetPerDay(s, s.player.countryId) * (blocSeats(s)[i] / 300) * WHIP_PAY));
+export const payCostOf = (s: GameState, i: number) => Math.max(30, Math.round(priceBase(s) * (blocSeats(s)[i] / 300) * WHIP_PAY));
 export const talkChance = (s: GameState) => Math.min(0.8, 0.35 + (s.officer.stats['정치'] ?? 0) / 100);
-export const debtCost = (s: GameState) => Math.max(30, Math.round(budgetPerDay(s, s.player.countryId) * DEBT_PAY));
+export const debtCost = (s: GameState) => Math.max(30, Math.round(priceBase(s) * DEBT_PAY));
 
 export function canWhip(s: GameState, i: number, how: WhipHow): string | null {
   const w = whipOf(s);

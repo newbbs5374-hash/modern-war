@@ -34,7 +34,7 @@ import { canAppointGeneralSlot, fieldTaken, type GeneralField } from './loyal';
 import { GENERAL_STYLES } from '../data/officers';
 import { originEff } from './origin';
 import { Rng } from './rng';
-import { budgetPerDay, type GameState } from './state';
+import { budgetPerDay, priceBase, type GameState } from './state';
 import { homeOf, isAlive, pairKey, relationOf } from './world';
 
 const H = 3600e3;
@@ -335,7 +335,7 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
         out.push(`정보 +${Math.round(fx.intel * k)}`);
       }
       if (fx.treasuryH) {
-        const got = Math.round(budgetPerDay(s, me) * fx.treasuryH * (fx.treasuryH > 0 ? k : 1));
+        const got = Math.round((fx.treasuryH > 0 ? budgetPerDay(s, me) * k : priceBase(s)) * fx.treasuryH); // 11-27 쓰는 돈은 본토 기준
         ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: Math.max(0, ns.nations[me].treasury + got) } } };
         out.push(`금고 ${got >= 0 ? '+' : ''}${got.toLocaleString('ko-KR')}`);
       }

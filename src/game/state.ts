@@ -63,6 +63,8 @@ import {
   PLAYER_START_TROOPS_MULT,
   aiStrength,
   actAi,
+  SIZE_BONUS_MAX,
+  SIZE_BONUS_PER,
 } from './balance';
 
 export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개), 7: 현실 나라·도시 이름(11-23) — 예전 저장은 새 판으로
@@ -307,7 +309,20 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
   const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId);
-  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * incomeShare(s.world, countryId) * ind * (BUDGET_BONUS[countryId] ?? 1);
+  const share = incomeShare(s.world, countryId, true);
+  const size = countryId === s.player.countryId ? sizeBonus(share) : 1;
+  return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * share * size * ind * (BUDGET_BONUS[countryId] ?? 1);
+}
+/** 11-27 나라 규모 보너스(내 나라만): 가진 도시 값어치가 본토보다 커진 만큼 × 0.2, 최대 +40% */
+export const sizeBonus = (share: number) => 1 + Math.min(SIZE_BONUS_MAX, Math.max(0, share - 1) * SIZE_BONUS_PER);
+/**
+ * 11-27 내정 비용 기준(시간당 수입 한 시간치).
+ * 예전엔 비용을 '지금 수입 × N시간'으로 매겨 나라가 커지면 비용도 똑같이 커졌음 → 땅을 늘려도 여유가 안 생김.
+ * 이제 본토보다 커진 만큼(가진 도시·규모 보너스)은 비용에 넣지 않음. 본토 이하일 땐 예전과 같음.
+ */
+export function priceBase(s: GameState): number {
+  const share = incomeShare(s.world, s.player.countryId, true);
+  return budgetPerDay(s, s.player.countryId) / (Math.max(1, share) * sizeBonus(share));
 }
 /** 하루 모병 = 군사력 × 나라 보너스 × 가진 도시 비율 */
 export function troopsPerDay(s: GameState, countryId: string): number {
@@ -324,13 +339,14 @@ export function troopsPerDay(s: GameState, countryId: string): number {
 export function budgetBreakdown(s: GameState): Array<[string, string]> {
   const me = s.player.countryId;
   const p = s.world.personalities[me];
-  const share = incomeShare(s.world, me);
+  const share = incomeShare(s.world, me, true);
   const x = (v: number) => `×${(Math.round(v * 100) / 100).toFixed(2)}`;
   return [
     ['기본(나라 예산 점수)', `${Math.round(countryById(me).budget * BUDGET_PER_DAY_PER_POINT).toLocaleString('ko-KR')}`],
     [`지도자 성향(${p})`, x(PERSONALITIES[p].budget)],
     ...(BUDGET_BONUS[me] ? [['나라 특수 능력', x(BUDGET_BONUS[me])] as [string, string]] : []),
-    ['가진 도시(점령지는 절반)', x(share)],
+    ['가진 도시(점령지 60%·민정 85%)', x(share)],
+    ...(sizeBonus(share) > 1 ? [['🌏 나라 규모 보너스', x(sizeBonus(share))] as [string, string]] : []),
     ['🏭 군수공장', x(budgetMult(s))],
     ['🏛️ 체제·카드·도시 민심·인구', x(civBudgetMult(s))],
     ['🙂 지지도', x(approvalBudgetMult(s))],
