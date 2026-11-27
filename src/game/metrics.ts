@@ -6,6 +6,8 @@ import { armyPower } from './economy';
 import { approvalOf, fieldValue } from './approval';
 import { domOf } from './domestic';
 import { liveZones } from './zones';
+import './arms'; // 효과 줄 등록(방산 수출)
+import './citySpec'; // 효과 줄 등록(도시 특화)
 
 export type MetricId =
   | 'troops' | 'power' | 'budget' | 'mil' | 'soc' | 'approval' | 'trust' | 'loyalty' | 'pop'
