@@ -20,6 +20,8 @@ import { FLeadRadio, FRecAds, FSupBase } from './freshD';
 import { M3AirFlare, M3AirIntercept, M3ArtyLead, M3SeaSonar, M3SeaTorpedo, M3ShootMoving, M3ShootPopup, M3SneakLight } from './three';
 import { EAmbush, EBreath, ECarrier, EConvoy, EHoldRun, EMarch, EParade, ERally, ERunner, ESand, ESling, ETorpedo, EWall } from './easyA';
 import { ELiar, EPack, ERings, ESatDiff } from './easyB';
+import { EAirdrop, EBomb, EFilm, EFlare, EHill, EIntercept, ELeadShot, ERefuel, ETakedown, ETide, ETot, EWaves } from './easyC';
+import { EAirFuel, EBombSet, EClimb, ECover, EFront, ELowFly, ERadio, ERepair, EScoot, ESeaFuel, ETrace, EWheel } from './easyD';
 import { EASY } from '../../../battle/easy';
 
 /** 한 손가락 미니 훈련 화면(easy.ts 의 view 이름) */
@@ -27,6 +29,10 @@ const EASY_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'e:holdrun': EHoldRun, 'e:wall': EWall, 'e:runner': ERunner, 'e:march': EMarch, 'e:sand': ESand, 'e:ambush': EAmbush,
   'e:breath': EBreath, 'e:sling': ESling, 'e:satdiff': ESatDiff, 'e:liar': ELiar, 'e:parade': EParade, 'e:rally': ERally,
   'e:convoy': EConvoy, 'e:pack': EPack, 'e:rings': ERings, 'e:carrier': ECarrier, 'e:torpedo': ETorpedo,
+  'e:takedown': ETakedown, 'e:leadshot': ELeadShot, 'e:airdrop': EAirdrop, 'e:refuel': ERefuel, 'e:flare': EFlare, 'e:bomb': EBomb,
+  'e:intercept': EIntercept, 'e:film': EFilm, 'e:tide': ETide, 'e:waves': EWaves, 'e:hill': EHill, 'e:tot': ETot,
+  'e:airfuel': EAirFuel, 'e:seafuel': ESeaFuel, 'e:lowfly': ELowFly, 'e:bombset': EBombSet, 'e:cover': ECover, 'e:radio': ERadio,
+  'e:wheel': EWheel, 'e:trace': ETrace, 'e:front': EFront, 'e:repair': ERepair, 'e:scoot': EScoot, 'e:climb': EClimb,
 };
 
 export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
