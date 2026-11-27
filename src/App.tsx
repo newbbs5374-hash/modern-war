@@ -214,7 +214,7 @@ export function App() {
     return (
       <StartScreen
         onStart={(name, countryId, pick) => {
-          const s = G.newGame(name, countryId, Date.now(), pick); // 11-26 난이도: 새 판은 시험판 자원 지급 없이 적게 시작
+          const s = G.newGame(name, countryId, Date.now(), { ...pick, acts: true }); // 11-26 난이도: 새 판은 시험판 자원 지급 없이 적게 시작
           saveGame(s);
           stateRef.current = s;
           setState(s);

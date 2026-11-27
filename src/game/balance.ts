@@ -152,3 +152,31 @@ export const HEGEMON_FROM = 0.3;
 export const HEGEMON_POWER = 0.5;
 /** 정적의 발언·방해 공작으로 깎이는 의회 신뢰도 하루(실제 24시간) 상한. 예전엔 상한이 없어 정적 12명이면 하루 반 만에 0이 됨 */
 export const RIVAL_TRUST_LOSS_PER_DAY = 6;
+
+// ── 11-27 종합 확장안: 4막 구조 ──
+
+/** 지금 몇 막인가. 막 기록이 없는 옛 저장은 3막(막힘 없음)으로 대접 */
+export const actOf = (w: { act?: number }): 1 | 2 | 3 | 4 => Math.max(1, Math.min(4, w.act ?? 3)) as 1 | 2 | 3 | 4;
+/** 막마다 AI 나라 힘 배율(예산·모병). 막 기록이 없는 옛 저장은 1 */
+export const ACT_AI = [1, 1, 1.2, 1.5, 1.8];
+export const actAi = (w: { act?: number }) => (w.act == null ? 1 : ACT_AI[actOf(w)]);
+/** 막 배율 가운데 전투 질(병사 한 명의 힘)로 붙는 몫: 3막 +25% · 4막 +40% */
+export const ACT_QUALITY_SHARE = 0.5;
+/** 막 배율만큼 대전투가 어려워짐: (배율 − 1) × 이 값. 3막 +0.125 · 4막 +0.2 */
+export const GRAND_ACT_DIFF = 0.25;
+/** 1막 → 2막: 취임 뒤 게임 100일(실제 100시간) · 군사 연구 · 부대 전투력(나라 군사력 점수 × 이 값) */
+export const ACT1_MIN_HOURS = 100;
+export const ACT1_TECHS = 6;
+/** 조건을 못 채워도 이만큼 지나면 2장(약한 나라가 1장에 갇히지 않게) */
+export const ACT1_MAX_HOURS = 14 * 24;
+export const ACT1_POWER_PER_MIL = 6;
+/** 2막: 이웃 나라 수 · 굴복시킬 나라 수 · 못 해도 이만큼 지나면 세계 대전(실제 시간) */
+export const ACT2_NEIGHBORS = 5;
+export const ACT2_SUBDUE = 2;
+export const ACT2_MAX_HOURS = 25 * 24;
+/** 막이 오를 때 보상(올라간 막 번호 − 1 로 찾음) */
+export const ACT_REWARD: Record<number, { ruby: number; boosts: number }> = { 1: { ruby: 50, boosts: 5 }, 2: { ruby: 80, boosts: 8 }, 3: { ruby: 120, boosts: 10 } };
+/** 하루(실제 24시간) 대전투 상한. 루비로 2번까지 더. 빼앗긴 우리 도시 되찾기는 세지 않음 */
+export const GRAND_PER_DAY = 3;
+export const GRAND_EXTRA_MAX = 2;
+export const GRAND_EXTRA_RUBY = 40;

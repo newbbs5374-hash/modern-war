@@ -59,12 +59,14 @@ import {
   PLAYER_START_TREASURY_MULT,
   PLAYER_START_TROOPS_MULT,
   aiStrength,
+  actAi,
 } from './balance';
 
 export const SAVE_VERSION = 7; // 5: 새 세계관(여명 군도), 6: 육각 타일 지도(도시 53개), 7: 현실 나라·도시 이름(11-23) — 예전 저장은 새 판으로
 
 import { growBudget, growTroop } from './aiGrowth';
 import { growTick } from './aiGrowthTick';
+import { actsTick } from './acts';
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -177,6 +179,8 @@ export interface NewGameOptions {
   realWorld?: boolean;
   /** 내 얼굴(남/여 × 30·40·50·60대, 11-24) */
   look?: LeaderLook;
+  /** 11-27 4막 구조로 시작(게임 화면에서 새 판을 만들 때 켬). 끄면 막 제한 없음 */
+  acts?: boolean;
 }
 
 export function newGame(name: string, countryId: string, now: number, opt: NewGameOptions = {}): GameState {
@@ -198,6 +202,7 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
   }
   const world = newWorld(opt.seed ?? (now ^ 0x5eed) >>> 0, !!opt.randomLeaders, AI_TICK_MS);
   if (opt.realWorld) applyNowConflicts(world, countryId);
+  if (opt.acts) { world.act = 1; world.actSinceMs = 0; }
   const s: GameState = {
     version: SAVE_VERSION,
     worldMs: 0,
@@ -257,7 +262,7 @@ export function troopsPerDay(s: GameState, countryId: string): number {
     TROOPS_PER_DAY_PER_POINT *
     (TROOP_BONUS[countryId] ?? 1) *
     incomeShare(s.world, countryId) *
-    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) * (1 + lawEff(s, 'troop')) : aiStrength(countryId, s.player.countryId) * growTroop(s.world, countryId))
+    (countryId === s.player.countryId ? welfareMult(s) * approvalTroopMult(s) * splitTroop(s) * cabTroop(s) * (1 + lawEff(s, 'troop')) : aiStrength(countryId, s.player.countryId) * actAi(s.world) * growTroop(s.world, countryId))
   );
 }
 
@@ -352,6 +357,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = surrenderTick(pressureTick(annexTick(deployTick(civTick(cur, pairsBefore)))));
+    cur = actsTick(cur);
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }

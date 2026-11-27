@@ -1465,3 +1465,18 @@ button.big { min-height: 64px; font-size: 18px; }
 .sns-tag { color: #fb923c; font-weight: 700; }
 .sns-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
 .sns-act button { font-size: 12px; padding: 5px 10px; }
+
+/* 11-27 4막 구조 */
+.hq.act-hq { border: 1px solid var(--hud, #3fb8c9); background: #3d5566; }
+.act-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+.act-step { display: flex; flex-direction: column; gap: 2px; padding: 7px 8px; border-radius: 8px; background: #3f4c59; border: 1px solid #586676; opacity: 0.7; }
+.act-step b { font-size: 13px; } .act-step small { font-size: 11px; line-height: 1.35; }
+.act-step.on { opacity: 1; border-color: var(--amber, #ffb020); box-shadow: 0 0 0 1px #ffb02055 inset; }
+.act-step.past { opacity: 0.85; border-color: var(--hud, #3fb8c9); }
+.act-sub { margin: 4px 0 6px; font-size: 13px; }
+.act-goal { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 5px; border-radius: 8px; background: #3f4c59; }
+.act-goal.done { background: #37564f; }
+.act-goal-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.act-goal-main b { font-size: 12px; font-weight: 600; }
+.act-bar { display: block; height: 6px; border-radius: 3px; background: #2b3540; overflow: hidden; }
+.act-bar i { display: block; height: 100%; background: var(--hud, #3fb8c9); }

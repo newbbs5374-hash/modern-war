@@ -6,6 +6,7 @@ import { RANKS } from '../data/ranks';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { onPlayerWar } from './civ';
+import { actBlocksWar } from './acts';
 import { endVassalPair, isVassalPair, lordOf } from './surrender';
 import { ga, gwa, isAlive, isLosing, isRival, pairKey, relationOf, sameBloc, type WorldEvent } from './world';
 
@@ -50,7 +51,7 @@ export function canDiplo(s: GameState, id: string, act: DiploAct): string | null
   if (id === me || !isAlive(s.world, id)) return '할 수 없는 나라';
   const rel = relationOf(s.world, me, id);
   // 11-26 대장 요청(다 정복하고 싶음): 선전포고는 외교 대기 시간과 상관없이 바로, 연합국도 연합을 깨고 칠 수 있음
-  if (act === '선전포고') return rel === '전쟁' ? '이미 전쟁 중이에요' : null;
+  if (act === '선전포고') return rel === '전쟁' ? '이미 전쟁 중이에요' : actBlocksWar(s, id);
   // 11-26 대장 요청: 연합은 언제든(외교 대기 없이) 깰 수 있음
   if (act === '연합 깨기') return rel !== '연합' ? '연합이 아니에요' : isVassalPair(s, me, id) ? (lordOf(s, me) === id ? '속국은 선전포고(독립 전쟁)로만 벗어나요' : '속국은 선전포고로만 다시 쳐요') : null;
   if (s.worldMs < diploReady(s)) return `외교 준비 중 · ${waitText(diploReady(s) - s.worldMs)} 남음`;
