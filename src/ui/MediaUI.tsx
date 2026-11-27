@@ -10,6 +10,7 @@ import {
   canGrant,
   canPress,
   grantPetition,
+  petCost,
   mediaOf,
   pressAnswerText,
   pressMult,
@@ -121,10 +122,20 @@ export function PetitionPanel({ state, actions }: ScreenProps) {
                     “{k.text}” · ✍️{fmt(p.signs)}명 · ⏳{timeLeft(p.endMs - state.worldMs)}
                   </small>
                 </span>
-                <button className="gold" disabled={!!why} onClick={() => actions.apply((s) => grantPetition(s, p.id))}>
-                  들어주기
-                  <small>💵{fmt(p.cost)}</small>
-                </button>
+                <span className="pet-btns">
+                  <button className="gold" disabled={!!why} onClick={() => actions.apply((s) => grantPetition(s, p.id, 'full'))} title="민심 +12 · 사회 +2 · 지지도 +1">
+                    전부
+                    <small>💵{fmt(p.cost)}</small>
+                  </button>
+                  <button disabled={!!canGrant(state, p.id, 'part')} onClick={() => actions.apply((s) => grantPetition(s, p.id, 'part'))} title="민심 +5 · 사회 +1">
+                    일부
+                    <small>💵{fmt(petCost(p, 'part'))}</small>
+                  </button>
+                  <button onClick={() => actions.apply((s) => grantPetition(s, p.id, 'no'))} title="민심 −2(그냥 두면 −4)">
+                    거절
+                    <small>민심 −2</small>
+                  </button>
+                </span>
               </div>
             );
           })}

@@ -65,6 +65,10 @@ export const spyOf = (s: GameState): SpyState => s.spy ?? newSpy();
 
 export const spyTeams = (s: GameState) => Math.min(3, 1 + Math.floor(s.player.rankIndex / 4));
 export const scouted = (s: GameState, id: string) => (spyOf(s).scout[id] ?? 0) > s.worldMs;
+/** 11-28 정보 신선도 0~1: 정찰 직후 1, 24시간 동안 줄어 0(낡음) */
+export const intelFresh = (s: GameState, id: string) => Math.max(0, Math.min(1, ((spyOf(s).scout[id] ?? 0) - s.worldMs) / (24 * H)));
+/** 신선한 정보가 주는 다른 공작 성공률 덤(최대 +10%p) */
+export const INTEL_BONUS = 0.1;
 
 /** 성공률(0~0.95) */
 export function spyChance(s: GameState, op: SpyOpId, target: string): number {
@@ -73,7 +77,7 @@ export function spyChance(s: GameState, op: SpyOpId, target: string): number {
   const st = s.officer.stats;
   const skill = ((st['은밀'] ?? 8) + (st['정보'] ?? 8)) / 2;
   const watch = relationOf(s.world, s.player.countryId, target) === '전쟁' ? -0.05 : 0; // 전쟁 중엔 경계가 심함
-  const scout = scouted(s, target) ? 0.05 : 0;
+  const scout = op === 'scout' ? 0 : INTEL_BONUS * intelFresh(s, target); // 11-28 정보가 신선할수록(정찰 직후) 덤, 낡으면 사라짐
   return Math.max(0.1, Math.min(0.95, d.base + skill * 0.004 + watch + scout + originEff(s, 'spy') + cabSpy(s) + lawEff(s, 'spy')));
 }
 

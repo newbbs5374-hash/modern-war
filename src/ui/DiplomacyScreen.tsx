@@ -35,7 +35,7 @@ import { Chip, Help, Modal, Tabs, useTab, type TabDef } from './kit';
 import { timeLeft } from './officerScreens';
 import { FieldBar } from './PresUI';
 import type { ScreenProps } from './screens';
-import { civOf } from '../game/civ';
+import { civOf, favorOf } from '../game/civ';
 import { AgreePanel, CouncilPanel, IslandPanel } from './CivScreens';
 import { REL_COLORS } from './WorldMap';
 import { PersonFace } from './People';
@@ -43,6 +43,8 @@ import { ForeignPeople, MinistryCards } from './CabinetUI';
 import { SummitPanel } from './MediaUI';
 import { clashes, openRequests } from '../game/deploy';
 import { DeployPanel } from './DeployPanel';
+import { threatOf, wantOf } from '../game/intel';
+import { EMBASSY_COST, EMBASSY_MAX_FAVOR, canOpenEmbassy, closeEmbassy, embassyFavor, embassyOf, embassySlots, openEmbassy } from '../game/embassy';
 import { CountryDetail } from './CountryDetail';
 import { HegemonyPanel, hegemonyBadge } from './HegemonyPanel';
 import { AdviceBar } from './AdviceBar';
@@ -81,6 +83,7 @@ export function DiplomacyScreen(props: ScreenProps) {
         <>
           <MinistryCards state={props.state} actions={props.actions} ids={['mofa', 'mou']} title="외교부·통일부" compact go={props.go} />
           <SummitPanel {...props} />
+          <EmbassyPanel {...props} />
           <ForeignPeople state={props.state} actions={props.actions} />
         </>
       )}
@@ -243,9 +246,16 @@ export function TradePanel({ state, actions }: ScreenProps) {
 const kShort = (v: number) => (v >= 999_500 ? `${(v / 1_000_000).toFixed(1)}M` : `${Math.round(v / 1000)}k`);
 function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) => void }) {
   const me = state.player.countryId;
+  const [byThreat, setByThreat] = useState(true);
+  const list = byThreat ? [...COUNTRIES].sort((a, b) => threatOf(state, b.id) - threatOf(state, a.id)) : COUNTRIES;
   return (
+    <>
+    <div className="row" style={{ gap: 6, margin: '0 0 6px' }}>
+      <button className={`mini ${byThreat ? 'on' : ''}`} onClick={() => setByThreat(true)}>⚠️ 위협 큰 순</button>
+      <button className={`mini ${!byThreat ? 'on' : ''}`} onClick={() => setByThreat(false)}>기본 순</button>
+    </div>
     <div className="ncards">
-      {COUNTRIES.map((c) => {
+      {list.map((c) => {
         const alive = isAlive(state.world, c.id);
         const rel = c.id === me ? '나' : relationOf(state.world, me, c.id);
         return (
@@ -272,11 +282,18 @@ function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) =>
                 <small>🪖{kShort(state.nations[c.id].troops)}</small>
                 <small>💰{kShort(state.nations[c.id].treasury)}</small>
               </span>
+              {alive && c.id !== me && (
+                <small className="ncard-intel">
+                  ⚠️위협 {threatOf(state, c.id)}
+                  {wantOf(state, c.id) ? ` · 원함: ${wantOf(state, c.id)}` : ''}
+                </small>
+              )}
             </span>
           </button>
         );
       })}
     </div>
+    </>
   );
 }
 
@@ -370,3 +387,47 @@ function RelationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) 
   );
 }
 
+
+/* ───────── 11-28 대사관: 호감이 날마다 조금씩(최대 +12) ───────── */
+function EmbassyPanel({ state, actions }: ScreenProps) {
+  const me = state.player.countryId;
+  const e = embassyOf(state);
+  const open = Object.keys(e.open);
+  const [pick, setPick] = useState('');
+  const cands = COUNTRIES.filter((c) => c.id !== me && !open.includes(c.id) && !canOpenEmbassy({ ...state, nations: { ...state.nations, [me]: { ...state.nations[me], treasury: Infinity } } }, c.id));
+  const why = pick ? canOpenEmbassy(state, pick) : '나라를 고르세요';
+  return (
+    <section className="card">
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <b>🏢 대사관</b>
+        <small className="muted">
+          {open.length}/{embassySlots(state)}곳 · 호감 하루 +2씩(최대 +{EMBASSY_MAX_FAVOR})
+        </small>
+      </div>
+      {open.map((id) => (
+        <div key={id} className="row" style={{ gap: 6, marginTop: 4, alignItems: 'center' }}>
+          <Flag id={id} />
+          <span style={{ flex: 1 }}>
+            {countryById(id).name} <small className="muted">호감 +{embassyFavor(state, id)}</small>
+          </span>
+          <button className="mini" onClick={() => actions.apply((s) => closeEmbassy(s, id))}>
+            불러들이기
+          </button>
+        </div>
+      ))}
+      <div className="row" style={{ gap: 6, marginTop: 6 }}>
+        <select value={pick} onChange={(ev) => setPick(ev.target.value)} style={{ flex: 1 }}>
+          <option value="">대사를 보낼 나라</option>
+          {cands.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} (호감 {favorOf(state, c.id)})
+            </option>
+          ))}
+        </select>
+        <button disabled={!!why} title={why ?? ''} onClick={() => (actions.apply((s) => openEmbassy(s, pick)), setPick(''))}>
+          보내기 💵{EMBASSY_COST.toLocaleString('ko-KR')}
+        </button>
+      </div>
+    </section>
+  );
+}

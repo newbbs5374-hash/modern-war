@@ -5,6 +5,7 @@ import { PIONEER_ISLANDS } from '../data/hexmap';
 import { canAgree, canEnvoy, canFulfill, civOf, favorOf, fulfillRequest, influenceMult, islandLeader, islandRequest, makeAgreement, sendEnvoy } from './civ';
 import { canTalk } from './summitTalk';
 import { tradeTips } from './tradeAdvice';
+import { EMBASSY_COST, EMBASSY_MAX_FAVOR, canOpenEmbassy, openEmbassy } from './embassy';
 import { pairKey } from './world';
 import { approx, registerRecs, type Rec } from './recs';
 import type { GameState } from './state';
@@ -147,3 +148,27 @@ export function talkRecs(s: GameState): Rec[] {
 registerRecs('diplo', islandRecs);
 registerRecs('diplo', agreeRecs);
 registerRecs('diplo', talkRecs);
+
+/** 대사관 칸이 비면: 방위 약속(호감 30)까지 가장 가까운 나라 */
+export function embassyRecs(s: GameState): Rec[] {
+  const me = s.player.countryId;
+  const c = COUNTRIES.filter((x) => x.id !== me && !canOpenEmbassy(s, x.id))
+    .map((x) => ({ x, f: favorOf(s, x.id) }))
+    .sort((a, b) => Math.abs(30 - a.f - EMBASSY_MAX_FAVOR) - Math.abs(30 - b.f - EMBASSY_MAX_FAVOR))[0];
+  if (!c) return [];
+  return [
+    {
+      id: `emb:${c.x.id}`,
+      field: 'diplo',
+      tab: 'mofa',
+      icon: '🏢',
+      title: `${c.x.name}에 대사 보내기`,
+      value: 3200,
+      gain: () => `호감 +4 → 날마다 +2(최대 +${EMBASSY_MAX_FAVOR}) · −${approx(EMBASSY_COST)}`,
+      why: `호감 ${Math.round(c.f)}: 대사관 호감이 다 차면 방위 약속(30)에 가까워져요.`,
+      act: (x) => openEmbassy(x, c.x.id),
+      can: (x) => canOpenEmbassy(x, c.x.id),
+    },
+  ];
+}
+registerRecs('diplo', embassyRecs);

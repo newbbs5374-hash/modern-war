@@ -14,7 +14,8 @@ import { RANKS } from '../data/ranks';
 import { cityById } from '../data/cities';
 import { COUNTRIES, countryById } from '../data/world';
 import { canDiplo, doDiplo } from '../game/command';
-import { isAlive, relationOf } from '../game/world';
+import { isAlive, relationOf, spoilsOf } from '../game/world';
+import { CITY_RES } from '../data/economy';
 import { campaignInfo } from '../game/campaign';
 import { CAMPAIGN_STREAK_MAX } from '../game/balance';
 import type { GameState } from '../game/state';
@@ -373,6 +374,7 @@ export function GrandCard({ state, actions }: ScreenProps) {
             {countryById(state.world.owner[pick]).name} · 방어도 {Math.round(state.world.defense[pick])}
             {cityById(pick).capital && cityById(pick).home === state.world.owner[pick] ? ' · 수도' : ''}
           </p>
+          <GrandPreview state={state} city={pick} />
           <div className="tiles c3" style={{ margin: '8px 0' }}>
             {['외곽', '시가전', '도심'].map((g, i) => (
               <Tile key={g} icon={['🌄', '🏙️', '🏛️'][i]} label={`${i + 1}막`} sub={g} tone={i === 2 ? 'gold' : undefined} />
@@ -1119,3 +1121,22 @@ function TrainModal({ name, state, featured, onClose, onStart }: { name: string;
 }
 
 export { HOUR };
+
+/** 11-28 대전투 미리 보기: 이기면 얻는 것 · 지면 잃는 것 */
+function GrandPreview({ state, city }: { state: GameState; city: string }) {
+  const owner = state.world.owner[city];
+  const sp = spoilsOf(state.world, city, owner, state.nations[owner]?.treasury ?? 0);
+  const res = Object.entries(CITY_RES[cityById(city).name] ?? {});
+  return (
+    <div className="grand-preview">
+      <p className="small" style={{ margin: '4px 0' }}>
+        ✅ <b>이기면</b>: 전리품 나라 예산 약 +{sp.loot.toLocaleString('ko-KR')}
+        {sp.note}
+        {res.length ? ` · 자원 ${res.map(([r, n]) => `${r} +${n}`).join(' · ')}` : ''} · 세금·인구가 우리 것
+      </p>
+      <p className="small" style={{ margin: '4px 0' }}>
+        ❌ <b>지면</b>: 데려간 부대 일부를 잃고 명성·지지도가 떨어져요. 다음 대전투까지 기다려야 해요.
+      </p>
+    </div>
+  );
+}

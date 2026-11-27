@@ -5,6 +5,7 @@ import { canMoveDef, defMoveAmount, defOf, moveDefToNation } from './defFund';
 import { canSetRate, overheat, setRate } from './econ';
 import { PROJECTS, PROJECT_MAX, advanceProject, busyProjects, canAdvanceProject, canStartProject, projectCities, stageCost, startProject } from './projects';
 import { approx, registerRecs, type Rec } from './recs';
+import { bondRate, bondSize, borrow, canBorrow, forecast } from './bonds';
 import type { GameState } from './state';
 
 /** 금고: 나라 예산이 바닥인데 국방비가 남으면 옮기기 */
@@ -140,3 +141,24 @@ registerRecs('economy', vaultRecs);
 registerRecs('economy', macroRecs);
 registerRecs('economy', facRecs);
 registerRecs('economy', projectRecs);
+
+/** 금고: 12시간 안에 나라 예산이 바닥나면 국채 추천 */
+export function bondRecs(s: GameState): Rec[] {
+  if (forecast(s, 12) >= 0 || canBorrow(s)) return [];
+  const amt = bondSize(s);
+  return [
+    {
+      id: 'vault:bond',
+      field: 'economy',
+      tab: 'vault',
+      icon: '🏦',
+      title: `국채 발행 +${approx(amt)}`,
+      value: 9000,
+      gain: (k) => `예산 +${approx(amt * k)} · 이자 ${Math.round(bondRate(s) * 100)}%`,
+      why: `12시간 뒤 나라 예산이 ${approx(forecast(s, 12))}로 바닥이에요. 48시간 동안 나눠 갚아요.`,
+      act: borrow,
+      can: canBorrow,
+    },
+  ];
+}
+registerRecs('economy', bondRecs);

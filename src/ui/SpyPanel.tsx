@@ -9,7 +9,7 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { isAlive, relationOf } from '../game/world';
 import { CATCH_FAME, CATCH_INTEL, LEAK_RESEARCH, LEAK_SPY, MOLE_SPOTS, arrest, canClue, clueCost, findClue, moleOf } from '../game/mole';
-import { SPY_OPS, canSpy, scoutView, spyChance, spyOf, spyOpById, spyTeams, startSpy } from '../game/spy';
+import { INTEL_BONUS, SPY_OPS, canSpy, intelFresh, scoutView, spyChance, spyOf, spyOpById, spyTeams, startSpy } from '../game/spy';
 
 export function SpyPanel({ state, actions }: ScreenProps) {
   const me = state.player.countryId;
@@ -86,9 +86,10 @@ export function SpyPanel({ state, actions }: ScreenProps) {
         </div>
         {view && (
           <p className="small result">
-            🛰️ 정찰 중({timeLeft(view.untilMs - state.worldMs)}): 나라 예산 {fmt(view.treasury)} · 병력 {fmt(view.troops)}
+            🛰️ 정찰 중({timeLeft(view.untilMs - state.worldMs)}): 나라 예산 {fmt(view.treasury)} · 병력 {fmt(view.troops)} · 정보 신선도 {Math.round(intelFresh(state, target!) * 100)}%(다른 공작 성공 +{Math.round(INTEL_BONUS * intelFresh(state, target!) * 100)}%p)
           </p>
         )}
+        {target && !view && <p className="small muted">🗂️ 이 나라 정보가 낡았어요. 정찰부터 하면 다른 공작 성공률이 최대 +{Math.round(INTEL_BONUS * 100)}%p 올라요.</p>}
       </Card>
 
       {target && (
