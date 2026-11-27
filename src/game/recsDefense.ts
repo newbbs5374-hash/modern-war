@@ -7,7 +7,9 @@ import { canResearch, civOf, startResearch, techPayWhy, techPrice } from './civ'
 import { canProduce, canUpgrade, isDefBuilding, produce, QUEUE_MAX, upgradeCost, upgradeFacility } from './economy';
 import { canSpy, spyChance, spyOf, startSpy } from './spy';
 import { COUNTRIES } from '../data/world';
-import { pairKey } from './world';
+import { pairKey, spoilsOf } from './world';
+import { canGrand, grandTargets } from './officer';
+import { cityById } from '../data/cities';
 
 export function produceRecs(s: GameState): Rec[] {
   const free = QUEUE_MAX - s.economy.queue.length;
@@ -108,3 +110,25 @@ registerRecs('defense', researchRecs('mil'));
 registerRecs('society', researchRecs('soc'));
 registerRecs('defense', defFacRecs);
 registerRecs('defense', spyRecs);
+
+/** 작전: 대전투를 할 수 있으면 방어도가 가장 낮은 도시(직접 출격하는 일이라 보기만) */
+export function grandRecs(s: GameState): Rec[] {
+  if (canGrand(s)) return [];
+  const c = grandTargets(s)[0];
+  if (!c) return [];
+  const owner = s.world.owner[c];
+  const sp = spoilsOf(s.world, c, owner, s.nations[owner]?.treasury ?? 0);
+  return [
+    {
+      id: `grand:${c}`,
+      field: 'defense',
+      tab: 'ops',
+      icon: '🏙️',
+      title: `${cityById(c).name} 대전투`,
+      value: 8000 + sp.loot * 0.1,
+      gain: (k) => `전리품 약 +${approx(sp.loot * k)}`,
+      why: `대전투 준비가 끝났어요. 지금 칠 수 있는 도시 중 방어도(${Math.round(s.world.defense[c])})가 가장 낮아요.`,
+    },
+  ];
+}
+registerRecs('defense', grandRecs);

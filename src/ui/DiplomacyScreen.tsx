@@ -43,6 +43,7 @@ import { ForeignPeople, MinistryCards } from './CabinetUI';
 import { SummitPanel } from './MediaUI';
 import { clashes, openRequests } from '../game/deploy';
 import { DeployPanel } from './DeployPanel';
+import { threatOf, wantOf } from '../game/intel';
 import { CountryDetail } from './CountryDetail';
 import { HegemonyPanel, hegemonyBadge } from './HegemonyPanel';
 import { AdviceBar } from './AdviceBar';
@@ -243,9 +244,16 @@ export function TradePanel({ state, actions }: ScreenProps) {
 const kShort = (v: number) => (v >= 999_500 ? `${(v / 1_000_000).toFixed(1)}M` : `${Math.round(v / 1000)}k`);
 function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) => void }) {
   const me = state.player.countryId;
+  const [byThreat, setByThreat] = useState(true);
+  const list = byThreat ? [...COUNTRIES].sort((a, b) => threatOf(state, b.id) - threatOf(state, a.id)) : COUNTRIES;
   return (
+    <>
+    <div className="row" style={{ gap: 6, margin: '0 0 6px' }}>
+      <button className={`mini ${byThreat ? 'on' : ''}`} onClick={() => setByThreat(true)}>⚠️ 위협 큰 순</button>
+      <button className={`mini ${!byThreat ? 'on' : ''}`} onClick={() => setByThreat(false)}>기본 순</button>
+    </div>
     <div className="ncards">
-      {COUNTRIES.map((c) => {
+      {list.map((c) => {
         const alive = isAlive(state.world, c.id);
         const rel = c.id === me ? '나' : relationOf(state.world, me, c.id);
         return (
@@ -272,11 +280,18 @@ function NationsPanel({ state, onPick }: ScreenProps & { onPick: (id: string) =>
                 <small>🪖{kShort(state.nations[c.id].troops)}</small>
                 <small>💰{kShort(state.nations[c.id].treasury)}</small>
               </span>
+              {alive && c.id !== me && (
+                <small className="ncard-intel">
+                  ⚠️위협 {threatOf(state, c.id)}
+                  {wantOf(state, c.id) ? ` · 원함: ${wantOf(state, c.id)}` : ''}
+                </small>
+              )}
             </span>
           </button>
         );
       })}
     </div>
+    </>
   );
 }
 
