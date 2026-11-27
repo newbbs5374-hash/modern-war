@@ -204,6 +204,14 @@ export function newCiv(s: Pick<GameState, 'world' | 'worldMs'>): CivState {
   };
 }
 
+/** 11-27 나라가 늘어난 옛 저장: 새 나라의 AI 체제를 새 판과 같은 규칙으로 채움 */
+export function fillAiGov(c: CivState, world: GameState['world']): void {
+  c.aiGov ??= {};
+  COUNTRIES.forEach((x, i) => {
+    if (!c.aiGov[x.id]) c.aiGov[x.id] = AI_GOV[world.personalities[x.id]]?.[i % 2] ?? 'assembly';
+  });
+}
+
 let fallback: CivState | null = null;
 /** 옛 저장·시험용 상태에도 안전하게 */
 export function civOf(s: GameState): CivState {
