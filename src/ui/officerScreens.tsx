@@ -58,7 +58,7 @@ import { minisFor } from '../battle/minigames';
 import { FRAME_NAME } from '../battle/fresh';
 import { UNIT_LV_AT, threeFor, unitBonusPct, unitLevel, unitName, weekLeftMs, weekOf, weeklyInfo, weeklyTraining } from '../battle3d/train3d';
 import { TEST_MODE } from '../game/balance';
-import { OPERATIONS, PRACTICE, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
+import { OPERATIONS, PRACTICE, PRACTICE_GROUPS, battleLabel, practicePlan, setPendingPlan, trainingPlan } from '../battle/spec';
 import { ACT_POOLS } from '../battle3d/stages';
 import { Card, fmt } from './common';
 import { aideKeys } from './Portrait';
@@ -845,19 +845,33 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
       {practice && (
         <Modal title="전투 연습장" icon="🎮" onClose={() => setPractice(false)}>
           <p className="small muted">임무에 나오는 전투를 보상 없이 해 봐요.</p>
-          <div className="tiles c3">
-            {PRACTICE.map((x, i) => (
-              <Tile
-                key={x.label}
-                icon={FRAME_ICON[x.frame]}
-                label={x.label}
-                onClick={() => {
-                  setPendingPlan(practicePlan(i, (Date.now() & 0xffff) + i));
-                  go('battle');
-                }}
-              />
-            ))}
-          </div>
+          {PRACTICE_GROUPS.map((g) => {
+            const list = PRACTICE.map((x, i) => ({ x, i })).filter(({ x }) => x.group === g.id);
+            if (!list.length) return null;
+            return (
+              <details key={g.id} className="prac-group">
+                <summary>
+                  <span className="prac-ico">{g.icon}</span>
+                  <b>{g.name}</b>
+                  <small className="muted">{g.text}</small>
+                  <i className="prac-n">{list.length}</i>
+                </summary>
+                <div className="tiles c3">
+                  {list.map(({ x, i }) => (
+                    <Tile
+                      key={x.label}
+                      icon={FRAME_ICON[x.frame]}
+                      label={x.label}
+                      onClick={() => {
+                        setPendingPlan(practicePlan(i, (Date.now() & 0xffff) + i));
+                        go('battle');
+                      }}
+                    />
+                  ))}
+                </div>
+              </details>
+            );
+          })}
         </Modal>
       )}
     </>
