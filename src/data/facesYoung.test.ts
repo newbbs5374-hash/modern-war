@@ -10,7 +10,7 @@ const have = new Set(Object.keys(import.meta.glob('../assets/portraits/*.webp'))
 
 describe('젊은 부관 얼굴·수행비서(11-24)', () => {
   it('젊은 얼굴 계획: 나라마다 32장(한국 36), 들어 있다고 한 그림은 모두 있음', () => {
-    expect(allYoungFiles().length).toBe(12 * 32 + 36);
+    expect(allYoungFiles().length).toBe(17 * 32 + 36);
     for (const [tag, n] of Object.entries(YOUNG_READY))
       for (const sex of ['m', 'f'] as const) {
         expect(n[sex]).toBeLessThanOrEqual(YOUNG_PLAN[tag][sex]);
@@ -58,7 +58,7 @@ describe('셋째 얼굴 묶음(나라별 80장 더)', () => {
       expect(tags.reduce((a, t) => a + deckSize(t, 'm') + deckSize(t, 'f'), 0)).toBe(142);
       for (const t of tags) for (const sex of ['m', 'f'] as const) for (let i = 0; i < deckSize(t, sex); i++) expect(have.has(faceFile(t, sex, i))).toBe(true);
     }
-    expect(EXTRA2_READY.length).toBe(13);
+    expect(EXTRA2_READY.length).toBe(18);
     expect(deckSize('ir', 'm') + deckSize('ir', 'f')).toBe(142);
   });
   it('켜면 142장이고 번호는 이어 붙음', () => {
@@ -69,7 +69,7 @@ describe('셋째 얼굴 묶음(나라별 80장 더)', () => {
     expect(faceFile('kr', 'm', 39, true, true)).toBe('face-kr-m-50-22');
     expect(faceFile('kr', 'm', 39 + 27, true, true)).toBe('face-kr-m-60-19');
     const all = allFaceFiles(true, true);
-    expect(all.length).toBe(13 * 142);
+    expect(all.length).toBe(18 * 142);
     expect(new Set(all).size).toBe(all.length);
   });
 });

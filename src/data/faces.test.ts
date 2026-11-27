@@ -6,10 +6,10 @@ import { newGame } from '../game/state';
 import { cabinetOf } from '../game/cabinet';
 
 describe('나라별 얼굴 40장(11-24)', () => {
-  it('나라마다 40장, 모두 520장, 파일 이름이 겹치지 않음', () => {
+  it('나라마다 40장, 모두 720장(11-27 18개국), 파일 이름이 겹치지 않음', () => {
     const files = allFaceFiles(false);
-    expect(files.length).toBe(520);
-    expect(new Set(files).size).toBe(520);
+    expect(files.length).toBe(720);
+    expect(new Set(files).size).toBe(720);
     const us = Object.keys(FACE_PLAN).filter((t) => t.startsWith('us-'));
     expect(us.reduce((a, t) => a + deckSize(t, 'm', false) + deckSize(t, 'f', false), 0)).toBe(40);
     expect(deckSize('kr', 'm', false) + deckSize('kr', 'f', false)).toBe(40);
@@ -17,13 +17,13 @@ describe('나라별 얼굴 40장(11-24)', () => {
     expect(faceFile('kr', 'm', 14)).toBe('face-kr-m-60-01');
     expect(faceFile('us-bl', 'f', 2)).toBe('face-us-bl-f-60-01');
   });
-  it('추가 얼굴(11-24) 켜짐: 나라마다 62장, 모두 806장, 그림 파일이 모두 있음', () => {
+  it('추가 얼굴(11-24) 켜짐: 나라마다 62장, 모두 1116장, 그림 파일이 모두 있음', () => {
     const have = new Set(Object.keys(import.meta.glob('../assets/portraits/face-*.webp')).map((k) => k.replace(/^.*\//, '').replace(/\.webp$/, '')));
-    expect(allFaceFiles(true, false).length).toBe(806);
+    expect(allFaceFiles(true, false).length).toBe(1116);
     expect(deckSize('kr', 'm', true, false) + deckSize('kr', 'f', true, false)).toBe(62);
     // 셋째 묶음이 켜진 나라(EXTRA2_READY)는 80장씩 더(11-25)
     const files = allFaceFiles(true);
-    expect(files.length).toBe(806 + 80 * EXTRA2_READY.length);
+    expect(files.length).toBe(1116 + 80 * EXTRA2_READY.length);
     expect(new Set(files).size).toBe(files.length);
     const missing = files.filter((f) => !have.has(f));
     expect(missing).toEqual([]);
@@ -84,7 +84,7 @@ describe('추가 얼굴 22장(11-24)', () => {
     expect(new Set(files).size).toBe(286);
     const base = new Set(F.allFaceFiles(false));
     expect(files.some((f) => base.has(f))).toBe(false);
-    expect(F.allFaceFiles(true, false).length).toBe(806);
+    expect(F.allFaceFiles(true, false).length).toBe(1116);
     for (let i = 0; i < 26; i++) expect(F.faceFile('kr', 'm', i, true)).toBe(F.faceFile('kr', 'm', i, false));
     expect(F.faceFile('kr', 'm', 26, true)).toBe('face-kr-m-50-15');
     expect(F.faceFile('kr', 'm', 33, true)).toBe('face-kr-m-60-13');
