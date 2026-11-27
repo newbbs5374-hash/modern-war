@@ -21,6 +21,7 @@ import { LEADER_LOOKS, lookName, playerKeys } from '../data/looks';
 import { FieldArtList, IconArtList } from './FieldArtList';
 import type { ScreenProps } from './screens';
 import { oldMenuOn, setOldMenu } from './nav';
+import { fullHomeOn, setFullHome } from './favs';
 import { CloudCard } from './CloudUI';
 import { ErrorLog } from './Safe';
 
@@ -56,6 +57,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 export function SettingsScreen({ state, speed, actions }: ScreenProps) {
   const [pop, setPop] = useState<Pop>(null);
   const [oldMenu, setOldMenuState] = useState(oldMenuOn);
+  const [fullHome, setFullHomeState] = useState(fullHomeOn);
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
   const [artTab, setArtTab] = useState<ArtTab>('face');
@@ -121,6 +123,17 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             onClick={() => {
               setOldMenu(!oldMenu);
               setOldMenuState(!oldMenu);
+              actions.apply((s) => ({ ...s }));
+            }}
+          />
+          <SwitchRow
+            icon="🧹"
+            name="본부 간단히"
+            sub="아이콘 3개와 즐겨찾기만 둬요. 끄면 옛 본부(아이콘 12개)로 돌아가요"
+            on={!fullHome}
+            onClick={() => {
+              setFullHome(!fullHome);
+              setFullHomeState(!fullHome);
               actions.apply((s) => ({ ...s }));
             }}
           />

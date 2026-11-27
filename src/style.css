@@ -1692,3 +1692,27 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .oa-ico { font-size: 22px; flex: none; }
 .oa-btns { display: flex; flex-direction: column; gap: 3px; flex: none; }
 .oa-btns button { padding: 3px 8px; font-size: 12px; }
+
+/* 11-27 화면 5·6: 찾기 · 즐겨찾기 · 본부 간단히 */
+.tree-find { display: flex; gap: 4px; margin-top: 6px; align-items: center; }
+.tree-find input { flex: 1; min-width: 0; padding: 7px 10px; font-size: 13px; border: 1px solid var(--line, #5b6b7c); background: #2f3a45; color: var(--text, #f1f5f9); border-radius: 8px; }
+.tree-find .mini { white-space: nowrap; }
+.tree-find .mini.on { border-color: var(--amber, #ffb020); color: var(--amber, #ffb020); }
+.tree-found { margin-top: 6px; }
+.tree-star { position: absolute; top: -6px; left: -2px; font-style: normal; font-size: 12px; }
+.tree-more { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; position: relative; padding-top: 18px; }
+.tree-more > b { position: absolute; top: 0; left: 2px; font-size: 11px; opacity: 0.8; }
+.tree-more .tree-leaf { min-height: 50px; border-color: var(--line, #5b6b7c); }
+.tree-more .tree-leaf small { font-size: 10px; }
+.bld-col .bld.fav .bld-ico { outline: 1px solid var(--amber, #ffb020); }
+.bld-col .bld.fav .ui-emo img { width: 26px; height: 26px; }
+.bld-col .bld.fav-add { opacity: 0.8; }
+
+/* 11-27 화면 4: 연구 목표 길 */
+.tt-goal { display: flex; align-items: center; gap: 6px; margin: 4px 0 6px; font-size: 12px; }
+.tt-goal span { flex: 1; min-width: 0; }
+.tt-goal b { color: #7dffb0; }
+.tt-lines path.goal { stroke: #7dffb0; stroke-width: 3.5; opacity: 1; stroke-dasharray: none; filter: drop-shadow(0 0 4px #7dffb0cc); }
+.tt-node.on-goal { border-color: #7dffb0; border-style: solid; opacity: 1; filter: none; box-shadow: 0 0 0 1px #7dffb0, 0 0 10px #7dffb066; }
+.tt-node.is-goal { box-shadow: 0 0 0 2px #7dffb0, 0 0 14px #7dffb0aa; }
+.tt-node.is-goal .tt-name::before { content: '🎯 '; }

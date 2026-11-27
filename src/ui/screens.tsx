@@ -1,3 +1,5 @@
+import { favsOf, fullHomeOn } from './favs';
+import { goSpot, spotsOf } from './TreeScreen';
 import { meetBadge } from './MeetUI';
 // 기능별 화면 묶음. 아래 메뉴 7칸 + 본부(홈) + 설정·전령·도감.
 import { payPreview } from '../game/payday';
@@ -129,7 +131,7 @@ export function HomeScreen(props: ScreenProps) {
   );
 
   // 지도 위 건물(아이콘 + 이름). x·y는 화면 비율(%)
-  const spots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
+  const allSpots: Array<{ icon: string; label: string; x: number; y: number; on: () => void; badge?: string | number | null; locked?: boolean; main?: boolean }> =
     [
       { icon: '💬', label: '대화', x: 90, y: 20, on: () => setTalkOpen(true), badge: talks.length || null },
       { icon: '📱', label: '정상 SNS', x: 90, y: 28, on: () => setSnsOpen(true), badge: snsUnread(state) || null },
@@ -144,6 +146,14 @@ export function HomeScreen(props: ScreenProps) {
       { icon: '📰', label: '국정 보고', x: 70, y: 87, on: () => setBrfOpen(true), badge: todos(state).length || null },
       { icon: '🧪', label: '시험', x: 90, y: 87, on: () => go('settings') },
     ];
+  // 11-27 화면 5: 본부 간단히 = 아이콘 3개(대화·SNS·보고) + 내가 꽂은 즐겨찾기 4개
+  const simple = !fullHomeOn();
+  const favSpots = simple
+    ? favsOf()
+        .map((k) => spotsOf(state).find((sp) => sp.key === k))
+        .filter((sp): sp is NonNullable<typeof sp> => !!sp)
+    : [];
+  const spots = simple ? allSpots.filter((sp) => ['대화', '정상 SNS', '보고'].includes(sp.label)) : allSpots;
 
   return (
     <div className="home-stage">
@@ -245,7 +255,7 @@ export function HomeScreen(props: ScreenProps) {
               <small>{a ? (missionReady ? '도착! 전투하기' : `${timeLeft(a.endMs - state.worldMs)} 남음`) : '게시판에 새 임무'}</small>
             </span>
           </button>
-          <button className="hq" onClick={() => goTab('personal', 'personal', 'profile')}>
+          {!simple && <button className="hq" onClick={() => goTab('personal', 'personal', 'profile')}>
             <span>{ttl.icon}</span>
             <span className="hq-main">
               <b>{ttl.name}</b>
@@ -254,8 +264,8 @@ export function HomeScreen(props: ScreenProps) {
                 <span className="bar-fill" style={{ width: `${ttlPct}%` }} />
               </span>
             </span>
-          </button>
-          <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'defense', 'train')}>
+          </button>}
+          {!simple && <button className={`hq ${drills > 0 ? 'hot' : ''}`} onClick={() => goTab('training', 'defense', 'train')}>
             <span>📅</span>
             <span className="hq-main">
               <b>
@@ -263,7 +273,7 @@ export function HomeScreen(props: ScreenProps) {
               </b>
               <small>{drills > 0 ? '훈련할 수 있어요' : '일정이 차는 중'}</small>
             </span>
-          </button>
+          </button>}
           <button className={`hq ${pending >= cap * 0.5 ? 'hot' : ''}`} disabled={pending < 1} onClick={actions.claim}>
             <span>💵</span>
             <span className="hq-main">
@@ -274,7 +284,7 @@ export function HomeScreen(props: ScreenProps) {
               </span>
             </span>
           </button>
-          {wars.length > 0 && (
+          {!simple && wars.length > 0 && (
             <div className="hq-wars">
               <small>전쟁 중</small>
               {wars.slice(0, 5).map((c) => (
@@ -301,6 +311,19 @@ export function HomeScreen(props: ScreenProps) {
             {sp.badge != null && sp.badge !== 0 && !sp.locked && <i className="bld-badge">{sp.badge}</i>}
           </button>
         ))}
+        {favSpots.map((sp) => (
+          <button key={sp.key} className="bld fav" onClick={() => go(goSpot(sp))} aria-label={sp.label}>
+            <span className="bld-ico"><span className="ui-emo">{sp.locked ? '🔒' : sp.icon}</span></span>
+            <small>{sp.label}</small>
+            {sp.badge ? <i className="bld-badge">{sp.badge}</i> : null}
+          </button>
+        ))}
+        {simple && (
+          <button className="bld fav-add" onClick={() => go('tree')} aria-label="즐겨찾기 고르기">
+            <span className="bld-ico"><span className="ui-emo">{favSpots.length ? '🌳' : '⭐'}</span></span>
+            <small>{favSpots.length ? '국정 나무' : '꽂기'}</small>
+          </button>
+        )}
       </div>
 
       {latest && (
