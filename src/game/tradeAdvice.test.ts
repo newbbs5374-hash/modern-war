@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame, setRank } from './state';
 import { RANKS } from '../data/ranks';
-import { ADVICE_PER_DAY, adviceLeft, autoTrade, canRunTip, runTip, setAuto, tradeTips } from './tradeAdvice';
+import { ADVICE_PER_DAY, adviceLeft, adviceResetIn, autoTrade, canRunTip, runTip, setAuto, tradeTips } from './tradeAdvice';
 
 const fresh = () => setRank(newGame('시험', 'kr', 0, { seed: 7 }), RANKS.length - 1);
 
@@ -24,8 +24,11 @@ describe('장관 무역 추천', () => {
     expect(adviceLeft(s)).toBe(ADVICE_PER_DAY - 1);
     for (let i = 1; i < ADVICE_PER_DAY; i++) s = runTip(s, tradeTips(s).find((x) => x.kind === 'flip') ?? t);
     expect(adviceLeft(s)).toBe(0);
-    expect(canRunTip(s, t)).toMatch(/하루/);
+    expect(canRunTip(s, t)).toMatch(/6시간/);
     expect(runTip(s, t)).toBe(s);
+    // 6시간이 지나면 다시 채워짐
+    s = { ...s, worldMs: s.worldMs + adviceResetIn(s) + 1 };
+    expect(adviceLeft(s)).toBe(ADVICE_PER_DAY);
   });
   it('맡기기를 켜면 시간이 흐를 때 장관이 알아서 실행한다', () => {
     let s = setAuto(fresh(), true);
