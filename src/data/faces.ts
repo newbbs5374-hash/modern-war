@@ -22,6 +22,7 @@ const STD = N(14, 12, 9, 5);
 export const FACE_PLAN: Record<string, FacePlan> = {
   kr: STD, kp: STD, jp: STD, cn: STD, in: STD, uk: STD, de: STD, ru: STD, ua: STD, ir: STD, il: STD, tr: STD,
   tw: STD, pl: STD, ph: STD, pk: STD, sa: STD, // 11-27 새 나라 5개 얼굴 들어옴
+  eg: STD, ng: STD, za: STD, et: STD, dz: STD, br: STD, ar: STD, co: STD, ve: STD, cl: STD, au: STD, ca: STD, mx: STD, fr: STD, it: STD, es: STD, gr: STD, fi: STD, // 11-27 새 나라 18개 얼굴 들어옴
   // 미국 40 = 백인 20 · 흑인 8 · 히스패닉 8 · 아시아계 4
   'us-we': N(7, 6, 4, 3),
   'us-bl': N(3, 2, 2, 1),
@@ -42,10 +43,7 @@ export const faceTag = (country: string, eth?: string): string =>
  * 그림이 들어오면 FACE_PLAN·FACE_EXTRA·FACE_EXTRA2·YOUNG_READY에 그 나라를 넣고 여기서 지우면 돼요.
  */
 export const FACE_BORROW: Record<string, string> = {
-  // 11-27 새 나라 18개: 그림이 오기 전까지 비슷한 얼굴을 빌림(us-bl·us-hi·us-we는 미국 얼굴 갈래)
-  eg: 'ir', dz: 'sa', ng: 'us-bl', za: 'us-bl', et: 'us-bl',
-  br: 'us-hi', ar: 'us-hi', co: 'us-hi', ve: 'us-hi', cl: 'us-hi', mx: 'us-hi',
-  au: 'uk', ca: 'us-we', fr: 'de', it: 'de', es: 'us-hi', gr: 'tr', fi: 'pl',
+  // 11-27 새 나라 18개도 그림이 모두 들어와서 지금은 빌리는 나라가 없어요.
 };
 
 /**
@@ -57,6 +55,7 @@ const STD2 = N(7, 6, 6, 3);
 export const FACE_EXTRA: Record<string, FacePlan> = {
   kr: STD2, kp: STD2, jp: STD2, cn: STD2, in: STD2, uk: STD2, de: STD2, ru: STD2, ua: STD2, ir: STD2, il: STD2, tr: STD2,
   tw: STD2, pl: STD2, ph: STD2, pk: STD2, sa: STD2,
+  eg: STD2, ng: STD2, za: STD2, et: STD2, dz: STD2, br: STD2, ar: STD2, co: STD2, ve: STD2, cl: STD2, au: STD2, ca: STD2, mx: STD2, fr: STD2, it: STD2, es: STD2, gr: STD2, fi: STD2,
   // 미국 22 = 백인 11 · 흑인 5 · 히스패닉 5 · 아시아계 1
   'us-we': N(4, 3, 3, 1),
   'us-bl': N(2, 1, 1, 1),
@@ -74,13 +73,14 @@ const STD3 = N(27, 23, 18, 12);
 export const FACE_EXTRA2: Record<string, FacePlan> = {
   kr: STD3, kp: STD3, jp: STD3, cn: STD3, in: STD3, uk: STD3, de: STD3, ru: STD3, ua: STD3, ir: STD3, il: STD3, tr: STD3,
   tw: STD3, pl: STD3, ph: STD3, pk: STD3, sa: STD3,
+  eg: STD3, ng: STD3, za: STD3, et: STD3, dz: STD3, br: STD3, ar: STD3, co: STD3, ve: STD3, cl: STD3, au: STD3, ca: STD3, mx: STD3, fr: STD3, it: STD3, es: STD3, gr: STD3, fi: STD3,
   // 미국 80 = 백인 40 · 흑인 16 · 히스패닉 16 · 아시아계 8
   'us-we': N(14, 11, 9, 6),
   'us-bl': N(5, 5, 3, 3),
   'us-hi': N(5, 5, 3, 3),
   'us-as': N(3, 2, 2, 1),
 };
-export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'tw', 'pl', 'ph', 'pk', 'sa'];
+export const EXTRA2_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'tw', 'pl', 'ph', 'pk', 'sa', 'eg', 'ng', 'za', 'et', 'dz', 'br', 'ar', 'co', 've', 'cl', 'au', 'ca', 'mx', 'fr', 'it', 'es', 'gr', 'fi'];
 const tagCountry = (tag: string) => (tag.startsWith('us-') ? 'us' : tag);
 const extra2On = (tag: string) => EXTRA2_READY.includes(tagCountry(tag));
 
@@ -92,13 +92,14 @@ const STD4: FacePlan = { m40: 20, f40: 12, m50: 4, m60: 4, f50: 4, f60: 4 };
 export const FACE_EXTRA3: Record<string, FacePlan> = {
   kr: STD4, kp: STD4, jp: STD4, cn: STD4, in: STD4, uk: STD4, de: STD4, ru: STD4, ua: STD4, ir: STD4, il: STD4, tr: STD4,
   tw: STD4, pl: STD4, ph: STD4, pk: STD4, sa: STD4,
+  eg: STD4, ng: STD4, za: STD4, et: STD4, dz: STD4, br: STD4, ar: STD4, co: STD4, ve: STD4, cl: STD4, au: STD4, ca: STD4, mx: STD4, fr: STD4, it: STD4, es: STD4, gr: STD4, fi: STD4,
   // 미국 48 = 백인 24 · 흑인 10 · 히스패닉 10 · 아시아계 4
   'us-we': { m40: 10, f40: 6, m50: 2, m60: 2, f50: 2, f60: 2 },
   'us-bl': { m40: 4, f40: 2, m50: 1, m60: 1, f50: 1, f60: 1 },
   'us-hi': { m40: 4, f40: 2, m50: 1, m60: 1, f50: 1, f60: 1 },
   'us-as': { m40: 2, f40: 2, m50: 0, m60: 0, f50: 0, f60: 0 },
 };
-export const EXTRA3_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'tw', 'pl', 'ph', 'pk', 'sa']; // 11-27 그림 들어옴(18개국 모두)
+export const EXTRA3_READY: readonly string[] = ['kr', 'kp', 'jp', 'cn', 'us', 'uk', 'de', 'ru', 'ua', 'in', 'ir', 'il', 'tr', 'tw', 'pl', 'ph', 'pk', 'sa', 'eg', 'ng', 'za', 'et', 'dz', 'br', 'ar', 'co', 've', 'cl', 'au', 'ca', 'mx', 'fr', 'it', 'es', 'gr', 'fi']; // 11-27 그림 들어옴(36개국 모두)
 const extra3On = (tag: string) => EXTRA3_READY.includes(tagCountry(tag));
 
 const BANDS: readonly FaceBand[] = ['40', '50', '60'];
@@ -171,6 +172,7 @@ export const YOUNG_PLAN: Record<string, YoungPlan> = {
   kp: { m: 20, f: 12 }, jp: { m: 20, f: 12 }, cn: { m: 20, f: 12 }, in: { m: 20, f: 12 }, uk: { m: 20, f: 12 }, de: { m: 20, f: 12 },
   ru: { m: 20, f: 12 }, ua: { m: 20, f: 12 }, ir: { m: 20, f: 12 }, il: { m: 20, f: 12 }, tr: { m: 20, f: 12 },
   tw: { m: 20, f: 12 }, pl: { m: 20, f: 12 }, ph: { m: 20, f: 12 }, pk: { m: 20, f: 12 }, sa: { m: 20, f: 12 },
+  eg: { m: 20, f: 12 }, ng: { m: 20, f: 12 }, za: { m: 20, f: 12 }, et: { m: 20, f: 12 }, dz: { m: 20, f: 12 }, br: { m: 20, f: 12 }, ar: { m: 20, f: 12 }, co: { m: 20, f: 12 }, ve: { m: 20, f: 12 }, cl: { m: 20, f: 12 }, au: { m: 20, f: 12 }, ca: { m: 20, f: 12 }, mx: { m: 20, f: 12 }, fr: { m: 20, f: 12 }, it: { m: 20, f: 12 }, es: { m: 20, f: 12 }, gr: { m: 20, f: 12 }, fi: { m: 20, f: 12 },
   // 미국 32 = 백인 16 · 흑인 6 · 히스패닉 6 · 아시아계 4
   'us-we': { m: 10, f: 6 },
   'us-bl': { m: 4, f: 2 },
@@ -200,6 +202,24 @@ export const YOUNG_READY: Record<string, YoungPlan> = {
   ph: { m: 20, f: 12 },
   pk: { m: 20, f: 12 },
   sa: { m: 20, f: 12 },
+  eg: { m: 20, f: 12 },
+  ng: { m: 20, f: 12 },
+  za: { m: 20, f: 12 },
+  et: { m: 20, f: 12 },
+  dz: { m: 20, f: 12 },
+  br: { m: 20, f: 12 },
+  ar: { m: 20, f: 12 },
+  co: { m: 20, f: 12 },
+  ve: { m: 20, f: 12 },
+  cl: { m: 20, f: 12 },
+  au: { m: 20, f: 12 },
+  ca: { m: 20, f: 12 },
+  mx: { m: 20, f: 12 },
+  fr: { m: 20, f: 12 },
+  it: { m: 20, f: 12 },
+  es: { m: 20, f: 12 },
+  gr: { m: 20, f: 12 },
+  fi: { m: 20, f: 12 },
 };
 /** 한국 이름 부관 그림 → 젊은 얼굴 번호(옛 저장의 이름 부관이 같은 얼굴을 계속 쓰게) */
 export const KR_NAMED_YOUNG: Record<string, string> = {
