@@ -8,7 +8,7 @@
 import { PERSON_ORIGINS, type Faction, type Group, type PersonOrigin } from '../data/cabinet';
 import { deckSize, faceFile, faceTag } from '../data/faces';
 import { addPresMod } from './approval';
-import { cabinetOf, genPerson, type Person } from './cabinet';
+import { cabinetOf, genPerson, giveFaces, type Person } from './cabinet';
 import { countDiff, type Count } from './goals';
 import { ROLE_INFO, roleOf, type RivalRole } from './rivals';
 import { Rng } from './rng';
@@ -399,6 +399,7 @@ function becomeMine(s: GameState, key: MeetKey): GameState {
     np.loyalty = MINE_LOYALTY;
     np.known = true;
     c.people.push(np);
+    giveFaces(c); // 11-27 나이를 얼굴에 맞춤
     rivals = s.officer.rivals.map((r, j) => (j === i ? { ...r, ally: true, influence: 0, mine: true } : r));
   }
   const m0 = meetOf(s);
