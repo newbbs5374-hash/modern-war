@@ -35,3 +35,16 @@ describe('가진 부대만 냄(11-26)', () => {
     expect(r.units).toEqual({ [sp.name]: 1 });
   });
 });
+
+describe('특별 병과 1.3배(11-27)', () => {
+  it('특별 병과 전투력은 같은 종류의 1.3배 이상, 3D에서는 비율만큼', async () => {
+    const { SPECIALS } = await import('../data/specials');
+    const { UNIT_COST, specialCost } = await import('../data/economy');
+    for (const d of SPECIALS) expect(specialCost(d.base, d.cost).power).toBeGreaterThanOrEqual(Math.round(UNIT_COST[d.base].power * 1.3) - 1);
+    const { specialBuffs } = await import('./losses');
+    const sp = SPECIALS.find((d) => d.base === '구축함')!;
+    expect(specialBuffs({ [sp.name]: 2 }).dd).toBe(1.3);
+    expect(specialBuffs({ [sp.name]: 1, 구축함: 1 }).dd).toBe(1.15);
+    expect(specialBuffs({ 구축함: 3 })).toEqual({});
+  });
+});

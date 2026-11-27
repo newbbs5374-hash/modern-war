@@ -4,7 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
 import { settleClash } from '../../game/deploy';
-import { loseUnits, ownedByBase } from '../../game/losses';
+import { loseUnits, mulBuffs, ownedByBase, specialBuffs } from '../../game/losses';
 import { deployOf } from '../../game/deploy';
 import { routeTo } from '../nav';
 import { autoResult } from '../../battle/auto';
@@ -148,7 +148,7 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   for (const r of results) for (const [k, v] of Object.entries(r.dead ?? {})) deadSoFar[k] = (deadSoFar[k] ?? 0) + v;
   const ownSrc = plan.source === 'deploy' && plan.deploy ? deployOf(state).list.find((x) => x.id === plan.deploy!.dep)?.units ?? {} : plan.source === 'training' || plan.source === 'practice' ? null : state.economy.army;
   const owned = ownSrc ? ownedByBase(ownSrc, deadSoFar) : undefined;
-  const props: FrameProps = { spec, stats, rank, owned, gen: spec.variant === 'siege' ? genSkillOf(o) : null, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: unitBuffs(o.unitXp), puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
+  const props: FrameProps = { spec, stats, rank, owned, gen: spec.variant === 'siege' ? genSkillOf(o) : null, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff: mulBuffs(unitBuffs(o.unitXp), specialBuffs(ownSrc ?? state.economy.army)), puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
   const final = done ? planOutcome(plan, results) : null;
