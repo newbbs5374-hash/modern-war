@@ -49,7 +49,7 @@ export function Box3D(props: { r: React.RefObject<HTMLDivElement>; ready: boolea
     >
       {!props.ready && <div className="mg-center">{props.fail ? '3D를 열 수 없어요' : '3D 훈련장 준비 중…'}</div>}
       {props.children}
-      <p className="mg-credit">모형: Quaternius (CC0) · “Jet”, “Helicopter” by jeremy, Poly Pizza (CC-BY 3.0)</p>
+      <p className="mg-credit">모형: Quaternius (CC0) · “Jet” by jeremy, Poly Pizza (CC-BY 3.0) · K2 jjj0605 · K9·AH-64 Muhamad Mirza Arrafi, Sketchfab (CC-BY 4.0)</p>
     </div>
   );
 }
