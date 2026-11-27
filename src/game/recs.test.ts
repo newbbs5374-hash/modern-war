@@ -67,12 +67,13 @@ import { islandRecs, agreeRecs, talkRecs } from './recsDiplo';
 import { produceRecs, researchRecs, defFacRecs, spyRecs } from './recsDefense';
 import { requestRecs, tiredRecs } from './recsDeploy';
 import { tradeRecs, pausedContractRecs } from './recsTrade';
+import { venueRecs, starRecs, courseRecs } from './recsCulture';
 
 describe('분야별 추천 만들기', () => {
   test('모든 추천이 오류 없이 만들어지고, 실행할 수 있는 건 실제로 바뀜', () => {
     let s = base();
     s = { ...s, player: { ...s.player, rankIndex: 6 }, economy: { ...s.economy, stock: Object.fromEntries(Object.entries(s.economy.stock).map(([k, v]) => [k, (v as number) + 50])) as typeof s.economy.stock } };
-    const gens = [researchRecs('mil'), researchRecs('soc'), defFacRecs, spyRecs, vaultRecs, macroRecs, facRecs, projectRecs, islandRecs, agreeRecs, talkRecs, produceRecs, requestRecs, tiredRecs, tradeRecs, pausedContractRecs];
+    const gens = [venueRecs, starRecs, courseRecs, researchRecs('mil'), researchRecs('soc'), defFacRecs, spyRecs, vaultRecs, macroRecs, facRecs, projectRecs, islandRecs, agreeRecs, talkRecs, produceRecs, requestRecs, tiredRecs, tradeRecs, pausedContractRecs];
     let ran = 0;
     for (const g of gens)
       for (const r of g(s)) {

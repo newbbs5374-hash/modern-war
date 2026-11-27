@@ -100,6 +100,7 @@ import './recsDeploy'; // 11-28 파병 추천
 import './recsDefense'; // 11-28 국방 추천
 import './recsEcon'; // 11-28 경제 추천
 import './recsDiplo'; // 11-28 외교 추천
+import './recsCulture'; // 11-28 문화 추천
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
