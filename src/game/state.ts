@@ -72,6 +72,7 @@ import { actsTick } from './acts';
 import { counterTick, type CounterState } from './counter';
 import { finaleTick, type FinaleState } from './finale';
 import { sagaTick, type SagaState } from './saga';
+import type { TourState } from './tour';
 import type { CampaignState } from './campaign';
 
 export interface NationState {
@@ -172,6 +173,8 @@ export interface GameState {
   finale?: FinaleState;
   /** 11-27 연속 위기 이야기 */
   saga?: SagaState;
+  /** 11-27 지방 순방 */
+  tour?: TourState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */

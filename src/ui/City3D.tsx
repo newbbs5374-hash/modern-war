@@ -30,6 +30,9 @@ interface Props {
   level: number;
   /** 0 낮 ~ 1 밤 */
   night: number;
+  /** 지방 순방 현안 표시(시청 기준 미터: 동쪽 x, 북쪽 y) */
+  marks?: Array<{ x: number; y: number; icon: string; label: string; done: boolean }>;
+  onMark?: (i: number) => void;
 }
 
 const BASE = import.meta.env.BASE_URL ?? '/';
@@ -297,8 +300,11 @@ function makeCrane(): THREE.Group {
   return g;
 }
 
-export default function City3D({ file, level, night }: Props) {
+export default function City3D({ file, level, night, marks, onMark }: Props) {
   const box = useRef<HTMLDivElement>(null);
+  const markBox = useRef<HTMLDivElement>(null);
+  const marksRef = useRef(marks);
+  marksRef.current = marks;
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(true);
   const api = useRef<{ setLook: (level: number, night: number) => void } | null>(null);
@@ -540,7 +546,23 @@ export default function City3D({ file, level, night }: Props) {
         cars.instanceMatrix.needsUpdate = true;
       }
       renderer.render(scene, cam);
+      // 순방 현안 표시: 3D 자리를 화면 자리로 옮김
+      const mk = marksRef.current;
+      const mb = markBox.current;
+      if (mk && mb) {
+        const w = el.clientWidth, h = el.clientHeight;
+        for (let i = 0; i < mb.children.length; i++) {
+          const m = mk[i];
+          const c = mb.children[i] as HTMLElement;
+          if (!m) continue;
+          markV.set(m.x, 60, -m.y).project(cam);
+          const hide = markV.z > 1 || Math.abs(markV.x) > 1.05 || Math.abs(markV.y) > 1.05;
+          c.style.display = hide ? 'none' : '';
+          c.style.transform = `translate(${((markV.x + 1) / 2) * w}px, ${((1 - markV.y) / 2) * h}px) translate(-50%, -100%)`;
+        }
+      }
     };
+    const markV = new THREE.Vector3();
     raf = requestAnimationFrame(tick);
     const onVis = () => {
       cancelAnimationFrame(raf);
@@ -572,6 +594,16 @@ export default function City3D({ file, level, night }: Props) {
   return (
     <div className="city3d">
       <div ref={box} className="city3d-canvas" />
+      {marks && (
+        <div ref={markBox} className="c3-marks">
+          {marks.map((m, i) => (
+            <button key={i} className={`c3-mark ${m.done ? 'done' : ''}`} onClick={() => onMark?.(i)}>
+              <span>{m.done ? '✅' : m.icon}</span>
+              <small>{m.label}</small>
+            </button>
+          ))}
+        </div>
+      )}
       {busy && !err && <div className="city3d-msg">🏗️ 3D 도시 불러오는 중…</div>}
       {err && <div className="city3d-msg">3D 자료를 못 불러왔어요({err}). 2D 화면을 써 주세요.</div>}
       <div className="city3d-credit">건물 자료 © OpenStreetMap 기여자 (ODbL)</div>
