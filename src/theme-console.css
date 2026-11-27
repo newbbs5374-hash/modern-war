@@ -1282,3 +1282,15 @@ select.wide, button.wide { width: 100%; }
 .whip-bloc em { font-style: normal; color: #fff; border-radius: 6px; padding: 0 6px; font-size: 10.5px; }
 .whip-bloc:disabled { opacity: 0.75; }
 .whip-debt button.mini { font-size: 11px; padding: 2px 6px; }
+/* 11-27 국가 대계획 */
+.mega { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.mega:first-of-type { border-top: 0; }
+.mega-art { border-radius: 8px; background: linear-gradient(135deg, #0f172a, #6366f1) center / cover; min-height: 84px; display: flex; align-items: flex-end; justify-content: flex-start; padding: 4px; }
+.mega-art span { font-size: 22px; filter: drop-shadow(0 1px 3px #000); }
+.mega-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mega-body b small { font-weight: 400; font-size: 11px; }
+.mega-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+.mega-steps span { font-size: 11px; padding: 3px 5px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); opacity: 0.65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mega-steps span.on { opacity: 1; background: rgba(79, 209, 165, 0.18); }
+.mega-steps span.run { opacity: 1; outline: 1px solid var(--gold, #e6b800); }
+.mega-body button.gold { font-size: 12px; padding: 6px 4px; }

@@ -73,6 +73,7 @@ import { counterTick, type CounterState } from './counter';
 import { finaleTick, type FinaleState } from './finale';
 import { sagaTick, type SagaState } from './saga';
 import type { TourState } from './tour';
+import { megaTick, type MegaState } from './megaPlan';
 import type { CampaignState } from './campaign';
 
 export interface NationState {
@@ -175,6 +176,8 @@ export interface GameState {
   saga?: SagaState;
   /** 11-27 지방 순방 */
   tour?: TourState;
+  /** 11-27 국가 대계획 */
+  mega?: MegaState;
   /** 내정 확장(국정 과제·이익집단·기본법·특구·대형 사업·예산 국회·사진첩, 11-24). 없으면 처음 쓸 때 채움 */
   dom?: DomState;
   /** 정상 SNS(11-26). 없으면 처음 쓸 때 채움 */
@@ -381,7 +384,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = surrenderTick(pressureTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore))))));
-    cur = sagaTick(counterTick(finaleTick(actsTick(cur))));
+    cur = megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))));
     cur = meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))));
     world = cur.world;
   }
