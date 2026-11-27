@@ -54,9 +54,9 @@ describe('시간당 누적', () => {
     const s0 = newGame('테스트', 'kr', 0);
     const s1 = advance(s0, HOUR / 6);
     expect(s1.player.pendingSalary).toBeCloseTo(salaryPerDay(s0) / 6);
-    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0) * cabBudget(s0) * (1 - defShare(s0)), 1);
+    expect(s1.nations.kr.treasury - s0.nations.kr.treasury).toBeCloseTo(((22 * 10 * 2) / 6) * civBudgetMult(s0) * cabBudget(s0) * (1 - defShare(s0)), 1); // 11-27 내 나라 수입 2배
     // 11-26 국방 몫(예산 나누기 40%)은 국방비로
-    expect((s1.nations.kr.def ?? 0) - (s0.nations.kr.def ?? 0)).toBeCloseTo(((22 * 10) / 6) * civBudgetMult(s0) * cabBudget(s0) * defShare(s0), 1); // 금융 센터·도시 특성·실제 시설(11/24) · 나라 특징 방산 수출(11/25)
+    expect((s1.nations.kr.def ?? 0) - (s0.nations.kr.def ?? 0)).toBeCloseTo(((22 * 10 * 2) / 6) * civBudgetMult(s0) * cabBudget(s0) * defShare(s0), 1); // 금융 센터·도시 특성·실제 시설(11/24) · 나라 특징 방산 수출(11/25)
     const t0 = s0.nations.kr.troops;
     expect(s1.nations.kr.troops).toBeCloseTo(t0 * Math.exp(-0.008 / 6) + (45 * 40) / 6);
   });
@@ -125,7 +125,8 @@ describe('저장/불러오기', () => {
     const back = importCode(exportCode(s))!;
     expect(back.player.salary).toBe(s.player.salary);
     expect(back.officer.testGrant).toBe(4);
-    expect(newGame('대장', 'kr', 0).nations.kr.treasury).toBeLessThan(2000);
+    expect(newGame('대장', 'kr', 0).nations.kr.treasury).toBeLessThan(3000); // 11-27 시작 금고 2배(0.6)
+    expect(newGame('대장', 'kr', 0).nations.us.treasury).toBeGreaterThan(newGame('대장', 'kr', 0).nations.kr.treasury * 20); // AI 시작 금고 5배
     expect(newGame('대장', 'kr', 0).officer.boosts).toBe(10);
   });
   it('시험판: 옛 저장(11-26 전)은 불러올 때 한 번만 자원을 받음', () => {

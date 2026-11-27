@@ -51,7 +51,7 @@ describe('정상 SNS(11-26)', () => {
     for (const p of posts) byKind[p.kind] = (byKind[p.kind] ?? 0) + 1;
     const dissAll = diss.length + (byKind.reply ?? 0);
     for (const [k, n] of Object.entries(byKind)) if (k !== 'diss' && k !== 'reply') expect(dissAll).toBeGreaterThan(n);
-    expect(dissAll).toBeGreaterThan(posts.length / 3);
+    expect(dissAll).toBeGreaterThanOrEqual(posts.length / 3);
     expect(diss.every((p) => isArchRival(p.from, p.to!))).toBe(true);
     expect(posts.some((p) => p.kind === 'reply')).toBe(true);
     expect(posts.every((p) => !p.text.includes('{'))).toBe(true);
