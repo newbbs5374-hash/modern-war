@@ -23,3 +23,5 @@
 .b3d-between ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:#ffc35a}
 .b3d-between-go{appearance:none;border:0;border-radius:999px;background:#3d8bff;color:#fff;font-weight:700;font-size:15px;height:46px;margin-top:6px;cursor:pointer;box-shadow:0 0 18px rgba(61,139,255,.35)}
 .b3d .b3-card .b3-own{font-family:var(--mono);font-size:9.5px;color:var(--us)}
+
+.b3d .b3-gcmd{appearance:none;grid-column:span 2;border:1px solid rgba(120,220,170,.55);background:rgba(20,60,45,.75);color:var(--fg);border-radius:12px;height:50px;font-family:var(--sans);font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}.b3d .b3-gcmd small{font-family:var(--mono);font-size:10px;color:#8fe3bd;font-weight:500}.b3d .b3-gcmd:disabled,.b3d .b3-gcmd.b3-used{opacity:.35}
