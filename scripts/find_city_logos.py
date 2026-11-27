@@ -15,11 +15,19 @@ EN = {"로스앤젤레스": "Los Angeles", "시카고": "Chicago", "시애틀": 
       "베르셰바": "Beersheba", "아슈도드": "Ashdod", "에일라트": "Eilat", "네타냐": "Netanya", "나사렛": "Nazareth", "티베리아": "Tiberias",
       "타브리즈": "Tabriz", "마슈하드": "Mashhad", "아흐바즈": "Ahvaz", "부셰르": "Bushehr",
       "리비우": "Lviv", "드니프로": "Dnipro", "자포리자": "Zaporizhzhia", "미콜라이우": "Mykolaiv", "빈니차": "Vinnytsia",
+      # 11-27 새 나라 5개
+      "타이베이": "Taipei", "가오슝": "Kaohsiung", "타이중": "Taichung", "타이난": "Tainan", "신주": "Hsinchu", "지룽": "Keelung", "화롄": "Hualien", "마궁": "Magong",
+      "바르샤바": "Warsaw", "크라쿠프": "Kraków", "그단스크": "Gdańsk", "브로츠와프": "Wrocław", "포즈난": "Poznań", "우치": "Łódź", "루블린": "Lublin", "제슈프": "Rzeszów", "슈체친": "Szczecin",
+      "마닐라": "Manila", "세부": "Cebu City", "다바오": "Davao City", "수비크": "Subic", "푸에르토프린세사": "Puerto Princesa", "일로일로": "Iloilo City", "삼보앙가": "Zamboanga City", "바기오": "Baguio", "바스코": "Basco",
+      "이슬라마바드": "Islamabad", "카라치": "Karachi", "라호르": "Lahore", "페샤와르": "Peshawar", "퀘타": "Quetta", "과다르": "Gwadar", "물탄": "Multan", "파이살라바드": "Faisalabad", "스카르두": "Skardu",
+      "리야드": "Riyadh", "제다": "Jeddah", "담맘": "Dammam", "타부크": "Tabuk", "지잔": "Jizan", "네옴": "Neom", "주바일": "Jubail", "얀부": "Yanbu", "아브하": "Abha", "하일": "Ha'il",
       "원산": "Wonsan", "신의주": "Sinuiju", "함흥": "Hamhung", "청진": "Chongjin", "개성": "Kaesong", "나선": "Rason"}
 # 다른 이름(독일어·현지 표기)
 ALT = {"뮌헨": ["München"], "쾰른": ["Köln"], "프랑크푸르트": ["Frankfurt am Main"], "코치": ["Kochi", "Cochin"], "베르셰바": ["Be'er Sheva", "Beer Sheva"],
        "티베리아": ["Tiberias"], "자포리자": ["Zaporizhia", "Zaporizhzhia"], "미콜라이우": ["Mykolaiv", "Nikolaev"], "드니프로": ["Dnipro"],
-       "아흐바즈": ["Ahvaz", "Ahwaz"], "인천": ["Incheon"], "울산": ["Ulsan"], "시안": ["Xi'an", "Xian"]}
+       "아흐바즈": ["Ahvaz", "Ahwaz"], "인천": ["Incheon"], "울산": ["Ulsan"], "시안": ["Xi'an", "Xian"],
+       "바르샤바": ["Warszawa", "Warsaw"], "크라쿠프": ["Krakow", "Kraków"], "그단스크": ["Gdansk", "Gdańsk"], "브로츠와프": ["Wroclaw", "Wrocław"], "포즈난": ["Poznan", "Poznań"], "우치": ["Lodz", "Łódź"], "제슈프": ["Rzeszow", "Rzeszów"],
+       "세부": ["Cebu"], "다바오": ["Davao"], "일로일로": ["Iloilo"], "삼보앙가": ["Zamboanga"], "지잔": ["Jazan", "Jizan"], "하일": ["Hail", "Ha'il"]}
 KIND = [("Coat of arms", "문장"), ("Seal", "인장"), ("Emblem", "휘장"), ("Symbol", "휘장"), ("Logo", "로고"), ("Flag", "시기"), ("Wappen", "문장")]
 BAD = re.compile(r"(district|oblast|raion|province|prefecture|state|county|governorate|region|kreis|university|police|fire|club|fc|airport|port of|bus|metro|railway|army|navy|school|church|diocese|archdiocese|consulate|company|bank|hospital|before|old|former|\(19|\(18|\(17|\(16|variant|bw|monochrome|grey|gray)", re.I)
 OK = ("Public domain", "PD", "CC0")
