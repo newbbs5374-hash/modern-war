@@ -245,7 +245,7 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
       const rng = new Rng(c.seed ^ 0x2c1b);
       const taken = takenNames(c);
       for (let i = 0; i < 2; i++) {
-        const p = genPerson(c, rng, { country: me, group: '인재', grade: '우수', age: [30, 45] }, now, taken);
+        const p = genPerson(c, rng, { country: me, group: '인재', grade: '우수', age: [42, 49] }, now, taken);
         p.known = true;
         c.people.push(p);
       }
@@ -299,7 +299,7 @@ function finishTask(s: GameState, min: MinistryId, taskId: string): GameState {
       break;
     case 'mpm:exam': {
       const rng = new Rng(c.seed ^ 0x51a7);
-      const p = genPerson(c, rng, { country: me, group: '인재', grade: '우수', age: [32, 50], origin: rng.pick(['mayor', 'econ', 'lawyer', 'prosecutor'] as const) }, now, takenNames(c));
+      const p = genPerson(c, rng, { country: me, group: '인재', grade: '우수', age: [44, 54], origin: rng.pick(['mayor', 'econ', 'lawyer', 'prosecutor'] as const) }, now, takenNames(c));
       p.known = true;
       c.people.push(p);
       c.seed = (c.seed + rng.seed) >>> 0;

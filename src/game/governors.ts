@@ -39,7 +39,7 @@ export const coopGoal = (s: GameState, g: Governor) => clamp((g.party === 'rulin
 
 function makeGov(s: GameState, rng: Rng, party: 'ruling' | 'opp', taken: Set<string>): Governor {
   const sex: 'm' | 'f' = rng.next() < 0.3 ? 'f' : 'm';
-  const age = 50 + Math.floor(rng.next() * 18);
+  const age = 54 + Math.floor(rng.next() * 14); // 11-27 시·도지사는 50~60대
   const name = makeName(s.player.countryId, sex, rng, taken);
   return { name, sex, age, id: 7000 + Math.floor(rng.next() * 90000), party, coop: party === 'ruling' ? 58 + Math.floor(rng.next() * 10) : 33 + Math.floor(rng.next() * 10) };
 }
