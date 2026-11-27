@@ -275,6 +275,8 @@ export interface CrisisOpen {
   untilMs: number;
 }
 export interface CrisisState {
+  /** 마지막으로 고른 답(연속 위기 이야기가 읽음) */
+  last?: { def: string; i: number };
   nextMs: number;
   open: CrisisOpen | null;
   /** 해결한 사건 수(직접 고른 것) */
@@ -342,7 +344,7 @@ export function canChoose(s: GameState, opt: CrisisOption): string | null {
   return null;
 }
 
-function applyFx(s: GameState, fx: Fx[], target: string | null): GameState {
+export function applyFx(s: GameState, fx: Fx[], target: string | null): GameState {
   const me = s.player.countryId;
   let ns: GameState = { ...s, nations: { ...s.nations, [me]: { ...s.nations[me] } }, officer: { ...s.officer }, economy: { ...s.economy, stock: { ...s.economy.stock } } };
   const clamp = (v: number) => Math.max(0, Math.min(100, v));
@@ -418,7 +420,7 @@ export function chooseCrisis(s: GameState, i: number, byAide = false): GameState
   let ns = applyFx(s, opt.fx, o.target);
   const line = `${d.icon} ${d.title}: ${opt.label}${byAide ? ' (부관이 대신 고름)' : ''} → ${fxText(opt.fx, o.target)}`;
   const log = [line, ...c.log].slice(0, 8);
-  ns = { ...ns, crisis: { ...c, open: null, solved: c.solved + (byAide ? 0 : 1), log } };
+  ns = { ...ns, crisis: { ...c, open: null, solved: c.solved + (byAide ? 0 : 1), log, last: { def: o.def, i } } };
   ns = addEvent(ns, `${d.icon} ${d.title} — ${opt.label}`);
   return pushReport(ns, { icon: d.icon, text: fill(opt.say, o.target) });
 }

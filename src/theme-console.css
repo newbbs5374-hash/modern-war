@@ -1219,3 +1219,12 @@ select.wide, button.wide { width: 100%; }
 .prac-ico { font-size: 22px; line-height: 1; }
 .prac-n { font-style: normal; font-size: 12px; padding: 1px 7px; background: var(--hud); color: #0b1a20; border-radius: 9px; }
 .prac-group > .tiles { padding: 0 8px 8px; }
+/* 11-27 연속 위기 이야기 · 마지막 위기 그림 */
+.crisis .crisis-art { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 8px; }
+.crisis .saga-bar { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.06); border-left: 3px solid var(--gold, #f0a23c); }
+.crisis .saga-bar.saga-good { border-left-color: #4fd1a5; }
+.crisis .saga-bar.saga-bad { border-left-color: #ff6b5e; }
+.crisis .saga-bar small { grid-column: 1 / -1; font-size: 11.5px; line-height: 1.35; }
+.crisis .saga-dots { display: flex; gap: 4px; }
+.crisis .saga-dots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); }
+.crisis .saga-dots i.on { background: var(--gold, #f0a23c); }
