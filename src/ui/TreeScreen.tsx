@@ -7,6 +7,8 @@ import type { GameState } from '../game/state';
 import { actInfo } from '../game/acts';
 import { counterOf } from '../game/counter';
 import { raidOf } from '../game/missileWar';
+import { wcById, wcOf } from '../game/worldCrisis';
+import { secOf } from '../game/security';
 import { crisisById, crisisOf } from '../game/crisis';
 import { goalsReady } from '../game/goals';
 import { cityById } from '../data/cities';
@@ -55,6 +57,8 @@ export function todosOf(state: GameState): Todo[] {
   const out: Todo[] = [];
   const cr = crisisOf(state).open;
   if (cr) out.push({ key: 'crisis', icon: crisisById(cr.def).icon, text: crisisById(cr.def).title, sub: '본부에서 결정', screen: 'home' });
+  { const wo = wcOf(state).open; if (wo && !wo.side) out.push({ key: 'wcrisis', icon: wcById(wo.def).icon, text: `세계 위기 · ${wcById(wo.def).title}`, sub: '본부에서 편 정하기', screen: 'home' }); }
+  for (const c of secOf(state).list) out.push({ key: `sec-${c.id}`, icon: '🕵️', text: `저항 조직 · ${cityById(c.city).name}`, sub: '본부에서 소탕·회유', screen: 'home' });
   for (const r of raidOf(state).list) out.push({ key: `raid-${r.id}`, icon: '🚀', text: `미사일 경보 · ${cityById(r.city).name}`, sub: '본부에서 막기', screen: 'home' });
   for (const c of counterOf(state).list) out.push({ key: `counter-${c.id}`, icon: '🚨', text: `반격 경보 · ${cityById(c.city).name}`, sub: '본부에서 막기', screen: 'home' });
   for (const b of branchesOf(state)) for (const l of b.leaves) if (isTodo(b.id, l)) out.push({ key: `${b.id}/${l.id}`, icon: l.icon, text: `${b.name} · ${l.label}`, sub: '할 일이 있어요', screen: b.id, tab: l.id });

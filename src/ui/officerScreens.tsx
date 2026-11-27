@@ -1,4 +1,5 @@
 // 장교(승급·스탯·부관·장군·라이벌) · 훈련(미니게임 12개) · 임무·대전투 패널. 그림 위주 + 팝업.
+import { JOINT_DIFF, alliesOf, askChance, askSupport, canAsk, supportOn } from '../game/jointOps';
 import { PREPS, PREP_DIFF, canPrep, doPrep, prepChance, prepLive } from '../game/prepOps';
 import { buyGrand, canBuyGrand, grandCapLeft, grandToday } from '../game/acts';
 import { GRAND_EXTRA_MAX, GRAND_EXTRA_RUBY } from '../game/balance';
@@ -266,6 +267,8 @@ function WarPick({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
 function PrepPanel({ state, actions, city }: Pick<ScreenProps, 'state' | 'actions'> & { city: string }) {
   const [msg, setMsg] = useState('');
   const live = prepLive(state, city);
+  const sup = supportOn(state, city);
+  const allies = alliesOf(state);
   return (
     <div className="prep">
       <b className="small">🎯 사전 작전 {live.length ? `· 성공 ${live.length}개(난이도 −${(live.length * PREP_DIFF).toFixed(2)})` : '· 이기면 이 도시 대전투가 쉬워져요'}</b>
@@ -282,6 +285,21 @@ function PrepPanel({ state, actions, city }: Pick<ScreenProps, 'state' | 'action
           );
         })}
       </div>
+      {sup ? (
+        <p className="small joint-on">🤝 {countryById(sup.ally).name}군이 함께 싸워요 · 난이도 −{JOINT_DIFF} · {timeLeft(sup.untilMs - state.worldMs)} 남음</p>
+      ) : allies.length ? (
+        <div className="joint-ask">
+          <b className="small">🤝 연합군 지원 청하기</b>
+          {allies.slice(0, 4).map((c) => {
+            const no = canAsk(state, c.id, city);
+            return (
+              <button key={c.id} className="mini" disabled={!!no} title={no ?? ''} onClick={() => setMsg(actions.applyWith((s) => { const r = askSupport(s, c.id, city); return { state: r.state, out: r.text }; }) ?? '')}>
+                {c.name} {Math.round(askChance(state, c.id) * 100)}%
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       {msg && <p className="small sch-msg">{msg}</p>}
     </div>
   );

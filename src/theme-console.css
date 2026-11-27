@@ -1328,3 +1328,32 @@ select.wide, button.wide { width: 100%; }
 .wargoal-opts button b { font-size: 12px; }
 .wargoal-opts button small { font-size: 10.5px; line-height: 1.25; text-align: center; }
 .wargoal .gold.wide small { font-size: 10.5px; font-weight: 400; }
+
+/* 11-27 전투 7~10 */
+.joint-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; }
+.joint-on { margin-top: 6px; color: #4fd1a5; }
+.wc-bar { height: 10px; border-radius: 5px; background: #d9822b; overflow: hidden; margin: 8px 0 4px; }
+.wc-bar i { display: block; height: 100%; background: #2bb3a3; }
+.wc-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.wc-sides > div { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border-top: 3px solid #2bb3a3; }
+.wc-sides > div + div { border-top-color: #d9822b; }
+.wc-sides > div.on { outline: 1px solid var(--gold, #e6b800); }
+.wc-sides em { font-style: normal; font-size: 12px; opacity: 0.9; }
+.wc-sides small { font-size: 10.5px; line-height: 1.3; opacity: 0.8; }
+.blog-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; text-align: center; font-size: 11px; }
+.blog-stats span { padding: 6px 2px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.blog-stats b { display: block; font-size: 18px; }
+.blog-medals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 8px 0; }
+.blog-medals > div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); opacity: 0.4; text-align: center; }
+.blog-medals > div.on { opacity: 1; outline: 1px solid var(--gold, #e6b800); }
+.blog-medals span { font-size: 22px; line-height: 1.1; }
+.blog-medals b { font-size: 11px; }
+.blog-medals small { font-size: 9.5px; line-height: 1.2; opacity: 0.8; }
+.blog-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; max-height: 40vh; overflow: auto; }
+.blog-list li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.04); }
+.blog-list em { font-style: normal; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; background: #2bb3a3; color: #06202a; }
+.blog-list li.lose em { background: #c0574a; color: #fff; }
+.blog-list span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.blog-list b { font-size: 12.5px; }
+.blog-list small { font-size: 10.5px; opacity: 0.75; }
+.blog-list i { font-style: normal; color: var(--gold, #e6b800); font-size: 12px; }

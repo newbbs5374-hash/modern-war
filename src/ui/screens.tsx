@@ -46,7 +46,7 @@ import { routeTo } from './nav';
 import { SettingsScreen } from './SettingsScreen';
 import { UiIcon } from './uiIcon';
 import { SnsPhone } from './SnsPhone';
-import { ActCard, CounterCards, RaidCards } from './ActsUI';
+import { ActCard, BattleLogCard, CounterCards, RaidCards, SecurityCards, WorldCrisisCard } from './ActsUI';
 import { TodoCard, TreeScreen } from './TreeScreen';
 import { snsUnread } from '../game/leaderSns';
 
@@ -173,6 +173,8 @@ export function HomeScreen(props: ScreenProps) {
           <ActCard state={state} />
           <CounterCards state={state} go={go} />
           <RaidCards state={state} apply={actions.apply} applyWith={actions.applyWith} />
+          <WorldCrisisCard state={state} apply={actions.apply} />
+          <SecurityCards state={state} applyWith={actions.applyWith} />
           <TodoCard state={state} go={go} apply={actions.apply} />
           {gstep && !guideOf(state).hidden && (
             <div className="guide-hq">
@@ -383,6 +385,7 @@ export function OpsScreen(props: ScreenProps) {
         <>
           <MissionCard {...props} />
           <WarStrip {...props} />
+          <BattleLogCard state={props.state} />
         </>
       )}
       {tab === 'grand' &&
