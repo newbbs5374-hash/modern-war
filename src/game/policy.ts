@@ -82,8 +82,32 @@ export function canSetPolicy(s: GameState, what: 'split' | 'tax' = 'split'): str
   const w = policyWait(s, what);
   return w > 0 ? `다음 변경까지 ${Math.ceil(w / 60000)}분` : null;
 }
+/* ───────── 국방비 국회 동의(11-27) ─────────
+ * 국방비 = 나라 수입의 국방 몫(%)이에요. 국방 몫을 늘리려면 국회 동의가 필요해서, 국회가 허락하는 한도까지만 올릴 수 있어요.
+ * 한도는 의회 신뢰도와 여당 의석으로 정해져요(5% 단위, 35~70%). 줄이는 건 언제나 돼요. */
+export const DEF_CAP_MIN = 35;
+export function defConsentRows(s: GameState): Array<[string, number]> {
+  const trust = s.officer?.trust ?? 50;
+  const ruling = s.polity?.seats.ruling ?? 150;
+  return [
+    ['기본', 50],
+    [`의회 신뢰도 ${Math.round(trust)}`, Math.round(((trust - 50) / 5) * 10) / 10],
+    [`여당 의석 ${ruling}/300`, Math.round(((ruling - 150) / 5) * 10) / 10],
+  ];
+}
+/** 국회가 동의해 주는 국방 몫 한도(%) */
+export function defConsentCap(s: GameState): number {
+  const raw = defConsentRows(s).reduce((a, [, v]) => a + v, 0);
+  return Math.max(DEF_CAP_MIN, Math.min(SPLIT_MAX, Math.floor(raw / SPLIT_STEP) * SPLIT_STEP));
+}
+/** 이 나누기를 국회가 막는지(국방 몫을 한도 넘게 늘릴 때만) */
+export function defConsentProblem(s: GameState, split: Split): string | null {
+  const now = splitOf(s).def;
+  const cap = defConsentCap(s);
+  return split.def > now && split.def > cap ? `🏛️ 국회 반대: 국방 몫은 ${Math.max(cap, now)}%까지만 동의해요` : null;
+}
 export function setSplit(s: GameState, split: Split): GameState {
-  if (splitProblem(split) || canSetPolicy(s)) return s;
+  if (splitProblem(split) || canSetPolicy(s) || defConsentProblem(s, split)) return s;
   const p = policyOf(s);
   return { ...s, policy: { ...p, split: { ...split }, changedMs: s.worldMs } };
 }

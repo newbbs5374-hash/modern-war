@@ -55,7 +55,7 @@ import {
   upgradeFacility,
   isDefBuilding,
 } from '../game/economy';
-import { splitOf } from '../game/policy';
+import { defConsentCap, defConsentRows, splitOf } from '../game/policy';
 import { budgetBreakdown, budgetPerDay, defPerDay, defShare, pendingCap, salaryPerDay, troopLossPerDay, troopsBreakdown, troopsPerDay } from '../game/state';
 import { citiesOf, homeOf, isAlive, relationOf } from '../game/world';
 import { BoostBar, BoostMini, BoostStart } from './BoostBar';
@@ -176,18 +176,18 @@ export function InteriorScreen(props: ScreenProps) {
 }
 
 /* ───────── 금고 ───────── */
-/** 금고 칸 이름: 그림이 있으면 오른쪽 위에 그림, 없으면 이모지 */
-function VaultLabel({ n, emoji }: { n: VaultName; emoji: string }) {
-  const url = vaultArtUrl(n);
-  return url ? (
-    <>
-      <img className="vbox-art" src={url} alt="" draggable={false} />
-      <small>{n}</small>
-    </>
-  ) : (
-    <small>
-      {emoji} {n}
-    </small>
+/** 금고 칸(11-27): 왼쪽 큰 그림 + 오른쪽 이름·값·시간당 한 줄. 칸 높이는 모두 같아요. */
+function VCard({ art, emoji, name, value, big, children }: { art: VaultName | null; emoji: string; name: string; value: ReactNode; big?: boolean; children?: ReactNode }) {
+  const url = art ? vaultArtUrl(art) : null;
+  return (
+    <div className={`vc${big ? ' vc-big' : ''}`}>
+      <span className="vc-art">{url ? <img src={url} alt="" draggable={false} /> : <i>{emoji}</i>}</span>
+      <span className="vc-body">
+        <small className="vc-name">{name}</small>
+        <b className="vc-val">{value}</b>
+        <span className="vc-sub">{children}</span>
+      </span>
+    </div>
   );
 }
 /** 시설 효과 %(그 단계 기준, 특별 가동 빼고) */
@@ -224,93 +224,92 @@ export function TreasuryPanel({ state, actions }: ScreenProps) {
   const budget = budgetPerDay(state, me.id);
   const troops = troopsPerDay(state, me.id);
   const troopLoss = troopLossPerDay(state);
+  const defCap = defConsentCap(state);
   return (
     <>
-      <section className="card">
-        <div className="hero">
-          <span className="avatar">{FLAG[me.id]}</span>
-          <div className="hero-main">
-            <b>{me.name}</b>
-            <div className="small muted">{leaderText(state, me.id)}</div>
-          </div>
+      <div className="vault-hero">
+        <span className="vh-flag">{FLAG[me.id]}</span>
+        <b>{me.name}</b>
+        <small className="muted">{leaderText(state, me.id)}</small>
+      </div>
+      <div className="vault2">
+        <div className="vgroup">
+          <small className="vgroup-title">💰 예산</small>
+          <VCard art="나라 예산" emoji="💰" name="나라 예산" big value={fmt(n.treasury)}>
+            <Tip label={`+${fmt(budget * (1 - defShare(state)) + cm)}/시간`} title="나라 예산 시간당" rows={[...bRows, [`🛡️ 국방비로 감(국방 몫 ${splitOf(state).def}%)`, `-${fmt(budget * defShare(state))}`]]} total={`+${fmt(budget * (1 - defShare(state)) + cm)}`} />
+          </VCard>
+          <VCard art="봉급" emoji="💵" name="봉급" value={fmt(state.player.salary)}>
+            <Tip
+              label={`+${fmt(salaryPerDay(state))}/시간`}
+              title="봉급"
+              rows={[
+                ['호칭', titleOf(state).name],
+                ['쌓인 봉급(본부에서 받기)', fmt(state.player.pendingSalary)],
+                ['쌓이는 한도', fmt(pendingCap(state))],
+              ]}
+            />
+          </VCard>
+          <VCard art="무역 계약" emoji="🔁" name="무역 계약" value={`${contracts.length}개`}>
+            <small className={cm >= 0 ? 'ok' : 'warn'}>
+              {cm >= 0 ? '+' : ''}
+              {fmt(cm)}/시간
+            </small>
+          </VCard>
         </div>
-      </section>
-      <div className="vault">
-        <div className="vbox big">
-          <VaultLabel n="나라 예산" emoji="💰" />
-          <b>{fmt(n.treasury)}</b>
-          <Tip label={`+${fmt(budget * (1 - defShare(state)) + cm)}/시간`} title="나라 예산 시간당" rows={[...bRows, [`🛡️ 국방비로 감(국방 몫 ${splitOf(state).def}%)`, `-${fmt(budget * defShare(state))}`]]} total={`+${fmt(budget * (1 - defShare(state)) + cm)}`} />
-        </div>
-        <div className="vbox">
-          <VaultLabel n="국방비" emoji="🛡️" />
-          <b>{fmt(n.def ?? 0)}</b>
-          <Tip label={`+${fmt(defPerDay(state))}/시간`} title="국방비 시간당" rows={[['수입 전체', fmt(budget)], [`국방 몫(예산 나누기)`, `${splitOf(state).def}%`], ['쓰는 곳', '부대 만들기·국방 시설·파병 유지비']]} total={`+${fmt(defPerDay(state))}`} />
-        </div>
-        <div className="vbox big">
-          <VaultLabel n="병력" emoji="🪖" />
-          <b>{fmt(n.troops)}명</b>
-          <Tip label={`${sign(troops - troopLoss)}/시간`} title="병력 시간당" rows={tRows} total={sign(troops - troopLoss)} />
-        </div>
-        <div className="vbox">
-          <VaultLabel n="봉급" emoji="💵" />
-          <b>{fmt(state.player.salary)}</b>
-          <Tip
-            label={`+${fmt(salaryPerDay(state))}/시간`}
-            title="봉급"
-            rows={[
-              ['호칭', titleOf(state).name],
-              ['쌓인 봉급(본부에서 받기)', fmt(state.player.pendingSalary)],
-              ['쌓이는 한도', fmt(pendingCap(state))],
-            ]}
-          />
-        </div>
-        <div className="vbox">
-          <VaultLabel n="도시" emoji="🏙️" />
-          <b>{mine.length}</b>
-          <small className="muted">
-            본토 {mine.length - occupied}/{home.length} · 점령 {occupied}
+        <div className="vgroup">
+          <small className="vgroup-title def">
+            🛡️ 국방비 <span>예산 {splitOf(state).def}% · 국회 {defCap}%까지</span>
           </small>
+          <VCard art="국방비" emoji="🛡️" name="국방비" big value={fmt(n.def ?? 0)}>
+            <Tip
+              label={`+${fmt(defPerDay(state))}/시간`}
+              title="국방비 시간당"
+              rows={[
+                ['수입 전체', fmt(budget)],
+                ['국방 몫(예산 나누기)', `${splitOf(state).def}%`],
+                ['🏛️ 국회 동의 한도', `${defCap}%`],
+                ...defConsentRows(state).map(([k, v]) => [`  ${k}`, `${v >= 0 && k !== '기본' ? '+' : ''}${v}`] as [string, string]),
+                ['쓰는 곳', '부대·국방 시설·파병'],
+              ]}
+              total={`+${fmt(defPerDay(state))}`}
+            />
+          </VCard>
+          <VCard art="병력" emoji="🪖" name="병력" big value={`${fmt(n.troops)}명`}>
+            <Tip label={`${sign(troops - troopLoss)}/시간`} title="병력 시간당" rows={tRows} total={sign(troops - troopLoss)} />
+          </VCard>
+          <VCard art="전투력" emoji="💪" name="전투력" value={fmt(e.power)}>
+            <small className="muted">부대 {units} · 모집 {e.queue.length}</small>
+          </VCard>
         </div>
-        <div className="vbox">
-          <VaultLabel n="전투력" emoji="💪" />
-          <b>{fmt(e.power)}</b>
-          <small className="muted">부대 {units} · 모집 중 {e.queue.length}</small>
+        <div className="vgroup">
+          <small className="vgroup-title">📦 자원 · 산업</small>
+          <VCard art="자원 값어치" emoji="📦" name="자원 값어치" value={fmt(stockValue)}>
+            <small className="muted">보유량 × 기본값</small>
+          </VCard>
+          <VCard art="시설" emoji="🏭" name="시설" value={`평균 ${r1(avgLv)}단계`}>
+            <small className="muted">
+              {builtN}/{BUILDINGS.length}곳 · 가동 {buffs}
+            </small>
+          </VCard>
+          <VCard art="도시" emoji="🏙️" name="도시" value={`${mine.length}곳`}>
+            <small className="muted">
+              본토 {mine.length - occupied}/{home.length} · 점령 {occupied}
+            </small>
+          </VCard>
         </div>
-        <div className="vbox">
-          <VaultLabel n="외교" emoji="🌐" />
-          <b>
-            🤝{relCount('연합')} ⚔️{relCount('전쟁')}
-          </b>
-          <small className="muted">
-            휴전 {relCount('휴전')} · 중립 {relCount('중립')}
-          </small>
-        </div>
-        <div className="vbox">
-          <VaultLabel n="자원 값어치" emoji="📦" />
-          <b>{fmt(stockValue)}</b>
-          <small className="muted">7종 보유량 × 기본값</small>
-        </div>
-        <div className="vbox">
-          <VaultLabel n="무역 계약" emoji="🔁" />
-          <b>{contracts.length}개</b>
-          <small className={cm >= 0 ? 'ok' : 'warn'}>
-            {cm >= 0 ? '+' : ''}
-            {fmt(cm)}/시간
-          </small>
-        </div>
-        <div className="vbox">
-          <VaultLabel n="시설" emoji="🏭" />
-          <b>평균 {r1(avgLv)}단계</b>
-          <small className="muted">
-            {builtN}/{BUILDINGS.length}곳 · 특별 가동 {buffs}곳
-          </small>
-        </div>
-        <div className="vbox">
-          <VaultLabel n="정보 · 신뢰" emoji="🕵️ 정보" />
-          <b>
-            {fmt(state.officer.intel)} · {Math.round(state.officer.trust)}
-          </b>
-          <small className="muted">명성 {fmt(state.officer.fame)}</small>
+        <div className="vgroup">
+          <small className="vgroup-title">🌐 외교 · 정치</small>
+          <VCard art="외교" emoji="🌐" name="외교" value={`🤝${relCount('연합')} ⚔️${relCount('전쟁')}`}>
+            <small className="muted">
+              휴전 {relCount('휴전')} · 중립 {relCount('중립')}
+            </small>
+          </VCard>
+          <VCard art={null} emoji="🏛️" name="국회" value={state.polity ? `여당 ${state.polity.seats.ruling}석` : `신뢰 ${Math.round(state.officer.trust)}`}>
+            <small className="muted">국방비 동의 {defCap}%까지</small>
+          </VCard>
+          <VCard art="정보 · 신뢰" emoji="🕵️" name="정보 · 신뢰" value={`${fmt(state.officer.intel)} · ${Math.round(state.officer.trust)}`}>
+            <small className="muted">명성 {fmt(state.officer.fame)}</small>
+          </VCard>
         </div>
       </div>
       <Fold title="📖 우리 나라 더 보기 (특수 능력·신앙·도시)">

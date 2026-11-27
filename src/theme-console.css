@@ -1178,3 +1178,33 @@ select.wide, button.wide { width: 100%; }
 .meet-sel-face { width: 140px; height: 140px; object-fit: cover; border-radius: 14px; border: 2px solid var(--line); }
 .meet-sel-face.no { filter: brightness(0.15); }
 .meet-sel .meet-bond { width: 100%; }
+
+/* 11-27 대장 요청: 금고 한 화면 — 묶음 띠(작게) + 2열 묶음 + 낮은 칸·큰 그림 */
+.vault-hero { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 3px 8px; margin-bottom: 5px; background: #3b4855; border: 1px solid var(--line); border-radius: 2px; }
+.vault-hero .vh-flag { font-size: 22px; line-height: 1; }
+.vault-hero b { flex: none; font-size: 14px; }
+.vault-hero small { flex: 1; min-width: 0; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vault2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 6px; margin-bottom: 6px; }
+.vgroup { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.vgroup-title { display: flex; align-items: baseline; gap: 4px; min-width: 0; height: 18px; padding: 0 6px; font-size: 11px; font-weight: 700; color: var(--hud);
+  background: linear-gradient(90deg, #2f3b47, #2f3b4700); border-left: 3px solid var(--hud); white-space: nowrap; overflow: hidden; }
+.vgroup-title.def { color: var(--amber); border-left-color: var(--amber); }
+.vgroup-title span { min-width: 0; font-size: 9.5px; font-weight: 600; color: #d8dee5; overflow: hidden; text-overflow: ellipsis; }
+.vc { margin: 0; display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 4px; height: 66px; padding: 0 6px 0 2px; overflow: hidden;
+  background: #435260; border: 1px solid var(--line); border-radius: 2px; }
+.vc-art { position: relative; width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; }
+.vc-art img { width: 90px; height: 90px; max-width: none; object-fit: contain; filter: drop-shadow(0 1px 2px #000a); pointer-events: none; }
+.vc-art i { font-style: normal; font-size: 40px; line-height: 1; }
+.vc-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.vc-name { font-size: 10.5px; color: #bbc5cf; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-val { font-family: var(--num); font-size: 15px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.vc.vc-big .vc-val { color: var(--hud); font-size: 16px; }
+.vc-sub { display: block; min-width: 0; height: 17px; white-space: nowrap; overflow: hidden; }
+.vc-sub small { font-size: 10px; white-space: nowrap; }
+.vc-sub .tip { display: block; max-width: 100%; }
+.vc-sub .tip-btn { display: block; max-width: 100%; padding: 0 5px; height: 17px; line-height: 15px; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 4px; }
+
+/* 11-27 대장 요청: 본부 레이더 더 크게 */
+.home-mini.radar { width: 96px; }
+.radar-scope { width: 92px; height: 92px; }
+.radar-label { font-size: 10px !important; }

@@ -8,6 +8,9 @@ import {
   SPLIT_STEP,
   TAX_INFO,
   canSetPolicy,
+  defConsentCap,
+  defConsentProblem,
+  defConsentRows,
   policyOf,
   setSplit,
   setTax,
@@ -42,7 +45,8 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
   const p = policyOf(state);
   const [draft, setDraft] = useState<Split>(p.split);
   const total = SPLIT_INFO.reduce((a, x) => a + draft[x.key], 0);
-  const prob = splitProblem(draft);
+  const prob = splitProblem(draft) ?? defConsentProblem(state, draft);
+  const cap = defConsentCap(state);
   const wait = canSetPolicy(state);
   const waitTax = canSetPolicy(state, 'tax');
   const same = SPLIT_INFO.every((x) => draft[x.key] === p.split[x.key]);
@@ -58,6 +62,7 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
             <p>나라 살림을 국방·외교·사회·경제 4곳에 나눠요. 합은 100%, 한 곳은 {SPLIT_MIN}~{SPLIT_MAX}%, {SPLIT_STEP}% 단위예요.</p>
             <p>기본(국방 40 · 외교 20 · 사회 20 · 경제 20)에서 늘리면 그 분야가 좋아지고, 줄이면 나빠져요. 한 분야만 키우면 다른 분야가 흔들려요.</p>
             <p>실제 1시간(게임 하루)에 한 번 바꿀 수 있어요. 세금은 따로 1시간에 한 번이에요.</p>
+            <p>🏛️ 국방 몫(=국방비)을 늘리려면 국회 동의가 필요해요. 국회는 의회 신뢰도와 여당 의석에 따라 {cap}%까지 동의해요. 줄이는 건 언제나 돼요.</p>
           </Help>
         }
       >
@@ -76,7 +81,14 @@ export function PolicyPanel({ state, actions }: ScreenProps) {
             <button className="split-btn" disabled={draft[x.key] >= SPLIT_MAX} onClick={() => step(x.key, SPLIT_STEP)} aria-label={`${x.name} 늘리기`}>
               +
             </button>
-            <small className="split-eff muted">{effText(x.key, draft[x.key])}</small>
+            <small className="split-eff muted">
+              {effText(x.key, draft[x.key])}
+              {x.key === 'def' && (
+                <span className={draft.def > cap && draft.def > p.split.def ? 'warn' : ''} title={defConsentRows(state).map(([k, v]) => `${k} ${v}`).join(' · ')}>
+                  {' '}· 🏛️ 국회 동의 {cap}%까지
+                </span>
+              )}
+            </small>
           </div>
         ))}
         <div className="row" style={{ marginTop: 6 }}>
