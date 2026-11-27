@@ -1652,3 +1652,6 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .act-cover b { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 10px 7px; font-size: 15px; color: #fff; background: linear-gradient(transparent, rgba(8, 14, 22, .85)); }
 .act-thumb { width: 100%; aspect-ratio: 3 / 1.4; object-fit: cover; border-radius: 5px; display: block; margin-bottom: 4px; }
 .act-step:not(.on):not(.past) .act-thumb { filter: grayscale(.7) brightness(.7); }
+/* 11-27 도시 특화 나무 */
+.spec-done { color: #7ee0b0; }
+.dom-opt.on { outline: 1px solid #3fb8c9; }

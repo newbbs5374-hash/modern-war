@@ -1,4 +1,5 @@
 // 내정 확장 화면(11/24): 국정 과제 나무(개인)·여론(사회)·기본법(사회 정계)·국가 사업과 특구(경제)·예산 국회(경제 예산·세금)·사진첩과 오늘의 뉴스(개인)
+import { SPECS, SPEC_BELT_AT, SPEC_BELT_MUL, SPEC_NEED_STAGE, beltOn, canSpec, liveSpecs, specById, specCost, specMap, upSpec } from "../game/citySpec";
 import { useState } from "react";
 import type { ScreenProps } from "./screens";
 import { Card, fmt } from "./common";
@@ -548,6 +549,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
         </div>
       </Card>
       <ZonesCard state={state} actions={actions} />
+      <SpecCard state={state} actions={actions} />
       <ChainsCard state={state} />
       {pick && (
         <Modal
@@ -818,6 +820,85 @@ function ZonesCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
               })}
             </div>
           )}
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
+/* ───────── 내정 1 도시 특화 나무(11-27) ───────── */
+function SpecCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
+  const [pick, setPick] = useState<string | null>(null);
+  const map = specMap(state);
+  const cities = myCityIds(state);
+  const live = liveSpecs(state);
+  const cur = pick ? map[pick] : undefined;
+  return (
+    <Card
+      title={`도시 특화 ${live.length}/${cities.length}`}
+      icon="🌳"
+      right={
+        <Help title="도시 특화 나무">
+          <p>내 도시마다 길 하나(산업·과학·관광·군사·금융)를 골라 3단계까지 키워요. 단계마다 나라 전체에 효과가 더해져요.</p>
+          <p>같은 길을 {SPEC_BELT_AT}곳 넘게 키우면 '벨트'가 되어 그 길 효과가 ×{SPEC_BELT_MUL}. 2단계는 도시 {SPEC_NEED_STAGE[1]}단계, 3단계는 도시 {SPEC_NEED_STAGE[2]}단계부터. 길을 바꾸면 1단계부터 다시 키워요.</p>
+        </Help>
+      }
+    >
+      {SPECS.some((d) => beltOn(state, d.id)) && (
+        <div className="ichips">
+          {SPECS.filter((d) => beltOn(state, d.id)).map((d) => (
+            <span key={d.id} className="ichip">
+              ✨ {d.icon} {d.belt}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="dom-zones">
+        {cities.map((c) => {
+          const v = map[c];
+          const d = v ? specById(v.path) : undefined;
+          return (
+            <button key={c} className={`dom-zone ${d ? "on" : ""}`} onClick={() => setPick(c)}>
+              <span className="dom-ico">{d ? d.icon : "🌱"}</span>
+              <b>{cityById(c)?.name}</b>
+              <small>{d ? `${d.name} ${"●".repeat(v!.lv)}${"○".repeat(3 - v!.lv)}` : "길 고르기"}</small>
+            </button>
+          );
+        })}
+      </div>
+      {pick && (
+        <Modal title={`${cityById(pick)?.name} 특화`} icon="🌳" onClose={() => setPick(null)}>
+          <div className="dom-opts">
+            {SPECS.map((d) => {
+              const mine = cur?.path === d.id;
+              const next = mine ? cur!.lv + 1 : 1;
+              const no = canSpec(state, pick, d.id);
+              return (
+                <div key={d.id} className={`dom-opt ${mine ? "on" : ""}`}>
+                  <b>
+                    {d.icon} {d.name} {mine ? `${cur!.lv}/3단계` : ""}
+                  </b>
+                  <small>
+                    단계마다 {d.text}
+                    <br />
+                    {d.steps.map((n, i) => (
+                      <span key={n} className={mine && cur!.lv > i ? "spec-done" : "muted"}>
+                        {i ? " → " : ""}
+                        {n}
+                      </span>
+                    ))}
+                  </small>
+                  {next <= 3 ? (
+                    <button className="gold" disabled={!!no} onClick={() => actions.apply((s) => upSpec(s, pick, d.id))}>
+                      {mine ? `${next}단계 ${d.steps[next - 1]}` : cur ? "이 길로 바꾸기(1단계부터)" : `1단계 ${d.steps[0]}`} 💵{fmt(specCost(state, pick, next))} {no ? `(${no})` : ""}
+                    </button>
+                  ) : (
+                    <small className="spec-done">✅ 끝까지 키웠어요</small>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </Modal>
       )}
     </Card>
