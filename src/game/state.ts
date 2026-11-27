@@ -255,9 +255,9 @@ export function newGame(name: string, countryId: string, now: number, opt: NewGa
 }
 
 /** 나라 특수 능력 중 병력에 붙는 배율(기획서의 나라별 특수 능력치) */
-export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4, pl: 1.1 };
+export const TROOP_BONUS: Record<string, number> = { il: 1.4, kp: 1.5, in: 1.4, pl: 1.1, ng: 1.2, br: 1.1, co: 1.1, fi: 1.3 };
 /** 나라 특수 능력 중 나라 예산에 붙는 배율(11-26 사우디 오일 머니) */
-export const BUDGET_BONUS: Record<string, number> = { sa: 1.2 };
+export const BUDGET_BONUS: Record<string, number> = { sa: 1.2, eg: 1.1, za: 1.1, dz: 1.1, br: 1.1, ve: 1.15, au: 1.15, mx: 1.1, es: 1.1 };
 
 export function salaryPerDay(s: GameState): number {
   return RANKS[s.player.rankIndex].salaryPerDay;

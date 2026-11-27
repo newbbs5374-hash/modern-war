@@ -29,6 +29,25 @@ const BASE: Record<string, { birth: number; old: number; young: number; migrant:
   ph: { birth: 1.9, old: 6, young: 29, migrant: 0.3 },
   pk: { birth: 3.3, old: 4, young: 36, migrant: 1.5 },
   sa: { birth: 2.4, old: 3, young: 25, migrant: 38 },
+  // 11-27 새 나라 18개
+  eg: { birth: 2.8, old: 5, young: 33, migrant: 0.5 },
+  ng: { birth: 5.0, old: 3, young: 42, migrant: 0.6 },
+  za: { birth: 2.3, old: 6, young: 28, migrant: 4 },
+  et: { birth: 4.0, old: 3, young: 39, migrant: 1 },
+  dz: { birth: 2.8, old: 7, young: 31, migrant: 0.6 },
+  br: { birth: 1.6, old: 10, young: 20, migrant: 0.6 },
+  ar: { birth: 1.5, old: 12, young: 23, migrant: 5 },
+  co: { birth: 1.7, old: 9, young: 22, migrant: 5 },
+  ve: { birth: 2.2, old: 8, young: 26, migrant: 3 },
+  cl: { birth: 1.2, old: 13, young: 18, migrant: 9 },
+  au: { birth: 1.6, old: 17, young: 18, migrant: 30 },
+  ca: { birth: 1.3, old: 19, young: 16, migrant: 23 },
+  mx: { birth: 1.8, old: 8, young: 25, migrant: 1 },
+  fr: { birth: 1.7, old: 22, young: 17, migrant: 13 },
+  it: { birth: 1.2, old: 24, young: 12, migrant: 11 },
+  es: { birth: 1.2, old: 20, young: 14, migrant: 16 },
+  gr: { birth: 1.3, old: 23, young: 14, migrant: 12 },
+  fi: { birth: 1.3, old: 23, young: 15, migrant: 8 },
 };
 export const popBase = (s: GameState) => BASE[s.player.countryId] ?? BASE.kr;
 registerPolityInit((s, p) => {

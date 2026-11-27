@@ -41,6 +41,7 @@ export const NATION_FOCUS: Record<string, GrowTrack> = {
   us: 'reach', cn: 'eco', ru: 'army', de: 'eco', jp: 'tech', uk: 'tech', in: 'army',
   kr: 'tech', tr: 'reach', il: 'tech', ir: 'army', ua: 'fort', kp: 'army',
   tw: 'fort', pl: 'army', ph: 'reach', pk: 'army', sa: 'eco',
+  eg: 'army', ng: 'reach', za: 'eco', et: 'army', dz: 'fort', br: 'reach', ar: 'army', co: 'fort', ve: 'army', cl: 'fort', au: 'tech', ca: 'eco', mx: 'eco', fr: 'reach', it: 'eco', es: 'eco', gr: 'fort', fi: 'fort',
 };
 export const FOCUS_WEIGHT = 1.5;
 export const FOCUS_DISCOUNT = 0.85;

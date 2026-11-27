@@ -10,7 +10,7 @@ it('hexmap svg', () => {
   const out: string[] = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b.x} ${b.y} ${b.w} ${b.h}" width="${b.w*2}" height="${b.h*2}" font-family="sans-serif"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#0c2a44"/>`];
   for (const t of TILES) {
     const pts = hexCorners(t.x, t.y, 5.0).map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
-    const f = t.kind === 'city' ? COL[t.home] : t.kind === 'holy' ? '#fbbf24' : '#d6c08a';
+    const f = t.kind === 'city' ? (COL[t.home] ?? `hsl(${[...t.home].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 360} 70% 55%)`) : t.kind === 'holy' ? '#fbbf24' : '#d6c08a';
     out.push(`<polygon points="${pts}" fill="${f}" fill-opacity="${t.center ? 1 : 0.75}"/>`);
   }
   for (const c of CITIES) out.push(`<text x="${c.x}" y="${c.y - 3}" font-size="5" text-anchor="middle" fill="#000">${c.capital ? '★' : ''}${c.name}</text>`);

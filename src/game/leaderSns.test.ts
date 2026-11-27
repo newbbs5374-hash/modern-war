@@ -59,7 +59,8 @@ describe('정상 SNS(11-26)', () => {
     expect(snsUnread(snsSeen(s))).toBe(0);
   });
   it('우리 나라를 헐뜯은 글에 맞받아치기: 명성·긴장 오르고 한 번만', () => {
-    const s = advance(newGame('t', 'kr', 0, { seed: 4 }), 48 * H);
+    // 11-27 나라 36개: 글이 여러 나라로 흩어져 한 판으로는 안 나올 수 있어 몇 판 중 처음 나온 판
+    const s = [4, 5, 6, 7, 8].map((seed) => advance(newGame('t', 'kr', 0, { seed }), 48 * H)).find((x) => snsOf(x).posts.some((y) => y.to === 'kr' && y.kind === 'diss'))!;
     const p = snsOf(s).posts.find((x) => x.to === 'kr' && x.kind === 'diss');
     expect(p).toBeTruthy();
     const r = answerPost(s, p!.id, true);

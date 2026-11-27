@@ -13,7 +13,9 @@ describe('육각 타일 지도', () => {
   it('나라 타일 수 = 도시 묶음 합(겹침 없음), 표와 같음', () => {
     // 11-25: 도시 67곳 추가(원래 도시 칸은 그대로)
     // 11-26: 미국 7곳·중국 3곳·러시아 2곳 더(소도시)
-    const want: Record<string, number> = { us: 890, cn: 742, ru: 705, de: 368, jp: 368, uk: 368, in: 607, kr: 751, tr: 368, il: 368, ir: 422, ua: 368, kp: 368, tw: 398, pl: 435, ph: 435, pk: 435, sa: 472 };
+    const want: Record<string, number> = { us: 890, cn: 742, ru: 705, de: 368, jp: 368, uk: 368, in: 607, kr: 751, tr: 368, il: 368, ir: 422, ua: 368, kp: 368, tw: 398, pl: 435, ph: 435, pk: 435, sa: 472,
+      // 11-27 새 나라 18개
+      fi: 435, ca: 472, fr: 435, es: 435, mx: 435, it: 435, gr: 435, ve: 398, co: 435, dz: 435, eg: 435, br: 472, cl: 435, ng: 435, et: 435, au: 472, ar: 472, za: 435 };
     for (const c of COUNTRIES) {
       const n = TILES.filter((t) => t.home === c.id).length;
       expect(n).toBe(want[c.id]);
@@ -59,9 +61,16 @@ describe('육각 타일 지도', () => {
       expect(seen.size).toBe(mine.length);
     }
     for (const p of ['de-ru', 'de-ua', 'ru-ua', 'cn-ru', 'cn-kp', 'kp-kr', 'ir-tr', 'il-tr']) expect(pairs.has(p)).toBe(true);
+    // 11-27 새 나라: 남서유럽·아프리카·중남미는 같은 땅덩어리끼리만 닿음
+    for (const p of ['es-fr', 'fr-it', 'eg-et', 'ng-za', 'br-co', 'ar-cl', 'co-ve']) expect(pairs.has(p)).toBe(true);
+    const GROUP: Record<string, string> = { fr: 'w', es: 'w', it: 'w', gr: 'w', eg: 'a', dz: 'a', ng: 'a', et: 'a', za: 'a', mx: 'l', co: 'l', ve: 'l', br: 'l', ar: 'l', cl: 'l' };
+    for (const p of pairs) {
+      const [a, b] = p.split('-');
+      if (GROUP[a] || GROUP[b]) expect(GROUP[a], p).toBe(GROUP[b]);
+    }
     // 섬나라·따로 떨어진 대륙은 아무와도 닿지 않음
     // 11-25: 중국 새 도시(칭다오)가 둘러싸여 인도 옆에 붙음(실제로도 국경이 맞닿음)
-    for (const id of ['uk', 'jp', 'us', 'in']) expect([...pairs].some((p) => p !== 'cn-in' && p.split('-').includes(id))).toBe(false);
+    for (const id of ['uk', 'jp', 'us', 'in', 'fi', 'ca', 'au']) expect([...pairs].some((p) => p !== 'cn-in' && p.split('-').includes(id))).toBe(false);
   });
   it('픽셀 ↔ 칸 변환이 서로 맞음', () => {
     for (const h of Object.values(CITY_HEX)) {
