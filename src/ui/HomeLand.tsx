@@ -225,6 +225,7 @@ export function HomeLand(props: {
   const svgRef = useRef<SVGSVGElement>(null);
   const [view, setView] = useState<View>({ k: 1, x: 0, y: 0 });
   const [smooth, setSmooth] = useState(false);
+  const [dive, setDive] = useState(false);
   const pts = useRef(new Map<number, { x: number; y: number }>());
   const moved = useRef(0);
   const toSvg = (cx: number, cy: number) => {
@@ -283,8 +284,17 @@ export function HomeLand(props: {
   };
   const tapCity = (id: string, x: number, y: number) => {
     if (moved.current > 8) return;
-    flyTo(x, y, 2.4);
-    onCity(id);
+    // 11-27 본부 2: 도시로 빨려 들어가기 — 깊이 당겨 들어간 뒤 도시 창을 엶
+    setSmooth(true);
+    setDive(true);
+    const k = 9;
+    setView({ k, x: W / 2 - x * k, y: H * 0.45 - y * k });
+    window.setTimeout(() => onCity(id), 430);
+    window.setTimeout(() => {
+      setDive(false);
+      setView(clampView({ k: 2.4, x: W / 2 - x * 2.4, y: H * 0.45 - y * 2.4 }));
+      window.setTimeout(() => setSmooth(false), 520);
+    }, 650);
   };
 
   const nightOn = night > 0.05;
@@ -770,6 +780,7 @@ export function HomeLand(props: {
           <i />
         </div>
       )}
+      {dive && <div className="hl-dive" aria-hidden />}
       <div className="map-zoom">
         <button aria-label="확대" onClick={() => setView((v) => zoomAt(W / 2, H / 2, 1.4, v))}>
           ＋

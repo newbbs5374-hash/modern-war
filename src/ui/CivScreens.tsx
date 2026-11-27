@@ -1,5 +1,6 @@
 // 문명식 운영 화면: 내정 탭(연구 · 체제 · 도시) + 외교 탭(호감·협정 · 분쟁 지역 · 국제 회의).
 // 그림(아이콘) 위주, 자세한 내용은 팝업, 설명은 (?) 도움말.
+import { CITY_DEFENSE_MAX } from '../game/balance';
 import { HOME_BELT, HOMETOWN_LOYALTY, isHometown } from '../data/krCities';
 import { GOV_FACILITIES } from '../data/govFacilities';
 import { govFacCity, govFacLevel } from '../game/govFac';
@@ -693,7 +694,16 @@ const loyaltyFace = (v: number) => (v >= 75 ? '😊' : v >= LOYALTY_OK ? '🙂' 
 export function CityPanel(props: ScreenProps) {
   const { state } = props;
   const me = state.player.countryId;
-  const [pick, setPick] = useState<string | null>(null);
+  // 본부 지도에서 '도시 안으로 들어가기'로 왔으면 그 도시를 바로 엶
+  const [pick, setPick] = useState<string | null>(() => {
+    try {
+      const f = sessionStorage.getItem('city-focus');
+      sessionStorage.removeItem('city-focus');
+      return f && state.world.owner[f] === me ? f : null;
+    } catch {
+      return null;
+    }
+  });
   const mine = CITIES.filter((c) => state.world.owner[c.id] === me);
   const t = C.cityTotals(state);
   return (
@@ -1205,6 +1215,7 @@ function CityModal({ state, actions, go, id, onClose }: ScreenProps & { id: stri
               night={night}
               marks={tourHere?.issues.map((x) => ({ x: x.x, y: x.y, icon: issueById(x.def).icon, label: issueById(x.def).title, done: !!x.done }))}
               onMark={setIssue}
+              scars={Math.max(0, Math.min(1, (CITY_DEFENSE_MAX - (state.world.defense[id] ?? CITY_DEFENSE_MAX)) / (CITY_DEFENSE_MAX * 0.7)))}
             />
           </Suspense>
           <label className="city3d-preview small">
