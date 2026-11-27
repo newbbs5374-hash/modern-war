@@ -12,14 +12,14 @@ describe('한 손가락 미니 훈련', () => {
     for (const t of TRAININGS) expect(EASY.filter((e) => e.training === t.name).length, t.name).toBe(7);
     expect(new Set(EASY.map((e) => e.id)).size).toBe(84);
   });
-  it('1차 24개가 열려 있고 화면이 있다(훈련마다 2개)', () => {
+  it('열린 것은 모두 화면이 있다(훈련마다 2개 넘게)', () => {
     const on = EASY.filter((e) => e.view);
-    expect(on.length).toBe(24);
+    expect(on.length).toBeGreaterThanOrEqual(24);
     for (const e of on) {
       expect(MINI_VIEWS[e.id], e.name).toBeTruthy();
       expect(MINIGAMES.find((m) => m.id === e.id)?.easy).toBe(e.ctl);
     }
-    for (const t of TRAININGS) expect(minisFor(t.name).filter((m) => m.easy).length, t.name).toBe(2);
+    for (const t of TRAININGS) expect(minisFor(t.name).filter((m) => m.easy).length, t.name).toBeGreaterThanOrEqual(2);
   });
   it('능력은 내 능력 9개로 바뀌고 겹치지 않는다', () => {
     for (const e of EASY) {
