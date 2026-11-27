@@ -1,5 +1,6 @@
 import { MINISTRIES } from '../data/cabinet';
 import { overheat } from '../game/econ';
+import { artTabs } from './tabArt';
 import { MeetBook, meetBadge } from './MeetUI';
 import { Safe } from './Safe';
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
@@ -67,7 +68,7 @@ export function personalTabs(props: ScreenProps): TabDef<PersonalTab>[] {
   const { state } = props;
   const o = state.officer;
   const errandsDone = o.aides.filter((a) => a.errand && state.worldMs >= a.errand.endMs).length;
-  return [
+  return artTabs('personal', [
     { id: 'profile', label: '프로필', icon: '🪪' },
     { id: 'win', label: '승리', icon: '🏆', badge: winBadge(state) },
     { id: 'aides', label: officeName(state.player.countryId), icon: '🏢', badge: errandsDone || null },
@@ -76,7 +77,7 @@ export function personalTabs(props: ScreenProps): TabDef<PersonalTab>[] {
     { id: 'plan', label: '일정', icon: '📅', badge: state.polity?.speech.open ? '🎤' : scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
     { id: 'album', label: '사진첩', icon: '📸' },
-  ];
+  ]);
 }
 
 export function PersonalScreen(props: ScreenProps) {
@@ -138,7 +139,7 @@ export function defenseTabs(props: ScreenProps): TabDef<DefenseTab>[] {
   const r = state.player.rankIndex;
   const ready = !!o.active && state.worldMs >= o.active.endMs;
   const civ = civOf(state);
-  return [
+  return artTabs('defense', [
     { id: 'ops', label: '작전', icon: '🗺️', badge: ready ? '!' : null },
     { id: 'train', label: '훈련', icon: '🎯' },
     { id: 'forces', label: '부대', icon: '🪖' },
@@ -146,7 +147,7 @@ export function defenseTabs(props: ScreenProps): TabDef<DefenseTab>[] {
     { id: 'spy', label: '정보전', icon: '🕵️', badge: spyOf(state).active.length || null },
     { id: 'tech', label: '군사 연구', icon: '⚙️', badge: !civ.cur.mil && needPick(state) ? '!' : null },
     { id: 'fac', label: '국방 시설', icon: '🛡️', badge: choreIn(props, DEFENSE_BUILDINGS) ? '!' : null },
-  ];
+  ]);
 }
 
 export function DefenseScreen(props: ScreenProps) {
@@ -186,7 +187,7 @@ export function societyTabs(props: ScreenProps): TabDef<SocietyTab>[] {
   const { state } = props;
   const o = state.officer;
   const civ = civOf(state);
-  return [
+  return artTabs('society', [
     { id: 'mins', label: '부처·시설', icon: '🏛️', badge: choreIn(props, SOCIETY_BUILDINGS) ? '!' : null },
     { id: 'city', label: '도시', icon: '🏘️' },
     { id: 'gov', label: '체제·정책', icon: '🃏', badge: !civ.gov ? '!' : null },
@@ -195,7 +196,7 @@ export function societyTabs(props: ScreenProps): TabDef<SocietyTab>[] {
     { id: 'nation', label: '국정 운영', icon: '📋', badge: polityBadge(state) },
     { id: 'press', label: '언론·청원', icon: '🎙️', badge: mediaOf(state).petitions.length || (state.worldMs >= mediaOf(state).pressMs ? '!' : null) },
     { id: 'opinion', label: '여론', icon: '👥', badge: GROUPS.some((g) => groupSat(state, g.id) <= 25) ? '!' : null },
-  ];
+  ]);
 }
 
 export function SocietyScreen(props: ScreenProps) {
@@ -243,7 +244,7 @@ export function SocietyScreen(props: ScreenProps) {
 /* ───────── 💰 경제 ───────── */
 /** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
 export function economyTabs(props: ScreenProps): TabDef<EconomyTab>[] {
-  return [
+  return artTabs('economy', [
     { id: 'vault', label: '금고', icon: '💰' },
     { id: 'macro', label: '경기', icon: '📈', badge: props.state.polity?.econ.crisis || (props.state.polity && (overheat(props.state).hoursLeft ?? 99) < 6) ? '!' : null },
     { id: 'tax', label: '예산·세금', icon: '📊' },
@@ -252,7 +253,7 @@ export function economyTabs(props: ScreenProps): TabDef<EconomyTab>[] {
     { id: 'trade', label: '무역', icon: '🚢' },
     { id: 'facall', label: '공사 관리', icon: '🏗️', badge: choreDone(props) ? '!' : null },
     { id: 'proj', label: '국가 사업', icon: '🚄', badge: busyProjects(props.state).some(([, p]) => p.endMs <= props.state.worldMs) ? '!' : null },
-  ];
+  ]);
 }
 
 export function EconomyScreen(props: ScreenProps) {

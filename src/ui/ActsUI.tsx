@@ -37,6 +37,33 @@ export function ActCard({ state }: { state: GameState }) {
   );
 }
 
+/** 11/28 디자인 개편: 본부 왼쪽 위 장 진행 동그라미(누르면 장 설명 창) */
+export function ActRing({ state }: { state: GameState }) {
+  const [open, setOpen] = useState(false);
+  if (state.world.act == null) return null;
+  const a = actInfo(state);
+  const goals = actGoals(state);
+  const done = goals.filter((g) => g.done).length;
+  const pct = goals.length ? done / goals.length : 1;
+  const C = 2 * Math.PI * 16;
+  return (
+    <>
+      <button className="gx-act glass" onClick={() => setOpen(true)} aria-label={`${a.n}장 ${a.name}`}>
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden>
+          <circle cx="20" cy="20" r="16" stroke="rgba(255,255,255,.14)" strokeWidth="4" fill="none" />
+          <circle cx="20" cy="20" r="16" stroke="var(--hud)" strokeWidth="4" fill="none" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - pct)} transform="rotate(-90 20 20)" />
+          <text x="20" y="24.5" textAnchor="middle" fill="#fff" fontFamily="Rajdhani" fontWeight="700" fontSize="13">{a.n}장</text>
+        </svg>
+        <span>
+          <b>{a.name}</b>
+          <small>{goals.length ? <>다음 장까지 <em>{done}/{goals.length}</em></> : a.next}</small>
+        </span>
+      </button>
+      {open && <ActModal state={state} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 function ActModal({ state, onClose }: { state: GameState; onClose: () => void }) {
   const act = actOf(state.world);
   const goals = actGoals(state);

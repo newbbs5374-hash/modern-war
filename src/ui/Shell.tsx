@@ -4,7 +4,7 @@ import { playerKeys } from '../data/looks';
 import { goalsReady, rubyOf } from '../game/goals';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CURRENCIES } from '../data/catalog';
-import { titleOf } from '../game/title';
+import { tierNow, titleOf } from '../game/title';
 import { countryById } from '../data/world';
 import { gameClock, type GameState } from '../game/state';
 import { fmt } from './common';
@@ -17,6 +17,7 @@ import { citiesOf } from '../game/world';
 import { moodLabel, presOf } from '../game/approval';
 import { PresModal } from './PresUI';
 import { reportCount } from './ReportScreen';
+import { grandCapLeft } from '../game/acts';
 
 interface Props {
   state: GameState;
@@ -70,13 +71,14 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
   const n = state.nations[me.id];
   const pres = presOf(state);
   // 11-27 대장 요청: 맨 위 줄 = 지지도·신뢰도·명성·나라 예산·국방비(큰 수는 k·M). 누르면 말풍선에 전부.
+  // 11/28 디자인 개편: 같은 5개를 색 동그라미 + 큰 숫자 알약으로(이모지 대신 한 글자 표시)
   const wallet = (
-    <button ref={walletRef} className="wallet" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
-      <span>🙂{Math.round(pres.approval)}</span>
-      <span>🤝{Math.round(state.officer.trust)}</span>
-      <span>📣{fmtKM(state.officer.fame)}</span>
-      <span>💰{fmtKM(n.treasury)}</span>
-      <span>🛡️{fmtKM(n.def ?? 0)}</span>
+    <button ref={walletRef} className="wallet gx" onClick={() => setWalletOpen((v) => !v)} aria-label="자원 현황 보기">
+      <span title="지지도"><i style={{ background: '#2f8a52' }}>♥</i>{Math.round(pres.approval)}</span>
+      <span title="신뢰도"><i style={{ background: '#2a7f8c' }}>✓</i>{Math.round(state.officer.trust)}</span>
+      <span title="명성"><i style={{ background: '#7a4fc0' }}>★</i>{fmtKM(state.officer.fame)}</span>
+      <span title="나라 예산"><i style={{ background: '#a37a10' }}>₩</i>{fmtKM(n.treasury)}</span>
+      <span title="국방비"><i style={{ background: '#4a6a8a' }}>⛨</i>{fmtKM(n.def ?? 0)}</span>
     </button>
   );
   const nationRows: Array<{ icon: string; name: string; where: string; v: string; tone?: string }> = [
@@ -93,14 +95,9 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
     <>
       {/* 11-25 📨 보고: 건의·할 일을 한곳에서 */}
       <button className="icon-btn rep-btn" onClick={() => go('report')} aria-label={`보고 ${nRep}건`}>
-        📨{nRep > 0 && <i className="rep-badge">{nRep}</i>}
+        ✉{nRep > 0 && <i className="rep-badge">{nRep}</i>}
       </button>
-      {/* 본부가 아닌 화면은 위 띠가 좁아서 설정 대신 보고(설정은 본부에서) */}
-      {screen === 'home' && (
-        <button className="icon-btn" onClick={() => go('settings')} aria-label="설정">
-          ⚙️
-        </button>
-      )}
+      {/* 11/28 개편: 설정은 본부 오른쪽 줄 맨 아래 ⚙️로 옮김(위 띠는 숫자 5개가 넓게 쓰도록) */}
     </>
   );
 
@@ -111,13 +108,15 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
           <button className="who" onClick={() => go('personal')}>
             <span className="portrait">
               <PersonFace who={{ kind: 'player' }} keys={playerKeys(state.player)} fallback={<Flag id={me.id} />} />
+              <i className="lv">Lv{tierNow(state) + 1}</i>
             </span>
             <span>
               <b>
-                {rank.name} {state.player.name}
+                {state.player.name}
+                <em>{rank.name}</em>
               </b>
               <small>
-                {me.name} · {clock.month}/{clock.day} {pad(clock.hour)}:{pad(clock.minute)}
+                {clock.month}/{clock.day} {pad(clock.hour)}:{pad(clock.minute)}
                 {speed !== 1 ? ` ×${speed}` : ''}
               </small>
             </span>
@@ -196,6 +195,18 @@ export function Shell({ state, screen, speed, go, back, children, overlay }: Pro
         <nav className="bottom five">
           {NAV5.map((nv) => {
             const badge = nv.screen === 'shop' ? goalsReady(state) : nv.screen === 'tree' ? todoCount(state) : 0;
+            if (nv.center)
+              return (
+                <button key={nv.screen} className={['center', screen === nv.screen || nv.also?.includes(screen) ? 'active' : ''].join(' ').trim()} onClick={() => go(nv.screen)} aria-label={nv.label}>
+                  <span className="mid">
+                    <span className="ico">
+                      <UiIcon label={nv.art} emoji={nv.icon} />
+                    </span>
+                    <small>{nv.label}</small>
+                    {grandCapLeft(state) > 0 && grandCapLeft(state) < 10 && <i className="mid-n">⚔{grandCapLeft(state)}</i>}
+                  </span>
+                </button>
+              );
             return (
               <button key={nv.screen} className={[screen === nv.screen || nv.also?.includes(screen) ? 'active' : '', nv.main ? 'main' : ''].join(' ').trim()} onClick={() => go(nv.screen)} aria-label={nv.label}>
                 <span className="ico">

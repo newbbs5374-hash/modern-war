@@ -86,7 +86,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
             <p>
               <b>은혜 장부</b>: 머무는 6시간마다 그 나라 은혜 +1(최대 10), 요청 임무를 마치면 친한 나라 은혜 +2. 은혜 1마다 그 나라에서 살 때 1% 싸져요. 그 나라 전쟁이 끝나면 은혜만큼 <b>재건 계약</b> 돈이 들어와요.
             </p>
-            <p>파병은 처음 5곳, 호칭이 오르면 6·7곳까지. 이틀 넘게 머문 부대는 지쳐서 도움이 절반이 되니 교대해 주세요.</p>
+            <p>파병은 처음 5곳, 2막에 6곳, 3막에 7곳까지. 이틀 넘게 머문 부대는 지쳐서 도움이 절반이 되니 교대해 주세요.</p>
             <p>그 나라가 전쟁 중이면 가끔 부대를 하나씩 잃지만 명성을 얻어요. 머무는 동안 국방비에서 유지비가 나가요. 언제든 불러들일 수 있어요.</p>
             <p>
               <b>📨 파병 요청</b>: 인도양·아덴만·폴란드·사헬 등 28곳에서 해적 퇴치·평화유지·영공 초계 같은 요청이 자주 와요(한 번에 {REQ_MAX}개까지, 10시간 기다려 줌). 요청에 맞는 병과를 보내 임무 시간을 채우면 나라 예산·명성을 받아요.
@@ -95,6 +95,32 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
               <b>⚔️ 파병 교전</b>: 파병 중인 부대에 해적·반군·정체불명 함대 같은 교전이 생겨요(40가지). 보낸 병과에 맞는 공중전·해상전·육상전·해상-육상전·해상-공중전·육상-공중전이 3D 전장에서 벌어져요. 직접 싸우거나 맡길 수 있고, 4시간 안에 고르지 않으면 현지 부대가 알아서 싸워요(지면 부대 2개를 잃음).
             </p>
           </Help>
+        </div>
+        {/* 11/28 디자인 개편 6단계: 파병 칸 7개(처음 5칸 · 2막 6칸 · 3막 7칸) */}
+        <div className="gx-slots">
+          {Array.from({ length: DEPLOY_MAX }, (_, i) => {
+            const live = d.list.filter((x) => !x.returnMs);
+            const x = live[i];
+            const lock = i >= deployMax(state);
+            return (
+              <span key={i} className={`gx-slot ${x ? 'on' : ''} ${lock ? 'lock' : ''}`} title={lock ? `${i === DEPLOY_MAX - 1 ? 3 : 2}막에서 열려요` : x ? placeName(x.to) : '빈 칸'}>
+                {lock ? (
+                  <>
+                    🔒<small>{i === DEPLOY_MAX - 1 ? 3 : 2}막</small>
+                  </>
+                ) : x ? (
+                  <>
+                    {FLAG[x.to] ?? regionById(x.to)?.icon}
+                    <small>{placeName(x.to).slice(0, 4)}</small>
+                  </>
+                ) : (
+                  <>
+                    ＋<small>빈 칸</small>
+                  </>
+                )}
+              </span>
+            );
+          })}
         </div>
       </section>
 
@@ -286,6 +312,27 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
                 </div>
               );
             })}
+          </div>
+        )}
+        {unitsCount(pick) > 0 && (
+          <div className="gx-gain">
+            <small className="rec-sub">돌아올 이득(예상)</small>
+            <span className="gx-chips">
+              {req && reqKind ? (
+                <>
+                  <span className="gx-chip up">💰 +{reqKind.money.toLocaleString('ko-KR')}</span>
+                  <span className="gx-chip up">★ 명성 +{reqKind.fame}</span>
+                  {reqRegion?.friend && <span className="gx-chip up">{FLAG[reqRegion.friend]} 호감↑</span>}
+                </>
+              ) : (
+                <>
+                  <span className="gx-chip up">{FLAG[to]} 호감 +15</span>
+                  <span className="gx-chip up">🛡️ 그 나라 방어 +{Math.round(Math.min(0.4, unitsPower(pick) / 150) * 100)}%</span>
+                  <span className="gx-chip te">전쟁 중이면 명성↑</span>
+                </>
+              )}
+              <span className="gx-chip dn">⛨ 유지비 우리 부담</span>
+            </span>
           </div>
         )}
         <button

@@ -96,7 +96,7 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: TabDef
         <button key={t.id} role="tab" className={`${value === t.id ? 'on' : ''} ${t.locked ? 'locked' : ''}`} onClick={() => onChange(t.id)}>
           <span className="tab-ico">{t.locked ? '🔒' : t.icon}</span>
           <small>{t.label}</small>
-          {t.badge ? <i className="badge">{t.badge}</i> : null}
+          {t.badge ? <Badge v={t.badge} /> : null}
         </button>
       ))}
     </div>
@@ -124,7 +124,7 @@ export function Tile({
 }) {
   return (
     <button className={`itile ${locked ? "locked" : ""} ${tone ? `t-${tone}` : ""}`} onClick={onClick}>
-      {badge != null && badge !== '' && <i className="badge">{badge}</i>}
+      {badge != null && badge !== '' && (typeof badge === 'string' || typeof badge === 'number' ? <Badge v={badge} /> : <i className="badge">{badge}</i>)}
       <span className="itile-ico">{locked ? '🔒' : icon}</span>
       <b>{label}</b>
       {sub != null && <small>{sub}</small>}
@@ -153,3 +153,9 @@ export function Chip({ icon, value, label }: { icon: ReactNode; value: ReactNode
 }
 
 export const stars = (n: number, max = 3) => '★'.repeat(Math.max(0, n)) + '☆'.repeat(Math.max(0, max - n));
+
+/** 11/28 빨간 점 규칙: 숫자(받을 것·급한 것) = 빨간 숫자, '!'·'●' 같은 "새 것" = 작은 주황 점 */
+export const isNewMark = (v: unknown) => v === '!' || v === '●' || v === '❗' || v === 'N';
+export function Badge({ v, cls = 'badge' }: { v: number | string; cls?: string }) {
+  return isNewMark(v) ? <i className={`${cls} dot-new`} aria-label="새 소식" /> : <i className={cls}>{v}</i>;
+}

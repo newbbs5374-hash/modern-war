@@ -24,6 +24,7 @@ import { TITLE_MAX, syncTitle } from './title';
 import { PERSONALITIES } from '../data/leaders';
 import { aiTick, applyNowConflicts, cloneWorld, incomeShare, newWorld, type WorldState } from './world';
 import { applyContracts, contractMoneyPerHour } from './economy';
+import { autoTrade } from './tradeAdvice';
 import { TRUST_START, generalDefense, newOfficer, officerTick, type OfficerState } from './officer';
 import { checkVictory, type Ending } from './victory';
 import type { Report } from './report';
@@ -413,7 +414,7 @@ function accrue(s: GameState, ms: number): GameState {
   }
   const pendingSalary = Math.min(pendingCap(s), s.player.pendingSalary + salaryPerDay(s) * days);
   const economy = accrueEconomy(s, ms);
-  return civAccrue(economyTick(applyContracts({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy }, ms)), ms);
+  return civAccrue(autoTrade(economyTick(applyContracts({ ...s, worldMs: s.worldMs + ms, player: { ...s.player, pendingSalary }, nations, economy }, ms))), ms);
 }
 
 /**

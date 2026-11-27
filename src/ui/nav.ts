@@ -57,10 +57,11 @@ export const NAV: Array<{ screen: Screen; icon: string; label: string; art?: str
 ];
 
 /** 11-27 화면 개편: 아래 메뉴 5칸(본부·작전·국정 나무·사람·상점). art = 아이콘 그림을 빌려 올 옛 이름 */
-export const NAV5: Array<{ screen: Screen; icon: string; label: string; art: string; main?: boolean; locked?: string; also?: Screen[] }> = [
+/** 11/28 디자인 개편: 작전을 가운데 큰 단추로(본부 · 국정 · 작전 · 사람 · 상점) */
+export const NAV5: Array<{ screen: Screen; icon: string; label: string; art: string; main?: boolean; locked?: string; also?: Screen[]; center?: boolean }> = [
   { screen: 'home', icon: '🏠', label: '본부', art: '본부', main: true },
-  { screen: 'defense', icon: '⚔️', label: '작전', art: '국방' },
   { screen: 'tree', icon: '🌳', label: '국정', art: '사회', also: ['diplo', 'society', 'economy', 'culture'] },
+  { screen: 'defense', icon: '⚔️', label: '작전', art: '명령', center: true },
   { screen: 'personal', icon: '👥', label: '사람', art: '개인' },
   { screen: 'shop', icon: '🛒', label: '상점', art: '상점' },
 ];

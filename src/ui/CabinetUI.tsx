@@ -87,10 +87,18 @@ export function MinIcon({ id, size = 30, lv }: { id: MinistryId; size?: number; 
 /** 청사 단계 별(★★★☆☆) */
 export const minStars = (lv: number) => '★'.repeat(lv) + '☆'.repeat(MIN_LV_MAX - lv);
 
+/** 11/28 디자인 개편 7단계: 인물 등급 테두리(겉모습만, 뽑기 없음). 전설=금 · 우수=보라 · 숨은 재능/옛 동료=청록 · 나머지=회색 */
+export type Rarity = 'gold' | 'purple' | 'teal' | 'grey';
+export const RARITY_NAME: Record<Rarity, string> = { gold: '전설', purple: '우수', teal: '특별', grey: '일반' };
+export function rarityOf(p: Person): Rarity {
+  if (p.grade === '전설') return 'gold';
+  if (p.grade === '우수') return 'purple';
+  return p.buddy || (p.known && p.hidden) ? 'teal' : 'grey';
+}
 export function PersonFace({ p, size = 44 }: { p: Person; size?: number }) {
   const url = countryFaceUrl(p, lookOf(p));
   return (
-    <span className="cab-face" style={{ width: size, height: size, fontSize: size * 0.55 }}>
+    <span className={`cab-face rare-${rarityOf(p)}`} style={{ width: size, height: size, fontSize: size * 0.55 }}>
       {url ? <img className="face-img" src={url} alt="" draggable={false} /> : PERSON_ORIGINS[p.origin].icon}
     </span>
   );
@@ -100,7 +108,7 @@ export function PersonRow({ state, p, onOpen, right }: { state: GameState; p: Pe
   const seat = p.seat ? `${ministryById(p.seat.id).short} ${p.seat.kind === 'min' ? '장관' : '차관'}` : p.post ? postById(p.post).name : null;
   const hearing = cabinetOf(state).hearing?.pid === p.id;
   return (
-    <div className="cab-row" onClick={onOpen} role="button">
+    <div className={`cab-row rare-${rarityOf(p)}`} onClick={onOpen} role="button">
       <PersonFace p={p} size={52} />
       <span className="cab-main">
         <b>

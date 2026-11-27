@@ -45,10 +45,10 @@ describe('장관 추천', () => {
 });
 
 describe('파병 7곳 · 은혜', () => {
-  test('호칭에 따라 5→7곳', () => {
+  test('막에 따라 5→7곳', () => {
     const s = base();
-    expect(deployMax({ ...s, player: { ...s.player, rankIndex: 0 } })).toBe(5);
-    expect(deployMax({ ...s, player: { ...s.player, rankIndex: 10 } })).toBe(DEPLOY_MAX);
+    expect(deployMax({ ...s, world: { ...s.world, act: 1 } })).toBe(5);
+    expect(deployMax({ ...s, world: { ...s.world, act: 3 } })).toBe(DEPLOY_MAX);
   });
   test('은혜만큼 살 때만 싸지고 팔 때 값은 그대로', () => {
     const s = base();
