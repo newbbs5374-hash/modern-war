@@ -1744,3 +1744,8 @@ nav.bottom.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .gt-need::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 2px; height: 5px; background: #8e9eae; }
 .gt-need.done { border: 1px solid #5fe0f0; color: #5fe0f0; opacity: 1; }
 .gt-need.goal { border: 1px solid #7dffb0; color: #7dffb0; }
+/* 11-27 지도 움직임 끄기(설정 · 지도 위 ✈️ 버튼): 지도 안 CSS 움직임을 모두 멈춤 */
+html[data-map-still] .homeland *:not(.hl-dive),
+html[data-map-still] .wm-wrap *,
+html[data-map-still] .hl-wx i { animation: none !important; }
+.map-zoom button.off { opacity: .75; }

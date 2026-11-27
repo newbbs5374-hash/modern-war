@@ -5,6 +5,7 @@
 // 꾸밈 그림: src/assets/field/land-*.png 가 있으면 건물·나무·산을 그 그림으로 그림(명령문 src/assets/field/LAND.md). 도로·강·차량·날씨·전쟁 연출은 그대로 코드로 그림.
 import { Carrier, Escort } from './units';
 import { Mover } from './mover';
+import { MapMotionButton, useMapMotion } from './mapMotion';
 import { iconArt } from './iconArt';
 import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type WheelEvent as RWheelEvent } from 'react';
 import { CITIES, type City } from '../data/cities';
@@ -214,6 +215,7 @@ export function HomeLand(props: {
   const lands = landOwners(world);
   const status = homeCities.map((c) => cityStatus(c, world, countryId, atWar));
   const hot = status.some((s) => s === '공격받음' || s === '점령당함');
+  const [moving] = useMapMotion();
   const [night, setNight] = useState(() => nightLevel(dayMode));
   useEffect(() => {
     setNight(nightLevel(dayMode));
@@ -368,11 +370,11 @@ export function HomeLand(props: {
           {/* 11-25 흐르는 물결(바다 그림을 두 겹으로 반대로 천천히 움직임) */}
           <pattern id="g-ripple1" patternUnits="userSpaceOnUse" width="200" height="200">
             <image href={groundSea} width="200" height="200" />
-            <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="200 100" dur="60s" repeatCount="indefinite" />
+            {moving && <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="200 100" dur="60s" repeatCount="indefinite" />}
           </pattern>
           <pattern id="g-ripple2" patternUnits="userSpaceOnUse" width="140" height="140" patternTransform="rotate(30)">
             <image href={groundSea} width="140" height="140" />
-            <animateTransform attributeName="patternTransform" type="translate" from="140 0" to="0 70" dur="45s" repeatCount="indefinite" additive="sum" />
+            {moving && <animateTransform attributeName="patternTransform" type="translate" from="140 0" to="0 70" dur="45s" repeatCount="indefinite" additive="sum" />}
           </pattern>
           <filter id="g-soft2">
             <feGaussianBlur stdDeviation="3" />
@@ -540,6 +542,7 @@ export function HomeLand(props: {
                     {nightOn && <circle cx={bus ? 6 : 4.5} cy="1" r="1.4" fill="#fef9c3" opacity={night} />}
                   </Mover>
                 );
+              if (!moving) return null;
               const color = CAR_COLORS[(ri * 3 + j) % CAR_COLORS.length];
               return (
                 <g key={`${rd.id}-car${j}`}>
@@ -680,6 +683,7 @@ export function HomeLand(props: {
                     <image href={art} x={-7} y={-7} width={14} height={14} />
                   </Mover>
                 );
+              if (!moving) return null;
               return (
                 <g key={`boat${j}`}>
                   <path d="M-5,0 L5,0 L3.5,2.4 L-3.5,2.4Z" fill={j === 1 ? '#f8fafc' : '#b45309'} />
@@ -699,7 +703,7 @@ export function HomeLand(props: {
                 <Mover key={`cv${j}`} path={terrain.seaLoop!} dur={150} begin={-40 - j * 5} tilt={12} reverse>
                   <image href={j === 0 ? MOVE_ART.carrier : MOVE_ART.escort} x={j === 0 ? -14 : -9} y={j === 0 ? -14 : -9} width={j === 0 ? 28 : 18} height={j === 0 ? 28 : 18} />
                 </Mover>
-              ) : (
+              ) : !moving ? null : (
                 <g key={`cv${j}`}>
                   {j === 0 ? <Carrier s={2.1} color={mine} /> : <Escort s={1.6} color={mine} />}
                   <animateMotion dur="150s" begin={`${-40 - j * 5}s`} repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
@@ -717,7 +721,7 @@ export function HomeLand(props: {
                   <Mover key={`${rd.id}-mil${j}`} path={rd.d} dur={16} begin={-j * 1.6} tilt={30}>
                     <image href={(j === 1 && MOVE_ART.tank) || MOVE_ART.ifv} x={-6} y={-6} width={12} height={12} />
                   </Mover>
-                ) : (
+                ) : !moving ? null : (
                   <g key={`${rd.id}-mil${j}`}>
                     <rect x="-4" y="-2" width="8" height="4" rx="0.6" fill="#4d5b2c" stroke="#1a2010" strokeWidth="0.4" />
                     <rect x="1" y="-1.4" width="2.4" height="2.8" fill="#3a4520" />
@@ -734,6 +738,7 @@ export function HomeLand(props: {
         <g className="sky" pointerEvents="none">
           {/* 평시 초계 비행: 전투기 두 대가 남쪽 바다를 지나감 */}
           {!hot &&
+            moving &&
             [0, 1].map((j) => (
               <g key={`pj${j}`}>
                 <g transform={`translate(${-j * 10},${j * 8})`}>
@@ -751,6 +756,7 @@ export function HomeLand(props: {
               <ellipse cx={66} cy={112 + j * 170} rx="30" ry="13" fill="url(#cloud)" opacity={0.75 - night * 0.45} />
             </g>
           ))}
+          {moving && (
           <g>
             <PlaneArt kind="airliner" size={26} />
             {nightOn && <circle cx="-8" cy="0" r="1.2" fill="#ef4444" className="blink" />}
@@ -758,7 +764,9 @@ export function HomeLand(props: {
               <mpath href={`#air-${countryId}`} />
             </animateMotion>
           </g>
+          )}
           {hot &&
+            moving &&
             [0, 1].map((j) => (
               <g key={`jet${j}`}>
                 <PlaneArt kind="fighter" size={20} flipY trail />
@@ -794,6 +802,7 @@ export function HomeLand(props: {
         <button aria-label={`낮·밤: ${dayMode}`} title={`낮·밤: ${dayMode}(누르면 바뀜) · 날씨 ${WEATHER_ICON[wx]} ${wx}`} onClick={() => onDayMode(dayMode === '자동' ? '낮' : dayMode === '낮' ? '밤' : '자동')}>
           {dayMode === '자동' ? '🕒' : dayMode === '낮' ? '☀️' : '🌙'}
         </button>
+        <MapMotionButton />
       </div>
     </div>
   );
