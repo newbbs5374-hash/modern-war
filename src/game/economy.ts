@@ -469,9 +469,11 @@ function priceCore(s: GameState, id: string, r: Res): number {
   const wob = 1 + WOBBLE * (hash01(s.world.seed, id, r, Math.floor(s.worldMs / H6)) * 2 - 1);
   return RES_PRICE[r] * mult * local * war * wob * (1 - tradeEdge(s, id));
 }
+/** 11-28 은혜 장부: 파병해 준 나라에서 살 때 은혜 1마다 1% 싸게(최대 10%). 팔 때 값은 그대로 */
+export const oweCut = (s: GameState, id: string) => 1 - Math.min(10, s.deploy?.owe?.[id] ?? 0) * 0.01;
 /** 1개 값(사기) */
 export function tradePrice(s: GameState, id: string, r: Res): number {
-  return Math.max(1, Math.round(priceCore(s, id, r) * (1 + marketPressure(s, id, r))));
+  return Math.max(1, Math.round(priceCore(s, id, r) * (1 + marketPressure(s, id, r)) * oweCut(s, id)));
 }
 /** 팔 때 값 비율(항로 개방·체제 이득이면 더 비싸게 팖) */
 export function sellRate(s: GameState, id: string): number {
@@ -479,13 +481,13 @@ export function sellRate(s: GameState, id: string): number {
   return ((SELL_RATE * (1 + e)) / (1 - e)) * (isArchRival(s.player.countryId, id) ? ARCH_SELL : 1);
 }
 /** 1개 팔 때 받는 값 */
-export const sellPrice = (s: GameState, id: string, r: Res) => Math.max(1, Math.round(tradePrice(s, id, r) * sellRate(s, id)));
+export const sellPrice = (s: GameState, id: string, r: Res) => Math.max(1, Math.round(priceCore(s, id, r) * (1 + marketPressure(s, id, r)) * sellRate(s, id)));
 const clampP = (p: number) => Math.max(MARKET_P_MIN, Math.min(MARKET_P_MAX, p));
 /** qty개 사는 데 드는 돈(사는 동안 값이 오름) */
 export function buyCost(s: GameState, id: string, r: Res, qty: number): number {
   const p0 = marketPressure(s, id, r);
   const p1 = clampP(p0 + qty / MARKET_DEPTH);
-  return Math.round(priceCore(s, id, r) * (1 + (p0 + p1) / 2) * qty);
+  return Math.round(priceCore(s, id, r) * (1 + (p0 + p1) / 2) * oweCut(s, id) * qty);
 }
 /** qty개 팔아 받는 돈(파는 동안 값이 내림) */
 export function sellGain(s: GameState, id: string, r: Res, qty: number): number {

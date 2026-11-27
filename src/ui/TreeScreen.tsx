@@ -26,6 +26,7 @@ import { FAV_MAX, favsOf, matches, toggleFav } from './favs';
 import { BriefingModal } from './BriefingUI';
 import { OrdersModal } from './OrdersModal';
 import type { ScreenProps } from './screens';
+import { morningBrief, runRec } from '../game/recs';
 
 export interface Leaf { id: string; label: string; icon: ReactNode; badge?: number | string | null; locked?: boolean; screen: Screen }
 export interface Branch { id: Screen; name: string; icon: string; leaves: Leaf[] }
@@ -185,7 +186,8 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
   const [q, setQ] = useState('');
   const [favs, setFavs] = useState(favsOf);
   const [pin, setPin] = useState(false);
-  const [pop, setPop] = useState<'orders' | 'brief' | null>(null);
+  const [pop, setPop] = useState<'orders' | 'brief' | 'desk' | null>(null);
+  const desk = pop === 'desk' ? morningBrief(state, 5) : [];
   const spots = spotsOf(state);
   const found = q.trim() ? spots.filter((sp) => matches(`${sp.group}${sp.label}`, q.trim())) : [];
   const tap = (key: string, to: Screen) => (pin ? setFavs((f) => toggleFav(f, key)) : go(to));
@@ -202,6 +204,9 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
         )}
         <button className={`tree-chip ${n ? 'hot' : ''}`} onClick={() => setTodoOpen(true)}>
           📋 할 일 {n}
+        </button>
+        <button className="tree-chip" onClick={() => setPop('desk')}>
+          🗂️ 장관 결재
         </button>
       </div>
       <div className="tree-find">
@@ -286,6 +291,40 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
           <small>국정 보고</small>
         </button>
       </div>
+      {pop === 'desk' && (
+        <Modal title="오늘의 장관 결재" icon="🗂️" onClose={() => setPop(null)}>
+          <p className="small muted" style={{ margin: '0 0 6px' }}>
+            각 분야 장관이 지금 가장 이득인 일을 골라 올렸어요. 숫자는 장관 정확도만큼 틀릴 수 있어요.
+          </p>
+          {desk.length ? (
+            <div className="rec-box">
+              {desk.map((r, i) => (
+                <div key={r.id} className="rec-card">
+                  <span className="rec-ic">{r.icon}</span>
+                  <span className="rec-txt">
+                    <b>
+                      {i + 1}. {r.title}
+                    </b>
+                    <small>
+                      {r.who} · {r.why}
+                    </small>
+                  </span>
+                  <span className="rec-act">
+                    <b className={r.gain(r.k).startsWith('−') ? 'bad' : 'good'}>{r.gain(r.k)}</b>
+                    {r.act && actions ? (
+                      <button onClick={() => actions.apply((s) => runRec(s, r.field, r.id))}>결재</button>
+                    ) : (
+                      <button onClick={() => (setPop(null), go(routeTo(r.field, r.field, r.tab)))}>보기 →</button>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="empty">지금 올라온 결재가 없어요. 장관을 앉히면 더 많이 올라와요.</p>
+          )}
+        </Modal>
+      )}
       {pop === 'orders' && actions && <OrdersModal state={state} apply={actions.apply} onClose={() => setPop(null)} />}
       {pop === 'brief' && <BriefingModal state={state} onClose={() => setPop(null)} goTab={(sc, key, tab) => (setPop(null), go(routeTo(sc, key, tab)))} />}
       <p className="tree-legend">칸을 누르면 그 화면으로 가요 · 빨간 점 = 할 일 · 🔒 = 아직 잠김 · 맨 위 얼굴 = 사람(인사·인맥)</p>

@@ -23,6 +23,11 @@ import {
   REQ_MAX,
   DEPLOY_FAVOR,
   DEPLOY_MAX,
+  deployMax,
+  oweOf,
+  rebuildValue,
+  tired,
+  OWE_MAX,
   activeDeploys,
   canDeploy,
   canHost,
@@ -69,7 +74,7 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
         <div className="row">
           <b>🪖 해외 파병</b>
           <small className="muted">
-            {activeDeploys(state)}/{DEPLOY_MAX}곳{d.list.length > activeDeploys(state) ? ` · 돌아오는 중 ${d.list.length - activeDeploys(state)}` : ''} · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
+            {activeDeploys(state)}/{deployMax(state)}곳{deployMax(state) < DEPLOY_MAX ? `(최대 ${DEPLOY_MAX})` : ''}{d.list.length > activeDeploys(state) ? ` · 돌아오는 중 ${d.list.length - activeDeploys(state)}` : ''} · 유지비 시간당 🛡️{Math.round(upkeep).toLocaleString('ko-KR')}
           </small>
           <Help title="해외 파병">
             <p>
@@ -78,6 +83,10 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
             <p>
               도착하면 그 나라 호감 +15, 그 나라 도시를 함께 지켜 <b>방어가 전투력만큼(최대 +40%)</b> 올라요. 세계지도에서 우리 병과가 그 나라 둘레를 움직여요.
             </p>
+            <p>
+              <b>은혜 장부</b>: 머무는 6시간마다 그 나라 은혜 +1(최대 10), 요청 임무를 마치면 친한 나라 은혜 +2. 은혜 1마다 그 나라에서 살 때 1% 싸져요. 그 나라 전쟁이 끝나면 은혜만큼 <b>재건 계약</b> 돈이 들어와요.
+            </p>
+            <p>파병은 처음 5곳, 호칭이 오르면 6·7곳까지. 이틀 넘게 머문 부대는 지쳐서 도움이 절반이 되니 교대해 주세요.</p>
             <p>그 나라가 전쟁 중이면 가끔 부대를 하나씩 잃지만 명성을 얻어요. 머무는 동안 국방비에서 유지비가 나가요. 언제든 불러들일 수 있어요.</p>
             <p>
               <b>📨 파병 요청</b>: 인도양·아덴만·폴란드·사헬 등 28곳에서 해적 퇴치·평화유지·영공 초계 같은 요청이 자주 와요(한 번에 {REQ_MAX}개까지, 10시간 기다려 줌). 요청에 맞는 병과를 보내 임무 시간을 채우면 나라 예산·명성을 받아요.
@@ -212,6 +221,12 @@ export function DeployPanel({ state, actions, go }: ScreenProps) {
                     {x.req && !x.returnMs ? ` · ${requestKindById(x.req.kind)?.icon} ${requestKindById(x.req.kind)?.name} ${state.worldMs < x.arriveMs ? `${requestKindById(x.req.kind)?.hours}시간` : `${timeLeft(x.req.endMs - state.worldMs)} 남음`}` : ''}
                     {x.clash && !x.returnMs ? ` · ⚔️ ${clashById(x.clash.id)?.title}` : ''}
                     {x.wins ? ` · 교전 승리 ${x.wins}` : ''}
+                    {tired(state, x) ? ' · 😮‍💨 지침(도움 절반, 교대 필요)' : ''}
+                  </small>
+                  <br />
+                  <small className="muted">
+                    쓴 돈 🛡️{Math.round(x.spent ?? 0).toLocaleString('ko-KR')}
+                    {!x.to.startsWith('r-') && ` · 은혜 ${oweOf(state, x.to)}/${OWE_MAX}(살 때 −${oweOf(state, x.to)}%) · 전쟁 끝나면 재건 계약 약 ${rebuildValue(state, x.to).toLocaleString('ko-KR')}`}
                   </small>
                 </span>
                 {(x.returnMs || state.worldMs < x.arriveMs) && <BoostBar state={state} apply={actions.apply} target={{ kind: 'deploy', id: x.id }} compact />}
