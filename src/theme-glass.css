@@ -163,6 +163,10 @@ html[data-map-still] .modal, html[data-map-still] .gx-pulse, html[data-map-still
 .top .who b { display: flex; align-items: baseline; gap: 3px; }
 .top .who b em { margin-left: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .wallet.gx span { padding-right: 5px; font-size: 12.5px; }
+/* 11/28 대장 요청: 맨 위 숫자 6개(루비 포함)를 3칸×2줄로 작게 — 위 띠 높이(초상 40px)는 그대로 */
+.top .wallet.gx { display: grid; grid-template-columns: repeat(3, auto); gap: 2px 3px; align-self: center; }
+.top .wallet.gx span { padding: 0 5px 0 1px; gap: 2px; font-size: 10.5px; line-height: 16px; height: 18px; }
+.top .wallet.gx i { width: 14px; height: 14px; font-size: 8px; }
 
 /* ── 국정 허브 ── */
 .tree.is-hub .tree-top { display: flex; gap: 6px; flex-wrap: wrap; }
