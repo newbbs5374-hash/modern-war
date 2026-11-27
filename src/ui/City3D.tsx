@@ -51,6 +51,66 @@ export function loadCity3D(file: string): Promise<City3DData> {
   return p;
 }
 
+/** 11-27 도시 4: 높낮이 자료(public/city3d/<파일>-h.json, scripts/gen_city3d_terrain.py). 없으면 평지 */
+interface TerrainData { half: number; n: number; base: number; h: number[] }
+/** three 좌표(x 동쪽, z 남쪽) → 땅 높이(m) */
+type HFn = (x: number, z: number) => number;
+const FLAT: HFn = () => 0;
+/** 바닥에서 이만큼(m)까지는 평지로 침(강가·도심이 울퉁불퉁해지지 않게) */
+const H_DEAD = 10;
+/** 산이 눈에 띄게 조금 과장 */
+const H_EXAG = 1.3;
+const tcache = new Map<string, Promise<TerrainData | null>>();
+function loadTerrain(file: string): Promise<TerrainData | null> {
+  let p = tcache.get(file);
+  if (!p) {
+    p = fetch(`${BASE}city3d/${file}-h.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    tcache.set(file, p);
+  }
+  return p;
+}
+export function heightFn(t: TerrainData | null): HFn {
+  if (!t) return FLAT;
+  const { half, n, h } = t;
+  return (x, z) => {
+    const fx = ((x + half) / (2 * half)) * (n - 1);
+    const fy = ((z + half) / (2 * half)) * (n - 1);
+    if (fx < 0 || fy < 0 || fx > n - 1 || fy > n - 1) return 0;
+    const i = Math.min(n - 2, Math.floor(fx));
+    const j = Math.min(n - 2, Math.floor(fy));
+    const u = fx - i;
+    const v = fy - j;
+    const a = h[j * n + i] * (1 - u) + h[j * n + i + 1] * u;
+    const b = h[(j + 1) * n + i] * (1 - u) + h[(j + 1) * n + i + 1] * u;
+    return Math.max(0, a * (1 - v) + b * v - H_DEAD) * H_EXAG;
+  };
+}
+/** 산 덩어리: 평지(0)는 바닥 밑에 숨고 솟은 곳만 보임 */
+function terrainMesh(t: TerrainData, hf: HFn, mat: THREE.Material): THREE.Mesh {
+  const g = new THREE.PlaneGeometry(t.half * 2, t.half * 2, t.n - 1, t.n - 1);
+  g.rotateX(-Math.PI / 2);
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  const col = new Float32Array(pos.count * 3);
+  const lo = new THREE.Color('#6d9455');
+  const mid = new THREE.Color('#4f7a43');
+  const hi = new THREE.Color('#8b8676');
+  const c = new THREE.Color();
+  for (let k = 0; k < pos.count; k++) {
+    const y = hf(pos.getX(k), pos.getZ(k));
+    pos.setY(k, y > 0 ? y : -3);
+    if (y < 260) c.copy(lo).lerp(mid, y / 260);
+    else c.copy(mid).lerp(hi, Math.min(1, (y - 260) / 500));
+    col[k * 3] = c.r;
+    col[k * 3 + 1] = c.g;
+    col[k * 3 + 2] = c.b;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return new THREE.Mesh(g, mat);
+}
+
 /** 단계(0~6) → 보이는 건물 비율·높이 배율·밤 불빛 비율 */
 export function growthLook(level: number) {
   const g = Math.max(0, Math.min(6, level)) / 6;
@@ -116,11 +176,11 @@ interface Built {
   wallEnd: Uint32Array;
   roofEnd: Uint32Array;
   /** 보이는 순서대로 건물 중심·윤곽 크기 */
-  order: Array<{ x: number; z: number; h: number; r: number }>;
+  order: Array<{ x: number; z: number; h: number; r: number; y0: number }>;
 }
 
 /** 건물을 도심 가까운 순서로 정렬해 벽·지붕을 각각 한 덩어리로 합침 */
-function buildCity(d: City3DData): Built {
+function buildCity(d: City3DData, hf: HFn = FLAT): Built {
   const items = d.b.map((b, i) => {
     let cx = 0;
     let cy = 0;
@@ -140,6 +200,8 @@ function buildCity(d: City3DData): Built {
   const wu: number[] = [];
   const wc: number[] = [];
   const wi: number[] = [];
+  const wb: number[] = [];
+  const rbase: number[] = [];
   const rp: number[] = [];
   const rc: number[] = [];
   const ri: number[] = [];
@@ -149,7 +211,8 @@ function buildCity(d: City3DData): Built {
   const col = new THREE.Color();
   items.forEach((it, idx) => {
     const { b, i } = it;
-    const h = Math.max(3, b[0]);
+    const y0 = hf(it.cx, -it.cy);
+    const h = y0 + Math.max(3, b[0]);
     col.set(KIND_COLOR[b[1]] ?? KIND_COLOR[4]);
     const t = 0.82 + 0.3 * hash(i * 3 + 1);
     col.multiplyScalar(t);
@@ -171,12 +234,15 @@ function buildCity(d: City3DData): Built {
       if (len < 0.5) continue;
       const base = wp.length / 3;
       // three: x=동, y=위, z=-북
-      wp.push(a.x, 0, -a.y, c.x, 0, -c.y, c.x, h, -c.y, a.x, h, -a.y);
+      wp.push(a.x, y0, -a.y, c.x, y0, -c.y, c.x, h, -c.y, a.x, h, -a.y);
       const u0 = run / 4;
       const u1 = (run + len) / 4;
-      const v1 = h / 3.3;
+      const v1 = (h - y0) / 3.3;
       wu.push(u0, 0, u1, 0, u1, v1, u0, v1);
-      for (let q = 0; q < 4; q++) wc.push(col.r, col.g, col.b);
+      for (let q = 0; q < 4; q++) {
+        wc.push(col.r, col.g, col.b);
+        wb.push(y0);
+      }
       wi.push(base, base + 1, base + 2, base, base + 2, base + 3);
       run += len;
     }
@@ -186,22 +252,25 @@ function buildCity(d: City3DData): Built {
     const rcol = col.clone().multiplyScalar(0.78);
     for (const p of pts) {
       rp.push(p.x, h, -p.y);
+      rbase.push(y0);
       rc.push(rcol.r, rcol.g, rcol.b);
     }
     for (const tr of tris) ri.push(rb + tr[0], rb + tr[2], rb + tr[1]);
     wallEnd[idx] = wi.length;
     roofEnd[idx] = ri.length;
-    order.push({ x: it.cx, z: -it.cy, h, r: rad });
+    order.push({ x: it.cx, z: -it.cy, h, r: rad, y0 });
   });
   const walls = new THREE.BufferGeometry();
   walls.setAttribute('position', new THREE.Float32BufferAttribute(wp, 3));
   walls.setAttribute('uv', new THREE.Float32BufferAttribute(wu, 2));
   walls.setAttribute('color', new THREE.Float32BufferAttribute(wc, 3));
+  walls.setAttribute('aBase', new THREE.Float32BufferAttribute(wb, 1));
   walls.setIndex(wi);
   walls.computeVertexNormals();
   const roofs = new THREE.BufferGeometry();
   roofs.setAttribute('position', new THREE.Float32BufferAttribute(rp, 3));
   roofs.setAttribute('color', new THREE.Float32BufferAttribute(rc, 3));
+  roofs.setAttribute('aBase', new THREE.Float32BufferAttribute(rbase, 1));
   roofs.setIndex(ri);
   roofs.computeVertexNormals();
   return { walls, roofs, wallEnd, roofEnd, order };
@@ -253,14 +322,14 @@ function seaShapes(list: number[][][], y: number): THREE.BufferGeometry {
 }
 
 /** 큰길: 띠 모양 + 차가 다닐 길 목록 */
-function roadStrips(list: number[][]) {
+function roadStrips(list: number[][], hf: HFn = FLAT) {
   const pos: number[] = [];
   const idx: number[] = [];
   const paths: Array<{ pts: THREE.Vector3[]; len: number[] }> = [];
   for (const r of list) {
     const w = [0, 9, 14, 22][r[0]] ?? 10;
     const pts: THREE.Vector3[] = [];
-    for (let k = 1; k + 1 < r.length; k += 2) pts.push(new THREE.Vector3(r[k], 2, -r[k + 1]));
+    for (let k = 1; k + 1 < r.length; k += 2) pts.push(new THREE.Vector3(r[k], 2 + hf(r[k], -r[k + 1]), -r[k + 1]));
     if (pts.length < 2) continue;
     const len = [0];
     for (let k = 1; k < pts.length; k++) len.push(len[k - 1] + pts[k].distanceTo(pts[k - 1]));
@@ -274,7 +343,7 @@ function roadStrips(list: number[][]) {
       const nx = (-dz / L) * (w / 2);
       const nz = (dx / L) * (w / 2);
       const b = pos.length / 3;
-      pos.push(a.x + nx, 1.8, a.z + nz, a.x - nx, 1.8, a.z - nz, c.x - nx, 1.8, c.z - nz, c.x + nx, 1.8, c.z + nz);
+      pos.push(a.x + nx, a.y - 0.2, a.z + nz, a.x - nx, a.y - 0.2, a.z - nz, c.x - nx, c.y - 0.2, c.z - nz, c.x + nx, c.y - 0.2, c.z + nz);
       idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
     }
   }
@@ -350,7 +419,16 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
     const tex = windowTextures();
     const wallMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, map: tex.day, emissive: '#ffffff', emissiveMap: tex.night, emissiveIntensity: 0 });
     // 건물마다 불 켜진 정도를 다르게(어떤 건물은 거의 꺼짐, 어떤 건물은 환함)
+    // 건물 높이 배율은 건물 바닥(aBase, 땅 높이)을 기준으로 늘림 — 산 위 건물이 땅에서 뜨거나 묻히지 않게
+    const uH = { value: 1 };
+    const growFrom = (sh: { uniforms: Record<string, unknown>; vertexShader: string }) => {
+      sh.uniforms.uH = uH;
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aBase;\nuniform float uH;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed.y = aBase + (transformed.y - aBase) * uH;');
+    };
     wallMat.onBeforeCompile = (sh) => {
+      growFrom(sh);
       sh.fragmentShader = sh.fragmentShader.replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
@@ -359,6 +437,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
       );
     };
     const roofMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    roofMat.onBeforeCompile = growFrom;
     const waterMat = new THREE.MeshLambertMaterial({ color: '#3d7aa8', side: THREE.DoubleSide });
     const parkMat = new THREE.MeshLambertMaterial({ color: '#5f8a4a', side: THREE.DoubleSide });
     const roadMat = new THREE.MeshLambertMaterial({ color: '#56595e', side: THREE.DoubleSide, emissive: '#ff9d45', emissiveIntensity: 0 });
@@ -420,6 +499,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
       roofMat.color.set(nt > 0.5 ? '#8d99b8' : '#ffffff');
       waterMat.color.set(nt > 0.5 ? '#2f6ea3' : '#3d7aa8');
       parkMat.color.set(nt > 0.5 ? '#47774f' : '#5f8a4a');
+      hillMat.color.set(nt > 0.5 ? '#6f7f9c' : '#ffffff');
       // 차 불빛: 밤엔 오는 차는 흰 전조등, 가는 차는 빨간 미등
       if (cars) {
         const cc = new THREE.Color();
@@ -430,15 +510,15 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
       const n = Math.max(1, Math.round(built.order.length * look.show));
       wallMesh.geometry.setDrawRange(0, built.wallEnd[n - 1]);
       roofMesh.geometry.setDrawRange(0, built.roofEnd[n - 1]);
-      wallMesh.scale.y = roofMesh.scale.y = look.height;
+      uH.value = look.height;
       // 다음에 지어질 큰 건물 4곳에 크레인
-      const next = built.order.slice(n, n + 400).filter((o) => o.h * look.height > 25).slice(0, 4);
+      const next = built.order.slice(n, n + 400).filter((o) => (o.h - o.y0) * look.height > 25).slice(0, 4);
       cranes.forEach((c, i) => {
         const o = next[i];
         c.visible = !!o && lv < 6;
         if (!o) return;
-        const hh = o.h * look.height;
-        c.position.set(o.x, 0, o.z);
+        const hh = (o.h - o.y0) * look.height;
+        c.position.set(o.x, o.y0, o.z);
         const mast = c.getObjectByName('mast')!;
         mast.scale.y = hh + 30;
         mast.position.set(o.r * 0.6, (hh + 30) / 2, 0);
@@ -455,16 +535,19 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
     api.current = { setLook, setScars: (v: number) => setScars(v) };
     if (import.meta.env.DEV) (window as unknown as { __city3d?: unknown }).__city3d = { cam, ctl, scene };
 
-    loadCity3D(file)
-      .then((d) => {
+    const hillMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    Promise.all([loadCity3D(file), loadTerrain(file)])
+      .then(([d, td]) => {
         if (!alive) return;
-        built = buildCity(d);
+        const hf = heightFn(td);
+        if (td) scene.add(terrainMesh(td, hf, hillMat));
+        built = buildCity(d, hf);
         wallMesh = new THREE.Mesh(built.walls, wallMat);
         roofMesh = new THREE.Mesh(built.roofs, roofMat);
         scene.add(wallMesh, roofMesh);
         const water = new THREE.Mesh(flatShapes(d.w, 2.5), waterMat);
         const parks = new THREE.Mesh(flatShapes(d.p, 1.2), parkMat);
-        const rs = roadStrips(d.r);
+        const rs = roadStrips(d.r, hf);
         const roads = new THREE.Mesh(rs.g, roadMat);
         scene.add(parks, roads, water);
         if (d.s?.length) {
@@ -493,7 +576,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
               const a = path.pts[k - 1];
               const b = path.pts[k];
               const f = (sAt - path.len[k - 1]) / Math.max(1, path.len[k] - path.len[k - 1]);
-              lp.push(a.x + (b.x - a.x) * f, 9, a.z + (b.z - a.z) * f);
+              lp.push(a.x + (b.x - a.x) * f, 7 + a.y + (b.y - a.y) * f, a.z + (b.z - a.z) * f);
             }
           }
           const lg = new THREE.BufferGeometry();
@@ -549,7 +632,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
         const r = Math.max(30, b.r * 1.6);
         const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 20), scorchMat);
         disc.rotation.x = -Math.PI / 2;
-        disc.position.set(b.x, 3.2, b.z);
+        disc.position.set(b.x, b.y0 + 3.2, b.z);
         scarGroup.add(disc);
         const fire = new THREE.Sprite(fireMat);
         fire.position.set(b.x, b.h + 20, b.z);
@@ -585,7 +668,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
           const a = path.pts[k - 1];
           const b = path.pts[k];
           const f = (c.s - path.len[k - 1]) / Math.max(1, path.len[k] - path.len[k - 1]);
-          tmp.position.set(a.x + (b.x - a.x) * f, 2.5, a.z + (b.z - a.z) * f);
+          tmp.position.set(a.x + (b.x - a.x) * f, 0.5 + a.y + (b.y - a.y) * f, a.z + (b.z - a.z) * f);
           tmp.rotation.y = Math.atan2(-(b.z - a.z), b.x - a.x);
           // 차선: 진행 방향 오른쪽으로 살짝
           tmp.translateZ(c.dir * 3);
@@ -639,7 +722,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
         const m = o as THREE.Mesh;
         if (m.geometry) m.geometry.dispose();
       });
-      [wallMat, roofMat, waterMat, parkMat, roadMat, carMat, lampMat, lampTex, tex.day, tex.night, smokeTex, smokeMat, fireMat, scorchMat].forEach((x) => x.dispose());
+      [wallMat, roofMat, waterMat, parkMat, roadMat, carMat, lampMat, lampTex, tex.day, tex.night, smokeTex, smokeMat, fireMat, scorchMat, hillMat].forEach((x) => x.dispose());
       renderer.dispose();
       renderer.domElement.remove();
       api.current = null;
@@ -668,7 +751,7 @@ export default function City3D({ file, level, night, marks, onMark, scars = 0 }:
       )}
       {busy && !err && <div className="city3d-msg">🏗️ 3D 도시 불러오는 중…</div>}
       {err && <div className="city3d-msg">3D 자료를 못 불러왔어요({err}). 2D 화면을 써 주세요.</div>}
-      <div className="city3d-credit">건물 자료 © OpenStreetMap 기여자 (ODbL)</div>
+      <div className="city3d-credit">건물 자료 © OpenStreetMap 기여자 (ODbL) · 지형 Terrain Tiles(Mapzen)</div>
     </div>
   );
 }
