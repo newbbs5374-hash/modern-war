@@ -1,4 +1,7 @@
 // 내정 확장 화면(11/24): 국정 과제 나무(개인)·여론(사회)·기본법(사회 정계)·국가 사업과 특구(경제)·예산 국회(경제 예산·세금)·사진첩과 오늘의 뉴스(개인)
+import { COUNTRIES, countryById } from "../data/world";
+import { isAlive } from "../game/world";
+import { DEAL_BUDGET, FIRMS, FIRM_MAX, canDeal as canArmsDeal, canGrowFirm, dealPreview, dealSlots, firmById, firmCost, firmLv, growFirm, liveDeals, signDeal, type FirmId } from "../game/arms";
 import { SPECS, SPEC_BELT_AT, SPEC_BELT_MUL, SPEC_NEED_STAGE, beltOn, canSpec, liveSpecs, specById, specCost, specMap, upSpec } from "../game/citySpec";
 import { useState } from "react";
 import type { ScreenProps } from "./screens";
@@ -550,6 +553,7 @@ export function ProjectsPanel({ state, actions }: ScreenProps) {
       </Card>
       <ZonesCard state={state} actions={actions} />
       <SpecCard state={state} actions={actions} />
+      <ArmsCard state={state} actions={actions} />
       <ChainsCard state={state} />
       {pick && (
         <Modal
@@ -895,6 +899,89 @@ function SpecCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
                   ) : (
                     <small className="spec-done">✅ 끝까지 키웠어요</small>
                   )}
+                </div>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
+/* ───────── 내정 3 방산 기업과 수출(11-27) ───────── */
+function ArmsCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
+  const [sell, setSell] = useState<FirmId | null>(null);
+  const me = state.player.countryId;
+  const live = liveDeals(state);
+  const buyers = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id));
+  return (
+    <Card
+      title={`방산 수출 ${live.length}/${dealSlots(state)}`}
+      icon="🏭"
+      right={
+        <Help title="방산 기업과 수출">
+          <p>방산 기업 4곳을 키우고 다른 나라에 무기를 팔아요. 계약 하나는 3일 동안 나라 예산을 기업 단계마다 +{(DEAL_BUDGET * 100).toFixed(1)}% 올리고, 그 나라 호감이 올라요.</p>
+          <p>판 무기는 그 나라 병력에 실제로 더해져요. 전쟁 중인 나라에는 못 팔고, 내 연합국과 싸우는 나라에 팔면 연합국이 싫어해요. 계약 수는 기업 단계 합의 절반까지(많아야 6건).</p>
+        </Help>
+      }
+    >
+      <div className="dom-zones">
+        {FIRMS.map((f) => {
+          const lv = firmLv(state, f.id);
+          const no = canGrowFirm(state, f.id);
+          return (
+            <div key={f.id} className={`dom-zone ${lv ? "on" : ""}`}>
+              <span className="dom-ico">{f.icon}</span>
+              <b>{f.name}</b>
+              <small>
+                {"●".repeat(lv)}
+                {"○".repeat(FIRM_MAX - lv)}
+              </small>
+              {lv < FIRM_MAX && (
+                <button className="gold" disabled={!!no} title={no ?? ""} onClick={() => actions.apply((s) => growFirm(s, f.id))}>
+                  키우기 💵{fmt(firmCost(state, f.id))}
+                </button>
+              )}
+              <button disabled={lv < 1} onClick={() => setSell(f.id)}>
+                팔기
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {live.length > 0 && (
+        <div className="ichips">
+          {live.map((d) => (
+            <span key={d.to} className="ichip">
+              {firmById(d.firm)?.icon} {countryById(d.to).name} · {timeLeft(d.untilMs - state.worldMs)}
+            </span>
+          ))}
+        </div>
+      )}
+      {sell && (
+        <Modal title={`${firmById(sell)!.name} 수출(${firmById(sell)!.goods})`} icon={firmById(sell)!.icon} onClose={() => setSell(null)}>
+          <div className="dom-opts">
+            {buyers.map((c) => {
+              const no = canArmsDeal(state, c.id, sell);
+              const pv = dealPreview(state, c.id);
+              return (
+                <div key={c.id} className="dom-opt">
+                  <b>{c.name}</b>
+                  <small>
+                    호감 +{pv.favor}
+                    {pv.angry.length ? ` · ${pv.angry.map((id) => countryById(id).name).join("·")}이(가) 싫어해요` : ""}
+                  </small>
+                  <button
+                    className="gold"
+                    disabled={!!no}
+                    onClick={() => {
+                      actions.apply((s) => signDeal(s, c.id, sell));
+                      setSell(null);
+                    }}
+                  >
+                    계약 {no ? `(${no})` : `· 3일 예산 +${(DEAL_BUDGET * firmLv(state, sell) * 100).toFixed(1)}%`}
+                  </button>
                 </div>
               );
             })}

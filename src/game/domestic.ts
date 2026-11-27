@@ -64,6 +64,8 @@ export interface DomState {
   codes: CodesState;
   /** 도시 id → 특구 종류 */
   zones: Record<string, string>;
+  /** 방산 기업과 수출(11-27 내정 3, arms.ts). 옛 저장은 없음 */
+  arms?: { lv: Partial<Record<'land' | 'sea' | 'air' | 'missile', number>>; deals: Array<{ to: string; firm: 'land' | 'sea' | 'air' | 'missile'; lv: number; untilMs: number }>; sold: number };
   /** 도시 id → 특화 길과 단계(11-27 내정 1, citySpec.ts). 옛 저장은 없음 */
   spec?: Record<string, { path: 'ind' | 'sci' | 'tour' | 'mil' | 'fin'; lv: number }>;
   projects: Record<string, ProjectState>;
