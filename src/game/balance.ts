@@ -125,7 +125,11 @@ export function aiStrength(id: string, player: string): number {
   return AI_STRENGTH[id] ?? AI_STRENGTH_DEFAULT;
 }
 /** 시작할 때 내 나라 금고·병력(예전의 몇 배). 시험판 자원 넉넉히 지급도 새 판에선 안 함 */
-export const PLAYER_START_TREASURY_MULT = 0.3;
+export const PLAYER_START_TREASURY_MULT = 0.6; // 11-27 대장 "예산 전체 2배": 0.3 → 0.6
+/** 11-27 대장 "예산을 전체적으로 2배": 내 나라 수입(나라 예산·국방비) 배율. 내정 비용 기준(priceBase)에는 안 들어감 */
+export const PLAYER_BUDGET_MULT = 2;
+/** 11-27 대장 "AI는 초기 예산을 엄청 많이, 어렵게": AI 나라 시작 금고 배율(힘 배율에 곱함) */
+export const AI_START_TREASURY_MULT = 5;
 export const PLAYER_START_TROOPS_MULT = 0.7;
 
 /** 11-26 보상 늘리기: 임무·작전·대전투에 이기면 받는 작전 수당(× 임무 종류 배율 × 난이도) */
