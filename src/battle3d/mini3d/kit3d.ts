@@ -9,10 +9,10 @@ const BASE = `${import.meta.env.BASE_URL}battle3d/glb/`;
 
 /** 쓰는 모형 이름 → 파일 · 맞출 크기(h=높이, len=긴 쪽) · 앞을 +Z로 돌리는 각도 */
 const FILES: Record<string, { f: string; h?: number; len?: number; rot?: number }> = {
-  tank: { f: 'Tank', len: 1.35, rot: Math.PI / 2 },
-  spg: { f: 'Tank4', len: 1.45, rot: Math.PI / 2 },
+  tank: { f: 'K2', len: 1.4, rot: Math.PI },
+  spg: { f: 'K9', len: 1.6, rot: 0 },
   jet: { f: 'Jet', len: 1.9 },
-  heli: { f: 'Heli', len: 1.7, rot: -Math.PI / 2 },
+  heli: { f: 'Apache', len: 1.7, rot: -Math.PI / 2 },
   b2s: { f: '2Story_Mat', h: 1.6 },
   b1g: { f: '1Story_GableRoof_Mat', h: 1.15 },
   b3s: { f: '3Story_Small_Mat', h: 2.1 },
