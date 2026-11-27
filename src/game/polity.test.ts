@@ -70,7 +70,7 @@ describe('내정 새 콘텐츠 8가지', () => {
     expect(canRally(s, c)).toContain('하루');
     expect(raw(s)).toBeGreaterThan(before);
     expect(voteShare(s)).toBeGreaterThanOrEqual(10);
-  });
+  }, 20000); // 선거 하루 전까지 여러 날 흘림(11-27 세계가 더 바빠져 5초를 넘길 수 있음)
   test('금리: 6시간마다, 올리면 물가 목표가 내려감', () => {
     let s = fresh();
     expect(canSetRate(s, 1)).toBeNull();

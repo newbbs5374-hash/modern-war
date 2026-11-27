@@ -17,6 +17,8 @@ import { activeAgreements, islandLeader, sanctionMult } from '../game/civ';
 import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../game/command';
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { deployOf } from '../game/deploy';
+import { regionIcon, regionName, regionOf } from '../data/regions';
+import { regionStanding, sanctionsOn, squeezesOn } from '../game/hegemony';
 import { TRIBUTE, acceptSurrender, canAccept, canDemand, canSurrender, demandChance, doDemand, doSurrender, lordOf } from '../game/surrender';
 import { MY_TARIFF_HOURS, MY_TARIFF_RATE, canDeal, canTariff, dealCost, doDeal, doTariff, tariffBetween } from '../game/pressure';
 import { scoutView } from '../game/spy';
@@ -225,6 +227,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                 <span>⚖️ 난이도 <b>{c.difficulty}</b></span>
               </div>
               <p className="small muted">📌 {f.note}</p>
+              <HegLine state={state} id={id} />
               {id !== me && <AiGrowBox state={state} id={id} />}
               {top && id !== me && (
                 <div className="buttons">
@@ -531,6 +534,23 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
 }
 
 /** AI 나라 성장(11-26): 지금 전략과 갈래 5개 단계 */
+/** 11-27 대륙 패권 한 줄: 대륙 순위·지분, 받는 제재·약탈 계약 */
+function HegLine({ state, id }: { state: GameState; id: string }) {
+  const rid = regionOf(id);
+  const st = regionStanding(state, rid);
+  const i = st.findIndex((x) => x.id === id);
+  if (i < 0) return null;
+  const sc = sanctionsOn(state, id).length;
+  const sq = squeezesOn(state, id).length;
+  return (
+    <p className="small muted" style={{ margin: '4px 0' }}>
+      {i === 0 && st.length > 1 ? '👑' : regionIcon(rid)} {regionName(rid)} {i + 1}위 · 힘 지분 {Math.round(st[i].share * 100)}%
+      {sc ? ` · 🚫 제재 ${sc}` : ''}
+      {sq ? ` · ⛓️ 약탈 계약 ${sq}` : ''}
+    </p>
+  );
+}
+
 function AiGrowBox({ state, id }: { state: GameState; id: string }) {
   const w = state.world;
   const g = w.grow?.[id];
