@@ -429,7 +429,7 @@ export const ERA_TENSION = 4;
 
 // ── 외교: 호감 · 협정 · 불만 장부 ──
 
-export type AgreeId = 'route' | 'science' | 'swap' | 'defense' | 'nonagg';
+export type AgreeId = 'route' | 'science' | 'swap' | 'defense' | 'nonagg' | 'prio' | 'techx';
 export interface Agree {
   id: AgreeId;
   name: string;
@@ -447,9 +447,12 @@ export const AGREES: Agree[] = [
   { id: 'swap', name: '자원 교환 계약', icon: '🔁', favorNeed: 0, hours: 48, cost: 2000, text: '그 나라가 만드는 자원 1가지를 시간당 1개 받고, 우리 가장 많은 자원 1개를 줌' },
   { id: 'defense', name: '방위 약속', icon: '🛡️', favorNeed: 30, hours: 72, cost: 6000, text: '그 나라와 긴장이 오르지 않고, 내 도시 방어 +5% · 호감 +10' },
   { id: 'nonagg', name: '불가침', icon: '🤝', favorNeed: 5, hours: 72, cost: 3000, text: '그 나라와 긴장이 오르지 않음 · 호감 +5' },
+  // 11-28 국정 37 강화(호감·협정): 새 협정 2가지
+  { id: 'prio', name: '자원 우선 구매권', icon: '📦', favorNeed: 15, hours: 48, cost: 3500, text: '그 나라에서 살 때 6% 싸고, 하루 거래 한도 +50% · 호감 +3' },
+  { id: 'techx', name: '기술 교류', icon: '🧪', favorNeed: 20, hours: 48, cost: 4500, text: '연구 점수 +(연구 협력의 절반) · 그 나라 연구도 빨라짐 · 호감 +4' },
 ];
 export const agreeById = (id: AgreeId) => AGREES.find((a) => a.id === id)!;
-export const AGREE_FAVOR: Record<AgreeId, number> = { route: 5, science: 5, swap: 3, defense: 10, nonagg: 5 };
+export const AGREE_FAVOR: Record<AgreeId, number> = { route: 5, science: 5, swap: 3, defense: 10, nonagg: 5, prio: 3, techx: 4 };
 /** 협정·체제 같은 계산 이유 외에, 쌓이는 이유(대화·불만)는 시간이 지나면 줄어듦: 실제 하루에 이 비율 */
 export const FAVOR_DECAY_PER_DAY = 0.2;
 export const GRIEVANCE_DECAY_PER_DAY = 0.1;
