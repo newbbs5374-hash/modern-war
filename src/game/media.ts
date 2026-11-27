@@ -421,31 +421,40 @@ export function pressAnswerText(s: GameState, n: number): string {
 
 /* ───────── 국민 청원 ───────── */
 
-export function canGrant(s: GameState, id: number): string | null {
+/** 11-28 청원 대답 3단계: 전부(값 100%) · 일부(값 40%) · 거절(돈 없음, 민심 조금 −) */
+export type PetAnswer = 'full' | 'part' | 'no';
+export const PET_ANSWER: Record<PetAnswer, { name: string; cost: number; loyalty: number; society: number; pres: number }> = {
+  full: { name: '전부 들어주기', cost: 1, loyalty: 12, society: 2, pres: 1 },
+  part: { name: '일부만', cost: 0.4, loyalty: 5, society: 1, pres: 0 },
+  no: { name: '거절', cost: 0, loyalty: -2, society: 0, pres: 0 },
+};
+export const petCost = (p: Petition, a: PetAnswer) => Math.round(p.cost * PET_ANSWER[a].cost);
+export function canGrant(s: GameState, id: number, a: PetAnswer = 'full'): string | null {
   const p = mediaOf(s).petitions.find((x) => x.id === id);
   if (!p) return '없는 청원';
-  if ((s.nations[me(s)]?.treasury ?? 0) < p.cost) return '나라 예산이 모자라요';
+  if ((s.nations[me(s)]?.treasury ?? 0) < petCost(p, a)) return '나라 예산이 모자라요';
   return null;
 }
-export function grantPetition(s: GameState, id: number): GameState {
-  if (canGrant(s, id)) return s;
+export function grantPetition(s: GameState, id: number, a: PetAnswer = 'full'): GameState {
+  if (canGrant(s, id, a)) return s;
+  const A = PET_ANSWER[a];
   const m = structuredClone(mediaOf(s));
   const p = m.petitions.find((x) => x.id === id)!;
   m.petitions = m.petitions.filter((x) => x.id !== id);
-  m.petDone++;
-  addMod(m, s.worldMs, 'society', 2, 12, '📝 청원 들어줌');
+  if (a !== 'no') m.petDone++;
+  if (A.society) addMod(m, s.worldMs, 'society', A.society, 12, a === 'full' ? '📝 청원 들어줌' : '📝 청원 일부 들어줌');
   const civ = structuredClone(civOf(s));
-  if (civ.cities[p.city]) civ.cities[p.city].loyalty = clamp(civ.cities[p.city].loyalty + 12);
+  if (civ.cities[p.city]) civ.cities[p.city].loyalty = clamp(civ.cities[p.city].loyalty + A.loyalty);
   const city = CITIES.find((c) => c.id === p.city);
   const ns: GameState = {
     ...s,
     civ,
     media: m,
-    nations: { ...s.nations, [me(s)]: { ...s.nations[me(s)], treasury: s.nations[me(s)].treasury - p.cost } },
+    nations: { ...s.nations, [me(s)]: { ...s.nations[me(s)], treasury: s.nations[me(s)].treasury - petCost(p, a) } },
     world: { ...s.world, events: [...s.world.events] },
   };
-  note(ns, `📝 ${city?.name ?? ''} 청원 "${PET_KINDS[p.kind].name}"을(를) 들어줬어요. 민심 +12`);
-  return addPresMod(ns, '📝 국민 청원 응답', 1, 12);
+  note(ns, `📝 ${city?.name ?? ''} 청원 "${PET_KINDS[p.kind].name}": ${A.name}. 민심 ${A.loyalty >= 0 ? '+' : ''}${A.loyalty}`);
+  return A.pres ? addPresMod(ns, '📝 국민 청원 응답', A.pres, 12) : ns;
 }
 
 /* ───────── 정상회담 ───────── */

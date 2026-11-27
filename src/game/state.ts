@@ -101,6 +101,7 @@ import './recsDefense'; // 11-28 국방 추천
 import './recsEcon'; // 11-28 경제 추천
 import './recsDiplo'; // 11-28 외교 추천
 import './recsCulture';
+import './recsSociety'; // 11-28 내정 추천
 import { bondTick, type BondState } from './bonds'; // 11-28 문화 추천
 
 export interface NationState {
