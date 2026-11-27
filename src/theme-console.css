@@ -1312,3 +1312,19 @@ select.wide, button.wide { width: 100%; }
 .dayplan-slots button small { font-size: 10.5px; line-height: 1.25; text-align: center; }
 .dayplan-slots button.done { opacity: 0.6; }
 .dayplan-msg { white-space: pre-line; }
+/* 11-27 사전 작전 */
+.prep { margin: 8px 0; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.prep-ops { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.prep-ops button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px; }
+.prep-ops button span { font-size: 22px; line-height: 1.1; }
+.prep-ops button b { font-size: 11.5px; }
+.prep-ops button small { font-size: 10px; line-height: 1.25; text-align: center; opacity: 0.85; }
+.prep-ops button.done { outline: 1px solid #4fd1a5; opacity: 1; }
+/* 11-27 전쟁 목표 */
+.wargoal { margin: 6px 0; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border-left: 3px solid var(--gold, #e6b800); }
+.wargoal-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin: 6px 0; }
+.wargoal-opts button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; }
+.wargoal-opts button span { font-size: 22px; line-height: 1.1; }
+.wargoal-opts button b { font-size: 12px; }
+.wargoal-opts button small { font-size: 10.5px; line-height: 1.25; text-align: center; }
+.wargoal .gold.wide small { font-size: 10.5px; font-weight: 400; }
