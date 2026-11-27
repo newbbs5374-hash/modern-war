@@ -114,9 +114,29 @@ export function generalResult(share: number, indRoll: number, before?: Seats): S
   return { ruling, opp: SEATS - ind - ruling, ind };
 }
 
+/** 11-28 선거 예측: 득표 흔들림(±4%)·무소속 수를 고르게 나눠 본 의석 범위와 과반 확률 */
+export const VOTE_HIST_MS = 3 * H;
+export const VOTE_HIST_MAX = 24;
+export function seatForecast(s: GameState, share = voteShare(s)): { low: number; mid: number; high: number; majority: number } {
+  const before = seatsOf(s);
+  const kp = s.player.countryId === 'kp';
+  const got: number[] = [];
+  for (let i = 0; i <= 10; i++)
+    for (let j = 0; j <= 4; j++) got.push(kp ? 280 : generalResult(clamp(share + (i / 10 - 0.5) * 8, 5, 95), j / 4, before).ruling);
+  got.sort((a, b) => a - b);
+  return { low: got[0], mid: got[Math.floor(got.length / 2)], high: got[got.length - 1], majority: got.filter((v) => v >= MAJORITY).length / got.length };
+}
+/** 3시간마다 예상 득표율을 적어 둠(그래프) */
+function recordVote(s: GameState): GameState {
+  const p = polityOf(s);
+  if (s.worldMs - (p.voteHistMs ?? 0) < VOTE_HIST_MS) return s;
+  return withPolity(s, { voteHist: [...(p.voteHist ?? []), Math.round(voteShare(s) * 10) / 10].slice(-VOTE_HIST_MAX), voteHistMs: s.worldMs });
+}
+
 /** 15분마다: 유세 창 알림·투표 */
-export function seatsTick(s: GameState): GameState {
-  if (!s.polity) return s;
+export function seatsTick(s0: GameState): GameState {
+  if (!s0.polity) return s0;
+  const s = recordVote(s0);
   const e = electionOf(s);
   if (s.worldMs < e.atMs) return s;
   let ns = s;
