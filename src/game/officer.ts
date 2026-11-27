@@ -46,6 +46,7 @@ import { addPresMod } from './approval';
 import { facBonus } from './facility';
 import { citiesOf, eul, ga, homeOf, isAlive, relationOf, syncFollowers, type WorldEvent } from './world';
 import { actAllowsTarget, grandCapLeft, grandToday, noteGrand } from './acts';
+import { planCounter } from './counter';
 import { RIVAL_ROLES, hasAlly, rivalTick, shiftInfluence, type RivalRole } from './rivals';
 import { addLoyalty, generalMissionBonus, loyaltyMissionBonus, loyaltyMissionMult, loyaltyRewardMult, loyaltyTick, schoolTick, touchAide } from './loyal';
 
@@ -944,6 +945,7 @@ function captureCity(ns: GameState, city: string) {
   ns.nations = { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury + loot }, ...(ns.nations[prev] ? { [prev]: { ...ns.nations[prev], treasury: Math.max(0, ns.nations[prev].treasury - (ns.nations[prev].treasury * SPOILS_TREASURY_SHARE)) } } : {}) };
   const ev: WorldEvent = { t: ns.worldMs, kind: '점령', text: `${countryById(me).name}, ${countryById(prev).name}의 ${eul(cityById(city).name)} 점령(내 작전) · 💰 전리품 나라 예산 +${loot.toLocaleString('ko-KR')}`, mine: true };
   w.events.unshift(ev);
+  planCounter(ns, city, prev);
 }
 
 /** 대전투 시작(준장부터, 12시간마다): 전쟁 중인 나라의 도시 */

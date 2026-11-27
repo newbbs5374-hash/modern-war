@@ -10,7 +10,7 @@ import { DEPLOY_FIELDS } from '../battle3d/deployFields';
 import { pickMini } from './minigames';
 
 export type Frame = 'mini' | 'b3d' | 'd3';
-export type Source = 'mission' | 'practice' | 'training' | 'occupy' | 'deploy';
+export type Source = 'mission' | 'practice' | 'training' | 'occupy' | 'deploy' | 'counter';
 
 export interface BattleSpec {
   frame: Frame;
@@ -44,6 +44,8 @@ export interface BattlePlan {
   occupy?: { city: string; task: string };
   /** 파병 교전(11-26): 파병 번호 · 교전 id */
   deploy?: { dep: number; clash: string };
+  /** 반격 방어전(11-27): 반격 번호 */
+  counter?: number;
 }
 
 /** 점령지 관리 임무 = 미니게임 한 판 */

@@ -5,6 +5,10 @@ import { ACTS, actGoals, actInfo, neighborsOf } from '../game/acts';
 import { ACT_AI, ACT_REWARD, GRAND_EXTRA_MAX, GRAND_PER_DAY, actOf } from '../game/balance';
 import { countryById } from '../data/world';
 import { Modal } from './kit';
+import { cityById } from '../data/cities';
+import { counterAutoChance, counterOf, counterPlan, type Counter } from '../game/counter';
+import { setPendingPlan } from '../battle/spec';
+import type { Screen } from './nav';
 
 export function ActCard({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
@@ -76,5 +80,58 @@ function ActModal({ state, onClose }: { state: GameState; onClose: () => void })
         ⚔️ 대전투는 하루 {GRAND_PER_DAY}번(루비로 {GRAND_EXTRA_MAX}번 더). 빼앗긴 우리 도시 되찾기는 세지 않아요.
       </p>
     </Modal>
+  );
+}
+
+const leftText = (ms: number) => {
+  const m = Math.max(0, Math.round(ms / 60000));
+  return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`;
+};
+
+/** 본부 '주요 임무': 반격 경보 카드 + 직접 막기·맡기기 창 */
+export function CounterCards({ state, go }: { state: GameState; go: (s: Screen) => void }) {
+  const [open, setOpen] = useState<Counter | null>(null);
+  const list = counterOf(state).list;
+  if (!list.length) return null;
+  const pct = Math.round(counterAutoChance(state) * 100);
+  return (
+    <>
+      {list.map((c) => (
+        <button key={c.id} className="hq hot counter-hq" onClick={() => setOpen(c)}>
+          <span>🚨</span>
+          <span className="hq-main">
+            <b>반격 경보 · {cityById(c.city).name}</b>
+            <small>
+              {countryById(c.from).name}군 도착까지 {leftText(c.dueMs - state.worldMs)}
+            </small>
+          </span>
+        </button>
+      ))}
+      {open && (
+        <Modal title={`${cityById(open.city).name} 반격 경보`} icon="🚨" onClose={() => setOpen(null)}>
+          <p className="act-sub">
+            {countryById(open.from).name}군이 {cityById(open.city).name}을(를) 되찾으러 와요. 도착까지 <b>{leftText(open.dueMs - state.worldMs)}</b>.
+          </p>
+          <div className="counter-pick">
+            <button
+              className="primary"
+              onClick={() => {
+                setPendingPlan(counterPlan(state, open));
+                setOpen(null);
+                go('battle');
+              }}
+            >
+              <b>🛡️ 직접 막기</b>
+              <small>3D 방어전 한 판 · 시간까지 버티면 승리 · 별 3개면 🎫 +1</small>
+            </button>
+            <button onClick={() => setOpen(null)}>
+              <b>🤝 부대에 맡기기</b>
+              <small>도착하면 알아서 맞아요 · 막아 낼 확률 {pct}%</small>
+            </button>
+          </div>
+          <p className="act-sub">막아 내면 노획 예산과 신뢰도를 얻고, 지면 도시를 다시 빼앗겨요. 부대 전투력이 높을수록 맡겨도 잘 막아요.</p>
+        </Modal>
+      )}
+    </>
   );
 }

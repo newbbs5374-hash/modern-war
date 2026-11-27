@@ -180,3 +180,19 @@ export const ACT_REWARD: Record<number, { ruby: number; boosts: number }> = { 1:
 export const GRAND_PER_DAY = 3;
 export const GRAND_EXTRA_MAX = 2;
 export const GRAND_EXTRA_RUBY = 40;
+
+// ── 11-27 종합 확장안 개편 3: AI 반격(도시를 빼앗긴 나라가 되찾으러 옴) ──
+/** 장마다 반격이 오는 확률(1장은 전쟁 없음) */
+export const COUNTER_CHANCE = [0, 0, 0.35, 0.5, 0.65];
+/** 반격이 닿기까지(시간) */
+export const COUNTER_MIN_H = 6;
+export const COUNTER_MAX_H = 12;
+/** 한꺼번에 걸리는 반격 수 */
+export const COUNTER_MAX = 2;
+/** 맡기면 막아 낼 확률: 바탕 + 부대 전투력 몫 − 장이 오를수록 */
+export const COUNTER_AUTO_BASE = 0.45;
+export const COUNTER_AUTO_ARMY = 0.3;
+export const COUNTER_AUTO_ACT = 0.4;
+/** 막아 내면 받는 것: 도시 값어치당 나라 예산 · 신뢰도 · 별 3개면 가속권 */
+export const COUNTER_BOUNTY_PER_VALUE = 40;
+export const COUNTER_TRUST = 2;

@@ -6,7 +6,8 @@
 //  ④ 문화 승리: 다른 나라 2/3에서 문화 우세 + 5단계 문화 시설 2곳을 7일 지킴 — culture.ts
 //  둘 중 하나를 HOLD_DAYS일 동안 계속 지켜야 이김(지도자가 된 날 바로 끝나지 않게)
 import { FRONT } from '../data/cities';
-import { countryById } from '../data/world';
+import { COUNTRIES, countryById } from '../data/world';
+import { lordOf } from './surrender';
 import { RANKS } from '../data/ranks';
 import type { GameState } from './state';
 import { relationOf } from './world';
@@ -33,13 +34,32 @@ export interface Ending {
 /** 승리 조건을 지킨 시간(ms). 조건을 못 채우면 null */
 export const holdLeft = (s: GameState) => (s.officer.winSinceMs == null ? null : Math.max(0, s.officer.winSinceMs + HOLD_MS - s.worldMs));
 
+/** 강대국: 나를 뺀 나라 중 군사력이 가장 센 셋(11-27 정복 승리 조건) */
+export const CAPITALS_NEED = 3;
+export function greatPowers(me: string): string[] {
+  return COUNTRIES.filter((c) => c.id !== me)
+    .sort((a, b) => b.military - a.military)
+    .slice(0, CAPITALS_NEED)
+    .map((c) => c.id);
+}
+
 export function victoryProgress(s: GameState) {
   const me = s.player.countryId;
   const owner = s.world.owner;
   // 11-25: 점령 도시(거점)만 셈. 내정 도시는 거점을 따라감
   const mine = FRONT.filter((c) => owner[c.id] === me);
   const allied = FRONT.filter((c) => owner[c.id] === me || relationOf(s.world, me, owner[c.id]) === '연합').length;
+  // 11-27: 정복 승리는 강대국 수도 3곳도 쥐어야 함(내 것이거나 내 속국 것). 장 기록이 없는 옛 저장은 조건 없음
+  const caps = greatPowers(me).map((id) => {
+    const o = owner[`${id}-0`];
+    return { id, name: countryById(id).name, city: countryById(id).cities[0], held: o === me || lordOf(s, o) === me };
+  });
+  const capsNeed = s.world.act == null ? 0 : CAPITALS_NEED;
   return {
+    caps,
+    capsNeed,
+    capsHave: caps.filter((c) => c.held).length,
+    capsOk: caps.filter((c) => c.held).length >= capsNeed,
     mine: mine.length,
     allied,
     total: FRONT.length,
@@ -72,7 +92,7 @@ export function checkVictory(s: GameState): GameState {
   const p = victoryProgress(s);
   if (pt.won && !hasWon(s, '평화 승리')) return finish(s, '평화 승리', p);
   if (ct.won && !hasWon(s, '문화 승리')) return finish(s, '문화 승리', p);
-  const kind = p.mine >= p.needAlone && !hasWon(s, '정복 승리') ? '정복 승리' : p.allied >= p.needAllied && !hasWon(s, '연합 승리') ? '연합 승리' : null;
+  const kind = p.mine >= p.needAlone && p.capsOk && !hasWon(s, '정복 승리') ? '정복 승리' : p.allied >= p.needAllied && !hasWon(s, '연합 승리') ? '연합 승리' : null;
   const since = s.officer.winSinceMs ?? null;
   if (!kind) return since === null ? s : { ...s, officer: { ...s.officer, winSinceMs: null } };
   if (since === null) {
