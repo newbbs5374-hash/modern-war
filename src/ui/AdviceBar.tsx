@@ -81,7 +81,7 @@ export function adviceTips(s: GameState, f: AdviceField): Tip[] {
 }
 
 /** 11-28 장관 추천 카드(숫자 + 바로 실행). 장관이 없으면 비서실이 1개만 */
-function RecCards({ state, apply, field, go }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; field: AdviceField; go: (tab: string) => void }) {
+export function RecCards({ state, apply, field, go }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; field: AdviceField; go: (tab: string) => void }) {
   const hour = Math.floor(state.worldMs / 3600e3);
   // 실제 1분마다·자원·군대·파병이 바뀔 때만 다시 계산
   const v = useMemo(() => pickRecs(state, field, 3), [hour, Math.floor(state.worldMs / 60e3), state.economy, state.deploy, state.nations, field]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -90,23 +90,23 @@ function RecCards({ state, apply, field, go }: { state: GameState; apply: (f: (s
   if (!v.list.length) return null;
   const sc = v.advisor ? lg.score[v.advisor.p.id] : undefined;
   return (
-    <div className="rec-box">
-      <div className="rec-head">
+    <div className="mrec-box">
+      <div className="mrec-head">
         <b>📋 {v.advisor ? `${v.advisor.where} ${v.advisor.p.name}` : '비서실'} 추천</b>
         <small className="muted">
           정확도 {Math.round(v.acc * 100)}%{sc ? ` · 따른 추천 ${sc.n}건 중 1순위 ${sc.ok}건` : ''}
         </small>
       </div>
       {v.list.map((r: Picked, i) => (
-        <div key={r.id} className="rec-card">
-          <span className="rec-ic">{r.icon}</span>
-          <span className="rec-txt">
+        <div key={r.id} className="mrec-card">
+          <span className="mrec-ic">{r.icon}</span>
+          <span className="mrec-txt">
             <b>
               {i + 1}. {r.title}
             </b>
             <small>{r.why}</small>
           </span>
-          <span className="rec-act">
+          <span className="mrec-act">
             <b className={r.gain(r.k).startsWith('−') ? 'bad' : 'good'}>{r.gain(r.k)}</b>
             {r.act ? (
               <button onClick={() => apply((s) => runRec(s, field, r.id))}>실행</button>
@@ -116,10 +116,12 @@ function RecCards({ state, apply, field, go }: { state: GameState; apply: (f: (s
           </span>
         </div>
       ))}
-      <label className="rec-auto small">
+      {field !== 'economy' && (
+        <label className="mrec-auto small">
         <input type="checkbox" checked={on} onChange={(e) => apply((s) => setAuto(s, field, e.target.checked))} />
         {NAME[field]} 맡기기: 1시간마다 1순위를 알아서 실행(한 번에 {approx(lg.autoCap ?? AUTO_CAP)}까지)
       </label>
+      )}
       {on && lg.log.length > 0 && <small className="muted">최근 맡긴 일: {lg.log.slice(0, 3).join(' · ')}</small>}
     </div>
   );

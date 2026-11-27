@@ -6,7 +6,7 @@ import { RESOURCES, type Res } from '../data/economy';
 import { countryById } from '../data/world';
 import { isArchRival } from '../data/archRivals';
 import { relationOf } from './world';
-import { canTrade, producesOf, sellRate, trade, tradePartners, tradePrice } from './economy';
+import { buyCost, canTrade, producesOf, sellGain, sellPrice, trade, tradePartners, tradePrice } from './economy';
 import type { GameState } from './state';
 
 export const ADVICE_PER_DAY = 3;
@@ -44,9 +44,6 @@ export function adviceLeft(s: GameState): number {
   return ADVICE_PER_DAY - (a && a.day === adviceDay(s) ? a.n : 0);
 }
 
-const sellPrice = (s: GameState, id: string, r: Res) => Math.round(tradePrice(s, id, r) * sellRate(s, id));
-/** 실제 팔 때 받는 돈(trade()와 같은 반올림) */
-const sellTotal = (s: GameState, id: string, r: Res, q: number) => Math.round(tradePrice(s, id, r) * sellRate(s, id) * q);
 const persona = (s: GameState, id: string) => s.world.personalities[id] ?? '';
 
 function whyBuy(s: GameState, id: string): string[] {
@@ -85,9 +82,16 @@ export function tradeTips(s: GameState): TradeTip[] {
     // 1) 되팔기: 싸게 파는 나라에서 사서 비싸게 사는 나라에 팖
     if (bestBuy && bestSell && bestSell.id !== bestBuy.id && bestSell.p > bestBuy.p) {
       // (gain이 0 이하면 아래에서 거름)
-      const qty = Math.min(ADVICE_QTY_MAX, Math.floor((budget * ADVICE_SPEND) / Math.max(1, bestBuy.p)));
+      // 11-28 시세 제도: 많이 살수록 값이 오르고 많이 팔수록 내리므로, 실제 값으로 가장 남는 수량을 고름
+      const qmax = Math.min(ADVICE_QTY_MAX, Math.floor((budget * ADVICE_SPEND) / Math.max(1, bestBuy.p)));
+      let qty = 0;
+      let gain = 0;
+      for (const q of [5, 10, 20, 40, ADVICE_QTY_MAX]) {
+        if (q > qmax) break;
+        const g = sellGain(s, bestSell.id, r, q) - buyCost(s, bestBuy.id, r, q);
+        if (g > gain) (gain = g), (qty = q);
+      }
       if (qty >= 1) {
-        const gain = sellTotal(s, bestSell.id, r, qty) - tradePrice(s, bestBuy.id, r) * qty;
         const ally = relationOf(s.world, me, bestBuy.id) === '연합' || relationOf(s.world, me, bestSell.id) === '연합';
         if (gain > 0) out.push({ id: `flip-${r}`, kind: 'flip', res: r, qty, from: bestBuy.id, to: bestSell.id, gain, score: gain, why: [...whyBuy(s, bestBuy.id), ...whySell(s, bestSell.id)].slice(0, 2), ally });
       }
@@ -96,7 +100,7 @@ export function tradeTips(s: GameState): TradeTip[] {
     const have = Math.floor(s.economy.stock[r] ?? 0);
     if (bestSell && have > ADVICE_KEEP) {
       const qty = Math.min(ADVICE_QTY_MAX, have - ADVICE_KEEP);
-      const gain = sellTotal(s, bestSell.id, r, qty);
+      const gain = sellGain(s, bestSell.id, r, qty);
       const ally = relationOf(s.world, me, bestSell.id) === '연합';
       out.push({ id: `sell-${r}`, kind: 'sell', res: r, qty, to: bestSell.id, gain, score: gain * 0.6, why: [`창고 ${have}개 · ${ADVICE_KEEP}개 남김`, ...whySell(s, bestSell.id)].slice(0, 2), ally });
     }
@@ -107,7 +111,7 @@ export function tradeTips(s: GameState): TradeTip[] {
       if (qty >= 1) {
         const save = Math.round((avg - bestBuy.p) * qty);
         const ally = relationOf(s.world, me, bestBuy.id) === '연합';
-        out.push({ id: `buy-${r}`, kind: 'buy', res: r, qty, from: bestBuy.id, gain: -bestBuy.p * qty, score: Math.max(1, save) * 0.5 + 1, why: [`창고 ${have}개 · 부족`, ...(save > 0 ? [`평균보다 ${save} 아낌`] : []), ...whyBuy(s, bestBuy.id)].slice(0, 2), ally });
+        out.push({ id: `buy-${r}`, kind: 'buy', res: r, qty, from: bestBuy.id, gain: -buyCost(s, bestBuy.id, r, qty), score: Math.max(1, save) * 0.5 + 1, why: [`창고 ${have}개 · 부족`, ...(save > 0 ? [`평균보다 ${save} 아낌`] : []), ...whyBuy(s, bestBuy.id)].slice(0, 2), ally });
       }
     }
   }

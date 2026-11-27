@@ -323,11 +323,11 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
             각 분야 장관이 지금 가장 이득인 일을 골라 올렸어요. 숫자는 장관 정확도만큼 틀릴 수 있어요.
           </p>
           {desk.length ? (
-            <div className="rec-box">
+            <div className="mrec-box">
               {desk.map((r, i) => (
-                <div key={r.id} className="rec-card">
-                  <span className="rec-ic">{r.icon}</span>
-                  <span className="rec-txt">
+                <div key={r.id} className="mrec-card">
+                  <span className="mrec-ic">{r.icon}</span>
+                  <span className="mrec-txt">
                     <b>
                       {i + 1}. {r.title}
                     </b>
@@ -335,7 +335,7 @@ export function TreeScreen({ state, go, actions }: ScreenProps) {
                       {r.who} · {r.why}
                     </small>
                   </span>
-                  <span className="rec-act">
+                  <span className="mrec-act">
                     <b className={r.gain(r.k).startsWith('−') ? 'bad' : 'good'}>{r.gain(r.k)}</b>
                     {r.act && actions ? (
                       <button onClick={() => actions.apply((s) => runRec(s, r.field, r.id))}>결재</button>

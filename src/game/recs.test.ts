@@ -12,7 +12,7 @@ describe('장관 추천', () => {
   test('남는 자원이 있으면 팔기 추천, 실행하면 돈이 늘고 자원이 줆', () => {
     let s = base();
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 희토류: 200 } } };
-    const r = allRecs(s, 'economy').find((x) => x.id.startsWith('sell:희토류'));
+    const r = allRecs(s, 'economy').find((x) => x.id === 'trade:sell-희토류');
     expect(r).toBeTruthy();
     const t0 = s.nations.kr.treasury;
     const ns = runRec(s, 'economy', r!.id);
@@ -22,7 +22,7 @@ describe('장관 추천', () => {
   });
   test('중계 무역 추천은 실제로 이득', () => {
     const s = base();
-    const r = allRecs(s, 'economy').find((x) => x.id.startsWith('relay:'));
+    const r = allRecs(s, 'economy').find((x) => x.id.startsWith('trade:flip-'));
     if (!r) return; // 값 차이가 없는 판도 있음
     const ns = runRec(s, 'economy', r.id);
     expect(ns.nations.kr.treasury).toBeGreaterThan(s.nations.kr.treasury);
@@ -36,11 +36,11 @@ describe('장관 추천', () => {
   test('분야 맡기기는 처음엔 꺼짐, 켜면 1시간마다 실행', () => {
     let s = base();
     s = { ...s, economy: { ...s.economy, stock: { ...s.economy.stock, 희토류: 200 } } };
-    expect(recLogOf(s).auto.economy).toBeFalsy();
+    expect(recLogOf(s).auto.defense).toBeFalsy();
     expect(recTick(s)).toBe(s);
-    s = setAuto(s, 'economy', true);
+    s = setAuto(s, 'defense', true);
     const ns = recTick(s);
-    expect(ns.recLog!.autoMs.economy).toBe(s.worldMs);
+    expect(ns.recLog!.autoMs.defense).toBe(s.worldMs);
   });
 });
 

@@ -127,7 +127,7 @@ export function recTick(s: GameState): GameState {
   if (!lg || !Object.values(lg.auto).some(Boolean)) return s;
   let ns = s;
   for (const f of Object.keys(lg.auto) as AdviceField[]) {
-    if (!lg.auto[f] || ns.worldMs - (recLogOf(ns).autoMs[f] ?? -Infinity) < H) continue;
+    if (f === 'economy' || !lg.auto[f] || ns.worldMs - (recLogOf(ns).autoMs[f] ?? -Infinity) < H) continue;
     const me = ns.player.countryId;
     const r = pickRecs(ns, f, 3).list.find((x) => x.act);
     ns = { ...ns, recLog: { ...recLogOf(ns), autoMs: { ...recLogOf(ns).autoMs, [f]: ns.worldMs } } };
