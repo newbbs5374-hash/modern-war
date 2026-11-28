@@ -1814,3 +1814,27 @@ html[data-map-still] .hl-wx i { animation: none !important; }
 .proxy-row { padding: 3px 0; }
 .ctl-gar:has(> button:nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .alert-card { border-color: #ff6b5a; box-shadow: 0 0 0 1px rgba(255, 107, 90, 0.35) inset; }
+/* 11-28 새 전체 화면 훈련: 포격전 */
+.ft-full { position: fixed; inset: 0; z-index: 9000; background: #0b1622; touch-action: none; user-select: none; -webkit-user-select: none; }
+.ft-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ft-hud { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 8px; right: 8px; display: flex; gap: 8px; align-items: center; }
+.ft-hp { flex: 1; display: flex; flex-direction: column; gap: 2px; color: #fff; text-shadow: 0 1px 2px #000; }
+.ft-hp.foe { text-align: right; }
+.ft-hp i { display: block; height: 8px; border-radius: 4px; background: #3d7bd9; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); transition: width 0.4s; }
+.ft-hp.foe i { background: #d9483d; margin-left: auto; }
+.ft-mid { display: flex; flex-direction: column; align-items: center; color: #fff; text-shadow: 0 1px 2px #000; min-width: 84px; }
+.ft-exit { background: rgba(0, 0, 0, 0.45); color: #fff; border: 0; border-radius: 50%; width: 32px; height: 32px; }
+.ft-turn { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 50px); left: 0; right: 0; text-align: center; color: #fff; font-weight: 700; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.ft-ctl { position: absolute; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); display: grid; grid-template-columns: 48px 48px 90px auto 1fr; gap: 6px; align-items: center; }
+.ft-ctl > button { height: 46px; font-size: 20px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); }
+.ft-fuel { color: #fff; font-size: 11px; }
+.ft-fuel i { display: block; height: 6px; border-radius: 3px; background: #f5c542; }
+.ft-ang { display: flex; align-items: center; gap: 4px; color: #fff; background: rgba(0, 0, 0, 0.5); border-radius: 12px; padding: 4px 6px; }
+.ft-ang button { width: 36px; height: 36px; border-radius: 10px; background: rgba(255, 255, 255, 0.15); color: #fff; border: 0; }
+.ft-ang b { min-width: 40px; text-align: center; }
+.ft-fire { height: 52px; border-radius: 16px; border: 0; font-size: 18px; font-weight: 800; color: #fff; background: linear-gradient(#e0552f, #a8321a); position: relative; overflow: hidden; }
+.ft-fire:disabled { opacity: 0.5; }
+.ft-gauge { position: absolute; left: 10px; right: 10px; bottom: 6px; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.35); }
+.ft-gauge i { position: absolute; left: 0; top: 0; bottom: 0; background: #ffd34d; border-radius: 4px; }
+.ft-gauge em { position: absolute; top: -3px; width: 2px; height: 14px; background: #fff; }
+.ft-full.rot { inset: auto; top: 0; left: 0; width: 100vh; height: 100vw; transform-origin: top left; transform: rotate(90deg) translateY(-100%); }
