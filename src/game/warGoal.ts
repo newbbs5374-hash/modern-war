@@ -35,7 +35,8 @@ export function takenIn(s: GameState, foe: string): number {
   const g = warGoalOf(s, foe);
   return Math.max(0, homeHeld(s, foe).length - (g?.base ?? 0));
 }
-const capitalHeld = (s: GameState, foe: string) => s.world.owner[`${foe}-0`] === s.player.countryId;
+// 11-28 수도는 함락 불가: 정권 교체 목표 = 수도를 뺀 본토 거점을 모두 차지
+const capitalHeld = (s: GameState, foe: string) => FRONT.filter((c) => c.home === foe && !c.capital).every((c) => s.world.owner[c.id] === s.player.countryId);
 
 export function canSetGoal(s: GameState, foe: string): string | null {
   if (!atWar(s, foe)) return '전쟁 중인 나라가 아니에요';

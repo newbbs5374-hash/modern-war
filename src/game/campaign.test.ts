@@ -13,12 +13,11 @@ const war = (act: number | undefined): GameState => {
 };
 
 describe('전역', () => {
-  it('길은 본토 거점 전부, 수도가 맨 끝', () => {
+  it('길은 수도를 뺀 본토 거점 전부(11-28 수도 함락 불가)', () => {
     const s = war(2);
     const r = campaignRoute(s, 'jp');
     expect(r.length).toBeGreaterThan(2);
-    expect(cityById(r[r.length - 1]).capital).toBe(true);
-    expect(r.slice(0, -1).some((id) => cityById(id).capital)).toBe(false);
+    expect(r.some((id) => cityById(id).capital)).toBe(false);
     expect(campaignNext(s, 'jp')).toBe(r[0]);
   });
   it('차례가 아닌 도시는 잠기고 대전투 대상에서 빠진다(옛 저장은 순서 없음)', () => {
