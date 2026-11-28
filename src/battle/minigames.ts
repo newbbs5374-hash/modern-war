@@ -99,6 +99,7 @@ export const MINIGAMES: MiniDef[] = [
   { id: 'n-rec-ads', training: '모병', name: '광고 캠페인', how: '하루 예산 10을 TV·인터넷·학교·박람회에 나눠요. 채널마다 효과가 숨어 있어요. 어제 결과를 보고 고쳐요. 뉴스가 뜨면 그 채널이 2배. 7일 동안.', secs: 70, on: true, three: true, fresh: 'D' },
   // 11-28 새 전체 화면 훈련(화면을 다 씀)
   { id: 'g-fortress', training: '포격', name: '포격전', how: '포트리스처럼 번갈아 쏘는 전차 포격. 화면을 위아래로 끌어 각도, 🔥를 꾹 눌렀다 떼서 힘. 바람을 보고 적 전차를 맞혀요. 포탄이 높이 날면 화면이 넓어져 끝까지 보여요.', secs: 300, on: true, three: true },
+  { id: 'g-infiltrate', training: '잠입', name: '침투 작전', how: '옆으로 가는 잠입 플랫폼. ◀ ▶로 달리고 ⤴ 점프, ⤵ 꾹 숙이기. 그림자 속에서 숙이면 안 보이고, 상자 뒤에 숙이면 경비병 시선이 막혀요. 경보가 차면 목숨 하나. 적 기지 문까지 가요.', secs: 240, on: true, three: true },
   // 11-27 한 손가락 미니 훈련(화면이 만들어진 것만)
   ...EASY.filter((e) => e.view).map((e) => ({ id: e.id, training: e.training, name: e.name, how: e.how, secs: e.secs, on: true, three: true, easy: e.ctl })),
 ];

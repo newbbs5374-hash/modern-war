@@ -1838,3 +1838,7 @@ html[data-map-still] .hl-wx i { animation: none !important; }
 .ft-gauge i { position: absolute; left: 0; top: 0; bottom: 0; background: #ffd34d; border-radius: 4px; }
 .ft-gauge em { position: absolute; top: -3px; width: 2px; height: 14px; background: #fff; }
 .ft-full.rot { inset: auto; top: 0; left: 0; width: 100vh; height: 100vw; transform-origin: top left; transform: rotate(90deg) translateY(-100%); }
+.if-ctl { position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); display: flex; justify-content: space-between; pointer-events: none; }
+.if-pad { display: flex; gap: 10px; pointer-events: auto; }
+.if-pad button { white-space: nowrap; width: 84px; height: 64px; border-radius: 16px; background: rgba(0, 0, 0, 0.45); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); font-size: 18px; font-weight: 700; touch-action: none; }
+.if-pad .if-jump { background: rgba(60, 140, 90, 0.7); }
