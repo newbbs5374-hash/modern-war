@@ -17,7 +17,7 @@ import { civOf } from '../game/civ';
 import { aideSlots, generalSlots } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { GovPanel, CityPanel, ResearchPanel } from './CivScreens';
-import { FacilityPanel, ResourcePanel, TreasuryPanel, needPick } from './InteriorScreen';
+import { FacilityPanel, MbCard, ResourcePanel, TaxCard, TreasuryPanel, needPick } from './InteriorScreen';
 import { TradePanel } from './DiplomacyScreen';
 import { ForcesScreen } from './ForcesScreen';
 import { SpyPanel } from './SpyPanel';
@@ -270,6 +270,8 @@ export function EconomyScreen(props: ScreenProps) {
       {tab === 'tax' && (
         <>
           <BudgetSeasonCard {...props} />
+          <MbCard state={props.state} apply={props.actions.apply} />
+          <TaxCard state={props.state} apply={props.actions.apply} />
           <MinistryCards state={props.state} actions={props.actions} ids={['mof', 'moel', 'mss']} title="기획재정·고용·중소기업" compact go={props.go} />
           <PolicyPanel {...props} />
         </>
