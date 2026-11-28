@@ -390,7 +390,7 @@ function OpsCard({ state, run }: { state: GameState; run: Run }) {
       <select value={foe} onChange={(e) => setFoe(e.target.value)} style={{ width: '100%' }}>
         {foes.map((f) => (
           <option key={f.id} value={f.id}>
-            {FLAG[f.id] ?? ''} {nm(f.id)} {f.war ? '⚔️' : `긴장 ${Math.round(f.t)}`} · 여론 {Math.round(moodOf(state, f.id))}
+            {nm(f.id)} {f.war ? '⚔️' : `긴장 ${Math.round(f.t)}`} · 여론 {Math.round(moodOf(state, f.id))}
           </option>
         ))}
       </select>
@@ -439,7 +439,7 @@ function StraitCard({ state, run }: { state: GameState; run: Run }) {
           <div key={d.id} className="row wrap proxy-row" style={{ gap: 6 }}>
             <span style={{ flex: 1, minWidth: 0 }}>
               <b className="small">{d.icon} {d.name}</b>
-              <small className="muted"> · {d.city} · {own ? `${FLAG[own] ?? ''} ${nm(own)}` : '?'}</small>
+              <small className="muted"> · {d.city} · {own ? nm(own) : '?'}</small>
               {blk && <small className="warn"> · 🚫 {nm(blk.by)}가 봉쇄 중({timeLeft(blk.untilMs - state.worldMs)})</small>}
             </span>
             {own === me && (
@@ -512,7 +512,7 @@ function MineralCard({ state, run }: { state: GameState; run: Run }) {
           <option value="">통제할 나라</option>
           {targets.map((c) => (
             <option key={c.id} value={c.id}>
-              {FLAG[c.id] ?? ''} {c.name}
+              {c.name}
             </option>
           ))}
         </select>
