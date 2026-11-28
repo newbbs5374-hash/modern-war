@@ -11,7 +11,7 @@ import { RANKS } from '../data/ranks';
 import { isAlive, relationOf } from '../game/world';
 import { CATCH_FAME, CATCH_INTEL, LEAK_RESEARCH, LEAK_SPY, MOLE_SPOTS, arrest, canClue, clueCost, findClue, moleOf } from '../game/mole';
 import { INTEL_BONUS, SPY_OPS, canPick, canSpy, intelFresh, missionOdds, missionStep, pickCost, pickStep, scoutView, spyChance, spyOf, spyOpById, spyTeams, startSpy, type SpyMission } from '../game/spy';
-import { PICKS, SKILLS, STEP_ART, TRAITS, agentById, agentLook, bestAgent, canSwap, hasSteps, ransomOf, stepNames, stepText, type Agent, type StepPick } from '../game/agents';
+import { LV_MAX, PICKS, SKILLS, STEP_ART, TRAITS, powerOf, statsOf, agentById, agentLook, bestAgent, canSwap, hasSteps, ransomOf, stepNames, stepText, type Agent, type StepPick } from '../game/agents';
 import { canPayRansom } from '../game/shadow';
 import { countryFaceUrl, portraitUrl, youngFaceUrl } from './Portrait';
 import { agentArt } from './scenes';
@@ -146,8 +146,11 @@ const STATUS: Record<Agent['status'], { t: string; c: string }> = {
   caught: { t: '붙잡힘', c: 'dn' },
   dead: { t: '순직', c: 'dn' },
 };
-export function AgentCard({ a, state, on, onPick, onSwap, onRansom }: { a: Agent; state: GameState; on: boolean; onPick: () => void; onSwap: () => void; onRansom?: () => void }) {
-  const url = (a.legend && a.home ? portraitUrl(`agent-${a.home}-${String((a.photo ?? 0) + 1).padStart(2, '0')}`) : null) ?? youngFaceUrl(a.home ?? state.player.countryId, a.sex, a.face) ?? countryFaceUrl({ country: state.player.countryId, sex: a.sex, age: a.age, id: a.id, face: a.face }, agentLook(state));
+/** 요원 사진: 그 나라 요원 사진(agent-<나라>-01~16) → 젊은 얼굴 → 나라 얼굴 */
+export const agentPhotoUrl = (a: Agent, state: GameState) => (a.home && a.photo != null ? portraitUrl(`agent-${a.home}-${String(a.photo + 1).padStart(2, '0')}`) : null) ?? youngFaceUrl(a.home ?? state.player.countryId, a.sex, a.face) ?? countryFaceUrl({ country: state.player.countryId, sex: a.sex, age: a.age, id: a.id, face: a.face }, agentLook(state));
+export function AgentCard({ a, state, on, onPick, onSwap, onRansom, onInfo }: { a: Agent; state: GameState; on: boolean; onPick: () => void; onSwap: () => void; onRansom?: () => void; onInfo?: () => void }) {
+  const url = agentPhotoUrl(a, state);
+  const t = statsOf(a);
   const st = STATUS[a.status];
   const where = a.where ? ` · ${countryById(a.where).name}` : '';
   const left = a.untilMs && a.untilMs > state.worldMs ? ` ${timeLeft(a.untilMs - state.worldMs)}` : '';
@@ -157,12 +160,14 @@ export function AgentCard({ a, state, on, onPick, onSwap, onRansom }: { a: Agent
         {url ? <img src={url} alt="" /> : <span>🕵️</span>}
         {a.legend && <i className="agent-ss">SS</i>}
         <i className={`agent-tag ${st.c}`}>{st.t}{where}{left}</i>
+        {onInfo && <button className="agent-info" aria-label="요원 키우기" onClick={(e) => { e.stopPropagation(); onInfo(); }}>⬆️{(a.pts ?? 0) > 0 ? <i>{a.pts}</i> : null}</button>}
       </div>
       <b>"{a.code}" {a.name}</b>
       <small className="muted">{a.skills.map((k) => `${SKILLS[k].icon}${SKILLS[k].name}`).join(' · ')}</small>
       {a.legend && a.trait && <small className="agent-trait">🖤 {TRAITS[a.trait].name} · {TRAITS[a.trait].text}{a.from ? ` · ${a.from} 출신` : ''}</small>}
-      <small className="agent-star">{'★'.repeat(a.lv)}{'☆'.repeat(5 - a.lv)}</small>
-      <span className="bar"><span className="bar-fill" style={{ width: `${a.lv >= 5 ? 100 : Math.min(100, (a.xp / (a.lv * 100)) * 100)}%` }} /></span>
+      <small className="agent-star">등급 {a.lv}/{LV_MAX} · 힘 <b>{powerOf(a)}</b></small>
+      <small className="agent-stats">🥷{t.infil} 🎯{t.ops} 🤫{t.hush}</small>
+      <span className="bar"><span className="bar-fill" style={{ width: `${a.lv >= LV_MAX ? 100 : Math.min(100, (a.xp / (a.lv * 100)) * 100)}%` }} /></span>
       {a.status === 'caught' && (
         <button className="small" disabled={!!canSwap(state, a.id)} title={canSwap(state, a.id) ?? ''} onClick={(e) => { e.stopPropagation(); onSwap(); }}>
           🔁 포로 교환

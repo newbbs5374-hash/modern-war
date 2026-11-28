@@ -11,7 +11,7 @@ import { Rng } from './rng';
 import { pushReport } from './report';
 import type { GameState } from './state';
 import { isAlive, isRival, pairKey, relationOf, type WorldEvent } from './world';
-import { HURT_MS, CAUGHT_MS, PICKS, addWeak, agentBonus, agentById, agentDone, agentRiskMul, agentsOf, bestAgent, bondRumor, caughtIn, hasSteps, patchAgent, withAgents, type StepPick } from './agents';
+import { HURT_MS, CAUGHT_MS, PICKS, addWeak, agentBonus, agentById, agentDone, agentRiskMul, agentsOf, bestAgent, powerOf, bondRumor, caughtIn, hasSteps, patchAgent, withAgents, type StepPick } from './agents';
 import { applyRivalMethod, domesticScandal, grantTech, stealable, type RivalMethod } from './shadow';
 import { influenceOf } from './rivals';
 import { specialsOf } from '../data/specials';
@@ -39,6 +39,12 @@ export interface SpyOpDef {
   shadow?: boolean;
   domestic?: boolean;
 }
+/** 11-28 주요 임무: 요원 힘(능력치 평균)이 이만큼은 돼야 보낼 수 있음 */
+export const OP_NEED: Partial<Record<string, number>> = {
+  'r-woo': 55, 'r-probe': 60, 'r-defect': 65, 'r-frame': 70, 'r-family': 70, 'r-accident': 78,
+  turn: 55, blueprint: 60, base: 60, techsteal: 68,
+};
+export const opNeed = (op: string) => OP_NEED[op] ?? 0;
 
 export const SPY_OPS: SpyOpDef[] = [
   { id: 'scout', name: '위성 정찰', icon: '🛰️', text: '그 나라 병력·나라 예산을 24시간 동안 봐요(늘 성공). 다른 작전 성공률 +5%.', intel: 5, money: 300, hours: 1, base: 1, caught: { favor: 0, tension: 0 }, rank: 0 },
@@ -109,7 +115,7 @@ export const INTEL_BONUS = 0.1;
 export function spyChance(s: GameState, op: SpyOpId, target: string, agentId?: number, rival?: string): number {
   const d = spyOpById(op);
   if (d.base >= 1) return 1;
-  const ag = hasSteps(op) ? (agentId != null ? agentById(s, agentId) : bestAgent(s, op)) : undefined;
+  const ag = hasSteps(op) ? (agentId != null ? agentById(s, agentId) : bestAgent(s, op, opNeed(op)) ?? bestAgent(s, op)) : undefined;
   const st = s.officer.stats;
   const skill = ((st['은밀'] ?? 8) + (st['정보'] ?? 8)) / 2;
   if (d.domestic) { // 정적 처리: 영향력이 클수록 어려움
@@ -143,7 +149,9 @@ export function canSpy(s: GameState, op: SpyOpId, target: string, agentId?: numb
     if (agentId != null) {
       const a = agentById(s, agentId);
       if (!a || a.status !== 'idle') return '그 요원은 지금 보낼 수 없어요';
+      if (powerOf(a) < opNeed(op)) return `주요 임무: 요원 힘 ${opNeed(op)} 이상(지금 ${powerOf(a)})`;
     } else if (!bestAgent(s, op)) return '쉬고 있는 요원이 없어요';
+    else if (!bestAgent(s, op, opNeed(op))) return `주요 임무: 요원 힘 ${opNeed(op)} 이상인 요원이 필요해요`;
   }
   return null;
 }
@@ -161,7 +169,7 @@ export function startSpy(s: GameState, op: SpyOpId, target: string, agentId?: nu
   const d = spyOpById(op);
   const me = s.player.countryId;
   const sp = spyOf(s);
-  const agent = hasSteps(op) ? (agentId ?? bestAgent(s, op)?.id) : undefined;
+  const agent = hasSteps(op) ? (agentId ?? bestAgent(s, op, opNeed(op))?.id) : undefined;
   const m: SpyMission = { id: sp.nextId, op, target, startMs: s.worldMs, endMs: s.worldMs + d.hours * H, chance: spyChance(s, op, target, agent, rival) };
   if (rival) m.rival = rival;
   if (agent != null) {

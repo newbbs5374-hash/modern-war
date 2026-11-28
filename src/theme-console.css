@@ -1457,3 +1457,21 @@ select.wide, button.wide { width: 100%; }
 .icbm-cap span { font-size: 12px; opacity: 0.85; }
 .icbm-skip { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 11px; background: rgba(0, 0, 0, 0.55); }
 .icbm-close { max-width: 720px; }
+
+/* 11-28 요원 뽑기·키우기 */
+.agent-info { position: absolute; top: 22px; right: 4px; padding: 2px 6px; font-size: 12px; border-radius: 8px; background: rgba(0, 0, 0, 0.6); }
+.agent-info i { font-style: normal; margin-left: 2px; padding: 0 4px; border-radius: 6px; background: #e3b64a; color: #111; font-size: 10px; font-weight: 800; }
+.agent-stats { color: var(--muted, #9fb3c2); }
+.cand-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.cand-card { display: flex; flex-direction: column; gap: 2px; padding: 0 0 6px; border-radius: 10px; overflow: hidden; background: rgba(0, 0, 0, 0.28); border: 1px solid var(--glass-line, rgba(190, 210, 225, 0.18)); font-size: 11px; }
+.cand-card.legend { border-color: rgba(214, 170, 70, 0.7); }
+.cand-card > b, .cand-card > small, .cand-card > button { margin: 0 5px; }
+.ag-head { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: start; margin-bottom: 8px; }
+.ag-head .agent-face { border-radius: 10px; overflow: hidden; }
+.ag-head > div:last-child { display: flex; flex-direction: column; gap: 3px; }
+.ag-stats { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.ag-stat { display: grid; grid-template-columns: 72px minmax(0, 1fr) 28px; gap: 6px; align-items: center; font-size: 12px; }
+.ag-stat b { text-align: right; }
+.ag-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
+.ag-acts small { display: block; opacity: 0.8; font-size: 10px; }
+.ag-need { color: #e3b64a; font-size: 10.5px; }
