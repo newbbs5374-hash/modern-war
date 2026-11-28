@@ -5,7 +5,7 @@ import type { Kind, Stage } from './sim';
 
 export const LAND: Kind[] = ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa', 'aav', 'mlrs', 'bm', 'sam', 'csm', 'eng', 'hgv', 'pmc'];
 export const SEA: Kind[] = ['dd', 'cv', 'sub', 'lha', 'ssn', 'laser', 'usv'];
-export const AIR: Kind[] = ['drone', 'heli', 'jet', 'bomber', 'missile', 'uav', 'f35', 'awacs', 'gunship'];
+export const AIR: Kind[] = ['drone', 'heli', 'jet', 'bomber', 'missile', 'uav', 'f35', 'awacs', 'gunship', 'mpa'];
 
 /** ① 인도양 해적 소굴: 온통 바다, 무장 고속정 떼 · 모선 */
 export const PIRATES = makeField({

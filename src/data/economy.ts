@@ -168,6 +168,7 @@ export const UNIT_COST: Record<string, UnitCost> = {
   '해안 미사일': { money: 2000, res: { 강철: 3, 반도체: 1, 희토류: 1, 정밀부품: 1, 구리: 1 }, hours: 4, power: 13, troops: 250 },
   '정찰 무인기': { money: 900, res: { 알루미늄: 2, 리튬: 1, 반도체: 2, 복합소재: 1 }, hours: 2, power: 6, troops: 0 },
   '스텔스 전투기': { money: 5000, res: { 알루미늄: 2, 복합소재: 4, 티타늄: 4, 반도체: 3, 희토류: 1, 석유: 2 }, hours: 9, power: 30, troops: 100 },
+  '대잠 초계기': { money: 3200, res: { 알루미늄: 3, 반도체: 3, 구리: 2, 석유: 3 }, hours: 6, power: 14, troops: 100 },
   조기경보기: { money: 3800, res: { 알루미늄: 4, 반도체: 4, 구리: 2, 석유: 3, 갈륨: 1 }, hours: 7, power: 16, troops: 100 },
   '지상 공격기': { money: 3200, res: { 알루미늄: 4, 티타늄: 2, 석유: 3, 텅스텐: 1 }, hours: 6, power: 20, troops: 100 },
   상륙장갑차: { money: 900, res: { 강철: 3, 석유: 1, 알루미늄: 1 }, hours: 2, power: 6, troops: 500 },

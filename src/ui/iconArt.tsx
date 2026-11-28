@@ -49,6 +49,7 @@ export const UNIT_KEY: Record<string, { key: string; field?: string; who: string
   // 11-28 새 병과(그림이 없으면 이모지)
   공병: { key: 'engineer', who: '공병' },
   '극초음속 미사일': { key: 'hypersonic', who: '극초음속 미사일' },
+  '대잠 초계기': { key: 'mpa', who: '대잠 초계기' },
   용병: { key: 'pmc', who: '용병' },
 };
 export const TRAIN_KEY: Record<string, string> = {

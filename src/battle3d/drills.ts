@@ -586,7 +586,22 @@ const ENG: Drill = {
   score: (S) => clamp01(killFrac(S) * 0.82 + (foes(S).some((u) => u.alive && u.z > 10.4) ? 0 : 0.18)),
   bar: killBar('막아 낸 적'),
 };
-const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV, HGV, ENG];
+/** 11-28 대잠 초계기: 숨은 잠수함을 소노부이로 찾아 잡기 */
+const MPA: Drill = {
+  id: 'n3-mpa', training: '정보', name: '잠수함 사냥', how: '바다 밑에 적 잠수함 4척이 숨어 있어요. 대잠 초계기가 가까이 날아가면 소노부이로 찾아내고(찾은 잠수함은 모두가 30% 더 잘 맞혀요) 어뢰로 잡아요.',
+  stage: field('mpa', '목표: 숨은 잠수함 4척 격침(적 구축함 방공 조심)', {
+    enemy: [['sub', -6.6, -6], ['sub', -8, -10], ['sub', -5.6, -13], ['ssn', -8.4, -15], ['dd', -4.6, -17]],
+    timeLimit: 90, cmds: [], cpRate: .6,
+    setup: (S) => { S.drillLimit = 90; foes(S).forEach((u) => { if (u.d.dom === 'sub') u.hidden = true; u.goal = { x: u.x, z: u.z }; u.hold = true; u.max = Math.round(u.max * (u.kind === 'dd' ? .7 : 1)); u.hp = u.max; }); },
+    rule: (S) => (!foes(S).some((u) => u.alive && u.d.dom === 'sub') ? 'win' : !aliveUs(S).length && !S.pending.length ? 'lose' : S.simT >= 90 ? 'time' : null),
+    cam: { tx: -4, tz: -2, dist: 32 },
+  }),
+  preset: [at('mpa', -6.4, 11), at('mpa', -8.4, 12), at('dd', -6, 13.6)],
+  kinds: ['mpa'], lock: true, cp0: 2,
+  score: (S) => clamp01(1 - hpFrac(foes(S).filter((u) => u.d.dom === 'sub'))),
+  bar: killBar('격침'),
+};
+const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV, HGV, ENG, MPA];
 /** 무리 하나(종류×수를 가로로 늘어놓음) */
 function squad3(list: Array<[Kind, number]>, x: number, z: number): Place[] {
   const out: Place[] = [];

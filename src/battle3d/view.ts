@@ -1194,6 +1194,7 @@ function unitIcon(kind){
     gunship:()=>{g.moveTo(34,14);g.lineTo(34,40);g.moveTo(16,24);g.lineTo(52,24);g.moveTo(24,34);g.lineTo(44,34);g.moveTo(20,30);g.lineTo(14,36);},
     aav:()=>{g.ellipse(34,24,17,10,0,0,7);g.moveTo(18,34);g.quadraticCurveTo(26,40,34,34);g.quadraticCurveTo(42,40,50,34);},
     usv:()=>{g.moveTo(18,24);g.lineTo(46,24);g.lineTo(52,30);g.lineTo(22,30);g.closePath();g.moveTo(34,24);g.lineTo(34,16);},
+    mpa:()=>{g.moveTo(34,12);g.lineTo(34,40);g.moveTo(16,26);g.lineTo(52,26);g.moveTo(26,38);g.lineTo(42,38);g.moveTo(20,44);g.arc(20,44,2,0,7);g.moveTo(48,44);g.arc(48,44,2,0,7);},
     eng:()=>{g.moveTo(16,34);g.lineTo(16,18);g.lineTo(52,18);g.lineTo(52,34);g.moveTo(26,18);g.lineTo(26,30);g.moveTo(42,18);g.lineTo(42,30);},
     hgv:()=>{g.moveTo(16,36);g.lineTo(48,14);g.moveTo(40,14);g.lineTo(48,14);g.lineTo(48,22);g.moveTo(14,26);g.lineTo(24,20);g.moveTo(20,34);g.lineTo(30,28);},
     pmc:()=>{g.moveTo(14,10);g.lineTo(54,38);g.moveTo(54,10);g.lineTo(14,38);g.moveTo(26,30);g.lineTo(42,30);g.lineTo(42,38);g.lineTo(26,38);g.closePath();}};

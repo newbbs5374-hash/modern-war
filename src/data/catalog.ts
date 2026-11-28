@@ -61,6 +61,7 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
   { name: '용병', domain: '육', role: '돈으로 72시간 빌리는 부대(부대 창 용병 계약)', rank: 0 },
   { name: '정찰 무인기', domain: '공', role: '숨은 적을 찾아 포격이 더 잘 맞게 함', rank: 2 },
   { name: '조기경보기', domain: '공', role: '하늘의 눈, 둘레 공군 사거리·요격 ↑', rank: 6 },
+  { name: '대잠 초계기', domain: '공', role: '소노부이로 숨은 잠수함을 찾고 어뢰로 잡음', rank: 5 },
   { name: '지상 공격기', domain: '공', role: '하늘에서 맴돌며 땅을 계속 때림', rank: 6 },
   { name: '스텔스 전투기', domain: '공', role: '레이더에 잘 안 잡힘, 들키기 전엔 먼저 때림', rank: 8 },
   { name: '바다 드론', domain: '해', role: '싸고 빠른 자폭 보트, 큰 배 사냥', rank: 3 },
@@ -125,7 +126,7 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     groups: [
       { name: '무인기', icon: '🛸', units: ['무인드론', '정찰 무인기'] },
       { name: '항공기', icon: '✈️', units: ['공격헬기', '전투기', '폭격기'] },
-      { name: '첨단 항공기', icon: '🛩️', units: ['스텔스 전투기', '조기경보기', '지상 공격기'] },
+      { name: '첨단 항공기', icon: '🛩️', units: ['스텔스 전투기', '조기경보기', '대잠 초계기', '지상 공격기'] },
       { name: '미사일', icon: '🚀', units: ['미사일'] },
     ],
   },
