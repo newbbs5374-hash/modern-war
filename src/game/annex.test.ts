@@ -1,3 +1,4 @@
+import { controlTick } from './control';
 import { describe, expect, it } from 'vitest';
 import { CITIES } from '../data/cities';
 import { newGame, type GameState } from './state';
@@ -33,7 +34,7 @@ describe('점령 도시 편입', () => {
     expect(annexEntry(s, fk)?.stage).toBe('민정');
     s = annexTick(setLoyalty(s, fk, 95));
     expect(canVote(s, fk)).toBeTruthy();
-    s = annexTick(setLoyalty(later(s, OK_HOURS + 1), fk, 95));
+    s = controlTick(annexTick(setLoyalty(later(s, OK_HOURS + 1), fk, 95))); // 11-28 장악도도 60을 넘어야 함
     expect(canVote(s, fk)).toBeNull();
     const favor = favorOf(s, 'jp');
     const income = incomeShare(s.world, 'kr');
