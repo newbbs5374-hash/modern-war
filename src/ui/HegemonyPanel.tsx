@@ -28,6 +28,7 @@ import {
 import { ACT_ICON } from '../data/bullies';
 import { BEAT_FAME, COAL_BLOCK, MY_COAL_DAYS, actLabel, answerBully, canMyCoal, claimLine, isBeaten, makeMyCoal, myCoalCands, myCoalCost, bullyChoice, bullyStats, currentBullies } from '../game/bully';
 import type { GameState } from '../game/state';
+import { CH_BONUS, CH_COST, CH_RATIO, canChallenge, challenge, challengeInfo, isCrowned } from '../game/regionChallenge';
 import type { HegAsk } from '../game/hegemony';
 import { timeLeft } from './officerScreens';
 import { FLAG } from './flag';
@@ -122,6 +123,8 @@ export function HegemonyPanel({ state, actions }: ScreenProps) {
           <small className="muted">요구·요청은 {ASK_HOURS}시간 동안 기다려요.</small>
         </section>
       )}
+
+      <ChallengeCard state={state} run={run} />
 
       {regions.map((rid) => {
         const list = regionStanding(state, rid);
@@ -287,7 +290,12 @@ function CoalRow({ state, bully, run }: { state: GameState; bully: string; run: 
     <div style={{ marginTop: 4 }}>
       {live && (
         <p className="small" style={{ margin: '2px 0' }}>
-          🛡️ 반깡패 연합{live.mine ? '(우리가 이끎)' : ''}: {[...(live.mine ? [me] : []), ...live.members].map((x) => `${FLAG[x]} ${nm(x)}`).join(' · ')} · {timeLeft(live.untilMs - state.worldMs)} 남음
+          🛡️ 반깡패 연합{live.mine ? '(우리가 이끎)' : ''}: {[...(live.mine ? [me] : []), ...live.members].map((x, i) => (
+            <span key={x}>
+              {i ? ' · ' : ''}
+              {FLAG[x]} {nm(x)}
+            </span>
+          ))} · {timeLeft(live.untilMs - state.worldMs)} 남음
         </p>
       )}
       {!live?.mine && (
@@ -309,5 +317,35 @@ function CoalRow({ state, bully, run }: { state: GameState; bully: string; run: 
           </p>
         ))}
     </div>
+  );
+}
+
+/** 11-28 대륙 회의·패권 도전 */
+function ChallengeCard({ state, run }: { state: GameState; run: (f: (s: GameState) => { state: GameState; text: string }) => void }) {
+  const i = challengeInfo(state);
+  const why = canChallenge(state);
+  const crowned = isCrowned(state);
+  return (
+    <section className="card">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <b>🏛️ {i.name} 대륙 회의 · 패권 도전</b>
+        <Help title="패권 도전">
+          <p>
+            우리 대륙 2·3등이고 힘이 1등의 {Math.round(CH_RATIO * 100)}%를 넘으면 대륙 회의를 열어 패권국에 도전해요(나라 예산 {CH_COST.toLocaleString('ko-KR')}, 48시간마다).
+            이길 확률은 힘 비율과 대륙 나라들 호감으로 정해져요. 이기면 3일 동안 대륙 맹주(나라 예산 +{Math.round(CH_BONUS * 100)}%), 지면 신뢰도 −4.
+          </p>
+        </Help>
+      </div>
+      {crowned ? (
+        <p className="small good">👑 지금 우리가 {i.name} 대륙 맹주예요(나라 예산 +{Math.round(CH_BONUS * 100)}%).</p>
+      ) : (
+        <p className="small" style={{ margin: '4px 0' }}>
+          패권국 {i.hegemon ? `${countryById(i.hegemon).name}` : '-'} · 우리 {i.rank}등 · 힘 비율 {Math.round(i.ratio * 100)}% · 대륙 나라 호감 평균 {Math.round(i.fav)} · 이길 확률 <b>{Math.round(i.chance * 100)}%</b>
+        </p>
+      )}
+      <button className="primary" style={{ width: '100%' }} disabled={!!why} title={why ?? ''} onClick={() => run((s) => challenge(s))}>
+        {why ?? `🏛️ 대륙 회의 열고 도전하기(${Math.round(i.chance * 100)}%)`}
+      </button>
+    </section>
   );
 }

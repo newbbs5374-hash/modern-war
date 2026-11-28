@@ -3,7 +3,8 @@
 // 정해진 시간(8시간) 안에 안 고르면 부관이 무난한 쪽(auto)을 고름.
 import { COUNTRIES, countryById } from '../data/world';
 import type { Res } from '../data/economy';
-import { addFavorNote, civOf } from './civ';
+import { addFavorNote, addIslandInfluence, civOf } from './civ';
+import { PIONEER_ISLANDS } from '../data/hexmap';
 import { addPresMod } from './approval';
 import { ORIGIN_CRISES } from '../data/originContent';
 import { LEADERS } from '../data/leaders';
@@ -34,7 +35,8 @@ export type Fx =
   | { k: 'research'; v: number } // 연구 점수(군사·사회 두 줄에 각각)
   | { k: 'favor'; who: 'target' | 'rivals' | 'all'; v: number }
   | { k: 'tension'; v: number } // 대상국과 긴장
-  | { k: 'approval'; v: number }; // 지지도(하루 동안)
+  | { k: 'approval'; v: number } // 지지도(하루 동안)
+  | { k: 'isle'; v: number }; // 11-28 분쟁 지역 사건: 그 섬 우리 영향력
 
 export interface CrisisOption {
   label: string;
@@ -273,6 +275,8 @@ export interface CrisisOpen {
   def: string;
   target: string | null;
   untilMs: number;
+  /** 11-28 분쟁 지역 사건이 일어난 섬 */
+  isle?: string;
 }
 export interface CrisisState {
   /** 마지막으로 고른 답(연속 위기 이야기가 읽음) */
@@ -297,16 +301,19 @@ export const crisisOf = (s: GameState): CrisisState => s.crisis ?? newCrisis(0);
 
 const nm = (id: string | null) => (id ? countryById(id).name : '');
 const leaderName = (id: string | null) => (id && LEADERS[id] ? `${countryById(id).name} ${LEADERS[id].title} ${LEADERS[id].name}` : '');
-export const fill = (t: string, target: string | null) => t.replace(/\{X\}/g, nm(target)).replace(/\{L\}/g, leaderName(target));
+const isleName = (id?: string) => PIONEER_ISLANDS.find((p) => p.id === id)?.name ?? '분쟁 지역';
+export const fill = (t: string, target: string | null, isle?: string) => t.replace(/\{X\}/g, nm(target)).replace(/\{L\}/g, leaderName(target)).replace(/\{I\}/g, isleName(isle));
 
 /** 효과를 글로(예: "나라 예산 -15,000 · 신뢰 +5") */
-export function fxText(fx: Fx[], target: string | null): string {
+export function fxText(fx: Fx[], target: string | null, isle?: string): string {
   const sg = (v: number) => (v > 0 ? `+${v.toLocaleString('ko-KR')}` : v.toLocaleString('ko-KR'));
   return fx
     .map((f) => {
       switch (f.k) {
         case 'money':
           return `💰 나라 예산 ${sg(f.v)}`;
+        case 'isle':
+          return `🏝️ ${isleName(isle)} 영향력 ${sg(f.v)}`;
         case 'res':
           return `${f.r} ${sg(f.v)}`;
         case 'troops':
@@ -344,7 +351,7 @@ export function canChoose(s: GameState, opt: CrisisOption): string | null {
   return null;
 }
 
-export function applyFx(s: GameState, fx: Fx[], target: string | null): GameState {
+export function applyFx(s: GameState, fx: Fx[], target: string | null, isle?: string): GameState {
   const me = s.player.countryId;
   let ns: GameState = { ...s, nations: { ...s.nations, [me]: { ...s.nations[me] } }, officer: { ...s.officer }, economy: { ...s.economy, stock: { ...s.economy.stock } } };
   const clamp = (v: number) => Math.max(0, Math.min(100, v));
@@ -352,6 +359,9 @@ export function applyFx(s: GameState, fx: Fx[], target: string | null): GameStat
     switch (f.k) {
       case 'money':
         ns.nations[me].treasury = Math.max(0, ns.nations[me].treasury + f.v);
+        break;
+      case 'isle':
+        if (isle) ns = addIslandInfluence(ns, isle, me, f.v);
         break;
       case 'res':
         ns.economy.stock[f.r] = Math.max(0, (ns.economy.stock[f.r] ?? 0) + f.v);
@@ -417,12 +427,12 @@ export function chooseCrisis(s: GameState, i: number, byAide = false): GameState
   const opt = d.options[i];
   if (!opt) return s;
   if (!byAide && canChoose(s, opt)) return s;
-  let ns = applyFx(s, opt.fx, o.target);
-  const line = `${d.icon} ${d.title}: ${opt.label}${byAide ? ' (부관이 대신 고름)' : ''} → ${fxText(opt.fx, o.target)}`;
+  let ns = applyFx(s, opt.fx, o.target, o.isle);
+  const line = `${d.icon} ${d.title}: ${opt.label}${byAide ? ' (부관이 대신 고름)' : ''} → ${fxText(opt.fx, o.target, o.isle)}`;
   const log = [line, ...c.log].slice(0, 8);
   ns = { ...ns, crisis: { ...c, open: null, solved: c.solved + (byAide ? 0 : 1), log, last: { def: o.def, i } } };
   ns = addEvent(ns, `${d.icon} ${d.title} — ${opt.label}`);
-  return pushReport(ns, { icon: d.icon, text: fill(opt.say, o.target) });
+  return pushReport(ns, { icon: d.icon, text: fill(opt.say, o.target, o.isle) });
 }
 
 /** 시간이 흐를 때: 새 사건 열기 / 시간 넘으면 부관이 고르기 */

@@ -31,11 +31,11 @@ export function crisisScene(text: string, night: boolean): string | null {
 }
 /** 효과 하나의 좋고 나쁨(+1 좋음, -1 나쁨) */
 const goodSign = (f: Fx) => (f.k === 'tension' ? -Math.sign(f.v) : Math.sign((f as { v: number }).v));
-export function fxChips(fx: Fx[], target: string | null): Array<[string, string]> {
-  const parts = fxText(fx, target).split(' · ');
+export function fxChips(fx: Fx[], target: string | null, isle?: string): Array<[string, string]> {
+  const parts = fxText(fx, target, isle).split(' · ');
   return fx.map((f, i) => [goodSign(f) > 0 ? 'up' : goodSign(f) < 0 ? 'dn' : '', parts[i] ?? '']);
 }
-const W: Partial<Record<Fx['k'], number>> = { money: 1 / 3000, troops: 120, trust: 0.6, fame: 0.08, approval: 0.7, favor: 0.15, tension: 0.12, intel: 0.1, boost: 2, research: 0.4, merit: 0.05, res: 0.05 };
+const W: Partial<Record<Fx['k'], number>> = { isle: 0.3, money: 1 / 3000, troops: 120, trust: 0.6, fame: 0.08, approval: 0.7, favor: 0.15, tension: 0.12, intel: 0.1, boost: 2, research: 0.4, merit: 0.05, res: 0.05 };
 const scoreOf = (opt: CrisisOption, only?: Fx['k'][]) => opt.fx.reduce((a, f) => (only && !only.includes(f.k) ? a : a + goodSign(f) * Math.abs((f as { v: number }).v) * (W[f.k] ?? 0.1)), 0);
 
 
@@ -91,7 +91,7 @@ export function CrisisModal({ state, apply, onClose }: { state: GameState; apply
         )}
         <p className="gx-crisis-text">
           {o.target && <span style={{ marginRight: 4 }}>{FLAG[o.target]}</span>}
-          {fill(d.text, o.target)}
+          {fill(d.text, o.target, o.isle)}
         </p>
         {rec >= 0 && (
           <div className="gx-crisis-rec">
@@ -124,7 +124,7 @@ export function CrisisModal({ state, apply, onClose }: { state: GameState; apply
                 <small className="muted">{why}</small>
               ) : (
                 <span className="gx-chips">
-                  {fxChips(opt.fx, o.target).map(([c, t], k) => (
+                  {fxChips(opt.fx, o.target, o.isle).map(([c, t], k) => (
                     <span key={k} className={`gx-chip ${c}`}>
                       {t}
                     </span>

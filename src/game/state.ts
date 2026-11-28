@@ -97,6 +97,7 @@ import { recTick, type RecLog } from './recs';
 import './resPerks'; // 11-28 새 자원 비축 효과
 import './ministryBudget'; // 11-28 부처 예산 나누기
 import './taxes'; // 11-28 세금 종류
+import './regionChallenge'; // 11-28 대륙 회의·패권 도전
 import './recsTrade'; // 11-28 무역 장관 추천
 import './recsDeploy'; // 11-28 파병 추천
 import './recsDefense'; // 11-28 국방 추천
@@ -107,8 +108,10 @@ import './recsSociety'; // 11-28 내정 추천
 import { bondTick, type BondState, type FundState } from './bonds';
 import { embassyTick, type EmbassyState } from './embassy';
 import { antiwarTick } from './antiwar';
+import { isleEventTick } from './isleEvents';
 import type { MbState } from './ministryBudget';
 import type { TaxState } from './taxes';
+import type { RegionCrown } from './regionChallenge';
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -178,10 +181,14 @@ export interface GameState {
   embassy?: EmbassyState;
   /** 11-28 반전 시위 다음 판단 시각 */
   antiwarMs?: number;
+  /** 11-28 분쟁 지역 사건 다음 시각 */
+  isleEvMs?: number;
   /** 11-28 부처 예산 나누기 */
   mbudget?: MbState;
   /** 11-28 세금 종류 */
   taxes?: TaxState;
+  /** 11-28 대륙 맹주 */
+  crown?: RegionCrown;
   /** 첩보·특수 작전 */
   spy?: SpyState;
   /** 함대 충돌 관전 기록 */
@@ -466,7 +473,7 @@ export function advance(s: GameState, ms: number): GameState {
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
-    cur = antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS))))))))))));
+    cur = isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))))))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

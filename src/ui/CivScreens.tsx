@@ -1686,6 +1686,70 @@ function IslandModal({ state, actions, id, onClose }: ScreenProps & { id: string
 
 /* ═════════════ 국제 회의 ═════════════ */
 
+/** 11-28 안건 올리기: 다음 회의를 기다리지 않고 우리가 고른 안건을 바로 올림(찬성표 포함) */
+function ProposeBox({ state, actions }: ScreenProps) {
+  const me = state.player.countryId;
+  const [ag, setAg] = useState<(typeof AGENDAS)[number]['id']>('science');
+  const others = COUNTRIES.filter((x) => x.id !== me && isAlive(state.world, x.id));
+  const [tg, setTg] = useState<string>(others[0]?.id ?? '');
+  const a = agendaById(ag);
+  const why = C.canPropose(state, ag, a.target ? tg : undefined);
+  return (
+    <div className="queue-box" style={{ marginTop: 6 }}>
+      <small className="muted">
+        📝 우리가 안건 올리기 · 나라 예산 {C.PROPOSE_COST.toLocaleString('ko-KR')} · {Math.round(C.PROPOSE_WAIT_MS / 3600e3)}시간마다 한 번
+      </small>
+      <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+        {AGENDAS.map((x) => (
+          <button key={x.id} className={`mini${x.id === ag ? ' on' : ''}`} onClick={() => setAg(x.id)} title={x.text}>
+            {x.icon} {x.name}
+          </button>
+        ))}
+      </div>
+      {a.target && (
+        <select value={tg} onChange={(e) => setTg(e.target.value)} style={{ marginTop: 4, width: '100%' }}>
+          {others.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.name}
+            </option>
+          ))}
+        </select>
+      )}
+      <small className="muted" style={{ display: 'block', marginTop: 2 }}>
+        {a.text}
+      </small>
+      <button className="primary" style={{ width: '100%', marginTop: 4 }} disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => C.proposeCouncil(s, ag, a.target ? tg : undefined))}>
+        {why ?? `${a.icon} ${a.name} 올리기`}
+      </button>
+    </div>
+  );
+}
+
+/** 11-28 로비: 표가 많은 나라를 돈으로 설득해 내 표를 따라오게 함 */
+function LobbyBox({ state, actions }: ScreenProps) {
+  const me = state.player.countryId;
+  const o = C.civOf(state).council.open!;
+  const t = C.councilTally(state);
+  const list = COUNTRIES.filter((x) => x.id !== me && isAlive(state.world, x.id) && x.id !== o.target)
+    .map((x) => ({ x, v: C.councilVotes(state, x.id), why: C.canLobby(state, x.id), done: (o.lobbied ?? []).includes(x.id) }))
+    .sort((a, b) => Number(b.done) - Number(a.done) || b.v - a.v)
+    .slice(0, 8);
+  return (
+    <div className="queue-box" style={{ marginTop: 6 }}>
+      <small className="muted">
+        🤝 로비 {(o.lobbied ?? []).length}/{C.LOBBY_MAX}곳 · 설득한 나라는 우리 표({o.vote ? '찬성' : '반대'})를 따라와요 · 확실한 표 찬성 {t?.yes ?? 0} · 반대 {t?.no ?? 0}
+      </small>
+      <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+        {list.map(({ x, v, why, done }) => (
+          <button key={x.id} className={`mini${done ? ' on' : ''}`} disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => C.lobby(s, x.id))}>
+            {FLAG[x.id]} {x.name} {v}표{done ? ' ✓' : ` · ${(C.lobbyCost(state, x.id) / 1000).toFixed(1)}k`}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function CouncilPanel(props: ScreenProps) {
   const { state, actions } = props;
   const c = C.civOf(state);
@@ -1740,6 +1804,8 @@ export function CouncilPanel(props: ScreenProps) {
           </div>
         )}
         {o?.vote !== null && o && <p className="small good">투표했어요: {o.vote ? '찬성' : '반대'}. 마감 때 결과가 나와요.</p>}
+        {o && o.vote !== null && c.council.on && <LobbyBox {...props} />}
+        {!o && c.council.on && <ProposeBox {...props} />}
       </section>
       {c.council.on && (
         <section className="card">
