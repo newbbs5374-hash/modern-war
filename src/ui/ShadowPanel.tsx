@@ -9,12 +9,13 @@ import type { ScreenProps } from './screens';
 import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { isAlive, relationOf } from '../game/world';
-import { SPY_OPS, canSpy, pickStep, spyChance, spyOf, spyOpById, spyTeams, startSpy } from '../game/spy';
-import { BOND_JOIN, SKILLS, TRAITS, agencyOf, agentById, agentCap, agentsOf, bestAgent, canMeetLegend, canRecruit, meetCost, meetLegend, prisonerEdge, ransomOf, recruitAgent, recruitCost, swapAgent } from '../game/agents';
+import { SPY_OPS, opNeed, canSpy, pickStep, spyChance, spyOf, spyOpById, spyTeams, startSpy } from '../game/spy';
+import { BOND_JOIN, SKILLS, TRAITS, agencyOf, agentById, agentCap, agentsOf, bestAgent, canMeetLegend, meetCost, meetLegend, prisonerEdge, ransomOf, swapAgent } from '../game/agents';
 import { canPrisoner, myLegendsView, payRansom, prisonerAct, stealable, turnChance } from '../game/shadow';
 import { ROLE_INFO, influenceOf, roleOf } from '../game/rivals';
 import { portraitUrl, youngFaceUrl } from './Portrait';
 import { AgentCard, MissionSteps } from './SpyPanel';
+import { AgentGrowModal, RecruitCard } from './ShadowGrow';
 
 const legendPhoto = (country: string, photo: number, sex: 'm' | 'f') => portraitUrl(`agent-${country}-${String(photo + 1).padStart(2, '0')}`) ?? youngFaceUrl(country, sex, photo);
 
@@ -31,6 +32,7 @@ export function ShadowPanel({ state, actions }: ScreenProps) {
   const others = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id));
   const [target, setTarget] = useState<string>(() => others[0]?.id ?? '');
   const [msg, setMsg] = useState('');
+  const [info, setInfo] = useState<number | null>(null);
   const say = (r: { state: typeof state; text: string }) => r;
   const run = (f: (s: typeof state) => { state: typeof state; text: string }) => setMsg(actions.applyWith((s) => { const r = say(f(s)); return { state: r.state, out: r.text }; }) ?? '');
   const shadowActive = sp.active.filter((m) => spyOpById(m.op).shadow);
@@ -73,14 +75,13 @@ export function ShadowPanel({ state, actions }: ScreenProps) {
         <div className="agent-grid">
           {ag.list.filter((a) => a.status !== 'dead').map((a) => (
             <AgentCard key={a.id} a={a} state={state} on={agentSel === a.id} onPick={() => setAgentSel(agentSel === a.id ? null : a.id)}
-              onSwap={() => run((s) => swapAgent(s, a.id))} onRansom={() => run((s) => payRansom(s, a.id))} />
+              onSwap={() => run((s) => swapAgent(s, a.id))} onRansom={() => run((s) => payRansom(s, a.id))} onInfo={() => setInfo(a.id)} />
           ))}
         </div>
-        <p className="small muted">요원을 누르면 그 요원을 보내요(안 고르면 지령에 가장 맞는 요원). 전설 요원(SS)은 등급 5 + 고유 능력.</p>
-        <button className="wide" disabled={!!canRecruit(state)} title={canRecruit(state) ?? ''} onClick={() => run(recruitAgent)}>
-          ➕ 일반 요원 뽑기 · 🕵️{recruitCost(state).intel} · 💰{fmt(recruitCost(state).money)}{canRecruit(state) ? ` · ${canRecruit(state)}` : ''}
-        </button>
+        <p className="small muted">요원을 누르면 그 요원을 보내요(안 고르면 지령에 가장 맞는 요원). ⬆️를 누르면 훈련·능력치 올리기. 힘(능력치 평균)이 높아야 주요 임무에 갈 수 있어요.</p>
       </Card>
+      <RecruitCard state={state} run={run} />
+      {info != null && <AgentGrowModal state={state} id={info} run={run} apply={actions.apply} onClose={() => setInfo(null)} />}
 
       <Card title={`🏛️ ${agencyOf(me)} 전설 요원`} right={<small className="muted">인연 {BOND_JOIN}이면 합류</small>}>
         {legends.length ? (
@@ -156,12 +157,12 @@ export function ShadowPanel({ state, actions }: ScreenProps) {
               const t = d.domestic ? me : tgt!;
               const rv = d.domestic ? curRival?.name : undefined;
               const why = canSpy(state, d.id, t, pickAgent, rv);
-              const who = pickAgent != null ? selAgent : bestAgent(state, d.id);
+              const who = pickAgent != null ? selAgent : bestAgent(state, d.id, opNeed(d.id)) ?? bestAgent(state, d.id);
               const locked = state.player.rankIndex < d.rank;
               return (
                 <div key={d.id} className={`list-row small ${locked ? 'muted' : ''}`}>
                   <span style={{ flex: 1 }}>
-                    {d.icon} <b>{d.name}</b> · {d.hours}시간 · 성공 {Math.round(spyChance(state, d.id, t, who?.id, rv) * 100)}%{who ? ` · "${who.code}"` : ''}
+                    {d.icon} <b>{d.name}</b>{opNeed(d.id) ? <span className="ag-need"> 주요 임무 · 힘 {opNeed(d.id)}</span> : null} · {d.hours}시간 · 성공 {Math.round(spyChance(state, d.id, t, who?.id, rv) * 100)}%{who ? ` · "${who.code}"` : ''}
                     <br />
                     <span className="muted">{locked ? `🔒 ${RANKS[d.rank].name}부터` : d.text}{d.domestic ? ` 들키면 지지도 −${d.caught.favor}·의회 신뢰 −${d.caught.tension}.` : ''}</span>
                   </span>

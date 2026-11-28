@@ -59,6 +59,9 @@ export interface Agent {
   where?: string;
   ops: number;
   wins: number;
+  /** 11-28 키우기: 남은 능력치 점수(등급이 오르면 +3) · 다음 훈련 가능 시각 */
+  pts?: number;
+  trainMs?: number;
 }
 /** 붙잡은 다른 나라 요원 */
 export interface Prisoner {
@@ -92,6 +95,8 @@ export interface AgentsState {
   alog?: string[];
   /** 요인 포섭·기지 폭파 효과: 나라 → 이 시각까지 그 나라 적 부대 체력·공격 배수 */
   weak: Record<string, { untilMs: number; mul: number }>;
+  /** 11-28 요원 뽑기 후보(💎로 새로 받기) */
+  cands?: Agent[];
 }
 
 export const AGENT_MAX = 6;
@@ -100,16 +105,16 @@ export const HURT_MS = 24 * H;
 export const CAUGHT_MS = 6 * 24 * H;
 export const XP_WIN = 40;
 export const XP_FAIL = 15;
-export const LV_MAX = 5;
-/** 등급 하나당 성공률 +3%p, 맞는 특기 +8%p */
-export const LV_BONUS = 0.03;
+export const LV_MAX = 10;
+/** 등급 하나당 성공률 +2%p, 맞는 특기 +8%p (11-28 키우기: 등급 10까지) */
+export const LV_BONUS = 0.02;
 export const SKILL_BONUS = 0.08;
 export const WEAK_MS = 48 * H;
 
 export const agentCap = (s: GameState) => Math.min(AGENT_MAX, AGENT_START + Math.floor(s.player.rankIndex / 3));
 export const recruitCost = (s: GameState) => ({ money: Math.max(500, Math.round(priceBase(s) * 0.15)), intel: 10 });
 
-function makeAgent(s: GameState, rng: Rng, id: number, taken: Set<string>): Agent {
+export function makeAgent(s: GameState, rng: Rng, id: number, taken: Set<string>): Agent {
   const me = s.player.countryId;
   const sex: 'm' | 'f' = rng.next() < 0.35 ? 'f' : 'm';
   const name = makeName(me, sex, rng, taken);
@@ -120,8 +125,27 @@ function makeAgent(s: GameState, rng: Rng, id: number, taken: Set<string>): Agen
   const usedCodes = new Set(agentsOfRaw(s)?.list.map((x) => x.code) ?? []);
   const free = CODES.filter((c) => !usedCodes.has(c));
   const code = free.length ? rng.pick(free) : rng.pick(CODES);
-  return { id, name, code, sex, age: 24 + Math.floor(rng.next() * 11), face: Math.floor(rng.next() * 1000), skills: [a, b], lv: 1, xp: 0, status: 'idle', ops: 0, wins: 0 };
+  const st = () => 35 + Math.floor(rng.next() * 36);
+  // 사진: 그 나라 요원 사진 16장 중(전설 4명이 쓰는 사진과 이미 있는 요원 사진은 피함), 0~7 남 · 8~15 여
+  const used = new Set([...legendsOf(s, me).map((l) => l.photo), ...(agentsOfRaw(s)?.list.filter((x) => x.home === me).map((x) => x.photo) ?? [])]);
+  const range = Array.from({ length: 8 }, (_, i) => i + (sex === 'f' ? 8 : 0));
+  const pool = range.filter((i) => !used.has(i));
+  const photo = rng.pick(pool.length ? pool : range);
+  return { id, name, code, sex, age: 24 + Math.floor(rng.next() * 11), face: Math.floor(rng.next() * 1000), skills: [a, b], lv: 1, xp: 0, status: 'idle', ops: 0, wins: 0, stats: { infil: st(), ops: st(), hush: st() }, photo, home: me };
 }
+
+/* ───────── 11-28 요원 키우기: 능력치(잠입·공작·은밀) ───────── */
+export type StatKey = 'infil' | 'ops' | 'hush';
+export const STAT_NAMES: Record<StatKey, { name: string; icon: string; text: string }> = {
+  infil: { name: '잠입', icon: '🥷', text: '해외 공작 성공률' },
+  ops: { name: '공작', icon: '🎯', text: '모든 지령 성공률' },
+  hush: { name: '은밀', icon: '🤫', text: '들킬 위험 낮춤' },
+};
+export const STAT_MAX = 99;
+/** 옛 저장 요원은 등급으로 능력치를 정함 */
+export const statsOf = (a: Agent): { infil: number; ops: number; hush: number } => a.stats ?? { infil: 40 + a.lv * 6, ops: 40 + a.lv * 6, hush: 40 + a.lv * 6 };
+/** 요원 힘(능력치 평균) — 주요 임무 조건 */
+export const powerOf = (a: Agent) => { const t = statsOf(a); return Math.round((t.infil + t.ops + t.hush) / 3); };
 
 const agentsOfRaw = (s: GameState): AgentsState | undefined => s.agents;
 
@@ -173,17 +197,18 @@ const TRAIT_OPS: Partial<Record<LegendTrait, (op: string) => boolean>> = {
 export function agentBonus(a: Agent | undefined, op: string): number {
   if (!a) return 0;
   const fit = (OP_SKILL[op] ?? []).some((k) => a.skills.includes(k));
-  let v = (a.lv - 1) * LV_BONUS + (fit ? SKILL_BONUS : 0);
-  if (a.legend) v += 0.06 + ((a.stats?.ops ?? 85) - 85) / 200;
+  const t = statsOf(a);
+  let v = (a.lv - 1) * LV_BONUS + (fit ? SKILL_BONUS : 0) + (t.ops - 60) / 300 + (op.startsWith('r-') ? 0 : (t.infil - 60) / 500);
+  if (a.legend) v += 0.02;
   if (a.trait === 'shadow') v += 0.08;
   else if (a.trait && TRAIT_OPS[a.trait]?.(op)) v += 0.15;
   return v;
 }
 /** 들킬 위험 배수(전설 요원·흔적 지우기) */
-export const agentRiskMul = (a: Agent | undefined) => (!a ? 1 : (a.trait === 'ghost' ? 0.5 : 1) * (a.legend ? 1 - (a.stats?.hush ?? 85) / 400 : 1));
+export const agentRiskMul = (a: Agent | undefined) => (!a ? 1 : (a.trait === 'ghost' ? 0.5 : 1) * (1.1 - statsOf(a).hush / 330));
 /** 이 작전에 가장 잘 맞는 쉬는 요원 */
-export function bestAgent(s: GameState, op: string): Agent | undefined {
-  return [...idleAgents(s)].sort((a, b) => agentBonus(b, op) - agentBonus(a, op) || b.lv - a.lv || a.id - b.id)[0];
+export function bestAgent(s: GameState, op: string, need = 0): Agent | undefined {
+  return [...idleAgents(s)].filter((a) => powerOf(a) >= need).sort((a, b) => agentBonus(b, op) - agentBonus(a, op) || b.lv - a.lv || a.id - b.id)[0];
 }
 
 export function canRecruit(s: GameState): string | null {
@@ -217,6 +242,7 @@ export function patchAgent(s: GameState, id: number, p: Partial<Agent>): GameSta
   return withAgents(s, { ...ag, list: ag.list.map((a) => (a.id === id ? { ...a, ...p } : a)) });
 }
 
+export const PTS_PER_LV = 3;
 /** 작전을 마친 요원: 경험치·등급 */
 export function agentDone(s: GameState, id: number, ok: boolean, after: { status: AgentStatus; untilMs?: number; where?: string }): { state: GameState; up: boolean } {
   const a = agentById(s, id);
@@ -224,13 +250,15 @@ export function agentDone(s: GameState, id: number, ok: boolean, after: { status
   let xp = a.xp + (ok ? XP_WIN : XP_FAIL);
   let lv = a.lv;
   let up = false;
+  let pts = a.pts ?? 0;
   while (lv < LV_MAX && xp >= lv * 100) {
     xp -= lv * 100;
     lv++;
+    pts += PTS_PER_LV;
     up = true;
   }
   if (lv >= LV_MAX) xp = Math.min(xp, LV_MAX * 100);
-  return { state: patchAgent(s, id, { xp, lv, ops: a.ops + 1, wins: a.wins + (ok ? 1 : 0), status: after.status, untilMs: after.untilMs, where: after.where }), up };
+  return { state: patchAgent(s, id, { xp, lv, pts, ops: a.ops + 1, wins: a.wins + (ok ? 1 : 0), status: after.status, untilMs: after.untilMs, where: after.where }), up };
 }
 
 /** 포로 교환: 방첩으로 잡은 그 나라 첩자와 우리 요원을 맞바꿈 */
@@ -349,7 +377,7 @@ export function meetLegend(s: GameState, key: string, way: 'warm' | 'deal' = 'wa
 /** 전설 요원을 내 블랙 요원으로 */
 export function joinLegend(s: GameState, l: Pick<LegendDef, 'key' | 'name' | 'code' | 'sex' | 'age' | 'photo' | 'trait' | 'stats' | 'skills' | 'country'>, from: string): GameState {
   const ag = agentsOf(s);
-  const a: Agent = { id: ag.nextId, name: l.name, code: l.code, sex: l.sex, age: l.age, face: l.photo, skills: l.skills, lv: LV_MAX, xp: 0, status: 'idle', ops: 0, wins: 0, legend: true, photo: l.photo, home: l.country, from, trait: l.trait, stats: l.stats };
+  const a: Agent = { id: ag.nextId, name: l.name, code: l.code, sex: l.sex, age: l.age, face: l.photo, skills: l.skills, lv: 5, xp: 0, status: 'idle', ops: 0, wins: 0, legend: true, photo: l.photo, home: l.country, from, trait: l.trait, stats: l.stats };
   return withAgents(s, { ...ag, list: [...ag.list, a], nextId: ag.nextId + 1, gone: [...new Set([...(ag.gone ?? []), l.key])] });
 }
 /** 지령이 성공하면 소문이 나서 내 나라 전설 요원들의 인연이 조금 오름 */
