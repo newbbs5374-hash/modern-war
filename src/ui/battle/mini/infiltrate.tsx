@@ -1,32 +1,9 @@
 // 11-28 새 전체 화면 훈련 2 "침투 작전"(옆으로 가는 플랫폼 + 잠입). 계산은 battle/infiltrate.ts.
 // 조작: ◀ ▶ 꾹 = 달리기 · ⤴ = 점프 · ⤵ 꾹 = 숙이기(그림자 속이면 안 보임, 상자 뒤면 시선이 막힘)
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useFullCanvas } from './full';
 import { FLOOR, IH, IW, LIVES, PH, PH_LOW, PW, camAngle, inShadow, infiltrateScore, newInfiltrate, stepInfiltrate, type IState } from '../../../battle/infiltrate';
 import { useLoop, type MiniProps } from './kit';
-
-/** 세로 화면이면 눕혀서 쓰기 + 캔버스 크기 맞추기 */
-export function useFullCanvas() {
-  const cv = useRef<HTMLCanvasElement>(null);
-  const [rot, setRot] = useState(() => window.innerHeight > window.innerWidth);
-  useEffect(() => {
-    const on = () => setRot(window.innerHeight > window.innerWidth);
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  useEffect(() => {
-    const fit = () => {
-      const c = cv.current;
-      if (!c) return;
-      const d = Math.min(2, window.devicePixelRatio || 1);
-      c.width = Math.round(c.clientWidth * d);
-      c.height = Math.round(c.clientHeight * d);
-    };
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, [rot]);
-  return { cv, rot };
-}
 
 export function GInfiltrate({ level, seed, report, finish }: MiniProps) {
   const { cv, rot } = useFullCanvas();

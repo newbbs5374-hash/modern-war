@@ -1841,4 +1841,9 @@ html[data-map-still] .hl-wx i { animation: none !important; }
 .if-ctl { position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); display: flex; justify-content: space-between; pointer-events: none; }
 .if-pad { display: flex; gap: 10px; pointer-events: auto; }
 .if-pad button { white-space: nowrap; width: 84px; height: 64px; border-radius: 16px; background: rgba(0, 0, 0, 0.45); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); font-size: 18px; font-weight: 700; touch-action: none; }
+.fa-btns { display: flex; gap: 6px; }
+.fa-btns button { height: 34px; padding: 0 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 700; white-space: nowrap; }
+.fa-btns button:disabled { opacity: 0.4; }
+.if-pad .fa-big { width: 130px; font-size: 20px; }
+.if-pad button:disabled { opacity: 0.45; }
 .if-pad .if-jump { background: rgba(60, 140, 90, 0.7); }

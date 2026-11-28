@@ -100,6 +100,11 @@ export const MINIGAMES: MiniDef[] = [
   // 11-28 새 전체 화면 훈련(화면을 다 씀)
   { id: 'g-fortress', training: '포격', name: '포격전', how: '포트리스처럼 번갈아 쏘는 전차 포격. 화면을 위아래로 끌어 각도, 🔥를 꾹 눌렀다 떼서 힘. 바람을 보고 적 전차를 맞혀요. 포탄이 높이 날면 화면이 넓어져 끝까지 보여요.', secs: 300, on: true, three: true },
   { id: 'g-infiltrate', training: '잠입', name: '침투 작전', how: '옆으로 가는 잠입 플랫폼. ◀ ▶로 달리고 ⤴ 점프, ⤵ 꾹 숙이기. 그림자 속에서 숙이면 안 보이고, 상자 뒤에 숙이면 경비병 시선이 막혀요. 경보가 차면 목숨 하나. 적 기지 문까지 가요.', secs: 240, on: true, three: true },
+  { id: 'g-pairs', training: '보급', name: '부품 짝 맞추기', how: '사천성처럼 같은 무인기 부품 두 개를 눌러요. 빈 길로 꺾임 2번 안에 이어지면 사라져요(판 바깥으로 돌아가도 돼요). 💡 힌트 3번, 🔀 섞기는 10초 깎임. 다 지우면 조립 완료.', secs: 185, on: true, three: true },
+  { id: 'g-jigsaw', training: '정보', name: '위성 사진 맞추기', how: '무인기가 찍은 정찰 사진이 조각났어요. 오른쪽 조각을 끌어 판의 제자리에 놓으면 딱 붙어요. 다 맞추면 적 기지 위치가 드러나요.', secs: 185, on: true, three: true },
+  { id: 'g-bomb', training: '항공', name: '폭격 투하', how: '폭격기가 왼쪽에서 오른쪽으로 지나가요(5번, 한 번에 💣 2발). 떨어지는 폭탄은 앞으로 날아가니 미리 떨어뜨려요. ▲▼ 고도: 낮으면 맞히기 쉽지만 대공포에 맞아요. ★ 지휘소를 모두 부숴요.', secs: 200, on: true, three: true },
+  { id: 'g-ballistic', training: '포격', name: '탄도 사격', how: '앵그리버드처럼 화면 어디든 눌러 뒤로 당겼다 놓으면 미사일이 날아가요. 당긴 만큼 세게, 반대 방향으로. 언덕 너머 ★ 지휘소를 미사일 7발로 모두 부숴요. 높이 날면 화면이 넓어져 끝까지 보여요.', secs: 240, on: true, three: true },
+  { id: 'g-shield', training: '사격', name: '하늘의 방패', how: '적 미사일이 도시로 떨어져요. 하늘을 누르면 가까운 포대에서 요격탄이 날아가 그 자리에서 터져요. 불꽃에 닿은 미사일은 떨어져요. 분홍 미사일은 셋으로 갈라져요. 5파를 막아요.', secs: 200, on: true, three: true },
   // 11-27 한 손가락 미니 훈련(화면이 만들어진 것만)
   ...EASY.filter((e) => e.view).map((e) => ({ id: e.id, training: e.training, name: e.name, how: e.how, secs: e.secs, on: true, three: true, easy: e.ctl })),
 ];
