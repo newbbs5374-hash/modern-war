@@ -133,6 +133,9 @@ export interface CouncilOpen {
   untilMs: number;
   /** 내 표(null = 아직) */
   vote: boolean | null;
+  /** 11-28 내가 올린 안건 · 로비로 내 표를 따라오게 한 나라 */
+  mine?: boolean;
+  lobbied?: string[];
 }
 export interface CouncilActive {
   agenda: AgendaId;
@@ -166,7 +169,7 @@ export interface CivState {
   envoyReadyMs: number;
   /** 섬 → 부탁을 들어준 주기 번호 */
   reqDone: Record<string, number>;
-  council: { on: boolean; nextMs: number; open: CouncilOpen | null; active: CouncilActive[]; last: string | null };
+  council: { on: boolean; nextMs: number; open: CouncilOpen | null; active: CouncilActive[]; last: string | null; proposeMs?: number };
   cities: Record<string, CityCiv>;
   nextId: number;
   log: string[];
@@ -796,7 +799,11 @@ export function canEnvoy(s: GameState, island: string): string | null {
 }
 function addInfluence(c: CivState, island: string, who: string, v: number) {
   const m = (c.influence[island] ??= {});
-  m[who] = Math.min(INFLUENCE_MAX, (m[who] ?? 0) + v);
+  m[who] = Math.max(0, Math.min(INFLUENCE_MAX, (m[who] ?? 0) + v));
+}
+/** 11-28 분쟁 지역 사건 결과: 영향력 더하기·빼기(0~최대) */
+export function addIslandInfluence(s: GameState, island: string, who: string, v: number): GameState {
+  return withCiv(s, (c) => addInfluence(c, island, who, v));
 }
 export function sendEnvoy(s: GameState, island: string): GameState {
   if (canEnvoy(s, island)) return s;
@@ -877,6 +884,8 @@ function aiVote(s: GameState, id: string, o: CouncilOpen, rng: Rng): boolean {
     if (r === '연합') return false;
     return rng.chance(0.35);
   }
+  // 11-28 로비한 나라는 내 표를 따라옴
+  if (o.vote !== null && o.lobbied?.includes(id)) return o.vote;
   // 나를 좋아하면 내 표를 따라가는 편
   if (o.vote !== null && favorOf(s, id) >= 30 && rng.chance(0.6)) return o.vote;
   const base: Record<AgendaId, number> = { embargo: 0.35, sanction: 0.4, truce: 0.55, science: 0.6, islands: 0.5 };
@@ -938,6 +947,85 @@ function closeCouncil(s: GameState, c: CivState): GameState {
   }
   return worldEvent(ns, `🏛️ 국제 회의 ${c.council.last}`);
 }
+// ── 11-28 국제 회의 안건 올리기 · 로비 ──
+export const PROPOSE_COST = 3000;
+export const PROPOSE_WAIT_MS = 24 * H;
+export const LOBBY_MAX = 3;
+/** 로비 비용: 그 나라 표 1장마다 */
+export const LOBBY_PER_VOTE = 1200;
+const treasuryOf = (s: GameState) => s.nations[s.player.countryId]?.treasury ?? 0;
+const payMe = (s: GameState, v: number): GameState => {
+  const me = s.player.countryId;
+  return { ...s, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - v } } };
+};
+export function canPropose(s: GameState, agenda: AgendaId, target?: string): string | null {
+  const c = civOf(s).council;
+  if (!c.on) return '국제 회의가 꺼져 있어요';
+  if (c.open) return '지금 열린 안건이 끝나야 해요';
+  if (s.worldMs < (c.proposeMs ?? 0)) return `${Math.ceil(((c.proposeMs ?? 0) - s.worldMs) / H)}시간 뒤에 다시 올릴 수 있어요`;
+  const a = agendaById(agenda);
+  if (a.target && (!target || target === s.player.countryId || !isAlive(s.world, target))) return '제재할 나라를 골라요';
+  if (treasuryOf(s) < PROPOSE_COST) return `나라 예산 ${PROPOSE_COST.toLocaleString('ko-KR')} 필요`;
+  return null;
+}
+export function proposeCouncil(s: GameState, agenda: AgendaId, target?: string): GameState {
+  if (canPropose(s, agenda, target)) return s;
+  const a = agendaById(agenda);
+  return withCiv(payMe(s, PROPOSE_COST), (c) => {
+    const untilMs = s.worldMs + COUNCIL_ANSWER_MS;
+    c.council.open = { id: c.nextId++, agenda, target: a.target ? target : undefined, untilMs, vote: true, mine: true, lobbied: [] };
+    c.council.proposeMs = s.worldMs + PROPOSE_WAIT_MS;
+    c.council.nextMs = Math.max(c.council.nextMs, untilMs + 60e3);
+    clog(c, `🏛️ 우리가 안건을 올렸어요: ${a.icon} ${a.name}${a.target && target ? `(${countryById(target).name})` : ''} — 찬성표를 던졌어요`);
+  });
+}
+export const lobbyCost = (s: GameState, id: string) => councilVotes(s, id) * LOBBY_PER_VOTE;
+export function canLobby(s: GameState, id: string): string | null {
+  const o = civOf(s).council.open;
+  const me = s.player.countryId;
+  if (!o) return '열린 안건이 없어요';
+  if (o.vote === null) return '먼저 표를 던져요';
+  if (id === me || !isAlive(s.world, id)) return '고를 수 없는 나라';
+  if (id === o.target) return '안건 대상 나라는 설득할 수 없어요';
+  if (relationOf(s.world, me, id) === '전쟁') return '전쟁 중인 나라';
+  if ((o.lobbied ?? []).includes(id)) return '이미 설득했어요';
+  if ((o.lobbied ?? []).length >= LOBBY_MAX) return `한 회의에 ${LOBBY_MAX}곳까지`;
+  if (treasuryOf(s) < lobbyCost(s, id)) return `나라 예산 ${lobbyCost(s, id).toLocaleString('ko-KR')} 필요`;
+  return null;
+}
+export function lobby(s: GameState, id: string): GameState {
+  if (canLobby(s, id)) return s;
+  const cost = lobbyCost(s, id);
+  return withCiv(payMe(s, cost), (c) => {
+    c.council.open!.lobbied = [...(c.council.open!.lobbied ?? []), id];
+    clog(c, `🤝 ${countryById(id).name}에 로비: 우리 표를 따라와요(−${cost.toLocaleString('ko-KR')})`);
+  });
+}
+/** 지금 표를 세면(로비·내 표 반영, AI 표는 어림: 확률 50% 넘으면 찬성) */
+export function councilTally(s: GameState): { yes: number; no: number; sure: number } | null {
+  const o = civOf(s).council.open;
+  if (!o) return null;
+  const me = s.player.countryId;
+  let yes = 0;
+  let no = 0;
+  let sure = 0;
+  for (const x of COUNTRIES) {
+    if (!isAlive(s.world, x.id)) continue;
+    const v = councilVotes(s, x.id);
+    if (x.id === me) {
+      if (o.vote === null) continue;
+      if (o.vote) yes += v;
+      else no += v;
+      sure += v;
+    } else if (o.vote !== null && o.lobbied?.includes(x.id)) {
+      if (o.vote) yes += v;
+      else no += v;
+      sure += v;
+    }
+  }
+  return { yes, no, sure };
+}
+
 /** 회의 제재 중인 나라의 나라 예산 배율 */
 export function sanctionMult(s: GameState, id: string): number {
   return civOf(s).council.active.some((a) => a.agenda === 'sanction' && a.target === id && a.untilMs > s.worldMs) ? 0.8 : 1;
