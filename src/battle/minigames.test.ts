@@ -14,8 +14,8 @@ test('훈련 12개마다 미니게임 3개, 모두 화면이 있음', () => {
     for (const m of minisFor(t.name)) expect(m.three).toBe(true);
   }
   // 11-26: 3D 화면 8개 더함
-  expect(MINIGAMES.filter((m) => !m.fresh && !m.easy).length).toBe(46); // 11-28 전체 화면 포격전·침투 작전 +2
-  expect(MINIGAMES.filter((m) => m.three && !m.fresh && !m.easy).length).toBe(10);
+  expect(MINIGAMES.filter((m) => !m.fresh && !m.easy).length).toBe(51); // 11-28 전체 화면 포격전·침투 작전 +2, 묶음 A +5
+  expect(MINIGAMES.filter((m) => m.three && !m.fresh && !m.easy).length).toBe(15);
   for (const m of MINIGAMES) expect(MINI_VIEWS[m.id]).toBeTruthy();
   expect(new Set(MINIGAMES.map((m) => m.id)).size).toBe(MINIGAMES.length);
 });
