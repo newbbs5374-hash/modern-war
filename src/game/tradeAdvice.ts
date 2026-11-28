@@ -1,7 +1,7 @@
 // 11/28 디자인 개편 4단계: 경제부 장관 무역 추천.
 // 지금 시세로 "어느 나라에서 무엇을 사서 → 어느 나라에 팔면 남는지", "창고에 남는 것을 어디에 팔지",
 // "모자란 자원을 어디서 싸게 살지"를 모든 나라 × 모든 자원으로 따져 이득 순으로 고른다.
-// 장관 추천 실행은 6시간마다 ADVICE_PER_DAY번(맡기기도 같은 몫을 씀). 11/28 대장: 3번→12번, 6시간마다 다시 채움.
+// 장관 추천 실행은 4시간마다 ADVICE_PER_DAY번(맡기기도 같은 몫을 씀). 11/28 대장: 3번→12번, 6시간→4시간마다 다시 채움.
 import { RESOURCES, type Res } from '../data/economy';
 import { countryById } from '../data/world';
 import { isArchRival } from '../data/archRivals';
@@ -9,10 +9,10 @@ import { relationOf } from './world';
 import { buyCost, canTrade, producesOf, sellGain, sellPrice, trade, tradePartners, tradePrice } from './economy';
 import type { GameState } from './state';
 
-/** 한 번(6시간) 동안 쓸 수 있는 추천 횟수 */
+/** 한 번(4시간) 동안 쓸 수 있는 추천 횟수 */
 export const ADVICE_PER_DAY = 12;
 /** 추천 횟수가 다시 채워지는 간격 */
-export const ADVICE_RESET_H = 6;
+export const ADVICE_RESET_H = 4;
 /** 되팔기 한 번에 쓰는 돈: 나라 예산의 이만큼까지 */
 export const ADVICE_SPEND = 0.25;
 /** 창고에 남겨 둘 양(부대·시설에 쓸 몫) */
@@ -41,7 +41,7 @@ export interface TradeTip {
 }
 
 const H = 3600_000;
-/** 6시간 단위 번호(옛 저장의 하루 번호와 달라 자연히 새로 채워짐) */
+/** 4시간 단위 번호(옛 저장의 하루 번호와 달라 자연히 새로 채워짐) */
 export const adviceDay = (s: GameState) => Math.floor(s.worldMs / (ADVICE_RESET_H * H));
 /** 다음에 횟수가 다시 채워질 때까지 남은 시간(ms) */
 export const adviceResetIn = (s: GameState) => (adviceDay(s) + 1) * ADVICE_RESET_H * H - s.worldMs;

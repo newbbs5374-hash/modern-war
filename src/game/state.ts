@@ -7,6 +7,8 @@ import { deployHelp, deployTick, type DeployState } from './deploy';
 import { cultureTick, type CultureState } from './culture';
 import { annexTick } from './annex';
 import { occAdminTick } from './occAdmin';
+import { autoApproveTick } from './autoApprove';
+import { resignTick, type ResignState } from './resign';
 import { unrestTick } from './unrest';
 import { baseTick } from './occChoices';
 import { peaceHintTick } from './victoryPeace';
@@ -215,6 +217,8 @@ export interface GameState {
   props?: PropState;
   /** 11-27 점령지 관리청(편입 전 점령 도시를 맡는 관리단·건의, game/occAdmin.ts) */
   occAdmin?: OccAdminState;
+  /** 장관 사직 요청(11-28) */
+  resign?: ResignState;
   /** 인물 대화 기록(11-25) */
   chat?: ChatState;
   /** 11-27 인물 만남·인연·부탁·인맥 수첩(game/meet.ts) */
@@ -483,7 +487,7 @@ export function advance(s: GameState, ms: number): GameState {
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
-    cur = isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(aiShadowTick(agentsTick(spyTick(ordersTick(crisisTick(cur))))))), AI_TICK_MS), AI_TICK_MS)))))))))))));
+    cur = resignTick(autoApproveTick(isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(aiShadowTick(agentsTick(spyTick(ordersTick(crisisTick(cur))))))), AI_TICK_MS), AI_TICK_MS)))))))))))))));
     world = cur.world;
   }
   return syncTitle(stratTick(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left))))))));

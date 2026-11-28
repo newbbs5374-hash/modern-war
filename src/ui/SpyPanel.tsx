@@ -146,8 +146,8 @@ const STATUS: Record<Agent['status'], { t: string; c: string }> = {
   caught: { t: '붙잡힘', c: 'dn' },
   dead: { t: '순직', c: 'dn' },
 };
-/** 요원 사진: 그 나라 요원 사진(agent-<나라>-01~16) → 젊은 얼굴 → 나라 얼굴 */
-export const agentPhotoUrl = (a: Agent, state: GameState) => (a.home && a.photo != null ? portraitUrl(`agent-${a.home}-${String(a.photo + 1).padStart(2, '0')}`) : null) ?? youngFaceUrl(a.home ?? state.player.countryId, a.sex, a.face) ?? countryFaceUrl({ country: state.player.countryId, sex: a.sex, age: a.age, id: a.id, face: a.face }, agentLook(state));
+/** 요원 사진: (일반 요원) 30~40대 요원 사진 agentx-<나라>-01~64 → 그 나라 요원 사진(agent-<나라>-01~16) → 젊은 얼굴 → 나라 얼굴 */
+export const agentPhotoUrl = (a: Agent, state: GameState) => (!a.legend && a.home && a.px != null ? portraitUrl(`agentx-${a.home}-${String(a.px + 1).padStart(2, '0')}`) : null) ?? (a.home && a.photo != null ? portraitUrl(`agent-${a.home}-${String(a.photo + 1).padStart(2, '0')}`) : null) ?? youngFaceUrl(a.home ?? state.player.countryId, a.sex, a.face) ?? countryFaceUrl({ country: state.player.countryId, sex: a.sex, age: a.age, id: a.id, face: a.face }, agentLook(state));
 export function AgentCard({ a, state, on, onPick, onSwap, onRansom, onInfo }: { a: Agent; state: GameState; on: boolean; onPick: () => void; onSwap: () => void; onRansom?: () => void; onInfo?: () => void }) {
   const url = agentPhotoUrl(a, state);
   const t = statsOf(a);

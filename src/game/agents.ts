@@ -40,6 +40,8 @@ export interface Agent {
   /** 11-28 v2 전설 요원(SS) · 사진 번호(0~15) · 출신 나라 · 출신 기관 · 고유 능력 · 능력치 */
   legend?: boolean;
   photo?: number;
+  /** 11-28 일반 요원 사진 번호(agentx-<나라>-01~64: 0~31 남 · 32~63 여, 30~40대) */
+  px?: number;
   home?: string;
   from?: string;
   trait?: LegendTrait;
@@ -131,7 +133,13 @@ export function makeAgent(s: GameState, rng: Rng, id: number, taken: Set<string>
   const range = Array.from({ length: 8 }, (_, i) => i + (sex === 'f' ? 8 : 0));
   const pool = range.filter((i) => !used.has(i));
   const photo = rng.pick(pool.length ? pool : range);
-  return { id, name, code, sex, age: 24 + Math.floor(rng.next() * 11), face: Math.floor(rng.next() * 1000), skills: [a, b], lv: 1, xp: 0, status: 'idle', ops: 0, wins: 0, stats: { infil: st(), ops: st(), hush: st() }, photo, home: me };
+  // 11-28 일반 요원 사진 64장(30~40대) 중 이미 있는 요원과 겹치지 않게
+  const usedX = new Set(agentsOfRaw(s)?.list.filter((x) => x.home === me).map((x) => x.px) ?? []);
+  const xr = Array.from({ length: 32 }, (_, i) => i + (sex === 'f' ? 32 : 0));
+  const xfree = xr.filter((i) => !usedX.has(i));
+  const px = rng.pick(xfree.length ? xfree : xr);
+  const age = 30 + Math.floor(rng.next() * 20);
+  return { id, name, code, sex, age, px, face: Math.floor(rng.next() * 1000), skills: [a, b], lv: 1, xp: 0, status: 'idle', ops: 0, wins: 0, stats: { infil: st(), ops: st(), hush: st() }, photo, home: me };
 }
 
 /* ───────── 11-28 요원 키우기: 능력치(잠입·공작·은밀) ───────── */

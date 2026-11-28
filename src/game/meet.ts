@@ -10,6 +10,11 @@ import { deckSize, faceFile, faceTag } from '../data/faces';
 import { addPresMod } from './approval';
 import { cabinetOf, genPerson, giveFaces, type Person } from './cabinet';
 import { countDiff, type Count } from './goals';
+import { assemblyOf } from './assembly';
+import { mediaOf } from './media';
+import { scheduleOf } from './schedule';
+import { civOf } from './civ';
+import { TITLES } from '../data/ranks';
 import { ROLE_INFO, roleOf, type RivalRole } from './rivals';
 import { Rng } from './rng';
 import { budgetPerDay, type GameState } from './state';
@@ -188,6 +193,8 @@ export interface MeetState {
   /** 받은 모으기 보상 */
   got: string[];
   log: string[];
+  /** 11/28 마지막으로 만남을 청한 시각 */
+  askMs?: number;
 }
 
 export function newMeet(s: Pick<GameState, 'worldMs'>): MeetState {
@@ -577,4 +584,82 @@ function whoGroupWas(_m: MeetState, p: Person): Group {
   if (/실장|차장|전직 차관/.test(t)) return '관료';
   if (/공기업|연구원장|시장·군수/.test(t)) return '공공';
   return '인재';
+}
+
+// ── 11/28 대장 요청: 아직 못 만난 사람에게 만남 청하기 ──
+// 스토리상 아직 이르거나 너무 일찍 만나면 밸런스가 흐트러지는 사람은 잠그고, 열 수 있는 힌트를 보여 줌.
+/** 만남을 청하는 간격 */
+export const ASK_MEET_GAP_MS = 1 * H;
+/** 만남 자리 마련 비용: 나라 예산 하루치의 이만큼 */
+export const ASK_MEET_COST = 0.3;
+/** 정적을 청하려면 이 호칭부터 */
+export const ASK_RIVAL_TITLE = 2;
+/** 정적을 청하려면 먼저 만난 사람 수 */
+export const ASK_RIVAL_MET = 5;
+
+interface Gate {
+  ok: (s: GameState) => boolean;
+  hint: string;
+}
+const sumVals = (r: Record<string, number> | undefined) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
+/** 묶음별 잠금: 그 묶음과 처음 얽히는 콘텐츠를 한 번은 해 봐야 만날 수 있음 */
+const GROUP_GATE: Partial<Record<Group | '정적', Gate>> = {
+  정계: { ok: (s) => (assemblyOf(s).passed ?? 0) + assemblyOf(s).confWins >= 1, hint: '국회에서 법안을 한 번 통과시키면' },
+  재계: { ok: (s) => civOf(s).agreements.length + (s.economy.contracts?.length ?? 0) >= 1, hint: '협정이나 무역 계약을 한 번 맺으면' },
+  언론: { ok: (s) => scheduleOf(s).total >= 3, hint: '대통령 일정을 3번 소화하면' },
+  시민: { ok: (s) => mediaOf(s).petDone >= 1, hint: '국민 청원을 한 번 들어주면' },
+  군: { ok: (s) => s.officer.generals.length >= 1, hint: '장군을 한 명 이상 두면' },
+  외국: { ok: (s) => mediaOf(s).summits >= 1, hint: '정상회담을 한 번 성공하면' },
+  관료: { ok: (s) => sumVals(s.cabinet?.minWork as Record<string, number> | undefined) >= 1, hint: '부처 업무를 한 번 끝내면' },
+  공공: { ok: (s) => civOf(s).done.length >= 3, hint: '연구를 3개 끝내면' },
+  정적: {
+    ok: (s) => (s.player.title ?? 0) >= ASK_RIVAL_TITLE && meetOf(s).met.length >= ASK_RIVAL_MET,
+    hint: `호칭 「${TITLES[ASK_RIVAL_TITLE].name}」을 받고 다른 사람을 ${ASK_RIVAL_MET}명 이상 만나면`,
+  },
+};
+
+export const askMeetCost = (s: GameState) => Math.round(budgetPerDay(s, s.player.countryId) * ASK_MEET_COST);
+
+/** 이 사람을 만날 자리 */
+export function askSpot(s: GameState, key: string): SpotId {
+  const w = whoOf(s, key);
+  if (!w) return 'meeting';
+  if (w.group === '정적') return SPOT_IDS.find((id) => SPOTS[id].rivals.includes(w.title as RivalRole)) ?? 'meeting';
+  return SPOT_IDS.find((id) => SPOTS[id].groups.includes(w.group as Group)) ?? 'meeting';
+}
+
+/** 만남을 청할 수 없는 까닭(없으면 null). lock=true 면 스토리·밸런스 잠금(힌트 보여 줌) */
+export function canAskMeet(s: GameState, key: string): { why: string; lock: boolean } | null {
+  const m = meetOf(s);
+  const w = whoOf(s, key);
+  if (!w) return { why: '지금은 만날 수 없는 사람이에요', lock: false };
+  if (m.met.includes(key)) return { why: '이미 만난 사람이에요', lock: false };
+  const g = GROUP_GATE[w.group];
+  if (g && !g.ok(s)) return { why: `🔒 아직 만날 때가 아니에요. ${g.hint} 만남을 청할 수 있어요`, lock: true };
+  if (m.card) return { why: '지금 다른 만남이 열려 있어요', lock: false };
+  const today = m.day === dayOf(s.worldMs) ? m.today : 0;
+  if (today >= MEET_DAY_MAX) return { why: `오늘 만남 ${MEET_DAY_MAX}번을 다 했어요. 내일 다시 청해 보세요`, lock: false };
+  const gap = (m.askMs ?? -Infinity) + ASK_MEET_GAP_MS - s.worldMs;
+  if (gap > 0) return { why: `만남은 1시간에 한 번 청할 수 있어요(${Math.ceil(gap / 60e3)}분 남음)`, lock: false };
+  const cost = askMeetCost(s);
+  if ((s.nations[s.player.countryId]?.treasury ?? 0) < cost) return { why: `나라 예산 ${cost.toLocaleString('ko-KR')} 필요`, lock: false };
+  return null;
+}
+
+/** 만남 청하기: 예산으로 자리를 마련하면 그 사람 만남 카드가 바로 열림 */
+export function askMeet(s: GameState, key: string): GameState {
+  if (canAskMeet(s, key)) return s;
+  const me = s.player.countryId;
+  const cost = askMeetCost(s);
+  const m0 = meetOf(s);
+  const day = dayOf(s.worldMs);
+  const spot = askSpot(s, key);
+  const m: MeetState = {
+    ...m0,
+    day,
+    today: (m0.day === day ? m0.today : 0) + 1,
+    askMs: s.worldMs,
+    card: { key: key as MeetKey, spot, step: m0.times[key] ?? 0, atMs: s.worldMs, untilMs: s.worldMs + CARD_WAIT_MS },
+  };
+  return { ...s, meet: m, nations: { ...s.nations, [me]: { ...s.nations[me], treasury: s.nations[me].treasury - cost } } };
 }

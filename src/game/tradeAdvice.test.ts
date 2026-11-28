@@ -24,9 +24,9 @@ describe('장관 무역 추천', () => {
     expect(adviceLeft(s)).toBe(ADVICE_PER_DAY - 1);
     for (let i = 1; i < ADVICE_PER_DAY; i++) s = runTip(s, tradeTips(s).find((x) => x.kind === 'flip') ?? t);
     expect(adviceLeft(s)).toBe(0);
-    expect(canRunTip(s, t)).toMatch(/6시간/);
+    expect(canRunTip(s, t)).toMatch(/4시간/);
     expect(runTip(s, t)).toBe(s);
-    // 6시간이 지나면 다시 채워짐
+    // 4시간이 지나면 다시 채워짐
     s = { ...s, worldMs: s.worldMs + adviceResetIn(s) + 1 };
     expect(adviceLeft(s)).toBe(ADVICE_PER_DAY);
   });

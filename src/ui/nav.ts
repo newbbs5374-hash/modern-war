@@ -84,7 +84,7 @@ export function setOldMenu(on: boolean) {
 }
 
 /** 새 큰 탭 안의 작은 탭 이름 */
-export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'meet' | 'shadow' | 'plan' | 'agenda' | 'album';
+export type PersonalTab = 'profile' | 'win' | 'aides' | 'talent' | 'meet' | 'shadow' | 'plan' | 'agenda';
 export type DefenseTab = 'ops' | 'train' | 'forces' | 'command' | 'spy' | 'strat' | 'tech' | 'fac';
 export type DiploTab = 'mofa' | 'nations' | 'rel' | 'agree' | 'isle' | 'council';
 export type SocietyTab = 'mins' | 'city' | 'gov' | 'tech' | 'politics' | 'nation' | 'press' | 'opinion';

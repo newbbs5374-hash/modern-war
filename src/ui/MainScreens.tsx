@@ -6,7 +6,7 @@ import { Safe } from './Safe';
 // 대통령식 메뉴(11-23 대장 결정): 개인 · 국방 · 외교 · 사회 · 경제 큰 탭.
 // 지금 있던 기능은 하나도 빼지 않고, 맡은 분야 탭 안의 작은 탭으로 옮겼어요.
 import { officeName } from '../game/nation';
-import { AgendaPanel, AlbumPanel, BudgetSeasonCard, CodesPanel, GroupsPanel, ProjectsPanel } from './DomesticUI';
+import { AgendaPanel, BudgetSeasonCard, CodesPanel, GroupsPanel, ProjectsPanel } from './DomesticUI';
 import { domOf } from '../game/domestic';
 import { canFinish, AGENDA, pledgeSlots } from '../game/agenda';
 import { GROUPS, groupSat } from '../game/groups';
@@ -81,7 +81,6 @@ export function personalTabs(props: ScreenProps): TabDef<PersonalTab>[] {
     { id: 'shadow', label: '그림자실', icon: '🕶️', badge: spyOf(state).active.filter((m) => spyOpById(m.op).shadow && m.agent != null && !m.picks?.[missionStep(state, m)]).length || null },
     { id: 'plan', label: '일정', icon: '📅', badge: state.polity?.speech.open ? '🎤' : scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
-    { id: 'album', label: '사진첩', icon: '📸' },
   ]);
 }
 
@@ -110,7 +109,6 @@ export function PersonalScreen(props: ScreenProps) {
         </>
       )}
       {tab === 'agenda' && <AgendaPanel {...props} />}
-      {tab === 'album' && <AlbumPanel {...props} />}
       </Safe>
     </>
   );

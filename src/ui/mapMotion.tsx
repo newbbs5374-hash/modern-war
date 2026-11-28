@@ -57,3 +57,48 @@ export function MapMotionButton() {
     </button>
   );
 }
+
+// 11/28 대장 요청: 지구 3D의 이동 노선(전쟁·연합·공격 곡선)을 지우는 버튼. 기기마다 기억.
+const RKEY = 'mw-map-routes';
+const rsubs = new Set<() => void>();
+function readRoutes(): boolean {
+  try {
+    return localStorage.getItem(RKEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+let routes = readRoutes();
+export function mapRoutesOn(): boolean {
+  return routes;
+}
+export function setMapRoutes(v: boolean) {
+  routes = v;
+  try {
+    if (v) localStorage.removeItem(RKEY);
+    else localStorage.setItem(RKEY, '0');
+  } catch {
+    /* 저장 못 해도 이번 판은 그대로 */
+  }
+  rsubs.forEach((f) => f());
+}
+function rsubscribe(f: () => void) {
+  rsubs.add(f);
+  return () => {
+    rsubs.delete(f);
+  };
+}
+export function useMapRoutes(): [boolean, (v: boolean) => void] {
+  const v = useSyncExternalStore(rsubscribe, mapRoutesOn, mapRoutesOn);
+  return [v, setMapRoutes];
+}
+/** 지도 위 빠른 버튼: 이동 노선 보이기/지우기 */
+export function MapRoutesButton() {
+  const [v, set] = useMapRoutes();
+  const label = v ? '이동 노선 지우기' : '이동 노선 보이기';
+  return (
+    <button aria-label={label} title={`${label} (전쟁·연합·공격 곡선)`} className={v ? '' : 'off'} onClick={() => set(!v)}>
+      {v ? '〰️' : '➖'}
+    </button>
+  );
+}
