@@ -1,6 +1,7 @@
 // 작전 → 첩보 탭: 공작원 보내기
 import { BoostBar } from './BoostBar';
 import { useState } from 'react';
+import { routeTo } from './nav';
 import { Card, fmt } from './common';
 import { FLAG } from './flag';
 import { timeLeft } from './officerScreens';
@@ -9,9 +10,14 @@ import { COUNTRIES, countryById } from '../data/world';
 import { RANKS } from '../data/ranks';
 import { isAlive, relationOf } from '../game/world';
 import { CATCH_FAME, CATCH_INTEL, LEAK_RESEARCH, LEAK_SPY, MOLE_SPOTS, arrest, canClue, clueCost, findClue, moleOf } from '../game/mole';
-import { INTEL_BONUS, SPY_OPS, canSpy, intelFresh, scoutView, spyChance, spyOf, spyOpById, spyTeams, startSpy } from '../game/spy';
+import { INTEL_BONUS, SPY_OPS, canPick, canSpy, intelFresh, missionOdds, missionStep, pickCost, pickStep, scoutView, spyChance, spyOf, spyOpById, spyTeams, startSpy, type SpyMission } from '../game/spy';
+import { PICKS, SKILLS, STEP_ART, TRAITS, agentById, agentLook, bestAgent, canSwap, hasSteps, ransomOf, stepNames, stepText, type Agent, type StepPick } from '../game/agents';
+import { canPayRansom } from '../game/shadow';
+import { countryFaceUrl, portraitUrl, youngFaceUrl } from './Portrait';
+import { agentArt } from './scenes';
+import type { GameState } from '../game/state';
 
-export function SpyPanel({ state, actions }: ScreenProps) {
+export function SpyPanel({ state, actions, go }: ScreenProps) {
   const me = state.player.countryId;
   const sp = spyOf(state);
   const others = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id));
@@ -20,8 +26,13 @@ export function SpyPanel({ state, actions }: ScreenProps) {
   const mole = moleOf(state);
   const [mmsg, setMmsg] = useState('');
   const noClue = canClue(state);
+  const pickAgent: number | undefined = undefined;
   return (
     <>
+      <Card title="🕶️ 블랙 요원은 그림자실로">
+        <p className="small muted">정적 처리·기술 탈취·기지 폭파처럼 공식으로는 못 하는 일은 개인 → 🕶️ 그림자실에서 블랙 요원에게 맡겨요. 여기는 정보기관의 공식 작전(정찰·소문·방해)만 해요.</p>
+        <button className="wide" onClick={() => go(routeTo('personal', 'personal', 'shadow'))}>🕶️ 그림자실로 가기</button>
+      </Card>
       <Card title="🛡️ 방첩" right={<small className="muted">잡음 {mole.caught} · 놓침 {mole.missed}</small>}>
         {mole.open ? (
           <>
@@ -56,19 +67,20 @@ export function SpyPanel({ state, actions }: ScreenProps) {
           🕵️ 정보 점수 <b>{fmt(state.officer.intel)}</b> · 💰 나라 예산 <b>{fmt(state.nations[me].treasury)}</b>
         </p>
         <p className="small muted">정보 점수는 부관 "정보 수집" 심부름과 정찰 임무로 모여요. 실패하면 들킨 나라가 우리를 미워하고 긴장이 올라요.</p>
-        {sp.active.map((m) => {
+        {sp.active.filter((m) => !spyOpById(m.op).shadow).map((m) => {
           const d = spyOpById(m.op);
           const pct = Math.min(100, ((state.worldMs - m.startMs) / (m.endMs - m.startMs)) * 100);
           return (
-            <div key={m.id} className="list-row small">
+            <div key={m.id} className={`list-row small ${m.agent != null ? 'agent-mrow' : ''}`}>
               <span style={{ flex: 1 }}>
-                {d.icon} {d.name} → {FLAG[m.target]} {countryById(m.target).name}
+                {d.icon} {d.name} → {FLAG[m.target]} {countryById(m.target).name}{m.agent != null && agentById(state, m.agent) ? ` · "${agentById(state, m.agent)!.code}"` : ''}
                 <span className="bar">
                   <span className="bar-fill" style={{ width: `${pct}%` }} />
                 </span>
               </span>
               <span className="muted">{timeLeft(m.endMs - state.worldMs)}</span>
               <BoostBar state={state} apply={actions.apply} target={{ kind: 'spy', id: m.id }} compact />
+              {m.agent != null && <MissionSteps m={m} state={state} pick={(p) => actions.apply((s) => pickStep(s, m.id, p))} />}
             </div>
           );
         })}
@@ -94,17 +106,18 @@ export function SpyPanel({ state, actions }: ScreenProps) {
 
       {target && (
         <Card title={`작전 고르기 · ${countryById(target).name}`}>
-          {SPY_OPS.map((d) => {
-            const why = canSpy(state, d.id, target);
+          {SPY_OPS.filter((d) => !d.shadow).map((d) => {
+            const why = canSpy(state, d.id, target, hasSteps(d.id) ? pickAgent : undefined);
+            const who = hasSteps(d.id) ? bestAgent(state, d.id) : undefined;
             const locked = state.player.rankIndex < d.rank;
             return (
               <div key={d.id} className={`list-row small ${locked ? 'muted' : ''}`}>
                 <span style={{ flex: 1 }}>
-                  {d.icon} <b>{d.name}</b> · {d.hours}시간 · 성공 {Math.round(spyChance(state, d.id, target) * 100)}%
+                  {d.icon} <b>{d.name}</b> · {d.hours}시간 · 성공 {Math.round(spyChance(state, d.id, target, who?.id) * 100)}%{who ? ` · "${who.code}"` : ''}
                   <br />
                   <span className="muted">{locked ? `🔒 ${RANKS[d.rank].name}부터` : d.text}</span>
                 </span>
-                <button disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => startSpy(s, d.id, target))}>
+                <button disabled={!!why} title={why ?? ''} onClick={() => actions.apply((s) => startSpy(s, d.id, target, pickAgent))}>
                   🕵️{d.intel} · 💰{fmt(d.money)}
                 </button>
               </div>
@@ -123,5 +136,85 @@ export function SpyPanel({ state, actions }: ScreenProps) {
         </Card>
       )}
     </>
+  );
+}
+
+const STATUS: Record<Agent['status'], { t: string; c: string }> = {
+  idle: { t: '대기', c: '' },
+  busy: { t: '작전 중', c: 'am' },
+  hurt: { t: '부상', c: 'am' },
+  caught: { t: '붙잡힘', c: 'dn' },
+  dead: { t: '순직', c: 'dn' },
+};
+export function AgentCard({ a, state, on, onPick, onSwap, onRansom }: { a: Agent; state: GameState; on: boolean; onPick: () => void; onSwap: () => void; onRansom?: () => void }) {
+  const url = (a.legend && a.home ? portraitUrl(`agent-${a.home}-${String((a.photo ?? 0) + 1).padStart(2, '0')}`) : null) ?? youngFaceUrl(a.home ?? state.player.countryId, a.sex, a.face) ?? countryFaceUrl({ country: state.player.countryId, sex: a.sex, age: a.age, id: a.id, face: a.face }, agentLook(state));
+  const st = STATUS[a.status];
+  const where = a.where ? ` · ${countryById(a.where).name}` : '';
+  const left = a.untilMs && a.untilMs > state.worldMs ? ` ${timeLeft(a.untilMs - state.worldMs)}` : '';
+  return (
+    <div className={`agent-card ${on ? 'on' : ''} st-${a.status} ${a.legend ? 'legend' : ''}`} onClick={a.status === 'idle' ? onPick : undefined}>
+      <div className="agent-face">
+        {url ? <img src={url} alt="" /> : <span>🕵️</span>}
+        {a.legend && <i className="agent-ss">SS</i>}
+        <i className={`agent-tag ${st.c}`}>{st.t}{where}{left}</i>
+      </div>
+      <b>"{a.code}" {a.name}</b>
+      <small className="muted">{a.skills.map((k) => `${SKILLS[k].icon}${SKILLS[k].name}`).join(' · ')}</small>
+      {a.legend && a.trait && <small className="agent-trait">🖤 {TRAITS[a.trait].name} · {TRAITS[a.trait].text}{a.from ? ` · ${a.from} 출신` : ''}</small>}
+      <small className="agent-star">{'★'.repeat(a.lv)}{'☆'.repeat(5 - a.lv)}</small>
+      <span className="bar"><span className="bar-fill" style={{ width: `${a.lv >= 5 ? 100 : Math.min(100, (a.xp / (a.lv * 100)) * 100)}%` }} /></span>
+      {a.status === 'caught' && (
+        <button className="small" disabled={!!canSwap(state, a.id)} title={canSwap(state, a.id) ?? ''} onClick={(e) => { e.stopPropagation(); onSwap(); }}>
+          🔁 포로 교환
+        </button>
+      )}
+      {a.status === 'caught' && onRansom && (
+        <button className="small" disabled={!!canPayRansom(state, a.id)} title={canPayRansom(state, a.id) ?? ''} onClick={(e) => { e.stopPropagation(); onRansom(); }}>
+          💸 몸값 {fmt(ransomOf(state, a.legend))}
+        </button>
+      )}
+      {a.status === 'caught' && <small className="muted">구출 작전은 해외 공작에서 그 나라를 골라서</small>}
+    </div>
+  );
+}
+
+export function MissionSteps({ m, state, pick }: { m: SpyMission; state: GameState; pick: (p: StepPick) => void }) {
+  const step = missionStep(state, m);
+  const odds = missionOdds(state, m);
+  const art = agentArt((STEP_ART[m.op] ?? (m.op.startsWith('r-') ? STEP_ART['r-*'] : undefined))?.[step] ?? 'infil');
+  const a = agentById(state, m.agent);
+  return (
+    <div className="agent-steps">
+      <div className="agent-stage">
+        {stepNames(m.op).map((n, i) => (
+          <span key={n} className={i < step ? 'ok' : i === step ? 'now' : ''}>
+            {i + 1} {n}
+            {m.picks?.[i] ? ` ${PICKS[m.picks[i]!].icon}` : i < step ? ' 🤫' : ''}
+          </span>
+        ))}
+      </div>
+      <div className="agent-scene" style={art ? { backgroundImage: `url(${art})` } : undefined}>
+        <p>{a ? `"${a.code}" · ` : ''}{stepText(m.op, step, m.target, m.rival)}</p>
+      </div>
+      <div className="agent-odds">
+        <span>성공 {Math.round(odds.chance * 100)}%</span>
+        <span>들킬 위험 {Math.round(odds.risk)}%</span>
+      </div>
+      <span className="bar"><span className="bar-fill risk" style={{ width: `${odds.risk}%` }} /></span>
+      <div className="agent-picks">
+        {(Object.keys(PICKS) as StepPick[]).map((k) => {
+          const p = PICKS[k];
+          const why = canPick(state, m.id, k);
+          const chosen = m.picks?.[step] === k;
+          return (
+            <button key={k} className={chosen ? 'on' : ''} disabled={!!why && !chosen} title={why ?? ''} onClick={() => pick(k)}>
+              {p.icon} {p.name}
+              <small>{k === 'bribe' ? `💰${fmt(pickCost(m))} · ` : ''}성공 {p.chance ? `+${Math.round(p.chance * 100)}` : '±0'} · 위험 +{p.risk}</small>
+            </button>
+          );
+        })}
+      </div>
+      {!m.picks?.[step] && <p className="small muted">이 단계에서 안 고르면 「조용히」로 해요.</p>}
+    </div>
   );
 }

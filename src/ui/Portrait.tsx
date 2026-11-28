@@ -108,3 +108,13 @@ export function countryFaceUrl(p: { country: string; eth?: string; sex: 'm' | 'f
   if (list.length) return URLS[list[i % list.length]];
   return personFaceUrl(look, p.sex, p.age, p.id);
 }
+
+/** 11-28 젊은 얼굴(요원 등): 나라 묶음 그림 중 30·40대만 골라 번호로 고정 → 없으면 아무 나이대 */
+export function youngFaceUrl(country: string, sex: 'm' | 'f', i: number): string | null {
+  const tag = faceTag(country);
+  for (const pres of [[`face-${tag}-${sex}-30-`, `face-${tag}-${sex}-40-`], [`face-${tag}-${sex}-`]]) {
+    const list = Object.keys(URLS).filter((k) => pres.some((p) => k.startsWith(p))).sort();
+    if (list.length) return URLS[list[i % list.length]];
+  }
+  return null;
+}

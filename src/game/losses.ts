@@ -81,6 +81,14 @@ export function foeBuffs(country: string | null | undefined): Partial<Record<Kin
   return out;
 }
 
+/** 11-28 모든 병과에 같은 배수(요원 작전으로 약해진 적) */
+export function weakBuffs(mul: number): Partial<Record<Kind, number>> {
+  if (mul >= 1) return {};
+  const out: Partial<Record<Kind, number>> = {};
+  for (const k of Object.keys(DEF) as Kind[]) out[k] = mul;
+  return out;
+}
+
 /** 이 전투의 적 나라: 적 이름(예: 중국군) → 없으면 대상 도시 주인(내 도시면 없음) */
 export function foeCountryOf(s: GameState, spec: { enemy?: string; city?: string }): string | null {
   const byName = spec.enemy ? COUNTRIES.find((c) => spec.enemy === `${c.name}군` || spec.enemy === c.name) : undefined;

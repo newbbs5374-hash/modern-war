@@ -40,3 +40,7 @@ export const domArt = (key: string): string | null => DOM_URLS[key] ?? null;
 export const actArt = (n: number): string | null => URLS[`scene-act${n}`] ?? null;
 export const crisisArt = (id: 'coalition' | 'nuke' | 'coup'): string | null => URLS[`scene-crisis-${id}`] ?? null;
 export const campaignArt = (countryId: string): string | null => URLS[`campaign-${countryId}`] ?? null;
+
+/** 11-28 특수 요원 작전 단계 장면(scenes/agent-<이름>.webp). 그림이 없으면 비슷한 밤 장면을 빌려 씀 */
+const AGENT_FALLBACK: Record<string, string> = { infil: 'scene-port-night', contact: 'scene-meeting-night', server: 'scene-factory-night', base: 'scene-port-night', exfil: 'scene-port-night', caught: 'scene-crisis-coup' };
+export const agentArt = (key: string): string | null => URLS[`agent-${key}`] ?? URLS[AGENT_FALLBACK[key] ?? ''] ?? null;

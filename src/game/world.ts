@@ -121,6 +121,8 @@ export interface WorldState {
   actSinceMs?: number;
   /** 가장 멀리 간 장(보상은 처음 닿았을 때만) */
   actMax?: number;
+  /** 11-28 나라별 배치한 ICBM 수(strat.ts). 옛 저장은 없음(DEFAULT_ICBM) */
+  icbm?: Record<string, number>;
 }
 
 /** 11-27 승전 강화로 받은 도시: 원래 나라 선동·내정 부실이면 반란이 날 수 있음 */
@@ -481,6 +483,12 @@ function diplomacy(ctx: Ctx) {
     if (p.tension >= TENSION_MAX) {
       // 더 공격적인 쪽이 먼저 친다
       const [att, def] = pa.aggression >= pb.aggression ? [a, b] : [b, a];
+      // 11-28 내 나라 ICBM 억지력: 상대가 물러설 수 있음
+      if (def === ctx.player && !rng.chance(deterMul(w, def, att))) {
+        p.tension = TENSION_MAX * 0.7;
+        log(ctx, '외교', `${ga(nm(att))} ${nm(def)}의 ICBM이 두려워 전쟁 직전에 물러섰어요.`, att, def);
+        continue;
+      }
       startWar(ctx, att, def, p.rel === '휴전' ? '휴전이 깨짐' : '긴장이 한계에 다다름');
     }
   }
@@ -501,6 +509,17 @@ function diplomacy(ctx: Ctx) {
 
 /** 11-26 새 나라 특수 능력: 자기 땅 방어 때 힘 배율 */
 export const HOME_GUARD: Record<string, number> = { tw: 1.25, pl: 1.15, ph: 1.2, et: 1.25, ar: 1.15, cl: 1.2, ca: 1.2, it: 1.1, gr: 1.2 };
+/** 11-28 ICBM: 실제 핵보유국이 처음 가진 수(내 나라는 전략군 사령부에서 늘림) */
+export const DEFAULT_ICBM: Record<string, number> = { us: 5, ru: 5, cn: 4, uk: 2, fr: 2, in: 2, pk: 1, kp: 1, il: 1 };
+export const ICBM_MAX = 5;
+export const icbmOf = (w: WorldState, id: string) => (w.icbm ?? DEFAULT_ICBM)[id] ?? 0;
+/** ICBM 억지력: 상대가 ICBM이 없으면 한 기당 8%씩(최대 40%) 덜 덤빔. 서로 있으면 10%만 */
+export function deterMul(w: WorldState, def: string, att: string): number {
+  const d = icbmOf(w, def);
+  if (!d) return 1;
+  return icbmOf(w, att) ? 0.9 : Math.max(0.6, 1 - 0.08 * d);
+}
+
 /** 11-26 파키스탄 핵 억지: 다른 나라가 이 나라에 침공을 걸 확률 배율 */
 export const DETERRENCE: Record<string, number> = { pk: 0.7, fr: 0.75 };
 
@@ -546,7 +565,7 @@ function invasions(ctx: Ctx) {
     for (const def of enemies) {
       // 11-27 밸런스(패권 견제): 내 나라가 세계를 많이 차지할수록 나와 싸우는 나라들이 더 자주·더 세게 쳐들어옴
       const hegemon = def === ctx.player ? 1 + HEGEMON_POWER * Math.max(0, frontOf(w, def).length / FRONT.length - HEGEMON_FROM) / (1 - HEGEMON_FROM) : 1;
-      const bonus = (def === ctx.player ? PLAYER_TARGET_BONUS : 1) * (DETERRENCE[def] ?? 1) * hegemon;
+      const bonus = (def === ctx.player ? PLAYER_TARGET_BONUS : 1) * (DETERRENCE[def] ?? 1) * hegemon * (def === ctx.player ? deterMul(w, def, att) : 1);
       if (!rng.chance(INVADE_CHANCE * agg * bonus)) continue;
       const targets = frontOf(w, def);
       // 가까운 도시(같은 대륙)를 먼저, 수도는 마지막에, 원래 내 도시였던 곳(되찾기)을 더 노림

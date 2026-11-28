@@ -15,7 +15,7 @@ import { cultureOf } from './culture';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import { isVassalPair, lordOf } from './surrender';
-import { declareWar, eul, ga, isAlive, pairKey, playerFronts, relationOf } from './world';
+import { declareWar, deterMul, eul, ga, isAlive, pairKey, playerFronts, relationOf } from './world';
 
 const H = 3600e3;
 const nm = (id: string) => countryById(id).name;
@@ -193,6 +193,7 @@ function hitAi(k: Tick, d: BullyDoctrine, to: string, act: BullyAct) {
 /** 우리 나라에 온 깡패짓: 요구로 받아 고름 */
 function hitMe(k: Tick, d: BullyDoctrine, act: BullyAct) {
   if (coalBlocks(k, d, k.me, act)) return;
+  if (!k.rng.chance(deterMul(k.w, k.me, d.id))) return; // 11-28 ICBM 억지력: 요구가 덜 옴
   const { w, h, rng, t, me, nations } = k;
   if (h.asks.filter((x) => x.kind === 'bully').length >= ASK_MAX - 1 || h.asks.some((x) => x.kind === 'bully' && x.from === d.id)) return;
   const item = act === 'culture' ? claimItem(rng, me) : '';

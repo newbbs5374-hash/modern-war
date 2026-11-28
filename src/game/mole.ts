@@ -7,6 +7,7 @@ import { addPresMod } from './approval';
 import { addFavorNote } from './civ';
 import { domOf, registerDomRows, type Rows } from './domestic';
 import { pushReport } from './report';
+import { addPrisoner } from './agents';
 import { Rng } from './rng';
 import { priceBase, type GameState } from './state';
 import { isAlive, isRival, relationOf } from './world';
@@ -85,6 +86,7 @@ export function arrest(s: GameState, at: number): { state: GameState; text: stri
     m.caught++;
     let ns: GameState = { ...s, mole: m, officer: { ...s.officer, intel: s.officer.intel + CATCH_INTEL, fame: s.officer.fame + CATCH_FAME } };
     ns = addFavorNote(ns, o.from, '🕵️ 우리 부처에 첩자를 심음', -8);
+    ns = addPrisoner(ns, o.from); // 11-28 잡은 첩자는 포로로(붙잡힌 우리 요원과 맞바꿀 수 있음)
     const text = `🚨 ${spot.name}에 숨어 있던 ${from} 첩자를 잡았습니다! 정보 +${CATCH_INTEL} · 명성 +${CATCH_FAME}`;
     return { state: pushReport(ns, { icon: '🚨', text }), text, ok: true };
   }

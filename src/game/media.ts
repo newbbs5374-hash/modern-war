@@ -1,3 +1,4 @@
+import { prisonerEdge } from './agents';
 // 기자회견·국민 청원·정상회담(11-23 기획 ⑥⑦⑧).
 // - 기자회견: 실제 6시간마다. 나라 상황 질문 + 평소 질문 50여 개 중 7~10개(최근에 나온 질문은 피함) → 답 고르기 → 지지도·신뢰도·분야 점수·호감·정적
 // - 국민 청원: 도시마다 요구(병원·도로·치안·학교·일자리)가 올라옴. 예산을 써서 들어주면 그 도시 민심↑, 하루 안에 안 들어주면 민심↓
@@ -470,7 +471,7 @@ export function summitTargets(s: GameState) {
   return COUNTRIES.filter((c) => c.id !== me(s) && isAlive(s.world, c.id) && relationOf(s.world, me(s), c.id) !== '전쟁');
 }
 export function summitChance(s: GameState, id: string): number {
-  const v = 0.4 + favorOf(s, id) / 200 + (s.officer.stats['정치'] ?? 8) / 100 + ministryPower(s, 'mofa') * 0.1 + (ministerOf(cabinetOf(s), 'mofa') ? 0.03 : 0);
+  const v = 0.4 + prisonerEdge(s, id) + favorOf(s, id) / 200 + (s.officer.stats['정치'] ?? 8) / 100 + ministryPower(s, 'mofa') * 0.1 + (ministerOf(cabinetOf(s), 'mofa') ? 0.03 : 0);
   return Math.max(0.15, Math.min(0.92, v));
 }
 export function canSummit(s: GameState, id: string): string | null {

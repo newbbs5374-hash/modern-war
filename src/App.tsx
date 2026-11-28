@@ -20,6 +20,8 @@ import { AwayModal, OrdersModal } from './ui/OrdersModal';
 import { useCloudSync } from './ui/useCloud';
 import { CloudAskModal } from './ui/CloudUI';
 import { Safe, logError } from './ui/Safe';
+import { IcbmVideo } from './ui/IcbmVideo';
+import { dropClip } from './game/strat';
 
 /** 이만큼 넘게 비웠다 오면 '자리 비운 동안' 보고 창 */
 const AWAY_REPORT_MS = 20 * 60e3;
@@ -229,6 +231,7 @@ export function App() {
   }
 
   // 버튼으로 바꾼 것은 바로 저장(창을 금방 닫아도 남도록)
+  const dropClipNow = () => update(dropClip);
   const update = (f: (s: G.GameState) => G.GameState) => {
     if (!stateRef.current) return;
     let next: G.GameState;
@@ -308,6 +311,7 @@ export function App() {
       overlay={
         screen !== 'battle' && (
           <Safe where="알림 창" small>
+            {!!state.strat?.clips?.length && <IcbmVideo state={state} onDone={dropClipNow} />}
             <AideReport state={state} onNext={() => update(dismissReport)} />
             {away && <AwayModal sum={away} onClose={() => setAway(null)} onOrders={() => (setAway(null), setOrdersOpen(true))} />}
             {cloud.ask && <CloudAskModal ask={cloud.ask} local={state} onPick={(p) => void cloud.choose(p)} onClose={cloud.dismiss} />}
