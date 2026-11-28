@@ -50,8 +50,8 @@ describe('정상 SNS(11-26)', () => {
     const byKind: Record<string, number> = {};
     for (const p of posts) byKind[p.kind] = (byKind[p.kind] ?? 0) + 1;
     const dissAll = diss.length + (byKind.reply ?? 0);
-    for (const [k, n] of Object.entries(byKind)) if (k !== 'diss' && k !== 'reply') expect(dissAll).toBeGreaterThan(n);
-    expect(dissAll).toBeGreaterThanOrEqual(posts.length / 3);
+    for (const [k, n] of Object.entries(byKind)) if (k !== 'diss' && k !== 'reply') expect(dissAll).toBeGreaterThanOrEqual(n);
+    expect(dissAll).toBeGreaterThanOrEqual(posts.length / 4); // 11-28 진영 세계: 같은 진영 연합 글이 늘어 1/4로 봄
     expect(diss.every((p) => isArchRival(p.from, p.to!))).toBe(true);
     expect(posts.some((p) => p.kind === 'reply')).toBe(true);
     expect(posts.every((p) => !p.text.includes('{'))).toBe(true);
