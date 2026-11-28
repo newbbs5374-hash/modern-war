@@ -8,12 +8,12 @@ import { playerKeys } from '../data/looks';
 import { originFits, originOf } from '../game/origin';
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
+import { canMobilize, mobilize, mobOf } from '../game/ladder';
 import { STAT_GROUPS, TRAIN_ARMS, TRAIN_BRANCHES, TRAININGS } from '../data/catalog';
 import { GRAND_COOLDOWN_HOURS, GRAND_RANK, MISSION_KINDS, OPERATION_RANK, STAT_IDS, TRAIN_EXP_LOSE, TRAIN_EXP_PER_STAR, aideSlots, generalSlots, statCap, statExpNeed, type StatId } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { cityById } from '../data/cities';
 import { COUNTRIES, countryById } from '../data/world';
-import { canDiplo, doDiplo } from '../game/command';
 import { isAlive, relationOf, spoilsOf } from '../game/world';
 import { CITY_RES } from '../data/economy';
 import { campaignInfo } from '../game/campaign';
@@ -240,25 +240,26 @@ function WarPick({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
   const list = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id));
   return (
     <>
-      <p className="empty">지금 전쟁 중인 나라가 없어요. 선전포고하면 그 나라 도시를 점령하러 갈 수 있어요.</p>
+      <p className="empty">지금 전쟁 중인 나라가 없어요. 명분·지지도를 채우고 총동원 24시간이 지나면 전면전이 시작돼요. 명분은 나라 창의 분쟁 사다리에서 쌓아요.</p>
       <div className="tiles c3">
         {list.map((c) => {
           const rel = relationOf(state.world, me, c.id);
-          const no = canDiplo(state, c.id, '선전포고');
+          const mob = mobOf(state, me, c.id);
+          const no = mob ? `🪖 총동원 중 · ${Math.max(0, Math.ceil((mob.endMs - state.worldMs) / HOUR))}시간 남음` : canMobilize(state, c.id);
           return (
             <Tile
               key={c.id}
               icon={FLAG[c.id]}
               label={c.name}
-              sub={no ?? (rel === '연합' ? '⚔️ 연합을 깨고 선전포고' : rel === '휴전' ? '⚔️ 휴전을 깨고 선전포고' : '⚔️ 선전포고')}
+              sub={no ?? (rel === '연합' ? '🪖 연합을 깨고 총동원' : rel === '휴전' ? '🪖 휴전을 깨고 총동원' : '🪖 총동원(24시간)')}
               onClick={() => {
                 if (no) return;
                 const warn = rel === '연합' ? '\n(연합을 깨요: 신뢰 −10 · 명성 −10)' : rel === '휴전' ? '\n(휴전을 깨요: 신뢰 −5)' : '';
                 const hs = reinforceOf(state, c.id, 3);
                 const rf = hs.length ? `\n⚠️ 도우러 올 만한 나라: ${hs.map((h) => `${h.name} ${pct(h.help)}`).join(' · ')}` : '';
-                if (!window.confirm(`${c.name}에 선전포고할까요?${warn}${rf}`)) return;
+                if (!window.confirm(`${c.name}를 향해 총동원령을 내릴까요? 24시간 뒤 전면전이 시작돼요.${warn}${rf}`)) return;
                 setMsg(actions.applyWith((s) => {
-                  const r = doDiplo(s, c.id, '선전포고');
+                  const r = mobilize(s, c.id);
                   return { state: r.state, out: r.text };
                 }) ?? '');
               }}

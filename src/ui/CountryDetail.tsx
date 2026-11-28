@@ -20,6 +20,7 @@ import { COMMAND_TOP, canDiplo, diploChance, doDiplo, type DiploAct } from '../g
 import { canCede, cedeChance, cedeCities, doCede } from '../game/annex';
 import { VictoryPeaceBox } from './VictoryPeaceBox';
 import { UnifyBox } from './UnifyBox';
+import { LadderBox } from './LadderBox';
 import { warLead } from '../game/victoryPeace';
 import { deployOf } from '../game/deploy';
 import { bullyDoctrineOf, bullyStats, coalitionsOf } from '../game/bully';
@@ -239,7 +240,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
               {id !== me && <AiGrowBox state={state} id={id} />}
               {top && id !== me && (
                 <div className="buttons">
-                  {(['선전포고', '휴전 제안', relationOf(w, me, id) === '연합' ? '연합 깨기' : '연합 제안'] as DiploAct[]).map((act) => {
+                  {(['휴전 제안', relationOf(w, me, id) === '연합' ? '연합 깨기' : '연합 제안'] as DiploAct[]).map((act) => {
                     const why = canDiplo(state, id, act);
                     return (
                       <button
@@ -332,6 +333,7 @@ export function CountryDetail({ state, actions, id, onClose }: ScreenProps & { i
                   )}
                 </div>
               )}
+              {top && id !== me && <LadderBox state={state} id={id} applyWith={actions.applyWith} onMsg={setMsg} />}
               {top && id !== me && <VictoryPeaceBox state={state} id={id} applyWith={actions.applyWith} onMsg={setMsg} />}
               {top && id !== me && <UnifyBox state={state} id={id} applyWith={actions.applyWith} onMsg={setMsg} />}
               {top && id !== me && cedeCities(state, id).length > 0 && !warLead(state, id).winning && (
