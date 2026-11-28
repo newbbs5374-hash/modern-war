@@ -105,6 +105,11 @@ export const MINIGAMES: MiniDef[] = [
   { id: 'g-bomb', training: '항공', name: '폭격 투하', how: '폭격기가 왼쪽에서 오른쪽으로 지나가요(5번, 한 번에 💣 2발). 떨어지는 폭탄은 앞으로 날아가니 미리 떨어뜨려요. ▲▼ 고도: 낮으면 맞히기 쉽지만 대공포에 맞아요. ★ 지휘소를 모두 부숴요.', secs: 200, on: true, three: true },
   { id: 'g-ballistic', training: '포격', name: '탄도 사격', how: '앵그리버드처럼 화면 어디든 눌러 뒤로 당겼다 놓으면 미사일이 날아가요. 당긴 만큼 세게, 반대 방향으로. 언덕 너머 ★ 지휘소를 미사일 7발로 모두 부숴요. 높이 날면 화면이 넓어져 끝까지 보여요.', secs: 240, on: true, three: true },
   { id: 'g-shield', training: '사격', name: '하늘의 방패', how: '적 미사일이 도시로 떨어져요. 하늘을 누르면 가까운 포대에서 요격탄이 날아가 그 자리에서 터져요. 불꽃에 닿은 미사일은 떨어져요. 분홍 미사일은 셋으로 갈라져요. 5파를 막아요.', secs: 200, on: true, three: true },
+  { id: 'g-cover', training: '사격', name: '시가전 엄폐 사격', how: '모래주머니 뒤에서 🛡를 꾹 누르면 숨고, 떼면 일어나요. 일어서서 창문·문에 나온 적을 눌러 쏴요. 빨간 고리가 다 차면 적이 쏴요(그때 숨어 있으면 안 맞아요). 숨으면 장전. 흰 옷 민간인은 쏘지 마요.', secs: 150, on: true, three: true },
+  { id: 'g-naval', training: '해상', name: '함대 포격전', how: '8×8 바다 두 판. 오른쪽 적 바다를 눌러 포격, 맞히면 한 번 더. 적도 우리 바다를 쏴요. 적 배 5척을 먼저 다 가라앉히면 이겨요. 적게 쏠수록 별이 많아요.', secs: 300, on: true, three: true },
+  { id: 'g-hunt', training: '해상', name: '어둠 속 사냥', how: '깜깜한 바다. 바다를 누르면 그쪽으로 가요. 📡 핑을 치면 적 잠수함이 잠깐 보이지만 적도 우리를 알아채고 어뢰를 쏴요. 🎯 어뢰를 누르고 바다를 누르면 그쪽으로 발사. 적 3척.', secs: 240, on: true, three: true },
+  { id: 'g-run', training: '해상', name: '자폭 보트 돌격', how: '무인 자폭 보트가 달려요. 화면을 위아래로 끌어 방향. 기뢰·부표·경비정 총알을 피하고 ⛽ 연료를 먹어요. 끝에서 적 구축함의 빨간 띠에 들이받아요.', secs: 120, on: true, three: true },
+  { id: 'g-stealth', training: '항공', name: '스텔스 침투', how: '지도에 손가락으로 비행 길을 그려요(🛫 → 🎯). ▶ 출격하면 그 길로 날아요. 레이더 빛줄기에 스치면 탐지 막대가 차요. 초록 골짜기 위는 낮게 날아 덜 잡혀요. 작전 3번.', secs: 240, on: true, three: true },
   // 11-27 한 손가락 미니 훈련(화면이 만들어진 것만)
   ...EASY.filter((e) => e.view).map((e) => ({ id: e.id, training: e.training, name: e.name, how: e.how, secs: e.secs, on: true, three: true, easy: e.ctl })),
 ];
