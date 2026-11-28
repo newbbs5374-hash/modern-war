@@ -32,6 +32,8 @@ import {
   FAITH_EVENT_CHANCE,
   FAITH_EVENT_TENSION,
   INVADE_CHANCE,
+  AI_WEAK_OCC,
+  AI_WEAK_DEF,
   OCCUPIED_INCOME,
   CIVIL_INCOME,
   CIVIL_REBEL,
@@ -574,7 +576,9 @@ function invasions(ctx: Ctx) {
         return (
           (c.capital && targets.length > 1 ? 0.3 : 1) *
           (c.home === att ? 3 : 1) *
-          (isOverseas(att, c.home) ? OVERSEAS_ATTACK_RATE : 1)
+          (isOverseas(att, c.home) ? OVERSEAS_ATTACK_RATE : 1) *
+          // 11-28 AI 강화: 내 나라를 칠 땐 점령지·방어도 낮은 곳을 노림
+          (def === ctx.player ? (c.home !== def ? AI_WEAK_OCC : 1) * (1 + AI_WEAK_DEF * Math.max(0, 1 - w.defense[id] / CITY_DEFENSE_MAX)) : 1)
         );
       });
       if (!target) continue;
