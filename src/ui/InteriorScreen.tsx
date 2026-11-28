@@ -77,6 +77,8 @@ import { TECHS } from '../data/civ';
 export const needPick = (s: ScreenProps['state']) => (['mil', 'soc'] as const).some((l) => !civOf(s).cur[l] && TECHS.some((t) => t.line === l && !canResearch(s, t.id)));
 import { CityPanel, GovPanel, ResearchPanel } from './CivScreens';
 import type { GameState } from '../game/state';
+import { TAXES, TAX_LV_NAME, TAX_WAIT, canSetTax, setTax, taxEff, taxOf, type TaxLv } from '../game/taxes';
+import { MB_DEFS, MB_MAX, MB_TOTAL, MB_WAIT, canSetMb, mbEff, mbOf, mbText, mbUsed, setMb, type MbId } from '../game/ministryBudget';
 import { canInvest, fundChunk, fundOf, fundValue, invest, withdrawFund, BOND_HOURS, BOND_PAY_H, bondDebt, bondPayPerHour, bondRate, bondSize, borrow, canBorrow, forecast, treasuryPerHour } from '../game/bonds';
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -775,6 +777,87 @@ function BondCard({ state, apply }: { state: GameState; apply: (f: (s: GameState
       <small className="muted">
         국부 펀드: 나라 예산 20%씩 맡기면 경기의 주식 지수만큼 오르내려요(꺼낼 때 수수료 2%). 국채: 시간당 예산 {BOND_HOURS}시간치를 바로 빌리고, 이자 {Math.round(bondRate(state) * 100)}%를 붙여 {BOND_PAY_H}시간 동안 나눠 갚아요. 못 갚으면 이자가 올라요.
       </small>
+    </section>
+  );
+}
+
+/** 11-28 부처 예산 나누기: 10점을 5갈래에 */
+export function MbCard({ state, apply }: { state: GameState; apply: (f: (s: GameState) => GameState) => void }) {
+  const cur = mbOf(state);
+  const [pts, setPts] = useState<Record<MbId, number>>(cur.pts);
+  const used = mbUsed(pts);
+  const why = canSetMb(state, pts);
+  const same = MB_DEFS.every((d) => pts[d.id] === cur.pts[d.id]);
+  const bump = (id: MbId, v: number) => setPts((p) => ({ ...p, [id]: Math.max(0, Math.min(MB_MAX, p[id] + v)) }));
+  return (
+    <section className="card bond-card">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+        <b>💼 부처 예산 나누기</b>
+        <small className={used === MB_TOTAL ? 'muted' : 'warn'}>
+          {used}/{MB_TOTAL}점
+        </small>
+      </div>
+      <p className="small muted" style={{ margin: '2px 0 6px' }}>
+        2점이 보통이에요. 더 주면 1점마다 효과가 오르고, 덜 주면 1점마다 절반만큼 내려가요. {Math.round(MB_WAIT / 3600e3)}시간마다 한 번 바꿀 수 있어요.
+      </p>
+      {MB_DEFS.map((d) => {
+        const e = mbEff(d, pts[d.id]);
+        const txt = mbText(e);
+        return (
+          <div key={d.id} className="row small" style={{ gap: 6, alignItems: 'center', margin: '2px 0' }}>
+            <span style={{ width: 64 }}>
+              {d.icon} {d.name}
+            </span>
+            <button className="mini" onClick={() => bump(d.id, -1)} disabled={pts[d.id] <= 0}>
+              −
+            </button>
+            <b style={{ width: 16, textAlign: 'center' }}>{pts[d.id]}</b>
+            <button className="mini" onClick={() => bump(d.id, 1)} disabled={pts[d.id] >= MB_MAX || used >= MB_TOTAL}>
+              +
+            </button>
+            <small className="muted" style={{ flex: 1, minWidth: 0 }}>
+              {txt || `보통(1점마다 ${d.text})`}
+            </small>
+          </div>
+        );
+      })}
+      <button className="primary" style={{ marginTop: 6, width: '100%' }} disabled={!!why || same} title={why ?? ''} onClick={() => apply((s) => setMb(s, pts))}>
+        {same ? '지금 나눈 대로예요' : why ?? '이대로 정하기'}
+      </button>
+    </section>
+  );
+}
+
+/** 11-28 세금 종류: 소득세·법인세·부가세 낮춤/보통/높임 */
+export function TaxCard({ state, apply }: { state: GameState; apply: (f: (s: GameState) => GameState) => void }) {
+  const t = taxOf(state);
+  const wait = Math.max(0, t.nextMs - state.worldMs);
+  return (
+    <section className="card bond-card">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+        <b>🧾 세금 종류</b>
+        <small className="muted">{wait ? `${Math.ceil(wait / 3600e3)}시간 뒤 다시 바꿈` : `${Math.round(TAX_WAIT / 3600e3)}시간마다 한 번`}</small>
+      </div>
+      {TAXES.map((d) => (
+        <div key={d.id} style={{ margin: '4px 0' }}>
+          <div className="row small" style={{ gap: 4, alignItems: 'center' }}>
+            <span style={{ width: 64 }}>
+              {d.icon} {d.name}
+            </span>
+            {(['low', 'mid', 'high'] as TaxLv[]).map((lv) => {
+              const why = canSetTax(state, d.id, lv);
+              const on = t.lv[d.id] === lv;
+              return (
+                <button key={lv} className={`mini${on ? ' on' : ''}`} disabled={!on && !!why} title={why ?? ''} onClick={() => apply((s) => setTax(s, d.id, lv))}>
+                  {on ? '✓ ' : ''}
+                  {TAX_LV_NAME[lv]}
+                </button>
+              );
+            })}
+          </div>
+          <small className="muted">{mbText(taxEff(d, t.lv[d.id])) || `낮춤: ${mbText(d.low)} / 높임: ${mbText(d.high)}`}</small>
+        </div>
+      ))}
     </section>
   );
 }

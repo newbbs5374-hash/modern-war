@@ -95,16 +95,20 @@ import type { BattleLogState } from './battleLog';
 import type { CampaignState } from './campaign';
 import { recTick, type RecLog } from './recs';
 import './resPerks'; // 11-28 새 자원 비축 효과
+import './ministryBudget'; // 11-28 부처 예산 나누기
+import './taxes'; // 11-28 세금 종류
 import './recsTrade'; // 11-28 무역 장관 추천
 import './recsDeploy'; // 11-28 파병 추천
 import './recsDefense'; // 11-28 국방 추천
 import './recsEcon'; // 11-28 경제 추천
 import './recsDiplo'; // 11-28 외교 추천
-import './recsCulture';
+import './recsCulture'; // 11-28 문화 추천
 import './recsSociety'; // 11-28 내정 추천
 import { bondTick, type BondState, type FundState } from './bonds';
 import { embassyTick, type EmbassyState } from './embassy';
-import { antiwarTick } from './antiwar'; // 11-28 문화 추천
+import { antiwarTick } from './antiwar';
+import type { MbState } from './ministryBudget';
+import type { TaxState } from './taxes';
 
 export interface NationState {
   /** 나라 금고(나라 예산) */
@@ -174,6 +178,10 @@ export interface GameState {
   embassy?: EmbassyState;
   /** 11-28 반전 시위 다음 판단 시각 */
   antiwarMs?: number;
+  /** 11-28 부처 예산 나누기 */
+  mbudget?: MbState;
+  /** 11-28 세금 종류 */
+  taxes?: TaxState;
   /** 첩보·특수 작전 */
   spy?: SpyState;
   /** 함대 충돌 관전 기록 */
