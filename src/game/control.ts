@@ -8,6 +8,7 @@ import { cityById } from '../data/cities';
 import { annexEntry, occupiedCities, setEntry } from './annex';
 import { cityCiv } from './civ';
 import { pushReport } from './report';
+import { faithResist } from './faith';
 import { Rng } from './rng';
 import type { GameState } from './state';
 import type { AnnexCity } from './world';
@@ -77,7 +78,7 @@ export function controlTick(s: GameState): GameState {
     if (h < 0.25) continue;
     let ctl = Math.min(100, ctlOf(a) + ctlRate(out, id) * h);
     let next: AnnexCity = { ...a, ctl, ctlMs: s.worldMs };
-    if (ctl < 50 && rng.chance(Math.min(0.9, ((50 - ctl) / 50) * RESIST_CHANCE * h / (1 + garOf(out, id))))) {
+    if (ctl < 50 && rng.chance(Math.min(0.9, ((50 - ctl) / 50) * RESIST_CHANCE * h * faithResist(out) / (1 + garOf(out, id))))) {
       ctl = Math.max(0, ctl - 5);
       next = { ...next, ctl };
       out = setEntry(out, id, next);
