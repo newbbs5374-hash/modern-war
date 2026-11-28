@@ -13,6 +13,7 @@ import { actBlocksWar } from './acts';
 import { canDiplo, doDiplo } from './command';
 import { tariffBetween, doTariff } from './pressure';
 import { pushReport } from './report';
+import { MOOD_BLOCK, moodOf } from './opinion';
 import { Rng } from './rng';
 import { budgetPerDay, type GameState } from './state';
 import { lordOf } from './surrender';
@@ -330,6 +331,7 @@ export function ladderTick(s: GameState): GameState {
     if (mobOf(ns, id, me) || lordOf(ns, id) === me) continue;
     const p = ns.world.pairs[pairKey(me, id)];
     if (!p || p.tension < AI_MOB_TENSION || ns.world.act === 1) continue;
+    if (moodOf(ns, id) <= MOOD_BLOCK) continue; // 11-28 여론전: 상대 여론이 무너지면 총동원을 못 검
     const agg = PERSONALITIES[ns.world.personalities[id]]?.aggression ?? 1;
     if (!rng.chance(AI_MOB_CHANCE * agg)) continue;
     ns = withLadder(ns, (L) => ({ ...L, mobs: [...L.mobs, { by: id, vs: me, startMs: ns.worldMs, endMs: ns.worldMs + MOB_HOURS * H, preps: [] }] }));

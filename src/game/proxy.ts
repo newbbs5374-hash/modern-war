@@ -6,6 +6,7 @@ import { countryById } from '../data/world';
 import { addFavorNote } from './civ';
 import { registerDomRows } from './domestic';
 import { goalsOf } from './goals';
+import { firmLv } from './arms';
 import { pushReport } from './report';
 import { Rng } from './rng';
 import { priceBase, type GameState } from './state';
@@ -76,7 +77,8 @@ export function backSide(s: GameState, side: string, foe: string, kind: ProxyKin
   let world = s.world;
   let what = '';
   if (kind === 'arms') {
-    const add = Math.round(nations[side].troops * 0.04);
+    // 11-28 방산 수출 시장: 우리 지상 무기 기업이 클수록 대리전에서 우리 무기가 더 힘을 냄
+    const add = Math.round(nations[side].troops * 0.04 * (1 + firmLv(s, 'land') * 0.25));
     nations[side] = { ...nations[side], troops: nations[side].troops + add };
     what = `${countryById(side).name} 병력 +${add.toLocaleString('ko-KR')}`;
   } else if (kind === 'money') {
