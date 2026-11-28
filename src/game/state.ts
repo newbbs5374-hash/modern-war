@@ -100,6 +100,7 @@ import { secTick, type SecState } from './security';
 import type { BattleLogState } from './battleLog';
 import type { CampaignState } from './campaign';
 import { unifyTick, type UnifyState } from './unify';
+import { ladderTick, type LadderState } from './ladder';
 import { recTick, type RecLog } from './recs';
 import './resPerks'; // 11-28 새 자원 비축 효과
 import './ministryBudget'; // 11-28 부처 예산 나누기
@@ -242,6 +243,8 @@ export interface GameState {
   campaign?: CampaignState;
   /** 11-28 통일 권유(나라 → 점령지 지킨 기록) */
   unify?: UnifyState;
+  /** 11-28 분쟁 사다리(총동원·명분·전쟁 비용) */
+  ladder?: LadderState;
   /** 11-27 4장 마지막 위기 진행 */
   finale?: FinaleState;
   /** 11-27 연속 위기 이야기 */
@@ -488,7 +491,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
-    cur = unifyTick(hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore))))))))))));
+    cur = ladderTick(unifyTick(hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
     cur = resignTick(autoApproveTick(isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(aiShadowTick(agentsTick(spyTick(ordersTick(crisisTick(cur))))))), AI_TICK_MS), AI_TICK_MS)))))))))))))));
     world = cur.world;
