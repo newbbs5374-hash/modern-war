@@ -16,7 +16,7 @@ describe('특수 요원', () => {
 
   it('작전에 요원이 나가고, 끝나면 돌아오거나 붙잡힘', () => {
     let s = ready(setRank(newGame('t', 'kr', 0, { seed: 5 }), 6));
-    s = startSpy(s, 'sabotage', 'cn');
+    s = startSpy(s, 'base', 'cn');
     const m = spyOf(s).active[0];
     expect(m.agent).toBeDefined();
     expect(agentsOf(s).list.find((a) => a.id === m.agent)!.status).toBe('busy');
@@ -42,9 +42,9 @@ describe('특수 요원', () => {
 
   it('쉬는 요원이 없으면 못 보냄, 위성 정찰은 요원 없이', () => {
     let s = ready(setRank(newGame('t', 'kr', 0, { seed: 5 }), 9));
-    s = startSpy(s, 'secret', 'cn');
-    s = startSpy(s, 'secret', 'jp');
-    expect(canSpy(s, 'secret', 'us')).toMatch(/요원/);
+    s = startSpy(s, 'base', 'cn');
+    s = startSpy(s, 'turn', 'jp');
+    expect(canSpy(s, 'base', 'us')).toMatch(/요원/);
     expect(canSpy(s, 'scout', 'us')).toBeNull();
   });
 
@@ -60,7 +60,7 @@ describe('특수 요원', () => {
     let s = ready(newGame('t', 'kr', 0, { seed: 5 }));
     const id = agentsOf(s).list[0].id;
     s = patchAgent(s, id, { status: 'caught', where: 'cn', untilMs: s.worldMs + 1e9 });
-    expect(canSwap(s, id)).toMatch(/첩자/);
+    expect(canSwap(s, id)).toMatch(/요원을 잡아야/);
     expect(canSpy(s, 'rescue', 'cn')).toBeNull();
     s = addPrisoner(s, 'cn');
     s = swapAgent(s, id).state;

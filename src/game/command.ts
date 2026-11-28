@@ -1,3 +1,4 @@
+import { prisonerEdge } from './agents';
 // 지도자 권한: 선전포고(언제든) · 휴전 제안 · 연합 제안(12시간마다 한 번).
 import { PERSONALITIES } from '../data/leaders';
 import { CITIES } from '../data/cities';
@@ -31,11 +32,11 @@ export function diploChance(s: GameState, id: string, act: DiploAct): number {
   if (act === '선전포고' || act === '연합 깨기') return 1;
   if (act === '휴전 제안') {
     const tookFromThem = CITIES.filter((c) => c.home === id && w.owner[c.id] === me).length;
-    return Math.min(0.95, 0.15 + p.weariness / 250 + tookFromThem * 0.12 + (isLosing(w, id) ? 0.3 : 0) + (per.peace - 1) * 0.3);
+    return Math.min(0.95, prisonerEdge(s, id) + 0.15 + p.weariness / 250 + tookFromThem * 0.12 + (isLosing(w, id) ? 0.3 : 0) + (per.peace - 1) * 0.3);
   }
   // 연합: 같은 묶음·같은 신앙이면 쉬움, 맞수면 거의 안 됨, 긴장이 높으면 어려움
   const faith = countryById(me).faith === countryById(id).faith ? 0.15 : 0;
-  return Math.max(0.02, Math.min(0.9, 0.2 + (sameBloc(me, id) ? 0.35 : 0) + faith - (isRival(me, id) ? 0.4 : 0) - p.tension / 200 - (per.aggression - 1) * 0.2));
+  return Math.max(0.02, Math.min(0.9, prisonerEdge(s, id) + 0.2 + (sameBloc(me, id) ? 0.35 : 0) + faith - (isRival(me, id) ? 0.4 : 0) - p.tension / 200 - (per.aggression - 1) * 0.2));
 }
 
 /** 남은 시간을 "3시간 20분"처럼 */

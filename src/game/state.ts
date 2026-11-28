@@ -38,6 +38,7 @@ import { ensureRivalRoster } from './rivals';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
 import { agentsTick, type AgentsState } from './agents';
+import { aiShadowTick } from './shadow';
 import { stratTick, type StratState } from './strat';
 import { spaceTick, type SpaceState } from './space';
 import type { FleetState } from './fleet';
@@ -482,7 +483,7 @@ export function advance(s: GameState, ms: number): GameState {
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
-    cur = isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(agentsTick(spyTick(ordersTick(crisisTick(cur)))))), AI_TICK_MS), AI_TICK_MS)))))))))))));
+    cur = isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(aiShadowTick(agentsTick(spyTick(ordersTick(crisisTick(cur))))))), AI_TICK_MS), AI_TICK_MS)))))))))))));
     world = cur.world;
   }
   return syncTitle(stratTick(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left))))))));

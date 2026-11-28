@@ -21,6 +21,8 @@ import { FacilityPanel, MbCard, ResourcePanel, TaxCard, TreasuryPanel, needPick 
 import { TradePanel } from './DiplomacyScreen';
 import { ForcesScreen } from './ForcesScreen';
 import { SpyPanel } from './SpyPanel';
+import { ShadowPanel } from './ShadowPanel';
+import { missionStep, spyOpById } from '../game/spy';
 import { StratPanel } from './StratPanel';
 import { stratOf } from '../game/strat';
 import { AidesPanel, GeneralsPanel, LeaderCard, RivalsPanel, TrainingScreen } from './officerScreens';
@@ -76,6 +78,7 @@ export function personalTabs(props: ScreenProps): TabDef<PersonalTab>[] {
     { id: 'aides', label: officeName(state.player.countryId), icon: '🏢', badge: errandsDone || null },
     { id: 'talent', label: `인재 ${cabinetOf(state).people.filter((p) => p.group === '인재').length}`, icon: '👥' },
     { id: 'meet', label: '인맥', icon: '📒', badge: meetBadge(state) },
+    { id: 'shadow', label: '그림자실', icon: '🕶️', badge: spyOf(state).active.filter((m) => spyOpById(m.op).shadow && m.agent != null && !m.picks?.[missionStep(state, m)]).length || null },
     { id: 'plan', label: '일정', icon: '📅', badge: state.polity?.speech.open ? '🎤' : scheduleOf(state).slots.filter((x) => !x).length || null },
     { id: 'agenda', label: '국정 과제', icon: '🏁', badge: agendaBadge(state) },
     { id: 'album', label: '사진첩', icon: '📸' },
@@ -99,6 +102,7 @@ export function PersonalScreen(props: ScreenProps) {
       {tab === 'aides' && <StaffTab {...props} />}
       {tab === 'talent' && <TalentPanel {...props} />}
       {tab === 'meet' && <MeetBook {...props} />}
+      {tab === 'shadow' && <ShadowPanel {...props} />}
       {tab === 'plan' && (
         <>
           {state.polity?.speech.open && <SpeechPanel {...props} />}

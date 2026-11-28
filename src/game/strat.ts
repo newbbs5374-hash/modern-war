@@ -35,6 +35,29 @@ export const interceptOf = (id: string) => INTERCEPT[id] ?? 0.08;
 export const CONV = { def: 0.4, troops: 0.97, favor: -20, others: -3, tension: 20, approval: -2 };
 export const NUKE = { troops: 0.85, treasury: 0.9, favor: -60, approval: -25, approvalHours: 7 * 24, sanctions: 4, tension: 25 };
 
+/** 11-28 ICBM 영상 6편(모든 나라 공통 1세트): 장면 키 */
+export type IcbmClip = 'test' | 'launch' | 'intercept' | 'hit' | 'nuke' | 'deploy';
+export const ICBM_CLIPS: Array<{ key: IcbmClip; name: string }> = [
+  { key: 'test', name: '시험 발사' },
+  { key: 'launch', name: '실전 발사' },
+  { key: 'intercept', name: '요격' },
+  { key: 'hit', name: '재래식 탄두 명중' },
+  { key: 'nuke', name: '핵 폭발' },
+  { key: 'deploy', name: '실전 배치 완료' },
+];
+export interface ClipCue { key: IcbmClip; title: string; sub: string; atMs: number }
+/** 영상 줄에 넣기(최대 3편까지 쌓임) */
+export function cueClip(s: GameState, key: IcbmClip, title: string, sub: string): GameState {
+  const st = stratOf(s);
+  return { ...s, strat: { ...st, clips: [...(st.clips ?? []), { key, title, sub, atMs: s.worldMs }].slice(-3) } };
+}
+/** 영상을 본(또는 건너뛴) 뒤 */
+export function dropClip(s: GameState): GameState {
+  const st = s.strat;
+  if (!st?.clips?.length) return s;
+  return { ...s, strat: { ...st, clips: st.clips.slice(1) } };
+}
+
 export interface Flight { id: number; city: string; warhead: 'conv' | 'nuke'; launchMs: number; arriveMs: number }
 export interface StratState {
   /** 0 미착수 · 1 연구 끝 · 2 엔진 끝 · 3 시험 끝(배치 가능) */
@@ -49,6 +72,8 @@ export interface StratState {
   nukesUsed: number;
   nextId: number;
   seed: number;
+  /** 11-28 보여 줄 영상 줄 */
+  clips?: ClipCue[];
 }
 
 export function stratOf(s: GameState): StratState {
@@ -154,11 +179,13 @@ function finishJob(s: GameState): GameState {
       }
       text = `🚀 ICBM 시험 발사 ${tests}/${TESTS_NEED}번째 성공! 강대국 긴장 +${TEST_TENSION}.${sanc}${tests >= TESTS_NEED ? ' 이제 실전 배치를 할 수 있어요.' : ''}`;
       ns = event(ns, `🚀 ${ga(countryById(me).name)} 대륙간 탄도미사일을 시험 발사했어요.`);
+      ns = cueClip(ns, 'test', `ICBM 시험 발사 ${tests}/${TESTS_NEED}`, `${countryById(me).name} · 먼바다 목표 해역`);
       break;
     }
     case 'build':
       put({ deployed: st.deployed + 1 });
       text = `🏗️ ICBM ${st.deployed + 1}기를 사일로에 세웠어요. 억지력이 올라가요.`;
+      ns = cueClip(ns, 'deploy', `ICBM ${st.deployed + 1}기 실전 배치`, `${countryById(me).name} 전략군 사일로`);
       break;
     case 'nuke': {
       put({ nuke: true });
@@ -203,7 +230,7 @@ export function launch(s: GameState, city: string, warhead: 'conv' | 'nuke'): { 
   const c = cityById(city);
   const ns: GameState = { ...s, strat: { ...st, flights: [...st.flights, f], nextId: st.nextId + 1, launches: st.launches + 1 } };
   const text = `${warhead === 'nuke' ? '☢️' : '🚀'} ${c.name}을(를) 향해 ICBM을 쐈어요. 30분 뒤 닿아요.`;
-  return { state: event(ns, `${warhead === 'nuke' ? '☢️' : '🚀'} ${ga(countryById(s.player.countryId).name)} ${c.name}에 대륙간 탄도미사일을 쐈어요!`), text };
+  return { state: event(cueClip(ns, 'launch', `${warhead === 'nuke' ? '핵탄두' : '재래식 탄두'} ICBM 발사`, `${countryById(s.player.countryId).name} → ${c.name}`), `${warhead === 'nuke' ? '☢️' : '🚀'} ${ga(countryById(s.player.countryId).name)} ${c.name}에 대륙간 탄도미사일을 쐈어요!`), text };
 }
 
 function land(s: GameState, f: Flight): GameState {
@@ -221,6 +248,7 @@ function land(s: GameState, f: Flight): GameState {
     ns = addFavorNote(ns, owner, '🚀 우리에게 ICBM을 쏨', -10);
     ns = addTension(ns, me, owner, 10);
     const text = `🛡️ ${on}의 미사일 방어망이 우리 ICBM을 요격했어요. ${c.name}은(는) 무사해요.`;
+    ns = cueClip(ns, 'intercept', '요격됨', `${on} 미사일 방어망 · ${c.name} 상공`);
     return pushReport(event(ns, text), { icon: '🛡️', text });
   }
   const n = ns.nations[owner];
@@ -231,6 +259,7 @@ function land(s: GameState, f: Flight): GameState {
     ns = addTension(ns, me, owner, CONV.tension);
     for (const x of COUNTRIES) if (x.id !== me && x.id !== owner && isAlive(ns.world, x.id)) ns = addFavorNote(ns, x.id, '🚀 ICBM을 씀', CONV.others);
     ns = addPresMod(ns, 'ICBM 발사 논란', CONV.approval, 48);
+    ns = cueClip(ns, 'hit', `${c.name} 명중`, `${on} · 도시 방어 −${Math.round((1 - CONV.def) * 100)}%`);
     const text = `💥 ICBM이 ${c.name}에 떨어졌어요! 도시 방어 −${Math.round((1 - CONV.def) * 100)}%, ${on} 병력 −3%. 세계가 술렁여요.`;
     return pushReport(event(ns, text), { icon: '💥', text });
   }
@@ -247,6 +276,7 @@ function land(s: GameState, f: Flight): GameState {
   ns = addPresMod(ns, '핵 공격 후폭풍', NUKE.approval, NUKE.approvalHours);
   const text = `☢️ 핵탄두가 ${c.name}에 떨어졌어요. 도시가 무력화됐어요. 모든 나라 호감 ${NUKE.favor}, 강대국 ${Math.min(NUKE.sanctions, w.length)}곳이 반핵 연합을 맺고 제재해요. 지지율이 크게 떨어졌어요.`;
   ns = event(ns, `☢️ ${ga(countryById(me).name)} ${eul(c.name)} 핵으로 공격했어요. 세계가 반핵 연합으로 뭉쳤어요.`);
+  ns = cueClip(ns, 'nuke', `${c.name} 핵 공격`, `${on} · 도시 무력화`);
   return pushReport(ns, { icon: '☢️', text });
 }
 

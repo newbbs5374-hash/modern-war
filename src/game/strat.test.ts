@@ -27,7 +27,9 @@ describe('전략군 사령부(ICBM)', () => {
     s = go(s, 'test', 6.5);
     s = go(s, 'test', 6.5);
     expect(stratOf(s).stage).toBe(3);
+    expect(stratOf(s).clips?.map((c) => c.key)).toEqual(['test', 'test']);
     s = go(s, 'build', 24.5);
+    expect(stratOf(s).clips?.at(-1)?.key).toBe('deploy');
     expect(stratOf(s).deployed).toBe(1);
     expect(icbmOf(s.world, 'kr')).toBe(1);
     expect(deterMul(s.world, 'kr', 'jp')).toBeLessThan(1);
@@ -39,7 +41,9 @@ describe('전략군 사령부(ICBM)', () => {
     expect(canLaunch(s, city, 'conv')).toBeNull();
     const before = s.world.defense[city];
     s = launch(s, city, 'conv').state;
+    expect(stratOf(s).clips?.[0].key).toBe('launch');
     s = advance(s, 0.6 * H);
+    expect(['hit', 'intercept']).toContain(stratOf(s).clips?.at(-1)?.key);
     expect(stratOf(s).deployed).toBe(4);
     expect(s.world.defense[city] <= before).toBe(true);
     const fr = favorOf(s, 'de');

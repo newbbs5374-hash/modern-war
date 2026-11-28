@@ -23,6 +23,7 @@ import type { ScreenProps } from './screens';
 import { oldMenuOn, setOldMenu } from './nav';
 import { fullHomeOn, setFullHome } from './favs';
 import { useMapMotion } from './mapMotion';
+import { useIcbmVideo } from './IcbmVideo';
 import { CloudCard } from './CloudUI';
 import { ErrorLog } from './Safe';
 
@@ -58,6 +59,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 export function SettingsScreen({ state, speed, actions }: ScreenProps) {
   const [pop, setPop] = useState<Pop>(null);
   const [mapMoving, setMapMoving] = useMapMotion();
+  const [icbmVideo, setIcbmVideo] = useIcbmVideo();
   const [oldMenu, setOldMenuState] = useState(oldMenuOn);
   const [fullHome, setFullHomeState] = useState(fullHomeOn);
   const [code, setCode] = useState('');
@@ -146,6 +148,7 @@ export function SettingsScreen({ state, speed, actions }: ScreenProps) {
             on={mapMoving}
             onClick={() => setMapMoving(!mapMoving)}
           />
+          <SwitchRow icon="🚀" name="ICBM 영상" sub="시험 발사·발사·요격·명중 장면을 영상으로 보여 줘요" on={icbmVideo} onClick={() => setIcbmVideo(!icbmVideo)} />
           <SwitchRow icon="📘" name="첫 판 안내" sub="본부에 다음 할 일 안내를 띄워요" on={!guideHidden} onClick={() => actions.apply((s) => hideGuide(s, !guideOf(s).hidden))} />
         </div>
       </Card>
