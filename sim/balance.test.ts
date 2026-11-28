@@ -35,6 +35,10 @@ import { TECHS } from '../src/data/civ';
 import { Rng } from '../src/game/rng';
 import { actGoals } from '../src/game/acts';
 import { victoryProgress } from '../src/game/victory';
+import { buyGrand, canBuyGrand } from '../src/game/acts';
+import { canMobilize, canStep, cbOf, doStep, ladderOf, mobilize, type StepId } from '../src/game/ladder';
+import { canUnify, proposeUnify } from '../src/game/unify';
+import { influenceProgress } from '../src/game/influence';
 
 const H = 3600e3;
 const env = (k: string, d: string) => process.env[k] ?? d;
@@ -47,6 +51,11 @@ const TRAINS = Number(env('TRAINS', '3')); // 접속마다 훈련 수
 const PUPPET = env('PUPPET', '0') === '1';
 const USE_BOOST = env('USE_BOOST', '1') === '1';
 const BOOST_SHARE = Number(env('BOOST_SHARE', '1')); // 얻은 루비·가속권 중 정복(대전투)에 쓰는 몫. 나머지는 건물·연구 등 다른 데 쓴 것으로 침
+// 11-28 중후반 개편 뒤: PAID=하루 산 루비(중과금 150) · EXTRA=1 대전투 추가 구매 · LADDER=1 분쟁 사다리(명분→총동원 24h)로 선포 · UNIFY=1 통일 권유
+const PAID = Number(env('PAID', '0'));
+const EXTRA = env('EXTRA', '1') === '1';
+const LADDER = env('LADDER', '1') === '1';
+const UNIFY = env('UNIFY', '1') === '1';
 
 /** 맡기기(자동) 3막 공성전 승률: sim/siege.test.ts 로 잰 값 */
 function grandWinChance(d: number): number {
@@ -57,11 +66,11 @@ function grandWinChance(d: number): number {
   return 0.04;
 }
 
-interface Tally { grandTry: number; grandWin: number; boostsUsed: number; rubySpent: number; declared: number; boostGot: number; src: Record<string, number>; bsrc: Record<string, number>; lostRebel: number; lostInv: number; lostHome: number; seenT: number; elsewhere: number }
+interface Tally { mobs: number; steps: number; blocked: Record<string, number>; unifyTry: number; unifyOk: number; bought: number; grandTry: number; grandWin: number; boostsUsed: number; rubySpent: number; declared: number; boostGot: number; src: Record<string, number>; bsrc: Record<string, number>; lostRebel: number; lostInv: number; lostHome: number; seenT: number; elsewhere: number }
 
 function mkBot(seed: number) {
   const rng = new Rng(seed * 977 + 5);
-  const tally: Tally = { grandTry: 0, grandWin: 0, boostsUsed: 0, rubySpent: 0, declared: 0, boostGot: 0, src: {}, bsrc: {}, lostRebel: 0, lostInv: 0, lostHome: 0, seenT: -1, elsewhere: 0 };
+  const tally: Tally = { mobs: 0, steps: 0, blocked: {}, unifyTry: 0, unifyOk: 0, bought: 0, grandTry: 0, grandWin: 0, boostsUsed: 0, rubySpent: 0, declared: 0, boostGot: 0, src: {}, bsrc: {}, lostRebel: 0, lostInv: 0, lostHome: 0, seenT: -1, elsewhere: 0 };
   const add = (o: Record<string, number>, k: string, v: number) => { if (v) o[k] = (o[k] ?? 0) + v; };
   const act = (s: GameState, f: (s: GameState) => GameState): GameState => { const a = f(s); return a === s ? s : trackGoals(s, a); };
   const me = (s: GameState) => s.player.countryId;
@@ -92,16 +101,39 @@ function mkBot(seed: number) {
 
   function wars(s: GameState): GameState {
     const cur = enemies(s);
-    if (cur.length >= WARS) return s;
+    const myMobs = ladderOf(s).mobs.filter((m) => m.by === me(s)).length;
+    if (cur.length + (LADDER ? myMobs : 0) >= WARS) return s;
     // 가까운(같은 대륙) 나라·도시가 적은 나라부터
     const my = countryById(me(s));
     const cand = COUNTRIES.filter((c) => c.id !== me(s) && isAlive(s.world, c.id) && !cur.includes(c.id) && !canDiplo(s, c.id, '선전포고'))
       .map((c) => ({ id: c.id, k: (c.continent === my.continent ? 0 : 1) * 1000 + (s.nations[c.id]?.troops ?? 0) / 1000 + (relationOf(s.world, me(s), c.id) === '연합' ? 500 : 0) }))
       .sort((a, b) => a.k - b.k);
     let out = s;
-    for (const c of cand.slice(0, WARS - cur.length)) {
-      out = act(out, (x) => doDiplo(x, c.id, '선전포고').state);
-      tally.declared++;
+    if (!LADDER) {
+      for (const c of cand.slice(0, WARS - cur.length)) {
+        out = act(out, (x) => doDiplo(x, c.id, '선전포고').state);
+        tally.declared++;
+      }
+      return out;
+    }
+    // 11-28 분쟁 사다리: 명분이 차면 총동원(24시간 뒤 자동 선포), 모자라면 사다리를 오름
+    for (const c of cand.slice(0, WARS - cur.length - myMobs)) {
+      if (ladderOf(out).mobs.some((m) => m.by === me(out) && m.vs === c.id)) continue;
+      const why = canMobilize(out, c.id);
+      if (!why) {
+        out = act(out, (x) => mobilize(x, c.id).state);
+        tally.mobs++;
+        continue;
+      }
+      const key = why.split(' ')[0];
+      tally.blocked[key] = (tally.blocked[key] ?? 0) + 1;
+      if (cbOf(out, c.id) < 60)
+        for (const st of ['strike', 'shadow', 'tariff', 'protest'] as StepId[])
+          if (!canStep(out, c.id, st)) {
+            out = act(out, (x) => doStep(x, c.id, st).state);
+            tally.steps++;
+            break;
+          }
     }
     return out;
   }
@@ -118,7 +150,12 @@ function mkBot(seed: number) {
         continue;
       }
       if (!grandTargets(out).length) { out = wars(out); if (!grandTargets(out).length) break; }
-      const why = canGrand(out);
+      let why = canGrand(out);
+      if (why && EXTRA && !canBuyGrand(out)) {
+        out = buyGrand(out);
+        tally.bought++;
+        why = canGrand(out);
+      }
       if (why) {
         const need = Math.ceil(boostLeft(out, { kind: 'grand' }) / BOOST_MS);
         if (USE_BOOST && need > 0 && out.worldMs < out.officer.grandReadyMs && afford(out) >= need) { out = spend(out, 'grand'); continue; }
@@ -164,6 +201,14 @@ function mkBot(seed: number) {
       if (PUPPET && !canChoose(out, id)) out = act(out, (x) => makePuppet(x, id));
       else if (!canVote(out, id)) out = act(out, (x) => startVote(x, id));
     }
+    if (UNIFY)
+      for (const c of COUNTRIES) {
+        if (c.id === me(out) || !isAlive(out.world, c.id) || canUnify(out, c.id)) continue;
+        const r = proposeUnify(out, c.id);
+        tally.unifyTry++;
+        if (r.ok) tally.unifyOk++;
+        out = trackGoals(out, r.state);
+      }
     return out;
   }
 
@@ -251,10 +296,11 @@ test('밸런스 모의 실험', () => {
     const rows: unknown[] = [];
     const me = country;
     const total = FRONT.length;
-    const mile: Record<string, number | null> = { mil100: null, soc70: null, c25: null, win48: null, c76: null, c100: null, firstCap: null, act2: null, act3: null, act4: null, won: null };
+    const mile: Record<string, number | null> = { inf600: null, mil100: null, soc70: null, c25: null, win48: null, c76: null, c100: null, firstCap: null, act2: null, act3: null, act4: null, won: null };
     let rubyEarned = 0, rubyPrev = 0;
     const t0 = Date.now();
     for (let day = 0; day < DAYS; day++) {
+      if (PAID) s = { ...s, goals: { ...goalsOf(s), ruby: rubyOf(s) + PAID } };
       LOGINS.forEach((h, i) => {
         s = advance(s, (day * 24 + h) * H - s.worldMs);
         const spent0 = bot.tally.rubySpent;
@@ -287,11 +333,24 @@ test('밸런스 모의 실험', () => {
         growAvg: Math.round((ai.reduce((a, c) => a + Object.values(s.world.grow?.[c.id]?.lv ?? {}).reduce((x, y) => x + y, 0), 0) / Math.max(1, ai.length)) * 10) / 10,
       });
       rubyPrev = rubyEarned;
-      if (s.ending && mile.won == null) mile.won = day;
+      {
+        const ip = influenceProgress(s);
+        const r = rows[rows.length - 1] as Record<string, unknown>;
+        r.inf = Math.round(ip.mine?.total ?? 0);
+        r.infPlace = ip.place;
+        r.inf2 = Math.round(ip.second?.total ?? 0);
+        if (mile.inf600 == null && ip.ok) mile.inf600 = d1;
+      }
+      if (s.ending && mile.won == null) {
+        mile.won = day;
+        (mile as Record<string, unknown>).wonKind = s.ending.kind;
+      }
       if (s.ending) s = { ...s, ending: null, wins: [...(s.wins ?? []), s.ending] };
       if (mine >= total) break;
     }
     const last = rows[rows.length - 1] as Record<string, number>;
+    const ip = influenceProgress(s);
+    console.log(`  11-28: 결말 ${(mile as Record<string, unknown>).wonKind ?? '-'} d${mile.won} · 영향력 ${Math.round(ip.mine?.total ?? 0)}(${ip.place}등, 2등 ${Math.round(ip.second?.total ?? 0)}) 600+1.5배 첫날 d${mile.inf600} · 사다리 ${bot.tally.steps}번 총동원 ${bot.tally.mobs}번 막힘 ${JSON.stringify(bot.tally.blocked)} · 통일 ${bot.tally.unifyOk}/${bot.tally.unifyTry} · 대전투 추가 구매 ${bot.tally.bought}`);
     if (process.env.ACTS) console.log(`  승리 d${mile.won} · 반격 막음 ${s.counter?.won ?? 0} 뺏김 ${s.counter?.lost ?? 0} · 수도 ${victoryProgress(s).capsHave}/3`);
     if (process.env.ACTS) console.log('  장 조건: ' + actGoals(s).map((g) => `${g.text} ${g.have}/${g.need}`).join(' · '));
     console.log(`${country} seed${seed} logins${LOGINS.length} skill${SKILL} wars${WARS} | 첫 점령 d${mile.firstCap} · 25% d${mile.c25} · 정복승리조건(48%) d${mile.win48} · 76% d${mile.c76} · 100% d${mile.c100} · 장 2/3/4 d${mile.act2}/d${mile.act3}/d${mile.act4} · 연구 군사 d${mile.mil100} 사회 d${mile.soc70} | 끝 d${last.day}: 도시 ${last.mine}/${total} 편입 ${last.annexed} 대전투 ${last.grandWin}/${last.grandTry} 루비 번 것 ${last.rubyEarned} 가속권 쓴 것 ${last.boostsUsed}(+루비 ${last.rubySpent}) 신뢰 ${last.trust} 잃음(반란 ${last.lostRebel}·침공 ${last.lostInv}) | ${Math.round((Date.now() - t0) / 1000)}s`);

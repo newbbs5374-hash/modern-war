@@ -87,7 +87,7 @@ export function warWeariness(s: GameState): number {
   }
   return v;
 }
-export const WAR_CURB_MS = 5 * DAY;
+export const WAR_CURB_MS = 2 * DAY;
 export const voteShare = (s: GameState) => clamp(voteRows(s).reduce((a, [, v]) => a + v, 0), 10, 90);
 
 export const rallyCost = (s: GameState) => Math.round(priceBase(s) * 0.3);
@@ -181,7 +181,7 @@ export function seatsTick(s0: GameState): GameState {
     // 11-28 중-4: 전쟁 중에 지면 국회가 전쟁 권한을 묶음
     if (!win && warWeariness(ns) > 0) {
       ns = { ...ns, ladder: { ...ladderOf(ns), curbMs: ns.worldMs + WAR_CURB_MS } };
-      ns = tell(ns, '⚖️ 전쟁 중에 총선에서 져서 국회가 5일 동안 새 총동원을 막았어요. 지금 전쟁은 계속할 수 있어요.');
+      ns = tell(ns, '⚖️ 전쟁 중에 총선에서 져서 국회가 2일 동안 새 총동원을 막았어요. 지금 전쟁은 계속할 수 있어요.');
     }
   } else {
     ns = withPolity(ns, { election: nextElection(e, e.atMs), elections: p.elections + 1 });
