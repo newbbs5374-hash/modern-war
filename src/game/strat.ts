@@ -8,6 +8,7 @@ import { addPresMod } from './approval';
 import { addFavorNote } from './civ';
 import { hegOf } from './hegemony';
 import { pushReport } from './report';
+import { interceptMul } from './space';
 import { Rng } from './rng';
 import { priceBase, type GameState } from './state';
 import { DEFAULT_ICBM, ICBM_MAX, eul, ga, icbmOf, isAlive, pairKey, relationOf, type WorldEvent } from './world';
@@ -216,7 +217,7 @@ function land(s: GameState, f: Flight): GameState {
   ns = syncWorld(ns);
   if (!owner || owner === me) return pushReport(ns, { icon: '🚀', text: `${c.name}은(는) 이미 우리 도시라 미사일을 바다로 돌렸어요.` });
   const on = countryById(owner).name;
-  if (rng.next() < interceptOf(owner)) {
+  if (rng.next() < interceptOf(owner) * interceptMul(s, owner)) {
     ns = addFavorNote(ns, owner, '🚀 우리에게 ICBM을 쏨', -10);
     ns = addTension(ns, me, owner, 10);
     const text = `🛡️ ${on}의 미사일 방어망이 우리 ICBM을 요격했어요. ${c.name}은(는) 무사해요.`;

@@ -1193,7 +1193,10 @@ function unitIcon(kind){
     awacs:()=>{g.moveTo(34,14);g.lineTo(34,40);g.moveTo(18,28);g.lineTo(50,28);g.moveTo(42,20);g.ellipse(34,20,8,3,0,0,7);},
     gunship:()=>{g.moveTo(34,14);g.lineTo(34,40);g.moveTo(16,24);g.lineTo(52,24);g.moveTo(24,34);g.lineTo(44,34);g.moveTo(20,30);g.lineTo(14,36);},
     aav:()=>{g.ellipse(34,24,17,10,0,0,7);g.moveTo(18,34);g.quadraticCurveTo(26,40,34,34);g.quadraticCurveTo(42,40,50,34);},
-    usv:()=>{g.moveTo(18,24);g.lineTo(46,24);g.lineTo(52,30);g.lineTo(22,30);g.closePath();g.moveTo(34,24);g.lineTo(34,16);}};
+    usv:()=>{g.moveTo(18,24);g.lineTo(46,24);g.lineTo(52,30);g.lineTo(22,30);g.closePath();g.moveTo(34,24);g.lineTo(34,16);},
+    eng:()=>{g.moveTo(16,34);g.lineTo(16,18);g.lineTo(52,18);g.lineTo(52,34);g.moveTo(26,18);g.lineTo(26,30);g.moveTo(42,18);g.lineTo(42,30);},
+    hgv:()=>{g.moveTo(16,36);g.lineTo(48,14);g.moveTo(40,14);g.lineTo(48,14);g.lineTo(48,22);g.moveTo(14,26);g.lineTo(24,20);g.moveTo(20,34);g.lineTo(30,28);},
+    pmc:()=>{g.moveTo(14,10);g.lineTo(54,38);g.moveTo(54,10);g.lineTo(14,38);g.moveTo(26,30);g.lineTo(42,30);g.lineTo(42,38);g.lineTo(26,38);g.closePath();}};
   (K[kind]||(()=>{}))();g.stroke();return c;
 }
 function buildTabs(){
@@ -1207,7 +1210,7 @@ function buildCards(){
   // 11-26 병과가 7개를 넘으면 한 줄로 두고 옆으로 밀어서 봄
   wrap.classList.toggle("b3-scroll",kinds.length>6);wrap.style.gridTemplateColumns=kinds.length>6?"":`repeat(${Math.max(6,kinds.length)},1fr)`;
   kinds.forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-card";b.id="card-"+k;b.setAttribute("aria-pressed",String(k===selKind));
-    b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함").replace("장거리 방공","장거리방공").replace("해안 미사일","해안미사일").replace("정찰 무인기","정찰기").replace("스텔스 전투기","스텔스기").replace("지상 공격기","공격기").replace("다연장로켓","다연장").replace("바다 드론","바다드론");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);if(CAP){const o=document.createElement("span");o.className="b3-own";b.append(o);}
+    b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("극초음속 미사일","극초음속").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함").replace("장거리 방공","장거리방공").replace("해안 미사일","해안미사일").replace("정찰 무인기","정찰기").replace("스텔스 전투기","스텔스기").replace("지상 공격기","공격기").replace("다연장로켓","다연장").replace("바다 드론","바다드론");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);if(CAP){const o=document.createElement("span");o.className="b3-own";b.append(o);}
     b.onclick=()=>{selKind=k;root.querySelectorAll(".b3-card").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));highlightTiles();};
     wrap.append(b);});
   highlightTiles();

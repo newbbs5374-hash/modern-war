@@ -7,6 +7,7 @@ import { GEO } from '../data/realmap';
 import { CONV, FLIGHT_MS, NUKE, TESTS_NEED, canLaunch, canStep, interceptOf, launch, myDeter, nextStep, startStep, stepCost, stepDef, stratOf, targetCities, type StratStep } from '../game/strat';
 import { DEFAULT_ICBM, ICBM_MAX, icbmOf, isAlive, relationOf } from '../game/world';
 import { Card, fmt } from './common';
+import { AI_SATS, SATS, asatTargets, canLaunchSat, canShoot, interceptMul, launchSat, satCost, shootSat, spaceOf, type SatKind } from '../game/space';
 import { FLAG } from './flag';
 import { timeLeft } from './officerScreens';
 import type { ScreenProps } from './screens';
@@ -93,7 +94,7 @@ export function StratPanel({ state, actions }: ScreenProps) {
             <option value="">쏠 나라 고르기…</option>
             {foes.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} · {relationOf(state.world, me, c.id)} · 요격 {Math.round(interceptOf(c.id) * 100)}%
+                {c.name} · {relationOf(state.world, me, c.id)} · 요격 {Math.round(interceptOf(c.id) * interceptMul(state, c.id) * 100)}%
               </option>
             ))}
           </select>
@@ -120,7 +121,7 @@ export function StratPanel({ state, actions }: ScreenProps) {
                   <small>도시 무력화 · 모든 나라 호감 {NUKE.favor} · 지지율 {NUKE.approval}</small>
                 </button>
               </div>
-              <p className="small muted">날아가는 데 {Math.round(FLIGHT_MS / 60000)}분 · {countryById(state.world.owner[city]).name} 요격 확률 {Math.round(interceptOf(state.world.owner[city]) * 100)}% · 쏜 미사일은 사일로에서 빠져요.</p>
+              <p className="small muted">날아가는 데 {Math.round(FLIGHT_MS / 60000)}분 · {countryById(state.world.owner[city]).name} 요격 확률 {Math.round(interceptOf(state.world.owner[city]) * interceptMul(state, state.world.owner[city]) * 100)}% · 쏜 미사일은 사일로에서 빠져요.</p>
             </>
           )}
           {st.flights.map((f) => (
@@ -130,6 +131,8 @@ export function StratPanel({ state, actions }: ScreenProps) {
           ))}
         </Card>
       )}
+
+      <SpaceCard state={state} run={run} />
 
       <Card title="🌐 세계의 ICBM">
         <div className="strat-world">
@@ -182,3 +185,55 @@ function FlightMap({ from, to, flights }: { from: string; to: string; flights: s
   );
 }
 
+
+/** 11-28 우주군: 위성 띄우기 · 위성 요격 */
+function SpaceCard({ state, run }: { state: ScreenProps['state']; run: (f: (s: ScreenProps['state']) => { state: ScreenProps['state']; out: string }) => void }) {
+  const sp = spaceOf(state);
+  const [shoot, setShoot] = useState('');
+  const kinds: SatKind[] = ['recon', 'nav', 'asat'];
+  return (
+    <Card title="🛰️ 우주군" right={<small className="muted">궤도 위 위성 {sp.recon + sp.nav}기</small>}>
+      <div className="space-orbit">
+        <span className="earth">🌍</span>
+        {Array.from({ length: sp.recon }, (_, i) => <i key={`r${i}`} className="sat" style={{ transform: `rotate(${i * 120}deg) translateX(68px) rotate(${-i * 120}deg)` }}>🛰️</i>)}
+        {Array.from({ length: sp.nav }, (_, i) => <i key={`n${i}`} className="sat nav" style={{ transform: `rotate(${60 + i * 120}deg) translateX(46px) rotate(${-(60 + i * 120)}deg)` }}>📡</i>)}
+      </div>
+      {sp.job && (
+        <p className="small">
+          🚀 {SATS[sp.job.kind].name} 발사 준비 · {timeLeft(Math.max(0, sp.job.endMs - state.worldMs))} 남음
+        </p>
+      )}
+      {kinds.map((k) => {
+        const d = SATS[k];
+        const why = canLaunchSat(state, k);
+        return (
+          <div key={k} className="list-row small">
+            <span style={{ flex: 1 }}>
+              {d.icon} <b>{d.name}</b> {sp[k]}/{d.max}
+              <br />
+              <span className="muted">{d.text}</span>
+            </span>
+            <button disabled={!!why} title={why ?? ''} onClick={() => run((s) => { const r = launchSat(s, k); return { state: r.state, out: r.text }; })}>
+              🚀 💰{fmt(satCost(state, k))}
+            </button>
+          </div>
+        );
+      })}
+      {sp.asat > 0 && (
+        <div className="strat-row">
+          <select className="strat-select" value={shoot} onChange={(e) => setShoot(e.target.value)}>
+            <option value="">위성을 떨어뜨릴 나라…</option>
+            {asatTargets(state).map((id) => (
+              <option key={id} value={id}>
+                {countryById(id).name} · 위성 {AI_SATS[id]}기{(sp.blind[id] ?? 0) > state.worldMs ? ' · 눈 멂' : ''}
+              </option>
+            ))}
+          </select>
+          <button className="danger" disabled={!shoot || !!canShoot(state, shoot)} onClick={() => run((s) => { const r = shootSat(s, shoot); return { state: r.state, out: r.text }; })}>
+            💥 위성 요격
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+}

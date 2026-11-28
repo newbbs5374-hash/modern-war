@@ -55,6 +55,10 @@ export const UNITS: Array<{ name: string; domain: Domain; role: string; rank: nu
   { name: '해안 미사일', domain: '육', role: '바닷가에서 적 군함을 멀리서 잡음', rank: 5 },
   { name: '장거리 방공', domain: '육', role: '멀리서 오는 미사일·폭격기를 떨어뜨림', rank: 6 },
   { name: '탄도미사일', domain: '육', role: '아주 멀리 쏘는 큰 미사일, 요격당할 수 있음', rank: 8 },
+  // 11-28 새 병과
+  { name: '공병', domain: '육', role: '지뢰를 묻고 둘레 아군을 엄폐시킴, 지휘소 벽을 뚫음', rank: 3 },
+  { name: '극초음속 미사일', domain: '육', role: '아주 빨라서 방공이 거의 못 막음', rank: 9 },
+  { name: '용병', domain: '육', role: '돈으로 72시간 빌리는 부대(부대 창 용병 계약)', rank: 0 },
   { name: '정찰 무인기', domain: '공', role: '숨은 적을 찾아 포격이 더 잘 맞게 함', rank: 2 },
   { name: '조기경보기', domain: '공', role: '하늘의 눈, 둘레 공군 사거리·요격 ↑', rank: 6 },
   { name: '지상 공격기', domain: '공', role: '하늘에서 맴돌며 땅을 계속 때림', rank: 6 },
@@ -97,10 +101,10 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
     name: '육군',
     icon: '🪖',
     groups: [
-      { name: '보병', icon: '🪖', units: ['보병', '기갑병', '상륙장갑차'] },
+      { name: '보병', icon: '🪖', units: ['보병', '기갑병', '상륙장갑차', '공병'] },
       { name: '특수전', icon: '🥷', units: ['특수부대', '해킹부대'] },
       { name: '기갑·화력', icon: '🛡️', units: ['전차', '포병', '방공부대'] },
-      { name: '미사일·방공', icon: '🚀', units: ['다연장로켓', '탄도미사일', '해안 미사일', '장거리 방공'] },
+      { name: '미사일·방공', icon: '🚀', units: ['다연장로켓', '탄도미사일', '극초음속 미사일', '해안 미사일', '장거리 방공'] },
     ],
   },
   {

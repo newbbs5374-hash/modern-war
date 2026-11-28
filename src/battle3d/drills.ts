@@ -555,7 +555,38 @@ const USV: Drill = {
   bar: killBar('격침'),
 };
 
-const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV];
+// 11-28 새 병과 훈련 2개: 극초음속 미사일 · 공병
+const HGV: Drill = {
+  id: 'n3-hgv', training: '포격', name: '극초음속 관통 타격', how: '적 장거리 방공 4대가 겹겹이 지키는 지휘소예요. 탄도탄은 거의 다 떨어지지만 극초음속 미사일은 1.4초 만에 떨어져 방공이 거의 못 막아요.',
+  stage: field('hgv', '목표: 방공망 뒤 적 지휘소 파괴', {
+    enemy: [['hq', 5, -13], ['sam', 3, -10.6], ['sam', 7, -10.6], ['sam', 4, -12], ['sam', 6, -12], ['inf', 4.4, -9], ['tank', 6, -8.4]],
+    timeLimit: 90, cmds: [], cpRate: .6,
+    setup: (S) => { hqHp(S, 1700); S.drillLimit = 90; foes(S).forEach((u) => { u.goal = { x: u.x, z: u.z }; u.hold = true; }); aliveUs(S).forEach((u) => { if (u.kind === 'hgv') { u.only = 'hq'; u.d = { ...u.d, cd: 8 }; } }); },
+    rule: hqRule, cam: { tz: -1, dist: 32 },
+  }),
+  preset: [hold('hgv', 3, 13), hold('hgv', 6, 13.2), hold('aa', 4.5, 11.6)],
+  kinds: ['hgv'], lock: true, cp0: 2, score: hqScore, bar: hqBar,
+};
+const ENG_WAVES = [
+  { at: 6, hp: .6, list: squad3([['inf', 4], ['ifv', 1]], 4, -12) },
+  { at: 28, hp: .6, list: squad3([['inf', 3], ['ifv', 2]], 2.4, -13) },
+  { at: 50, hp: .6, list: squad3([['inf', 3], ['tank', 1], ['ifv', 1]], 5.6, -13) },
+];
+const ENG: Drill = {
+  id: 'n3-eng', training: '전술', name: '공병 방어선', how: '공병이 앞에 지뢰를 묻고 둘레 아군을 모래주머니로 지켜요(받는 피해 −18%). 적이 오기 전에 공병을 길목에 두면 지뢰가 먼저 터져요.',
+  stage: field('eng', '목표: 지뢰와 진지로 길목 지키기', {
+    timeLimit: 80, foeGoal: { x: 4, z: 11 }, cmds: ['arty'], cpRate: .5,
+    setup: (S) => { S.drillLimit = 80; },
+    tick: (S) => waves(S, ENG_WAVES),
+    rule: (S) => (foes(S).some((u) => u.alive && u.z > 10.4) ? 'lose' : !aliveUs(S).length ? 'lose' : S.simT >= 80 || (S.simT > 50 && !foes(S).some((u) => u.alive)) ? 'win' : null),
+    cam: { tz: 0, dist: 30 },
+  }),
+  preset: [hold('eng', 2.6, 5.6), hold('eng', 5.8, 5.6), hold('inf', 3, 8), hold('inf', 5.4, 8), hold('tank', 4.2, 9.2)],
+  kinds: ['eng'], lock: true, cp0: 2,
+  score: (S) => clamp01(killFrac(S) * 0.82 + (foes(S).some((u) => u.alive && u.z > 10.4) ? 0 : 0.18)),
+  bar: killBar('막아 낸 적'),
+};
+const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV, HGV, ENG];
 /** 무리 하나(종류×수를 가로로 늘어놓음) */
 function squad3(list: Array<[Kind, number]>, x: number, z: number): Place[] {
   const out: Place[] = [];

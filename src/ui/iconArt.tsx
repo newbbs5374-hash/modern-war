@@ -46,6 +46,10 @@ export const UNIT_KEY: Record<string, { key: string; field?: string; who: string
   '지상 공격기': { key: 'gunship', who: '지상 공격기' },
   상륙장갑차: { key: 'aav', who: '상륙장갑차' },
   '바다 드론': { key: 'usv', who: '바다 드론' },
+  // 11-28 새 병과(그림이 없으면 이모지)
+  공병: { key: 'engineer', who: '공병' },
+  '극초음속 미사일': { key: 'hypersonic', who: '극초음속 미사일' },
+  용병: { key: 'pmc', who: '용병' },
 };
 export const TRAIN_KEY: Record<string, string> = {
   잠입: 'stealth', 체력: 'fitness', 전술: 'tactics', 사격: 'shooting', 포격: 'artillery', 정보: 'intel',

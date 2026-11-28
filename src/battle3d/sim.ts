@@ -12,7 +12,9 @@ export type Kind =
   /** 11-26 새 전장용: 무장 고속정(해적) · 무장 트럭(반군) · 지켜야 할 상선 · 지켜야 할 차량·민간인 */
   | 'boat' | 'tech' | 'cargo' | 'vip'
   /** 11-26 새 병과 10개: 탄도미사일 · 다연장로켓 · 장거리 방공 · 해안 미사일 · 정찰 무인기 · 스텔스 전투기 · 조기경보기 · 지상 공격기 · 상륙장갑차 · 바다 드론 */
-  | 'bm' | 'mlrs' | 'sam' | 'csm' | 'uav' | 'f35' | 'awacs' | 'gunship' | 'aav' | 'usv';
+  | 'bm' | 'mlrs' | 'sam' | 'csm' | 'uav' | 'f35' | 'awacs' | 'gunship' | 'aav' | 'usv'
+  /** 11-28 새 병과: 공병 · 극초음속 미사일 · 용병 */
+  | 'eng' | 'hgv' | 'pmc';
 export type CmdKey = 'arty' | 'smoke' | 'air' | 'cruise' | 'emp' | 'repair' | 'para';
 
 export interface UnitDef {
@@ -24,6 +26,8 @@ export interface UnitDef {
   look?: Kind; lookScale?: number; ally?: boolean;
   /** 11-26 새 병과: 멀리 날아가는 탄도탄(요격될 수 있음) · 로켓 일제 사격 · 날아오는 탄 요격 · 둘레 적을 드러냄 · 조기경보(둘레 공군 사거리↑, 뒤에서 돔) · 땅과 바다를 둘 다 다님 */
   ballistic?: boolean; salvo?: boolean; intercept?: boolean; spot?: boolean; awacs?: boolean; amph?: boolean;
+  /** 11-28 극초음속(빨리 떨어지고 요격이 거의 안 됨) · 공병(둘레 아군 엄폐·지뢰·지휘소 벽 뚫기) */
+  hyper?: boolean; engineer?: boolean;
 }
 
 /* ───────── 숫자(초안) ───────── */
@@ -62,12 +66,16 @@ export const DEF: Record<Kind, UnitDef> = {
   awacs: { name: '조기경보기', cost: 22, hp: 440, atk: 0, def: 20, range: 0, cd: 99, spd: 1.6, dom: 'air', y: 4.3, jet: true, hits: {}, r: 1, spot: true, awacs: true },
   gunship: { name: '지상 공격기', cost: 28, hp: 620, atk: 16, def: 20, range: 3.8, cd: .45, spd: 1, dom: 'air', y: 3.3, hits: { land: 1.2, sea: .6 }, r: .9 },
   aav:   { name: '상륙장갑차', cost: 18, hp: 460, atk: 15, def: 36, range: 2.8, cd: .55, spd: 1.2, dom: 'land', amph: true, hits: { land: 1, sea: .4, air: .3 }, r: .55 },
+  // 11-28 새 병과 3개
+  eng:   { name: '공병', cost: 16, hp: 380, atk: 10, def: 35, range: 2.6, cd: .8, spd: .9, dom: 'land', hits: { land: 1 }, r: .5, look: 'aav', lookScale: .85, engineer: true },
+  hgv:   { name: '극초음속 미사일', cost: 38, hp: 240, atk: 280, def: 15, range: 34, minR: 5, cd: 18, spd: .55, dom: 'land', hits: { land: 1, sea: 1 }, splash: 1.6, r: .66, ballistic: true, hyper: true, look: 'bm', lookScale: 1.08 },
+  pmc:   { name: '용병', cost: 14, hp: 300, atk: 22, def: 14, range: 2.8, cd: .75, spd: 1.1, dom: 'land', hits: { land: 1, air: .3 }, r: .45, look: 'sf' },
   usv:   { name: '바다 드론', cost: 8, hp: 110, atk: 190, def: 0, range: .6, cd: 99, spd: 2.6, dom: 'sea', kamikaze: true, splash: .9, hits: { sea: 1, sub: .6 }, r: .36 },
 };
 /** 11-26 새 병과 10개(훈련·시험에서 씀) */
 export const NEW_KINDS: Kind[] = ['bm', 'mlrs', 'sam', 'csm', 'uav', 'f35', 'awacs', 'gunship', 'aav', 'usv'];
 export const TABS: Array<{ id: 'land' | 'sea' | 'air'; name: string; kinds: Kind[] }> = [
-  { id: 'land', name: '육군', kinds: ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa', 'mlrs', 'bm', 'sam', 'csm', 'aav'] },
+  { id: 'land', name: '육군', kinds: ['inf', 'sf', 'ifv', 'hack', 'tank', 'spg', 'aa', 'mlrs', 'bm', 'sam', 'csm', 'aav', 'eng', 'hgv', 'pmc'] },
   { id: 'sea', name: '해군', kinds: ['dd', 'cv', 'sub', 'lha', 'ssn', 'laser', 'usv'] },
   { id: 'air', name: '공군', kinds: ['drone', 'heli', 'jet', 'bomber', 'missile', 'uav', 'f35', 'awacs', 'gunship'] },
 ];
@@ -189,7 +197,7 @@ export interface Unit {
   id: number; kind: Kind; side: Side; d: UnitDef; hp: number; max: number; x: number; z: number;
   cd: number; cd2: number; spawnCd: number; tgt: Unit | null; alive: boolean; deadT: number; jam: number; kids: number;
   hd: number; launchAt?: number; waitT?: number; mom?: Unit; aim?: number; moving?: boolean; moveFace?: number; flying?: boolean; bank?: number;
-  hitT?: number; healT?: number;
+  hitT?: number; healT?: number; mineT?: number;
   /** 시가전·도심: 지키는 자리(적) · 끝까지 쫓아가는 부대(최후 저항) */
   home?: { x: number; z: number }; aggr?: boolean;
   /** 앞 막에서 넘어온 부대 */
@@ -249,6 +257,8 @@ export interface Sim {
   focus?: number; drill?: Record<string, number>;
   /** 11-26 정해진 시각 증원이 몇 번 나왔나 */
   tn?: number;
+  /** 11-28 공병이 묻은 지뢰(보이지 않음, 적 땅 부대가 밟으면 터짐) */
+  mines?: Array<{ x: number; z: number; side: Side; by: number }>;
 }
 
 export function createSim(hooks: SimHooks = {}): Sim {
@@ -273,13 +283,13 @@ const inSmoke = (S: Sim, u: Unit) => S.smokes.some((s) => Math.hypot(s.x - u.x, 
 /** 11-26 정찰 무인기·조기경보기가 이 부대를 보고 있나(by 편의 눈) */
 export const spotted = (S: Sim, t: { x: number; z: number }, by: Side) => S.units.some((o) => o.alive && o.side === by && o.d.spot && dist(o, t) < (o.d.awacs ? 7 : 5));
 /** 11-26 날아오는 탄도탄을 막는 부대(x,z에 떨어질 탄, side = 막는 편). 없으면 null */
-function interceptor(S: Sim, x: number, z: number, side: Side): Unit | null {
+function interceptor(S: Sim, x: number, z: number, side: Side, odds = 1): Unit | null {
   const eye = S.units.some((o) => o.alive && o.side === side && o.d.awacs) ? .1 : 0;
   for (const o of S.units) {
     if (!o.alive || o.side !== side || o.jam > S.simT) continue;
     const q = Math.hypot(o.x - x, o.z - z);
     const p = o.d.intercept ? (q < 10 ? .55 : 0) : o.d.aura ? (q < 6 ? .45 : 0) : o.kind === 'dd' ? (q < 6 ? .2 : 0) : o.kind === 'aa' ? (q < 4 ? .2 : 0) : 0;
-    if (p && rnd(S) < p + eye) return o;
+    if (p && rnd(S) < (p + eye) * odds) return o;
   }
   return null;
 }
@@ -289,6 +299,7 @@ export function damage(S: Sim, t: Unit, amt: number, src: Unit | null) {
   let a = amt * 100 / (100 + t.d.def) * (src && src.side === 'foe' ? FOE_MUL : 1) * (src?.buff ?? 1);
   if (inSmoke(S, t)) a *= .4;
   if (S.units.some((o) => o.alive && o.d.aura && o.side === t.side && o !== t && dist(o, t) < 2.4)) a *= .7; // 레이저 방공함 보호막
+  if (t.d.dom === 'land' && S.units.some((o) => o.alive && o.d.engineer && o.side === t.side && dist(o, t) < 2.2)) a *= .82; // 11-28 공병 모래주머니·참호
   if (ST.blocks && t.d.dom === 'land' && inBlock(t.x, t.z, t.d.r * .6 + .55)) a *= .75; // 건물에 붙으면 엄폐
   t.hp -= a; t.hitT = S.simT;
   if (t.hp <= 0) { t.hp = 0; t.alive = false; t.deadT = 0; onDeath(S, t, src); }
@@ -431,6 +442,16 @@ export function step(S: Sim) {
   ST.tick?.(S);
   for (let i = S.pending.length - 1; i >= 0; i--) { const e = S.pending[i]; if (S.simT >= e.at) { S.pending.splice(i, 1); e.fn(); } }
   for (let i = S.smokes.length - 1; i >= 0; i--) { if (S.simT > S.smokes[i].end) S.smokes.splice(i, 1); }
+  if (S.mines?.length) for (let i = S.mines.length - 1; i >= 0; i--) { // 11-28 지뢰
+    const m = S.mines[i];
+    const hit = S.units.find((t) => t.alive && t.side !== m.side && t.d.dom === 'land' && !t.d.ally && Math.hypot(t.x - m.x, t.z - m.z) < .7);
+    if (!hit) continue;
+    S.mines.splice(i, 1);
+    const by = S.units.find((o) => o.id === m.by) ?? null;
+    splash(S, m.x, m.z, 1.1, 110, m.side, by, ['land']);
+    S.hooks.event?.({ type: 'boom', x: m.x, z: m.z, size: 1.2 });
+    S.hooks.log?.(`${m.side === 'us' ? '우리' : '적'} 지뢰가 터졌어요`, m.side === 'us' ? 'k' : 'x');
+  }
   const list = S.units.slice();
   for (const u of list) {
     if (!u.alive || u.kind === 'hq') continue;
@@ -457,6 +478,19 @@ export function step(S: Sim) {
       u.tgt = best;
     }
     const t = u.tgt;
+    // 11-28 공병: 9초마다 발밑에 지뢰(한 공병당 4개까지)
+    if (u.d.engineer && !jam) {
+      u.mineT = (u.mineT ?? 4) - TICK;
+      if (u.mineT <= 0) {
+        u.mineT = 9;
+        S.mines ??= [];
+        if (S.mines.filter((m) => m.by === u.id).length < 4) {
+          const f = u.side === 'us' ? -1 : 1;
+          S.mines.push({ x: u.x + (rnd(S) - .5) * 1.2, z: u.z + f * (.8 + rnd(S) * .8), side: u.side, by: u.id });
+          if (S.mines.filter((m) => m.by === u.id).length === 1) S.hooks.log?.(`${nm(u)} 공병이 지뢰를 묻기 시작했어요`, u.side === 'us' ? 'k' : 'x');
+        }
+      }
+    }
     // 특수 행동: 항모 함재기 · 상륙함 · 원자력 잠수함 순항 미사일
     if (u.d.carrier) { u.spawnCd -= TICK; if (u.spawnCd <= 0) { u.spawnCd = 20; if (u.kids < 2) { const j = makeUnit(S, 'cvjet', u.side, u.x, u.z); j.mom = u; u.kids++; S.hooks.log?.(`${nm(u)} 함재기 출격`, u.side === 'us' ? 'k' : 'x'); } } }
     if (u.d.lha) { u.spawnCd -= TICK; if (u.spawnCd <= 0) { const lx = coastX(u.z) + .7; if (lx - u.x < 3.2 && u.kids < 3) { u.spawnCd = 16; u.kids++; const s = makeUnit(S, 'inf', u.side, lx, u.z); s.waitT = S.simT + 1.2; S.hooks.event?.({ type: 'landing', ship: u, unit: s }); S.hooks.log?.(`${nm(u)} 상륙 부대 해안 도착`, u.side === 'us' ? 'k' : 'x'); } else u.spawnCd = 2; } }
@@ -597,11 +631,11 @@ function fire(S: Sim, u: Unit, t: Unit) {
   // 11-26 멀리 쏘는 병과는 우리 눈(정찰기·조기경보기)이 보는 적에게 +20%
   if ((u.kind === 'spg' || u.d.ballistic || u.d.salvo || u.kind === 'csm') && spotted(S, t, u.side)) mul *= 1.2;
   if (u.d.ballistic) { // 탄도탄: 떨어질 곳에 경고 → 3.2초 뒤 떨어짐(그 사이 방공에 요격될 수 있음)
-    const tx = t.x, tz = t.z, fly = 3.2, def: Side = u.side === 'us' ? 'foe' : 'us';
+    const tx = t.x, tz = t.z, fly = u.d.hyper ? 1.4 : 3.2, def: Side = u.side === 'us' ? 'foe' : 'us';
     u.visFire = { kind: 'bm', tx, tz, fly };
     S.hooks.event?.({ type: 'warn', x: tx, z: tz, t: fly, side: u.side });
     S.pending.push({ at: S.simT + fly, fn: () => {
-      const by = interceptor(S, tx, tz, def);
+      const by = interceptor(S, tx, tz, def, u.d.hyper ? .15 : 1);
       if (by) { S.hooks.event?.({ type: 'intercept', x: tx, z: tz, by: by.kind }); S.hooks.log?.(`${def === 'us' ? '아군' : '적'} ${by.d.name}이 탄도탄을 요격했어요`, def === 'us' ? 'k' : 'x'); return; }
       splash(S, tx, tz, u.d.splash!, u.d.atk * mul, u.side, u, SURF); S.hooks.event?.({ type: 'boom', x: tx, z: tz, size: 2.2 });
     } });
@@ -630,6 +664,7 @@ function fire(S: Sim, u: Unit, t: Unit) {
     }
     u.visFire = { kind: 'bomber', tx, tz }; return;
   }
+  if (u.d.engineer && t.kind === 'hq') mul *= 3; // 11-28 공병: 지휘소 벽 폭파
   if (u.d.hack) { t.jam = S.simT + 3; S.pending.push({ at: S.simT + .1, fn: () => { if (t.alive) damage(S, t, u.d.atk * mul, u); } }); u.visFire = { kind: 'hack', tx: t.x, tz: t.z, tgt: t }; return; }
   const delay = u.kind === 'tank' ? .12 : (u.kind === 'sub' || u.kind === 'ssn') ? Math.min(2, dist(u, t) * .25) : u.kind === 'heli' ? .35 : u.kind === 'csm' ? 1.4 : u.kind === 'sam' ? .5 : .05;
   S.pending.push({ at: S.simT + delay, fn: () => { if (t.alive) damage(S, t, u.d.atk * mul, u); } });

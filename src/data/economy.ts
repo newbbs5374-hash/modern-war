@@ -171,6 +171,10 @@ export const UNIT_COST: Record<string, UnitCost> = {
   조기경보기: { money: 3800, res: { 알루미늄: 4, 반도체: 4, 구리: 2, 석유: 3, 갈륨: 1 }, hours: 7, power: 16, troops: 100 },
   '지상 공격기': { money: 3200, res: { 알루미늄: 4, 티타늄: 2, 석유: 3, 텅스텐: 1 }, hours: 6, power: 20, troops: 100 },
   상륙장갑차: { money: 900, res: { 강철: 3, 석유: 1, 알루미늄: 1 }, hours: 2, power: 6, troops: 500 },
+  // 11-28 새 병과: 공병 · 극초음속 미사일 · 용병(용병은 부대 창에서 계약, game/pmc.ts)
+  공병: { money: 800, res: { 강철: 2, 석유: 1, 구리: 1 }, hours: 2, power: 6, troops: 400 },
+  '극초음속 미사일': { money: 5200, res: { 티타늄: 3, 희토류: 2, 반도체: 3, 정밀부품: 3, 텅스텐: 2, 니켈: 1 }, hours: 7, power: 30, troops: 150 },
+  용병: { money: 900, res: {}, hours: 0.5, power: 5, troops: 0 },
   '바다 드론': { money: 500, res: { 알루미늄: 1, 리튬: 1, 반도체: 1 }, hours: 1, power: 4, troops: 0 },
   // 독점 병과(몇 나라만 만듦, data/specials.ts EXCLUSIVES)
   강습상륙함: { money: 6000, res: { 강철: 14, 특수강: 2, 석유: 6, 반도체: 3, 구리: 2 }, hours: 12, power: 34, troops: 1500 },

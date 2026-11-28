@@ -346,6 +346,7 @@ export function buildMs(s: GameState, unit: string, variant?: string | boolean):
 export const QUEUE_MAX = 5;
 export function canProduce(s: GameState, unit: string, variant?: string | boolean): string | null {
   if (!UNIT_COST[unit]) return '없는 병과';
+  if (unit === '용병') return '용병은 부대 창 「용병 계약」으로 빌려요'; // 11-28
   const me = s.player.countryId;
   const ex = exclusiveLock(me, unit);
   if (ex) return ex;

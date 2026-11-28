@@ -1407,3 +1407,14 @@ select.wide, button.wide { width: 100%; }
 .strat-world { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; font-size: 11.5px; margin-bottom: 4px; }
 .strat-world span { padding: 4px 6px; border-radius: 7px; background: rgba(0, 0, 0, 0.22); }
 .strat-select { width: 100%; padding: 8px; border-radius: 9px; background: rgba(0, 0, 0, 0.3); color: inherit; border: 1px solid var(--glass-line, rgba(190, 210, 225, 0.25)); font-size: 13px; }
+/* 11-28 우주군 */
+.space-orbit { position: relative; height: 150px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; border-radius: 10px; background: radial-gradient(circle at 50% 50%, #12203a 0%, #070b14 75%); }
+.space-orbit::before, .space-orbit::after { content: ''; position: absolute; left: 50%; top: 50%; border: 1px dashed rgba(63, 184, 201, 0.35); border-radius: 50%; transform: translate(-50%, -50%); }
+.space-orbit::before { width: 136px; height: 136px; } .space-orbit::after { width: 92px; height: 92px; }
+.space-orbit .earth { font-size: 44px; }
+.space-orbit .sat { position: absolute; left: calc(50% - 10px); top: calc(50% - 11px); font-style: normal; font-size: 18px; }
+/* 11-28 용병 */
+.pmc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none !important; border: 0 !important; padding: 2px 0 !important; color: inherit; text-align: left; }
+.pmc-buy { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
+.pmc-buy button { display: flex; flex-direction: column; align-items: center; font-size: 12px; }
+.pmc-buy small { font-size: 10px; opacity: 0.85; }

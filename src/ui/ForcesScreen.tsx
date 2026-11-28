@@ -1,5 +1,7 @@
 // 부대 화면: 1차 육군·해군·공군 → 2차 세부 병과(보병·특수전…). 병과마다 보유량 · 모집 · 가속.
 import { useState } from 'react';
+import { PMC_HOURS, PMC_MAX, PMC_SIZES, canHire, hire, pmcCost, pmcOf } from '../game/pmc';
+import type { GameState } from '../game/state';
 import { FORCE_BRANCHES, UNITS } from '../data/catalog';
 import { RANKS } from '../data/ranks';
 import { countryById } from '../data/world';
@@ -174,6 +176,7 @@ export function ForcesScreen(props: ScreenProps) {
         </div>
         <p className="small forces-msg">{msg || <span className="muted">모집을 누르면 위 줄에 차례로 서요</span>}</p>
       </section>
+      <PmcCard state={state} apply={(f) => setMsg(actions.applyWith(f) ?? '')} />
       <div className="seg branch-tabs">
         {FORCE_BRANCHES.map((b) => (
           <button key={b.id} className={tab === b.id ? 'on' : ''} onClick={() => (setMsg(''), setTab(b.id))}>
@@ -191,5 +194,37 @@ export function ForcesScreen(props: ScreenProps) {
       ))}
       {pick && <UnitModal {...props} unit={pick} onClose={() => setPick(null)} />}
     </>
+  );
+}
+
+/** 11-28 용병(민간 군사기업): 돈으로 72시간 빌리는 부대 */
+function PmcCard({ state, apply }: { state: GameState; apply: (f: (s: GameState) => { state: GameState; out: string }) => void }) {
+  const p = pmcOf(state);
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="card pmc-card">
+      <button className="pmc-head" onClick={() => setOpen(!open)}>
+        <span>💼 <b>용병 계약</b> <small className="muted">· 바로 쓰는 빌린 부대 {state.economy.army['용병'] ?? 0}</small></span>
+        <small className="muted">{p.list.length}/{PMC_MAX} {open ? '▲' : '▼'}</small>
+      </button>
+      {open && (
+        <>
+          <p className="small muted">돈을 내면 {PMC_HOURS}시간 동안 용병이 바로 우리 3D 전투에 나와요. 우리 병력(사람)이 안 들고, 쓰러져도 병력이 안 줄어요. 대신 전쟁 중엔 돈을 더 주는 쪽으로 넘어갈 수 있어요. 계약이 늘수록 비싸져요.</p>
+          {p.list.map((c) => (
+            <p key={c.id} className="small list-row">
+              💼 {c.firm} · {c.n}부대 · {timeLeft(Math.max(0, c.untilMs - state.worldMs))} 남음
+            </p>
+          ))}
+          <div className="pmc-buy">
+            {PMC_SIZES.map((n) => (
+              <button key={n} disabled={!!canHire(state, n)} title={canHire(state, n) ?? ''} onClick={() => apply((s) => { const r = hire(s, n); return { state: r.state, out: r.text }; })}>
+                {n}부대
+                <small>💰{fmt(pmcCost(state, n))}</small>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
