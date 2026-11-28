@@ -142,19 +142,19 @@ export const FORCE_BRANCHES: Array<{ id: '육' | '해' | '공'; name: string; ic
  * 11-28 훈련 11병과(대장 결정): 육군 4 · 해군 3 · 공군 4.
  * 훈련(스탯 오름·숙련·별 기록)은 그대로 12개이고, 화면에서 병과별로 묶어 보여 줌.
  * 항공·해상처럼 여러 병과에 걸친 훈련은 그 병과에 맞는 미니게임만 고를 수 있게 only로 거름.
- * 훈련이 없는 병과(미사일방공·무인정·미사일)는 새 훈련 게임이 들어올 자리.
+ * 11-28 미사일방공·무인정·미사일 병과는 새 전체 화면 훈련(g-*)만 고를 수 있게 only로 거름.
  */
 export const TRAIN_BRANCHES: Array<{ arm: '육' | '해' | '공'; name: string; icon: string; items: Array<{ t: string; only?: string[] }>; soon?: string }> = [
   { arm: '육', name: '보병', icon: '🪖', items: [{ t: '사격' }, { t: '체력' }, { t: '모병' }] },
   { arm: '육', name: '특수전', icon: '🥷', items: [{ t: '잠입' }, { t: '정보' }, { t: '해킹' }] },
   { arm: '육', name: '기갑화력', icon: '🛡️', items: [{ t: '포격' }, { t: '전술' }, { t: '통솔' }, { t: '보급' }] },
   { arm: '육', name: '미사일방공', icon: '🚀', items: [{ t: '사격', only: ['g-shield'] }] },
-  { arm: '해', name: '수상함', icon: '🚢', items: [{ t: '해상', only: ['sea-formation', 'n-sea-bridge', 'e-sea-3', 'e-sea-4', 'e-sea-5', 'e-sea-6', 'e-sea-7'] }], soon: '함대 포격전' },
-  { arm: '해', name: '잠수함', icon: '🫧', items: [{ t: '해상', only: ['sea-sonar', 'sea-torpedo', 'm3-sea-sonar', 'm3-sea-torpedo', 'e-sea-1', 'e-sea-2'] }], soon: '어둠 속 사냥' },
-  { arm: '해', name: '무인정', icon: '🚤', items: [], soon: '자폭 보트 돌격' },
+  { arm: '해', name: '수상함', icon: '🚢', items: [{ t: '해상', only: ['sea-formation', 'n-sea-bridge', 'e-sea-3', 'e-sea-4', 'e-sea-5', 'e-sea-6', 'e-sea-7', 'g-naval'] }] },
+  { arm: '해', name: '잠수함', icon: '🫧', items: [{ t: '해상', only: ['sea-sonar', 'sea-torpedo', 'm3-sea-sonar', 'm3-sea-torpedo', 'e-sea-1', 'e-sea-2', 'g-hunt'] }] },
+  { arm: '해', name: '무인정', icon: '🚤', items: [{ t: '해상', only: ['g-run'] }] },
   { arm: '공', name: '무인기', icon: '🛸', items: [{ t: '정보', only: ['e-intel-4', 'g-jigsaw'] }, { t: '해킹', only: ['e-hack-6'] }, { t: '보급', only: ['g-pairs'] }] },
   { arm: '공', name: '항공기', icon: '✈️', items: [{ t: '항공', only: ['air-intercept', 'air-landing', 'm3-air-intercept', 'n-air-cockpit', 'e-air-1', 'e-air-2', 'e-air-4', 'e-air-5', 'e-air-6', 'g-bomb'] }] },
-  { arm: '공', name: '첨단항공기', icon: '🛩️', items: [{ t: '항공', only: ['air-flare', 'm3-air-flare', 'e-air-3', 'e-air-7'] }], soon: '스텔스 침투' },
+  { arm: '공', name: '첨단항공기', icon: '🛩️', items: [{ t: '항공', only: ['air-flare', 'm3-air-flare', 'e-air-3', 'e-air-7', 'g-stealth'] }] },
   { arm: '공', name: '미사일', icon: '🎯', items: [{ t: '포격', only: ['g-ballistic'] }] },
 ];
 export const TRAIN_ARMS = [

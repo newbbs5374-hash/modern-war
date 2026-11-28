@@ -30,6 +30,7 @@ import { EASY } from '../../../battle/easy';
 import { GFortress } from './fortress';
 import { GInfiltrate } from './infiltrate';
 import { GBallistic, GBomb, GJigsaw, GPairs, GShield } from './fullA';
+import { GCover, GHunt, GNaval, GRun, GStealth } from './fullB';
 
 /** 한 손가락 미니 훈련 화면(easy.ts 의 view 이름) */
 const EASY_VIEWS: Record<string, ComponentType<MiniProps>> = {
@@ -56,6 +57,11 @@ export const MINI_VIEWS: Record<string, ComponentType<MiniProps>> = {
   'g-bomb': GBomb,
   'g-ballistic': GBallistic,
   'g-shield': GShield,
+  'g-cover': GCover,
+  'g-naval': GNaval,
+  'g-hunt': GHunt,
+  'g-run': GRun,
+  'g-stealth': GStealth,
   'sneak-path': SneakPath,
   'sneak-light': SneakLight,
   'sneak-lock': SneakLock,
