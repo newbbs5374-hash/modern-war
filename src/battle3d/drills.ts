@@ -599,7 +599,7 @@ const MPA: Drill = {
   preset: [at('mpa', -6.4, 11), at('mpa', -8.4, 12), at('dd', -6, 13.6)],
   kinds: ['mpa'], lock: true, cp0: 2,
   score: (S) => clamp01(1 - hpFrac(foes(S).filter((u) => u.d.dom === 'sub'))),
-  bar: killBar('격침'),
+  bar: (S) => { const f = foes(S).filter((u) => u.d.dom === 'sub'); const k = f.filter((u) => !u.alive).length; return { label: '잠수함 격침', pct: 100 - (k / Math.max(1, f.length)) * 100, txt: `${k}/${f.length}` }; },
 };
 const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV, HGV, ENG, MPA];
 /** 무리 하나(종류×수를 가로로 늘어놓음) */
