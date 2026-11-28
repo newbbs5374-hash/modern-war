@@ -12,6 +12,10 @@ import { faithLv, faithTotal } from './faith';
 import { budgetPerDay, type GameState } from './state';
 import { lordOf, vassalsOf } from './surrender';
 import { isAlive, relationOf } from './world';
+import { isCampLeader } from './camps';
+import { raceInfluence } from './techRace';
+import { secretInfluence } from './secretGoals';
+import { proxyInfluence } from './proxy';
 
 const H = 3600e3;
 export type InfBranch = 'mil' | 'eco' | 'dip' | 'cul' | 'sci';
@@ -28,7 +32,21 @@ export const INF_HOLD_DAYS = 7;
 /** 실제 12주 점수 마감 */
 export const INF_DEADLINE_DAYS = 84;
 
-export type InfScore = Record<InfBranch, number> & { total: number };
+export type InfScore = Record<InfBranch, number> & { total: number; bonus: number };
+/** 11-28 6단계 덤: 진영 맹주 +20 · 기술 경주 1등 +25씩 · (우리) 비밀 목표 +30씩 · 대리전 승리 +10씩 */
+export function infBonusRows(s: GameState, id: string): Array<[string, number]> {
+  const rows: Array<[string, number]> = [];
+  if (isCampLeader(s, id)) rows.push(['👑 진영 맹주', 20]);
+  const r = raceInfluence(s, id);
+  if (r) rows.push(['🏁 기술 경주 세계 최초', r]);
+  if (id === s.player.countryId) {
+    const sc = secretInfluence(s);
+    if (sc) rows.push(['🎯 비밀 목표', sc]);
+    const px = proxyInfluence(s);
+    if (px) rows.push(['🎭 대리전 승리', px]);
+  }
+  return rows;
+}
 
 /** 모든 살아 있는 나라 점수 */
 export function influenceAll(s: GameState): Record<string, InfScore> {
@@ -60,7 +78,8 @@ export function influenceAll(s: GameState): Record<string, InfScore> {
     const sciV = id === me ? (s.civ?.done ?? []).length / Math.max(1, TECHS.length) : Math.min(1, (s.world.grow?.[id]?.lv.tech ?? 0) / GROW_MAX * 0.8 + countryById(id).economy / 500);
     const v: Record<InfBranch, number> = { mil, eco, dip, cul: Math.min(200, culV), sci: 150 * Math.min(1, sciV) };
     const r = (x: number) => Math.round(x);
-    out[id] = { mil: r(v.mil), eco: r(v.eco), dip: r(v.dip), cul: r(v.cul), sci: r(v.sci), total: r(v.mil + v.eco + v.dip + v.cul + v.sci) };
+    const bonus = infBonusRows(s, id).reduce((a, [, x]) => a + x, 0);
+    out[id] = { mil: r(v.mil), eco: r(v.eco), dip: r(v.dip), cul: r(v.cul), sci: r(v.sci), bonus, total: r(v.mil + v.eco + v.dip + v.cul + v.sci + bonus) };
   }
   return out;
 }

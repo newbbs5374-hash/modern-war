@@ -8,6 +8,9 @@ import { DAY, H, bumpRival, bumpTrust, clamp, polityOf, polityLog, r1, registerP
 import { priceBase, type GameState } from './state';
 import { myCityIds } from './zones';
 import { cityById } from '../data/cities';
+import { ladderOf } from './ladder';
+import { pairKey } from './world';
+import { COUNTRIES } from '../data/world';
 import { isHometown } from '../data/krCities';
 
 export const SEATS = 300;
@@ -68,8 +71,23 @@ export function voteRows(s: GameState): Array<[string, number]> {
   const p = polityOf(s);
   if (p.scandal) rows.push(['🔍 비리 의혹', -3]);
   if (p.econ.crisis) rows.push(['📉 경제 위기', -5]);
+  // 11-28 중-4 선거와 전쟁 피로: 전쟁을 오래 끌수록 표가 빠짐
+  const tired = warWeariness(s);
+  if (tired >= 1) rows.push(['⚔️ 전쟁 피로', -Math.min(8, r1(tired / 15))]);
   return rows;
 }
+/** 내 전쟁들의 피로 합 */
+export function warWeariness(s: GameState): number {
+  const me = s.player.countryId;
+  let v = 0;
+  for (const c of COUNTRIES) {
+    if (c.id === me) continue;
+    const p = s.world.pairs[pairKey(me, c.id)];
+    if (p?.rel === '전쟁') v += p.weariness;
+  }
+  return v;
+}
+export const WAR_CURB_MS = 5 * DAY;
 export const voteShare = (s: GameState) => clamp(voteRows(s).reduce((a, [, v]) => a + v, 0), 10, 90);
 
 export const rallyCost = (s: GameState) => Math.round(priceBase(s) * 0.3);
@@ -160,6 +178,11 @@ export function seatsTick(s0: GameState): GameState {
     ns = polityLog(ns, line);
     ns = tell(ns, `${line}. ${win ? '과반을 지켰어요!' : `과반을 잃었어요. ${who ? `야당 대표 ${who}: "국민이 정권을 심판했다!"` : ''}`}`);
     ns = snap(ns, 'rally', win ? '총선 승리' : '총선 패배', line);
+    // 11-28 중-4: 전쟁 중에 지면 국회가 전쟁 권한을 묶음
+    if (!win && warWeariness(ns) > 0) {
+      ns = { ...ns, ladder: { ...ladderOf(ns), curbMs: ns.worldMs + WAR_CURB_MS } };
+      ns = tell(ns, '⚖️ 전쟁 중에 총선에서 져서 국회가 5일 동안 새 총동원을 막았어요. 지금 전쟁은 계속할 수 있어요.');
+    }
   } else {
     ns = withPolity(ns, { election: nextElection(e, e.atMs), elections: p.elections + 1 });
     ns = localElection(ns, got);

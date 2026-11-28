@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { GameState } from './state';
 import { newGame, setRank } from './state';
 import { RANKS } from '../data/ranks';
 import { INF_DEADLINE_DAYS, influenceAll, influenceProgress } from './influence';
@@ -7,7 +8,7 @@ import { checkVictory } from './victory';
 import { loyaltyReasons } from './civ';
 
 const H = 3600e3;
-const fresh = () => {
+const fresh = (): GameState => {
   const s = setRank(newGame('시험', 'kr', 0, { seed: 7, acts: true }), RANKS.length - 1);
   return { ...s, nations: { ...s.nations, kr: { ...s.nations.kr, treasury: 1e9 } } };
 };

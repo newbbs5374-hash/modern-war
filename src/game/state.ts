@@ -104,6 +104,11 @@ import { ladderTick, type LadderState } from './ladder';
 import { controlTick } from './control';
 import { faithTick, type FaithState } from './faith';
 import type { InflState } from './influence';
+import { campMult, campsTick, type CampState } from './camps';
+import { proxyTick, type ProxyState } from './proxy';
+import { raceTick, type RaceState } from './techRace';
+import { secretTick, type SecretState } from './secretGoals';
+import { collapseTick, type CollapseState } from './collapse';
 import { recTick, type RecLog } from './recs';
 import './resPerks'; // 11-28 새 자원 비축 효과
 import './ministryBudget'; // 11-28 부처 예산 나누기
@@ -253,6 +258,12 @@ export interface GameState {
   /** 11-28 신앙 시설 · 세계 영향력 기록 */
   faith?: FaithState;
   infl?: InflState;
+  /** 11-28 6단계: 진영 세계 · 대리전 · 기술 경주 · 비밀 목표 · 강대국 붕괴 */
+  camps?: CampState;
+  proxy?: ProxyState;
+  race?: RaceState;
+  secrets?: SecretState;
+  collapse?: CollapseState;
   /** 11-27 4장 마지막 위기 진행 */
   finale?: FinaleState;
   /** 11-27 연속 위기 이야기 */
@@ -380,7 +391,7 @@ export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId
 /** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) * campMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) * campMult(s, countryId);
   const share = incomeShare(s.world, countryId, true);
   const size = countryId === s.player.countryId ? sizeBonus(share) * PLAYER_BUDGET_MULT : 1;
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * share * size * ind * (BUDGET_BONUS[countryId] ?? 1);
@@ -499,6 +510,7 @@ export function advance(s: GameState, ms: number): GameState {
     world.nextTickMs += AI_TICK_MS;
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
+    cur = collapseTick(secretTick(raceTick(proxyTick(campsTick(cur)))));
     cur = faithTick(ladderTick(unifyTick(hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(controlTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
     cur = resignTick(autoApproveTick(isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(aiShadowTick(agentsTick(spyTick(ordersTick(crisisTick(cur))))))), AI_TICK_MS), AI_TICK_MS)))))))))))))));
