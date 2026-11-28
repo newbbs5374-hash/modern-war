@@ -193,7 +193,7 @@ export function winLines(s: ScreenProps['state']) {
   const r = (a: number, b: number) => Math.max(0, Math.min(1, a / Math.max(1, b)));
   const names: Record<WinId, Ending['kind']> = { conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리', science: '과학 승리' };
   return ([
-    { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)${p.capsNeed ? ' + 강대국 수도 3곳' : ''}`, now: `${p.mine} / ${p.needAlone}${p.capsNeed ? ` · 수도 ${p.capsHave}/${p.capsNeed}` : ''}`, pct: r(p.mine + p.capsHave * 4, p.needAlone + p.capsNeed * 4), left: conquerOn ? hold : null },
+    { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)${p.capsNeed ? ' + 강대국 수도 3곳(통일·속국으로)' : ''}`, now: `${p.mine} / ${p.needAlone}${p.capsNeed ? ` · 수도 ${p.capsHave}/${p.capsNeed}` : ''}`, pct: r(p.mine + p.capsHave * 4, p.needAlone + p.capsNeed * 4), left: conquerOn ? hold : null },
     { id: 'allied' as WinId, icon: '🤝', name: '연합 승리', goal: `우리+연합국 도시 ${p.needAllied}개`, now: `${p.allied} / ${p.needAllied}`, pct: r(p.allied, p.needAllied), left: alliedOn ? hold : null },
     { id: 'peace' as WinId, icon: '🕊️', name: '평화 승리', goal: `평화 헌장 서명 ${pr.need}나라`, now: `${pr.have} / ${pr.need}`, pct: pl !== null ? 1 : r(pr.have, pr.need), left: pl },
     {

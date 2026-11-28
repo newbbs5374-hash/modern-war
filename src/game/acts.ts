@@ -47,7 +47,7 @@ export const neighborsOf = (me: string): string[] => nearestOf(me).slice(0, ACT2
 export function subdued(s: GameState): string[] {
   const me = s.player.countryId;
   const mineOrVassal = (o: string) => o === me || lordOf(s, o) === me;
-  return COUNTRIES.map((c) => c.id).filter((id) => id !== me && (lordOf(s, id) === me || FRONT.filter((c) => c.home === id).every((c) => mineOrVassal(s.world.owner[c.id]))));
+  return COUNTRIES.map((c) => c.id).filter((id) => id !== me && (lordOf(s, id) === me || FRONT.filter((c) => c.home === id && !c.capital).every((c) => mineOrVassal(s.world.owner[c.id]))));
 }
 
 export const milTechs = (s: GameState) => TECHS.filter((t) => t.line === 'mil' && (s.civ?.done ?? []).includes(t.id)).length;

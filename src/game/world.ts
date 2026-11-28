@@ -569,7 +569,9 @@ function invasions(ctx: Ctx) {
       const hegemon = def === ctx.player ? 1 + HEGEMON_POWER * Math.max(0, frontOf(w, def).length / FRONT.length - HEGEMON_FROM) / (1 - HEGEMON_FROM) : 1;
       const bonus = (def === ctx.player ? PLAYER_TARGET_BONUS : 1) * (DETERRENCE[def] ?? 1) * hegemon * (def === ctx.player ? deterMul(w, def, att) : 1);
       if (!rng.chance(INVADE_CHANCE * agg * bonus)) continue;
-      const targets = frontOf(w, def);
+      // 11-28: 수도는 원래 주인만 가짐(함락 불가)
+      const targets = frontOf(w, def).filter((id) => !(cityById(id).capital && att !== homeOf(w, id)));
+      if (!targets.length) continue;
       // 가까운 도시(같은 대륙)를 먼저, 수도는 마지막에, 원래 내 도시였던 곳(되찾기)을 더 노림
       const target = rng.weighted(targets, (id) => {
         const c = cityById(id);

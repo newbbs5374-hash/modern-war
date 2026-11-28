@@ -1017,7 +1017,8 @@ function captureCity(ns: GameState, city: string) {
 export function grandTargets(s: GameState): string[] {
   const me = s.player.countryId;
   const w = s.world;
-  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁' && actAllowsTarget(s, c.id) && !campaignLocked(s, c.id))
+  // 11-28: 남의 수도는 칠 수 없음(빼앗긴 우리 수도 되찾기는 됨)
+  return FRONT.filter((c) => w.owner[c.id] !== me && relationOf(w, me, w.owner[c.id]) === '전쟁' && !(c.capital && homeOf(w, c.id) !== me) && actAllowsTarget(s, c.id) && !campaignLocked(s, c.id))
     .map((c) => c.id)
     .sort((a, b) => w.defense[a] - w.defense[b]);
 }

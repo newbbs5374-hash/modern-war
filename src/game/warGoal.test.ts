@@ -35,11 +35,13 @@ describe('전쟁 목표와 협상', () => {
     expect(r.state.nations.kr.treasury).toBe(money + reparations(s));
     expect(warGoalOf(r.state, 'jp')).toBeNull();
   });
-  it('정권 교체: 수도를 차지해야 하고, 끝내면 연합', () => {
+  it('정권 교체: 수도를 뺀 본토 거점을 모두 차지해야 하고, 끝내면 연합', () => {
     let s = setGoal(war(), 'jp', 'regime');
-    s = take(s, jp.find((id) => id !== 'jp-0')!);
+    const rest = jp.filter((id) => id !== 'jp-0');
+    s = take(s, rest[0]);
     expect(goalMet(s, 'jp')).toBe(false);
-    s = take(s, 'jp-0');
+    for (const id of rest.slice(1)) s = take(s, id);
+    expect(goalMet(s, 'jp')).toBe(true);
     const r = settleWar(s, 'jp');
     expect(relationOf(r.state.world, 'kr', 'jp')).toBe('연합');
     expect(r.state.world.owner['jp-0']).toBe('jp');
