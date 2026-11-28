@@ -24,11 +24,20 @@ export const WC_GIVE_COST = 0.1;
 export const WC_RUBY = 15;
 export const WC_FAME = 40;
 
-export interface WcDef { id: string; icon: string; title: string; text: string; a: string; b: string; key: LawKey; v: number; effText: string; aWin: string; bWin: string }
+export interface WcDef {
+  id: string; icon: string; title: string; text: string; a: string; b: string; key: LawKey; v: number; effText: string; aWin: string; bWin: string;
+  /** 11-28 중-5 세계 충격: 위기가 열린 사흘 동안 모든 나라에 바뀌는 세계 규칙 */
+  rule?: { key: LawKey; v: number; text: string };
+}
 export const WCS: WcDef[] = [
   { id: 'strait', icon: '🚢', title: '해협 봉쇄', text: '세계 기름의 다섯에 하나가 지나는 해협이 막혔어요. 군함을 보내 뚫자는 나라와 봉쇄를 편드는 나라로 갈렸어요.', a: '항행의 자유', b: '봉쇄 지지', key: 'res', v: 0.06, effText: '자원 6%', aWin: '해협이 다시 열렸어요.', bWin: '해협이 닫힌 채 남았어요.' },
   { id: 'nuke', icon: '☢️', title: '핵 시설 위기', text: '한 나라의 숨겨진 핵 시설이 드러났어요. 사찰과 제재를 밀어붙이자는 편과 주권을 지켜 주자는 편이 맞섰어요.', a: '사찰과 제재', b: '주권 존중', key: 'defense', v: 5, effText: '안보 5', aWin: '사찰단이 들어갔어요.', bWin: '시설은 그대로 남았어요.' },
   { id: 'fort', icon: '🏰', title: '초대형 요새', text: '분쟁 지역 한가운데 누구도 뚫지 못한 요새가 섰어요. 힘을 모아 치자는 편과 건드리지 말자는 편이 갈렸어요.', a: '공동 공격', b: '현상 유지', key: 'diplo', v: 5, effText: '외교 5', aWin: '요새가 무너졌어요.', bWin: '요새가 버텨 냈어요.' },
+  // 11-28 중-5 세계 충격 사건(열린 사흘 동안 세계 규칙이 바뀜)
+  { id: 'oil', icon: '🛢️', title: '유가 폭등', text: '산유국들이 기름을 줄여 값이 세 배로 뛰었어요. 증산을 밀어붙이자는 편과 감산에 맞추자는 편이 갈렸어요.', a: '증산 압박', b: '감산 동조', key: 'res', v: 0.06, effText: '자원 6%', aWin: '기름값이 내려앉았어요.', bWin: '비싼 기름이 굳어졌어요.', rule: { key: 'res', v: -0.08, text: '자원 −8%' } },
+  { id: 'finance', icon: '📉', title: '세계 금융 위기', text: '큰 은행들이 잇달아 무너졌어요. 함께 돈을 풀어 막자는 편과 각자 살길을 찾자는 편이 맞섰어요.', a: '공조 구제', b: '각자도생', key: 'budget', v: 0.04, effText: '나라 예산 4%', aWin: '시장이 되살아났어요.', bWin: '돈줄이 한동안 말랐어요.', rule: { key: 'budget', v: -0.06, text: '나라 예산 −6%' } },
+  { id: 'quake', icon: '🌋', title: '초대형 지진', text: '한 대륙을 흔든 큰 지진이 났어요. 국제 구호대를 보내자는 편과 남의 일에 끼지 말자는 편이 갈렸어요.', a: '국제 구호', b: '불개입', key: 'diplo', v: 5, effText: '외교 5', aWin: '구호대가 많은 목숨을 살렸어요.', bWin: '피해 나라들이 서운해했어요.', rule: { key: 'build', v: -0.1, text: '부대 모집 −10%' } },
+  { id: 'pandemic', icon: '🦠', title: '세계 전염병', text: '새 전염병이 퍼지고 있어요. 국경을 닫자는 편과 열어 두고 백신을 나누자는 편이 맞섰어요.', a: '국경 봉쇄', b: '백신 나눔', key: 'defense', v: 4, effText: '안보 4', aWin: '병이 빨리 잡혔어요.', bWin: '함께 백신을 나눴어요.', rule: { key: 'troop', v: -0.06, text: '병력 모집 −6%' } },
 ];
 export const wcById = (id: string) => WCS.find((d) => d.id === id) ?? WCS[0];
 
@@ -138,6 +147,9 @@ export function wcTick(s: GameState): GameState {
 
 registerDomRows((s, key) => {
   const rows: Rows = [];
+  const o = s.wcrisis?.open;
+  const r = o ? wcById(o.def).rule : undefined;
+  if (o && r && r.key === key) rows.push([`${wcById(o.def).icon} 세계 충격: ${wcById(o.def).title}`, r.v]);
   const l = s.wcrisis?.last;
   if (!l || !l.mine || l.untilMs <= s.worldMs) return rows;
   const d = wcById(l.def);

@@ -48,14 +48,16 @@ import { ENVOY2_COST, ENVOY2_TENSION, canSendEnvoy, sendEnvoy2, EMBASSY_COST, EM
 import { CountryDetail } from './CountryDetail';
 import { HegemonyPanel, hegemonyBadge } from './HegemonyPanel';
 import { AdviceBar } from './AdviceBar';
+import { WorldOrderPanel, campBadge } from './WorldOrderPanel';
 
-type Tab = 'mofa' | 'nations' | 'heg' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
+type Tab = 'mofa' | 'nations' | 'camp' | 'heg' | 'rel' | 'agree' | 'deploy' | 'isle' | 'council';
 /** 작은 탭 목록(화면과 국정 나무가 함께 씀) */
 export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
   const civ = civOf(props.state);
   return artTabs('diplo', [
           { id: 'mofa', label: '외교부', icon: '🌐' },
           { id: 'nations', label: '국가정보', icon: '🗂️' },
+          { id: 'camp', label: '진영', icon: '🌐', badge: campBadge(props.state) },
           { id: 'heg', label: '패권', icon: '👑', badge: hegemonyBadge(props) },
           { id: 'rel', label: '외교관계', icon: '🕸️' },
           { id: 'agree', label: '호감·협정', icon: '🤝' },
@@ -67,7 +69,7 @@ export function diploTabs(props: ScreenProps): TabDef<Tab>[] {
 
 export function DiplomacyScreen(props: ScreenProps) {
   const [raw, setTab] = useTab<Tab>('diplo', 'mofa');
-  const tab: Tab = (['mofa', 'nations', 'heg', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'mofa';
+  const tab: Tab = (['mofa', 'nations', 'camp', 'heg', 'rel', 'agree', 'deploy', 'isle', 'council'] as const).includes(raw) ? raw : 'mofa';
   const [sel, setSel] = useState<string | null>(null);
   return (
     <>
@@ -87,6 +89,7 @@ export function DiplomacyScreen(props: ScreenProps) {
           <ForeignPeople state={props.state} actions={props.actions} />
         </>
       )}
+      {tab === 'camp' && <WorldOrderPanel {...props} />}
       {tab === 'heg' && <HegemonyPanel {...props} />}
       {tab === 'agree' && <AgreePanel {...props} />}
       {tab === 'deploy' && <DeployPanel {...props} />}

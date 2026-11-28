@@ -13,8 +13,9 @@ import { Meter as KitMeter, Tile } from './kit';
 import { CultureWinPanel } from './CultureScreen';
 import { COUNTRIES } from '../data/world';
 import { isAlive, relationOf } from '../game/world';
-import { INF_BRANCHES, INF_DEADLINE_DAYS, INF_HOLD_DAYS, INF_LEAD, INF_WIN, influenceProgress } from '../game/influence';
+import { INF_BRANCHES, INF_DEADLINE_DAYS, INF_HOLD_DAYS, INF_LEAD, INF_WIN, infBonusRows, influenceProgress } from '../game/influence';
 import { countryById } from '../data/world';
+import { SECRET_INF, SECRET_RUBY, secretName, secretText, secretsOf } from '../game/secretGoals';
 
 function Meter({ have, need }: { have: number; need: number }) {
   return (
@@ -255,6 +256,7 @@ export function VictoryPanel(props: ScreenProps) {
         </div>
         <p className="small muted">조건을 채운 채 {HOLD_DAYS}일 동안 지키면 이겨요. 아래 칸을 누르면 자세히 볼 수 있어요.</p>
       </Card>
+      <SecretCard state={state} />
       {pick === 'influence' && <InfluencePart state={state} />}
       {pick === 'conquer' && (
         <Card title="⚔️ 정복 승리" right={<small className="muted">혼자 세계 도시 {ALONE_PCT}%</small>}>
@@ -315,6 +317,23 @@ export function VictoryPanel(props: ScreenProps) {
   );
 }
 
+/** 11-28 중-7 비밀 목표 3개 */
+function SecretCard({ state }: { state: ScreenProps['state'] }) {
+  const list = secretsOf(state);
+  return (
+    <Card title="🎯 비밀 목표" right={<small className="muted">{list.filter((o) => o.done).length}/{list.length}</small>}>
+      <p className="small muted">판마다 나라에 맞춰 받는 숨은 목표예요. 하나 이룰 때마다 💎 +{SECRET_RUBY} · 세계 영향력 +{SECRET_INF}.</p>
+      {list.map((o, i) => (
+        <div key={i} className={`row ${o.done ? 'ok' : ''}`} style={{ gap: 6 }}>
+          <span>{o.done ? '✅' : '🔒'}</span>
+          <b className="small">{secretName(o)}</b>
+          <small className="muted" style={{ flex: 1 }}>{secretText(o)}</small>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 /** 11-28 세계 영향력: 갈래별 점수 · 순위 · 12주 점수 마감 */
 function InfluencePart({ state }: { state: ScreenProps['state'] }) {
   const ip = influenceProgress(state);
@@ -339,6 +358,7 @@ function InfluencePart({ state }: { state: ScreenProps['state'] }) {
               </small>
             </div>
           ))}
+          {mine.bonus > 0 && <p className="small ok">⭐ 덤 +{mine.bonus}점 ({infBonusRows(state, me).map(([k, v]) => `${k} +${v}`).join(' · ')})</p>}
           <p className="small muted">{INF_BRANCHES.map((b) => `${b.icon}${b.how}`).join(' · ')}</p>
         </div>
       )}

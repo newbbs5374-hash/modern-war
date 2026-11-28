@@ -86,6 +86,8 @@ export interface LadderState {
   costDay?: number;
   /** 시험용 24시간 건너뛰기 보고 */
   skipReport?: string[];
+  /** 11-28 중-4: 전쟁 중 총선에 지면 이때까지 총동원을 못 함(전쟁 권한 축소) */
+  curbMs?: number;
 }
 export const ladderOf = (s: GameState): LadderState => s.ladder ?? { mobs: [], cb: {}, last: {}, hitMe: {} };
 const nm = (id: string) => countryById(id).name;
@@ -208,6 +210,7 @@ export function canMobilize(s: GameState, foe: string): string | null {
   if (base) return base;
   if (lordOf(s, me) === foe) return null;
   if (mobOf(s, me, foe)) return '이미 총동원 중이에요';
+  if ((ladderOf(s).curbMs ?? 0) > s.worldMs) return '총선 패배로 국회가 전쟁 권한을 묶었어요(5일)';
   const cb = cbOf(s, foe);
   if (cb < CB_NEED) return `명분 ${cb}/${CB_NEED} · 사다리를 올라 명분을 쌓아요`;
   const ap = Math.round(approvalOf(s));

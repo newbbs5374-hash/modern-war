@@ -12,7 +12,7 @@ import { OccAdminCityBox } from './OccAdminUI';
 import { BASE_FAVOR, GIFT_FAME, GIFT_FAVOR, ZONE_FAVOR, canGift, canSwap, canZone, giftCity, giftTargets, giftThanks, makeBase, makeZone, swapCity, swapTargets, zoneCost } from '../game/occChoices';
 import { CALM_DAYS, CALM_LOYALTY, UNREST_ACTS, canUnrestAct, doUnrestAct, unrestActCost, unrestOf, unrestRisk, type UnrestAct } from '../game/unrest';
 import { cityCiv } from '../game/civ';
-import { CTL_VOTE, GAR_NAMES, canGarrison, ctlOf, ctlRate, garOf, garTroops, setGarrison } from '../game/control';
+import { CTL_VOTE, GAR_NAMES, PACIFY, canGarrison, canPacify, ctlOf, ctlRate, garOf, garTroops, healCost, pacify, setGarrison } from '../game/control';
 
 const H = 3600e3;
 const hrs = (ms: number) => {
@@ -257,6 +257,17 @@ function ControlLine({ state, id, apply }: { state: GameState; id: string; apply
             <button key={n} className={`mini ${g === n ? 'gold' : ''}`} disabled={g !== n && !!no} title={no ?? ''} onClick={() => apply((s) => setGarrison(s, id, n))}>
               🪖 주둔 {GAR_NAMES[n]}
               <small>{n ? `병력 ${garTroops(id, n).toLocaleString('ko-KR')} 묶임` : '병력 안 묶임'}</small>
+            </button>
+          );
+        })}
+      </div>
+      <div className="ctl-gar">
+        {(['crush', 'heal'] as const).map((h) => {
+          const no = canPacify(state, id, h);
+          return (
+            <button key={h} className={`mini ${h === 'crush' ? 'danger' : ''}`} disabled={!!no} title={no ?? ''} onClick={() => apply((s) => pacify(s, id, h).state)}>
+              {PACIFY[h].icon} {PACIFY[h].name}
+              <small>{no ?? (h === 'heal' ? `${PACIFY[h].text} · 나라 예산 −${healCost(state).toLocaleString('ko-KR')}` : PACIFY[h].text)}</small>
             </button>
           );
         })}

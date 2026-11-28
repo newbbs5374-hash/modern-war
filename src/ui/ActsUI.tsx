@@ -249,6 +249,7 @@ export function WorldCrisisCard({ state, apply }: { state: GameState; apply: (f:
       {open && (
         <Modal title={`세계 위기 · ${d.title}`} icon={d.icon} onClose={() => setOpen(false)}>
           <p className="act-sub">{d.text}</p>
+          {d.rule && <p className="small warn">🌐 세계 규칙(위기가 열린 동안 모든 나라): {d.rule.text}</p>}
           <div className="wc-bar">
             <i style={{ width: `${(o.pa / tot) * 100}%` }} />
           </div>

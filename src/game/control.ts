@@ -10,7 +10,8 @@ import { cityCiv } from './civ';
 import { pushReport } from './report';
 import { faithResist } from './faith';
 import { Rng } from './rng';
-import type { GameState } from './state';
+import { addFavorNote } from './civ';
+import { priceBase, type GameState } from './state';
 import type { AnnexCity } from './world';
 
 const H = 3600e3;
@@ -107,3 +108,45 @@ export function controlTick(s: GameState): GameState {
   return out;
 }
 
+
+// 11-28 대장 결정 "중-3 점령지 경영": 강경 진압(빠르지만 국제 비난) vs 재건 사업(느리지만 안전). 도시마다 24시간에 한 번
+export type PacifyHow = 'crush' | 'heal';
+export const PACIFY: Record<PacifyHow, { icon: string; name: string; text: string }> = {
+  crush: { icon: '🪖', name: '강경 진압', text: '장악도 +25 · 민심 −8 · 원래 나라 호감 −10 · 명성 −15' },
+  heal: { icon: '🏗️', name: '재건 사업', text: '장악도 +8 · 민심 +10 · 전쟁 피해 −20%(나라 예산이 듦)' },
+};
+export const PACIFY_WAIT = 24 * H;
+export const healCost = (s: GameState) => Math.max(100, Math.round(priceBase(s) * 0.8));
+export function canPacify(s: GameState, cityId: string, how: PacifyHow): string | null {
+  const a = annexEntry(s, cityId);
+  if (!a || a.mode) return '점령지가 아니에요';
+  if ((a.taskReady?.[`pacify`] ?? 0) > s.worldMs) return '이 도시는 24시간에 한 번이에요';
+  if (how === 'heal' && s.nations[s.player.countryId].treasury < healCost(s)) return '나라 예산이 모자라요';
+  return null;
+}
+export function pacify(s: GameState, cityId: string, how: PacifyHow): { state: GameState; text: string } {
+  const why = canPacify(s, cityId, how);
+  if (why) return { state: s, text: why };
+  const a = annexEntry(s, cityId)!;
+  const me = s.player.countryId;
+  const city = cityById(cityId);
+  const next: AnnexCity = {
+    ...a,
+    ctl: Math.min(100, ctlOf(a) + (how === 'crush' ? 25 : 8)),
+    damage: how === 'heal' ? Math.max(0, (a.damage ?? 0) - 20) : a.damage,
+    taskReady: { ...(a.taskReady ?? {}), pacify: s.worldMs + PACIFY_WAIT },
+  };
+  let ns = setEntry(s, cityId, next);
+  const civ = ns.civ;
+  const dl = how === 'crush' ? -8 : 10;
+  if (civ?.cities[cityId]) ns = { ...ns, civ: { ...civ, cities: { ...civ.cities, [cityId]: { ...civ.cities[cityId], loyalty: Math.max(0, Math.min(100, civ.cities[cityId].loyalty + dl)) } } } };
+  if (how === 'crush') {
+    ns = addFavorNote(ns, city.home, `🪖 ${city.name} 강경 진압`, -10);
+    ns = { ...ns, officer: { ...ns.officer, fame: Math.max(0, ns.officer.fame - 15) } };
+  } else {
+    const cost = healCost(s);
+    ns = { ...ns, nations: { ...ns.nations, [me]: { ...ns.nations[me], treasury: ns.nations[me].treasury - cost } } };
+  }
+  const p = PACIFY[how];
+  return { state: ns, text: `${p.icon} ${city.name} ${p.name}: ${p.text}` };
+}
