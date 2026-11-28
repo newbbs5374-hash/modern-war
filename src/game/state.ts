@@ -109,6 +109,15 @@ import { proxyTick, type ProxyState } from './proxy';
 import { raceTick, type RaceState } from './techRace';
 import { secretTick, type SecretState } from './secretGoals';
 import { collapseTick, type CollapseState } from './collapse';
+import { straitMult, straitTick, type StraitState } from './straits';
+import { unscTick } from './unsc';
+import type { UnscState } from './unscSeats';
+import { brinkTick, type BrinkState } from './brink';
+import { opinionMult, opinionTick, type OpinionState } from './opinion';
+import { refugeeTick, type RefState } from './refugees';
+import { mineralMult, mineralTick, type MineralState } from './minerals';
+import { coupTick, type CoupState } from './coup';
+import { cyberMult, cyberTick, type CyberState } from './cyber';
 import { recTick, type RecLog } from './recs';
 import './resPerks'; // 11-28 새 자원 비축 효과
 import './ministryBudget'; // 11-28 부처 예산 나누기
@@ -264,6 +273,15 @@ export interface GameState {
   race?: RaceState;
   secrets?: SecretState;
   collapse?: CollapseState;
+  /** 11-28 7단계: 해협 · 안보리 · 벼랑끝 위기 · 여론전 · 난민 · 자원 독점 · 쿠데타 · 사이버 */
+  straits?: StraitState;
+  unsc?: UnscState;
+  brink?: BrinkState;
+  opinion?: OpinionState;
+  refugees?: RefState;
+  minerals?: MineralState;
+  coup?: CoupState;
+  cyber?: CyberState;
   /** 11-27 4장 마지막 위기 진행 */
   finale?: FinaleState;
   /** 11-27 연속 위기 이야기 */
@@ -389,9 +407,11 @@ export const defPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId) *
 /** 나라 예산 시간당(국방비 몫을 뺀 것) */
 export const nationPerDay = (s: GameState) => budgetPerDay(s, s.player.countryId) * (1 - defShare(s));
 /** 하루 나라 예산 = 시작 예산 × 지도자 성향 × 가진 도시 비율 */
+/** 11-28 7단계 세계 질서 배율(해협 · 해킹 폭로 · 자원 통제 · 사이버) */
+const worldOrderMult = (s: GameState, id: string) => straitMult(s, id) * opinionMult(s, id) * mineralMult(s, id) * cyberMult(s, id);
 export function budgetPerDay(s: GameState, countryId: string): number {
   const lead = PERSONALITIES[s.world.personalities[countryId]].budget;
-  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) * campMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) * campMult(s, countryId);
+  const ind = countryId === s.player.countryId ? budgetMult(s) * civBudgetMult(s) * ordersBudget(s) * approvalBudgetMult(s) * splitEco(s) * taxBudget(s) * cabBudget(s) * (1 + lawEff(s, 'budget')) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) * campMult(s, countryId) * worldOrderMult(s, countryId) : sanctionMult(s, countryId) * aiGovBudget(s, countryId) * aiStrength(countryId, s.player.countryId) * growBudget(s.world, countryId) * tariffMult(s, countryId) * vassalMult(s, countryId) * hegemonyMult(s, countryId) * campMult(s, countryId) * worldOrderMult(s, countryId);
   const share = incomeShare(s.world, countryId, true);
   const size = countryId === s.player.countryId ? sizeBonus(share) * PLAYER_BUDGET_MULT : 1;
   return countryById(countryId).budget * BUDGET_PER_DAY_PER_POINT * lead * share * size * ind * (BUDGET_BONUS[countryId] ?? 1);
@@ -511,6 +531,7 @@ export function advance(s: GameState, ms: number): GameState {
     cur = { ...cur, nations, world };
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = collapseTick(secretTick(raceTick(proxyTick(campsTick(cur)))));
+    cur = cyberTick(coupTick(mineralTick(refugeeTick(opinionTick(brinkTick(unscTick(straitTick(cur))))))));
     cur = faithTick(ladderTick(unifyTick(hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(controlTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
     cur = resignTick(autoApproveTick(isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spaceTick(stratTick(aiShadowTick(agentsTick(spyTick(ordersTick(crisisTick(cur))))))), AI_TICK_MS), AI_TICK_MS)))))))))))))));

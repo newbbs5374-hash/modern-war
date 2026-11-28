@@ -1,5 +1,6 @@
 // 문명식 운영: 연구 두 줄 · 나라 체제와 정책 카드 · 호감/협정/불만 장부 · 분쟁 지역 영향력 · 국제 회의 · 도시 구역/민심/인구.
 // 순수 계산(새 상태를 돌려줌). 상태는 GameState.civ 한 칸에만 둔다(다른 기능과 겹치지 않게).
+import { isP5 } from './unscSeats';
 import { archWhy, isArchRival } from '../data/archRivals';
 import { growReach } from './aiGrowth';
 import { CLAIM_INFLUENCE, CLAIM_TENSION, REAL_ISLANDS, claimsIsland } from '../data/islands';
@@ -851,7 +852,7 @@ export function councilVotes(s: GameState, id: string): number {
   const c = civOf(s);
   const led = PIONEER_ISLANDS.filter((p) => islandLeader(s, p.id).id === id).length;
   const gov = id === s.player.countryId ? Math.round(effSum(s, 'votes')) : c.aiGov[id] === 'sanctum' ? 1 : 0;
-  return 1 + led + gov;
+  return 1 + led + gov + (isP5(s, id) ? 1 : 0);
 }
 export function voteCouncil(s: GameState, yes: boolean): GameState {
   const o = civOf(s).council.open;
@@ -917,17 +918,22 @@ function closeCouncil(s: GameState, c: CivState): GameState {
   let yes = 0;
   let no = 0;
   const tmp: GameState = { ...s, civ: c };
+  // 11-28 안보리 거부권: 상임이사국이 반대하면 제재·수출 금지는 막힘
+  let veto: string | null = null;
   for (const x of COUNTRIES) {
     if (!isAlive(s.world, x.id)) continue;
     const v = councilVotes(tmp, x.id);
     const say = x.id === me ? o.vote : aiVote(tmp, x.id, o, rng);
     if (say) yes += v;
-    else no += v;
+    else {
+      no += v;
+      if (!veto && isP5(s, x.id) && (o.agenda === 'sanction' || o.agenda === 'embargo') && (x.id === me || x.id === o.target || (o.target && relationOf(s.world, x.id, o.target) === '연합'))) veto = x.id;
+    }
   }
   const a = agendaById(o.agenda);
-  const pass = yes > no;
+  const pass = yes > no && !veto;
   c.council.open = null;
-  c.council.last = `${a.icon} ${a.name}${o.target ? `(${countryById(o.target).name})` : ''}: 찬성 ${yes} · 반대 ${no} → ${pass ? '통과' : '부결'} (내 표: ${o.vote ? '찬성' : '반대'})`;
+  c.council.last = `${a.icon} ${a.name}${o.target ? `(${countryById(o.target).name})` : ''}: 찬성 ${yes} · 반대 ${no} → ${pass ? '통과' : veto ? `${countryById(veto).name} 거부권으로 부결` : '부결'} (내 표: ${o.vote ? '찬성' : '반대'})`;
   clog(c, `🏛️ ${c.council.last}`);
   let ns: GameState = { ...s, civ: c };
   if (pass) {

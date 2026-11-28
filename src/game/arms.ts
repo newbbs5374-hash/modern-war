@@ -99,7 +99,9 @@ registerDomRows((s, key) => {
   if (key !== 'budget') return rows;
   for (const d of liveDeals(s)) {
     const f = firmById(d.firm);
-    if (f) rows.push([`${f.icon} 무기 수출(${countryById(d.to).name})`, DEAL_BUDGET * d.lv]);
+    // 11-28 방산 수출 시장: 전쟁 중인 나라는 무기가 급해 1.5배로 삼
+    const hot = COUNTRIES.some((c) => c.id !== d.to && isAlive(s.world, c.id) && relationOf(s.world, d.to, c.id) === '전쟁');
+    if (f) rows.push([`${f.icon} 무기 수출(${countryById(d.to).name})${hot ? ' 🔥전시 수요' : ''}`, DEAL_BUDGET * d.lv * (hot ? 1.5 : 1)]);
   }
   return rows;
 });

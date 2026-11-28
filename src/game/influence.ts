@@ -16,6 +16,8 @@ import { isCampLeader } from './camps';
 import { raceInfluence } from './techRace';
 import { secretInfluence } from './secretGoals';
 import { proxyInfluence } from './proxy';
+import { brinkInfluence } from './brink';
+import { refInfluence } from './refugees';
 
 const H = 3600e3;
 export type InfBranch = 'mil' | 'eco' | 'dip' | 'cul' | 'sci';
@@ -44,6 +46,10 @@ export function infBonusRows(s: GameState, id: string): Array<[string, number]> 
     if (sc) rows.push(['🎯 비밀 목표', sc]);
     const px = proxyInfluence(s);
     if (px) rows.push(['🎭 대리전 승리', px]);
+    const bk = brinkInfluence(s);
+    if (bk) rows.push([bk > 0 ? '☢️ 벼랑끝 위기 승리' : '🏳️ 벼랑끝에서 물러섬', bk]);
+    const rf = refInfluence(s);
+    if (rf) rows.push(['🫂 난민 수용', rf]);
   }
   return rows;
 }
