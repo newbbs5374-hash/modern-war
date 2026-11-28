@@ -171,6 +171,9 @@ export interface AnnexCity {
   taskReady?: Record<string, number>;
   /** 구호품 민심 보너스와 끝나는 시각 */
   relief?: number;
+  /** 11-28 장악도(0~100, 없으면 50) · 장악도를 마지막으로 셈한 시각 */
+  ctl?: number;
+  ctlMs?: number;
   reliefUntil?: number;
   /** 하루마다 하는 일(피해 회복·꼭두각시 이탈 판정)을 마지막으로 한 시각 */
   dayMs?: number;
@@ -290,7 +293,9 @@ export function incomeShare(w: WorldState, countryId: string, budget = false): n
     if (homeOf(w, c.id) === countryId) { v += c.value; continue; }
     const a = w.annex?.[c.hub];
     const k = a?.mode === 'puppet' ? PUPPET_INCOME : a?.mode === 'base' ? BASE_INCOME : a?.mode === 'zone' ? 1 : a?.stage === '민정' ? (budget ? CIVIL_BUDGET : CIVIL_INCOME) : budget ? OCCUPIED_BUDGET : OCCUPIED_INCOME;
-    v += c.value * k * (1 - Math.min(90, a?.damage ?? 0) / 100);
+    // 11-28 장악도가 낮으면 세금이 덜 들어옴(0 → 60%, 100 → 100%)
+    const ctl = a && !a.mode ? 0.6 + 0.4 * ((a.ctl ?? 50) / 100) : 1;
+    v += c.value * k * ctl * (1 - Math.min(90, a?.damage ?? 0) / 100);
   }
   return v / homeValue(countryId);
 }

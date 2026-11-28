@@ -12,6 +12,7 @@ import { OccAdminCityBox } from './OccAdminUI';
 import { BASE_FAVOR, GIFT_FAME, GIFT_FAVOR, ZONE_FAVOR, canGift, canSwap, canZone, giftCity, giftTargets, giftThanks, makeBase, makeZone, swapCity, swapTargets, zoneCost } from '../game/occChoices';
 import { CALM_DAYS, CALM_LOYALTY, UNREST_ACTS, canUnrestAct, doUnrestAct, unrestActCost, unrestOf, unrestRisk, type UnrestAct } from '../game/unrest';
 import { cityCiv } from '../game/civ';
+import { CTL_VOTE, GAR_NAMES, canGarrison, ctlOf, ctlRate, garOf, garTroops, setGarrison } from '../game/control';
 
 const H = 3600e3;
 const hrs = (ms: number) => {
@@ -176,6 +177,7 @@ export function AnnexBox({ state, id, apply, go }: { state: GameState; id: strin
         ))}
       </div>
       <p className="small">{line}</p>
+      {a && <ControlLine state={state} id={id} apply={apply} />}
       {dmg}
       {choose}
       <OccAdminCityBox state={state} id={id} apply={apply} />
@@ -229,6 +231,36 @@ function UnrestBox({ state, id, apply }: { state: GameState; id: string; apply: 
         })}
       </div>
       <p className="small muted">민심 올리기: 주거·학교·병원 구역, 생활 자원, 행정안전부, 시·도지사. {c.name} 원래 주인: {from}.</p>
+    </div>
+  );
+}
+
+/** 11-28 장악도 · 주둔군(편입 길 점령지) */
+function ControlLine({ state, id, apply }: { state: GameState; id: string; apply: Apply }) {
+  const a = annexEntry(state, id);
+  const ctl = Math.floor(ctlOf(a));
+  const g = garOf(state, id);
+  return (
+    <div className="ctl-line">
+      <div className="promo-line">
+        <small>🛡️ 장악도</small>
+        <progress max={100} value={ctl} style={{ flex: 1 }} />
+        <small className="muted">
+          {ctl}/100 · 시간당 +{ctlRate(state, id).toFixed(1)}
+        </small>
+      </div>
+      <p className="small muted">장악도가 낮으면 세금이 덜 들어오고(최저 60%) 저항이 일어나요. 주민투표는 장악도 {CTL_VOTE}부터.</p>
+      <div className="ctl-gar">
+        {([0, 1, 2] as const).map((n) => {
+          const no = canGarrison(state, id, n);
+          return (
+            <button key={n} className={`mini ${g === n ? 'gold' : ''}`} disabled={g !== n && !!no} title={no ?? ''} onClick={() => apply((s) => setGarrison(s, id, n))}>
+              🪖 주둔 {GAR_NAMES[n]}
+              <small>{n ? `병력 ${garTroops(id, n).toLocaleString('ko-KR')} 묶임` : '병력 안 묶임'}</small>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -86,6 +86,7 @@ export function canVote(s: GameState, cityId: string): string | null {
   if (a.treaty) return '조약으로 받은 도시라 투표 없이 편입돼요';
   if (a.stage === '군정') return '군정이 끝나야 해요';
   if (a.voteAt) return '투표 중이에요';
+  if ((a.ctl ?? 50) < 60) return `장악도 ${Math.floor(a.ctl ?? 50)}/60 · 주둔군을 늘리면 빨리 올라요`;
   if (s.worldMs < a.retryMs) return `${Math.ceil((a.retryMs - s.worldMs) / H)}시간 뒤 다시 열 수 있어요`;
   if (a.okSince == null) return `민심 ${ANNEX_LOYALTY} 이상이 되어야 해요`;
   const left = a.okSince + OK_HOURS * H - s.worldMs;
@@ -274,7 +275,7 @@ export const PUPPET_BREAK_WEAK = 0.03;
 
 /** 처분을 고를 수 있는지(안 되면 이유) */
 /** 아직 기록이 없는 막 점령한 도시는 군정으로 보고 고르게 함 */
-const freshEntry = (s: GameState): AnnexCity => ({ stage: '군정', since: s.worldMs, okSince: null, voteAt: null, retryMs: 0, damage: START_DAMAGE, dayMs: s.worldMs });
+const freshEntry = (s: GameState): AnnexCity => ({ stage: '군정', since: s.worldMs, okSince: null, voteAt: null, retryMs: 0, damage: START_DAMAGE, dayMs: s.worldMs, ctl: 0, ctlMs: s.worldMs });
 export const entryOrFresh = (s: GameState, cityId: string) => annexEntry(s, cityId) ?? (occupiedCities(s).includes(cityId) ? freshEntry(s) : null);
 export function canChoose(s: GameState, cityId: string): string | null {
   const a = entryOrFresh(s, cityId);
