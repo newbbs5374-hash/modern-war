@@ -4,6 +4,7 @@ import { checkVictory, loadHall } from './game/victory';
 import { applyLegacy } from './game/unlock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as G from './game/state';
+import { autoOn, setAuto } from './game/tradeAdvice';
 import { deleteSave, exportCode, importCode, loadGame, saveGame } from './game/save';
 import { SCREENS, type GameActions } from './ui/screens';
 import { Shell } from './ui/Shell';
@@ -55,6 +56,8 @@ function resume(saved: G.GameState, now: number): { state: G.GameState; notice: 
   let state: G.GameState;
   try {
     state = addReports(saved, G.catchUp(saved, now));
+    // 11/28 대장: 다시 접속하면 무역 맡기기는 꺼진 상태로
+    if (autoOn(state)) state = setAuto(state, false);
   } catch (e) {
     // 흐른 시간 계산에서 오류가 나도 게임은 열리게(저장 그대로)
     logError('이어하기 계산', e);

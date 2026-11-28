@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { ministryById, type MinistryId } from '../data/cabinet';
 import { buildingInfo } from '../data/economy';
 import { todos } from '../game/briefing';
-import { acceptProposal, actWhy, propOf, type PropAct, type Proposal } from '../game/proposals';
+import { actWhy, propOf, type PropAct, type Proposal } from '../game/proposals';
 import type { GameState } from '../game/state';
 import { Card } from './common';
 import { routeTo, type Screen } from './nav';
 import type { ScreenProps } from './screens';
 import { PlanList, ProposalCard } from './TalkUI';
 import { OccAdminCard } from './OccAdminUI';
+import { ResignCard } from './ResignUI';
+import { acceptAllNow, autoApproveOn, setAutoApprove } from '../game/autoApprove';
 
 /** 부처가 있는 화면(큰 탭·작은 탭) */
 const MIN_PLACE: Record<string, [string, string]> = {
@@ -46,7 +48,7 @@ export function placeOf(act: PropAct, min: MinistryId): { screen: string; tab: s
 }
 
 /** 받을 보고 수(위 띠 배지) */
-export const reportCount = (s: GameState) => propOf(s).list.length + (s.occAdmin?.list.length ?? 0);
+export const reportCount = (s: GameState) => propOf(s).list.length + (s.occAdmin?.list.length ?? 0) + (s.resign?.ask ? 1 : 0);
 
 export function ReportScreen({ state, actions, go }: ScreenProps) {
   const [msg, setMsg] = useState('');
@@ -54,22 +56,33 @@ export function ReportScreen({ state, actions, go }: ScreenProps) {
   const goTo = (screen: string, tab: string, key = screen) => go(routeTo(screen, key, tab) as Screen);
   const ready = p.list.filter((x) => !actWhy(state, x.act).why);
   const acceptAll = () => {
-    const out: string[] = [];
+    let n = 0;
     actions.apply((s) => {
-      let ns = s;
-      for (const pr of propOf(s).list) {
-        if (actWhy(ns, pr.act).why) continue;
-        const r = acceptProposal(ns, pr.id);
-        ns = r.state;
-        out.push(r.text);
-      }
-      return ns;
+      const r = acceptAllNow(s);
+      n = r.n;
+      return r.state;
     });
-    setMsg(out.length ? `✅ ${out.length}건을 한꺼번에 승인했습니다.` : '지금 바로 승인할 수 있는 건의가 없어요.');
+    setMsg(n ? `✅ ${n}건을 한꺼번에 승인했습니다.` : '지금 바로 승인할 수 있는 건의가 없어요.');
   };
+  const auto = autoApproveOn(state);
   const todo = todos(state);
   return (
     <>
+      <ResignCard state={state} apply={(f) => actions.apply(f)} />
+      <Card
+        title="자동 모두 승인"
+        icon="🤖"
+        right={
+          <button className={auto ? 'gold small-btn' : 'small-btn'} onClick={() => actions.apply((s) => setAutoApprove(s, !autoApproveOn(s)))}>
+            {auto ? '✅ 켜짐' : '⏸️ 꺼짐'}
+          </button>
+        }
+      >
+        <p className="small muted">
+          켜 두면 건의와 점령지 관리청 건의를 <b>들어오는 대로 모두 승인</b>해요. 접속하지 않은 동안에도 나라 예산이 허락하는 만큼 승인하고, 돈이 모자란 건은 남겨 둬요.
+          {(p.autoN ?? 0) > 0 && ` 지금까지 자동 승인 ${p.autoN}건.`}
+        </p>
+      </Card>
       <Card
         title={`건의 ${p.list.length}건`}
         icon="📨"
@@ -79,9 +92,9 @@ export function ReportScreen({ state, actions, go }: ScreenProps) {
           </p>
         }
         right={
-          ready.length > 1 ? (
+          ready.length + (state.occAdmin?.list.length ?? 0) > 1 ? (
             <button className="gold small-btn" onClick={acceptAll}>
-              ✅ 모두 승인 {ready.length}
+              ✅ 모두 승인 {ready.length + (state.occAdmin?.list.length ?? 0)}
             </button>
           ) : undefined
         }

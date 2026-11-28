@@ -99,10 +99,9 @@ export function domLog(s: GameState, text: string): GameState {
   const d = domOf(s);
   return withDom(s, { log: [text, ...d.log].slice(0, 30) });
 }
-/** 사진첩에 한 장(국정 장면 그림, 최근 60장) */
-export function snap(s: GameState, scene: string, title: string, text: string): GameState {
-  const d = domOf(s);
-  return withDom(s, { album: [{ t: s.worldMs, scene, title, text }, ...d.album].slice(0, 60) });
+/** 사진첩(11/28 대장 요청으로 기능 없앰): 부르는 곳은 그대로 두고 아무것도 남기지 않음 */
+export function snap(s: GameState, _scene: string, _title: string, _text: string): GameState {
+  return s;
 }
 
 /* ── 효과 합치기 ── 각 계산 파일이 줄을 등록. laws.ts가 부름(순환을 피하려고 등록 방식) */

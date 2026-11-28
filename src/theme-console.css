@@ -1475,3 +1475,23 @@ select.wide, button.wide { width: 100%; }
 .ag-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
 .ag-acts small { display: block; opacity: 0.8; font-size: 10px; }
 .ag-need { color: #e3b64a; font-size: 10.5px; }
+/* 11/28 장관 사직 요청 */
+.resign-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: center; margin-bottom: 8px; }
+.resign-row p { margin: 4px 0 0; }
+.resign-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+/* 11/28 그림자실 카드 다듬기(2줄 3열 유지): 전설 카드에 .legend(범례 줄 모양)가 섞여 옆으로 밀리던 것 바로잡고 글씨·사진 크기 맞춤 */
+.agent-card.legend { flex-wrap: nowrap; margin: 0; gap: 2px; }
+.agent-card { font-size: 10.5px; line-height: 1.3; min-width: 0; }
+.agent-card > b { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+.agent-card > small { font-size: 10px; line-height: 1.3; overflow-wrap: anywhere; }
+.agent-card > small.agent-trait { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.agent-card > small.agent-star { font-size: 10.5px; }
+.agent-card > small.agent-stats { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-card > .bar { margin-top: auto; }
+.agent-card .agent-face { aspect-ratio: 5 / 6; }
+.agent-card .agent-face img { object-position: center 20%; }
+.agent-card .agent-info { top: 20px; padding: 1px 4px; font-size: 10.5px; }
+.agent-card .agent-tag { font-size: 9px; }
+.agent-card > .bar { width: auto; }
+.agent-card.legend i { width: auto; height: auto; vertical-align: baseline; display: inline; }
+.agent-card.legend i.agent-tag, .agent-card.legend i.agent-ss { display: block; }

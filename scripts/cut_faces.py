@@ -47,7 +47,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     sheets = []
     # 2 = 추가 22장(sheet-<나라>-6~8) · 3 = 수행비서(secretary-<나라>, 한 사람) · 젊은 부관(sheet-<나라>-y1…) · 4×4 장관급(sheet-<나라>-9~13)
-    for jf in ('scripts/face-sheets.json', 'scripts/face-sheets-2.json', 'scripts/face-sheets-3.json', 'scripts/face-sheets-4.json', 'scripts/face-sheets-5.json', 'scripts/face-sheets-6.json', 'scripts/face-sheets-7.json'):  # 4 = 11-26 새 나라 5개 · 5 = 11-27 40대 얼굴(sheet-<나라>-a1~a3) · 6 = 11-27 새 나라 18개 · 7 = 11-28 그림자실 전설 요원(agent-sheet-<나라>, 4×4)
+    for jf in ('scripts/face-sheets.json', 'scripts/face-sheets-2.json', 'scripts/face-sheets-3.json', 'scripts/face-sheets-4.json', 'scripts/face-sheets-5.json', 'scripts/face-sheets-6.json', 'scripts/face-sheets-7.json', 'scripts/face-sheets-8.json'):  # 4 = 11-26 새 나라 5개 · 5 = 11-27 40대 얼굴(sheet-<나라>-a1~a3) · 6 = 11-27 새 나라 18개 · 7 = 11-28 그림자실 전설 요원(agent-sheet-<나라>, 4×4) · 8 = 11-28 일반 요원 30~40대(agentx-sheet-<나라>-1~4)
         if (ROOT / jf).exists():
             sheets += json.loads((ROOT / jf).read_text())
     done, missing, hashes = 0, [], {}

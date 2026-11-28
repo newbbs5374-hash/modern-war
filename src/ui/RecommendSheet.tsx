@@ -140,7 +140,7 @@ export function RecommendSheet({
           <div className="rec-auto glass">
             <span>
               <b>🤖 무역 맡기기</b>
-              <small>장관이 1위 되팔기를 {ADVICE_RESET_H}시간마다 {ADVICE_PER_DAY}번까지 알아서 실행해요</small>
+              <small>장관이 1위 되팔기를 {ADVICE_RESET_H}시간마다 {ADVICE_PER_DAY}번까지 알아서 실행해요. 다시 접속하면 꺼져요</small>
             </span>
             <button className={`gx-switch ${autoOn(state) ? 'on' : ''}`} role="switch" aria-checked={autoOn(state)} onClick={() => apply((s) => setAuto(s, !autoOn(s)))}>
               <i />

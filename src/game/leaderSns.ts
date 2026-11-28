@@ -289,8 +289,8 @@ export const TONES: ToneInfo[] = [
   { id: 'boast', icon: '📣', name: '자랑', side: 'self', favor: 0, tension: 0, rivals: 0, fame: 2, reply: 0, hint: '우리 국민에게. 지지도 +1 · 명성 +2' },
 ];
 export const toneById = (id: MyTone) => TONES.find((t) => t.id === id)!;
-/** 글 사이 쉬는 시간 */
-export const MY_COOLDOWN_MS = 5 * M;
+/** 글 사이 쉬는 시간(11/28 대장: 없앰. 접속해서만 쓰니까) */
+export const MY_COOLDOWN_MS = 0;
 /** 같은 나라에 이 시간 안에 또 쓰면 효과 절반 */
 export const MY_SAME_MS = 60 * M;
 export const MY_TEXT_MAX = 120;

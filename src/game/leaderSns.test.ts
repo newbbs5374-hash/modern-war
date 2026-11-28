@@ -83,9 +83,9 @@ describe('SNS 내 글 쓰기(11-27)', () => {
     const mine = snsOf(r.state).posts.find((p) => p.kind === 'mine')!;
     expect(mine.tone).toBe('praise');
     expect(mine.text.includes('{')).toBe(false);
-    // 쉬는 시간
-    expect(myCooldown(r.state)).toBe(MY_COOLDOWN_MS);
-    expect(writePost(r.state, 'mock', 'jp', '').state).toBe(r.state);
+    // 쉬는 시간 없음(11/28): 바로 또 쓸 수 있음
+    expect(myCooldown(r.state)).toBe(0);
+    expect(writePost(r.state, 'mock', 'jp', '').state).not.toBe(r.state);
     // 조롱: 중국 호감 내림, 중국 숙적(한국 빼고) 호감 오름
     const s1 = advance(r.state, MY_COOLDOWN_MS + 1000);
     const rivals = archRivalsOf('cn').filter((x) => x !== 'kr');

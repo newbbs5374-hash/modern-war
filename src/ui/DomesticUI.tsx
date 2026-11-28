@@ -9,7 +9,7 @@ import type { ScreenProps } from "./screens";
 import { Card, fmt } from "./common";
 import { Help, Meter, Modal } from "./kit";
 import { timeLeft } from "./officerScreens";
-import { domOf, type AlbumShot } from "../game/domestic";
+import { domOf } from "../game/domestic";
 import {
   AGENDA,
   PLEDGE_DAYS,
@@ -951,7 +951,7 @@ function MegaCard({ state, actions }: Pick<ScreenProps, "state" | "actions">) {
       right={
         <Help title="국가 대계획">
           <p>여러 주에 걸쳐 4단계를 밟는 초대형 사업이에요. 한 번에 한 단계만 진행하고, 가속할 수 없어요.</p>
-          <p>단계를 끝낼 때마다 명성과 영구 효과가 붙고 사진첩에 장면이 남아요. 세 가지를 모두 완성하면 「과학 승리」예요.</p>
+          <p>단계를 끝낼 때마다 명성과 영구 효과가 붙어요. 세 가지를 모두 완성하면 「과학 승리」예요.</p>
         </Help>
       }
     >
@@ -1150,70 +1150,6 @@ export function BudgetSeasonCard({ state, actions }: ScreenProps) {
         통과 {b.passed}번 · 준예산 {b.cut}번
       </p>
     </Card>
-  );
-}
-
-/* ───────── B 사진첩·오늘의 뉴스 ───────── */
-export function AlbumPanel({ state }: ScreenProps) {
-  const d = domOf(state);
-  const [view, setView] = useState<AlbumShot | null>(null);
-  const news = d.log.slice(0, 4);
-  return (
-    <>
-      <Card title="오늘의 뉴스" icon="🗞️">
-        <div className="dom-paper">
-          <div className="dom-paper-head">
-            국정 일보 · {new Date().toLocaleDateString("ko-KR")}
-          </div>
-          {news.length ? (
-            <>
-              <h3>{news[0].replace(/^[^\s]+\s/, "")}</h3>
-              {news.slice(1).map((n, i) => (
-                <p key={i} className="small">
-                  · {n}
-                </p>
-              ))}
-            </>
-          ) : (
-            <p className="small muted">
-              아직 큰 소식이 없어요. 공약을 발표해 보세요.
-            </p>
-          )}
-        </div>
-      </Card>
-      <Card
-        title={`국정 사진첩 ${d.album.length}장`}
-        icon="📸"
-        right={
-          <Help title="사진첩">
-            <p>
-              공약 발표·법 개정·대형 사업 착공·완공·면담·집회 같은 순간이
-              사진으로 남아요. 판이 끝나면 내 임기 기록이에요.
-            </p>
-          </Help>
-        }
-      >
-        {d.album.length ? (
-          <div className="dom-album">
-            {d.album.map((a, i) => (
-              <button key={i} className="dom-shot" onClick={() => setView(a)}>
-                <SceneImg scene={a.scene} />
-                <small>{a.title}</small>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="small muted">아직 사진이 없어요</p>
-        )}
-      </Card>
-      {view && (
-        <Modal title={view.title} icon="📸" onClose={() => setView(null)}>
-          <SceneImg scene={view.scene} big />
-          <p className="small">{view.text}</p>
-          <p className="small muted">{SCENES[view.scene]?.name ?? ""}</p>
-        </Modal>
-      )}
-    </>
   );
 }
 

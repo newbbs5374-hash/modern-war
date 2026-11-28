@@ -17,6 +17,10 @@ import {
   SPOTS,
   answerBond,
   answerMeet,
+  askMeet,
+  askMeetCost,
+  askSpot,
+  canAskMeet,
   bondStage,
   bookList,
   claimBook,
@@ -255,6 +259,28 @@ export function MeetBook({ state, actions, go }: ScreenProps) {
                 ? '내 사람이에요. 개인 → 인재 → 내 사람에서 장관·참모·장군 자리에 앉힐 수 있어요.'
                 : `만날 수 있는 곳: ${hint(selW)}. 만난 횟수 ${m.times[selW.key] ?? 0}번.`}
             </p>
+            {!m.met.includes(selW.key) &&
+              (() => {
+                const c = canAskMeet(state, selW.key);
+                const sp = SPOTS[askSpot(state, selW.key)];
+                return (
+                  <>
+                    <button
+                      className="gold wide"
+                      disabled={!!c}
+                      title={c?.why ?? ''}
+                      onClick={() => {
+                        actions.apply((s) => askMeet(s, selW.key));
+                        setSel(null);
+                        setCardOpen(true);
+                      }}
+                    >
+                      {c?.lock ? '🔒 아직 만날 수 없어요' : `🤝 만남 청하기 · ${sp.icon} ${sp.name}`} <small>💰{askMeetCost(state).toLocaleString('ko-KR')}</small>
+                    </button>
+                    {c && <p className={`small ${c.lock ? 'warn' : 'muted'}`}>{c.lock ? `💡 힌트: ${c.why.replace(/^🔒 /, '')}` : c.why}</p>}
+                  </>
+                );
+              })()}
           </div>
         </Modal>
       )}

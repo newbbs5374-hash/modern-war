@@ -90,6 +90,10 @@ export interface PropState {
   log: string[];
   /** 차례로 살필 다음 사람 번호 */
   rr?: number;
+  /** 11/28 📨 보고 창 자동 모두 승인 켬 */
+  autoAll?: boolean;
+  /** 자동 승인한 건 수 */
+  autoN?: number;
 }
 
 export const propOf = (s: GameState): PropState =>

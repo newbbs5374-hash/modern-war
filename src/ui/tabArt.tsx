@@ -17,7 +17,7 @@ const STAND_IN: Record<string, string> = {
   'culture/venue': 'icon-cul-stage-3', 'culture/works': 'icon-cul-work-relic-1', 'culture/stars': 'icon-cul-star-artist', 'culture/tour': 'icon-cul-course-cruise',
   'culture/event': 'icon-cul-ev-fireworks', 'culture/world': 'icon-ui-culture',
   'personal/profile': 'icon-ui-personal', 'personal/win': 'icon-cul-ev-olympics', 'personal/aides': 'icon-ui-aide', 'personal/talent': 'icon-stat-leadership',
-  'personal/meet': 'icon-stat-charisma', 'personal/plan': 'icon-ui-briefing', 'personal/agenda': 'icon-ui-orders', 'personal/album': 'icon-cul-studio-1',
+  'personal/meet': 'icon-stat-charisma', 'personal/plan': 'icon-ui-briefing', 'personal/agenda': 'icon-ui-orders',
 };
 
 export function tabArtUrl(key: string): string | null {
