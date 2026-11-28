@@ -7,6 +7,9 @@ import { hearingNow } from './cabinetOps';
 import { addResearch, canResearch, civOf, hasTech, startResearch, techLeft, techPayWhy } from './civ';
 import { CARD_SWAP_FREE_MS, TECH_PTS_PER_BOOST, techById } from '../data/civ';
 import { rubyOf } from './goals';
+import { GRAND_BOOST_PER_DAY } from './balance';
+
+const DAY_MS = 24 * 3600e3;
 
 export const BOOST_MS = 30 * 60e3;
 /** 가속권 1장 대신 내는 루비(상점 가속권 1장 값) */
@@ -118,14 +121,28 @@ export function boostPrice(s: GameState, n: number): { boosts: number; ruby: num
 /** 가속권+루비로 낼 수 있는 최대 장수 */
 export const boostsAffordable = (s: GameState) => boostsOf(s) + Math.floor(rubyOf(s) / RUBY_PER_BOOST);
 
+/** 11-28 하루 상한이 걸리는 가속인가: 대전투 간격, 진행 중인 대전투 */
+export const isGrandBoost = (s: GameState, t: BoostTarget) => t.kind === 'grand' || (t.kind === 'mission' && s.officer.active?.kind === '대전투');
+/** 오늘 대전투에 더 쓸 수 있는 가속권(상한 없는 가속이면 Infinity) */
+export function boostCapLeft(s: GameState, t: BoostTarget): number {
+  if (!isGrandBoost(s, t)) return Infinity;
+  const g = s.officer.grandBoost;
+  const used = g && g.key === Math.floor(s.worldMs / DAY_MS) ? g.n : 0;
+  return Math.max(0, GRAND_BOOST_PER_DAY - used);
+}
+
 /** 가속권 n장 사용(남은 시간보다 많이 쓰지 않음, 모자라면 루비로) */
 export function useBoost(s: GameState, t: BoostTarget, n: number): GameState {
   const left = boostLeft(s, t);
-  const k = Math.min(n, boostsAffordable(s), Math.ceil(left / BOOST_MS));
+  const k = Math.min(n, boostsAffordable(s), Math.ceil(left / BOOST_MS), boostCapLeft(s, t));
   if (k <= 0) return s;
   const cut = Math.min(left, k * BOOST_MS);
   const pay = boostPrice(s, k);
   const o = { ...s.officer, boosts: boostsOf(s) - pay.boosts };
+  if (isGrandBoost(s, t)) {
+    const key = Math.floor(s.worldMs / DAY_MS);
+    o.grandBoost = { key, n: GRAND_BOOST_PER_DAY - boostCapLeft(s, t) + k };
+  }
   let ns: GameState = { ...s, officer: o };
   if (pay.ruby && s.goals) ns = { ...ns, goals: { ...s.goals, ruby: s.goals.ruby - pay.ruby } };
   let e = ns.economy;

@@ -8,7 +8,7 @@ import { playerKeys } from '../data/looks';
 import { originFits, originOf } from '../game/origin';
 import { BoostBar } from './BoostBar';
 import { useEffect, useState } from 'react';
-import { STAT_GROUPS, TRAININGS } from '../data/catalog';
+import { STAT_GROUPS, TRAIN_ARMS, TRAIN_BRANCHES, TRAININGS } from '../data/catalog';
 import { GRAND_COOLDOWN_HOURS, GRAND_RANK, MISSION_KINDS, OPERATION_RANK, STAT_IDS, TRAIN_EXP_LOSE, TRAIN_EXP_PER_STAR, aideSlots, generalSlots, statCap, statExpNeed, type StatId } from '../data/officers';
 import { RANKS } from '../data/ranks';
 import { cityById } from '../data/cities';
@@ -860,6 +860,7 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
   const rank = state.player.rankIndex;
   const d = drillsNow(o, state.worldMs);
   const [pick, setPick] = useState<string | null>(null);
+  const [only, setOnly] = useState<string[] | undefined>(undefined);
   const [practice, setPractice] = useState(false);
   const [msg, setMsg] = useState('');
   const featured = featuredTraining(state.worldMs, rank);
@@ -912,35 +913,68 @@ export function TrainingScreen({ state, actions, go }: ScreenProps) {
         {msg && <p className="small result">{msg}</p>}
       </section>
       <WeeklyCard state={state} onStart={start} />
-      <div className="tlist">
-        {TRAININGS.map((tr) => {
-          const lock = rank < tr.rank;
-          const runs = o.mastery?.[tr.name] ?? 0;
-          const lv = masteryLevel(runs);
-          const hot = tr.name === featured;
-          const perk = (o.perfect[tr.name] ?? 0) >= PERK_AT;
-          return (
-            <button key={tr.name} className={`trow ${lock ? 'locked' : ''} ${hot ? 't-gold' : perk ? 't-green' : ''}`} onClick={() => setPick(tr.name)}>
-              <span className="trow-ico"><TrainIcon name={tr.name} lock={lock} /></span>
-              <span className="trow-main">
-                <b>
-                  {tr.name}
-                  {hot && <i className="trow-hot">🔥2배</i>}
-                </b>
-                <small>{TRAINING_STATS[tr.name].map((x) => `${STAT_ICON[x]}${x}`).join(' ')}</small>
-                <small className="muted">{lock ? `${RANKS[tr.rank].name}부터` : `${MASTERY_NAME[lv - 1]} · 오늘 ${today[tr.name] ?? 0}번`}</small>
-              </span>
-              {!lock && <small className="stars trow-stars">{stars(o.best?.[tr.name] ?? 0)}</small>}
-            </button>
-          );
-        })}
-      </div>
+      {TRAIN_ARMS.map((arm) => (
+        <section key={arm.id} className="card t-arm">
+          <p className="mg-sec">
+            {arm.icon} {arm.name} · {TRAIN_BRANCHES.filter((b) => b.arm === arm.id).length}병과
+          </p>
+          {TRAIN_BRANCHES.filter((b) => b.arm === arm.id).map((b) => (
+            <div key={b.name} className="t-branch">
+              <small className="t-branch-name">
+                {b.icon} <b>{b.name}</b>
+              </small>
+              <div className="tlist">
+                {b.items.map((it) => {
+                  const tr = TRAININGS.find((x) => x.name === it.t)!;
+                  const lock = rank < tr.rank;
+                  const runs = o.mastery?.[tr.name] ?? 0;
+                  const lv = masteryLevel(runs);
+                  const hot = tr.name === featured;
+                  const perk = (o.perfect[tr.name] ?? 0) >= PERK_AT;
+                  return (
+                    <button
+                      key={tr.name}
+                      className={`trow ${lock ? 'locked' : ''} ${hot ? 't-gold' : perk ? 't-green' : ''}`}
+                      onClick={() => {
+                        setOnly(it.only);
+                        setPick(tr.name);
+                      }}
+                    >
+                      <span className="trow-ico"><TrainIcon name={tr.name} lock={lock} /></span>
+                      <span className="trow-main">
+                        <b>
+                          {tr.name}
+                          {it.only && <i className="mg-tag">{it.only.length}개</i>}
+                          {hot && <i className="trow-hot">🔥2배</i>}
+                        </b>
+                        <small>{TRAINING_STATS[tr.name].map((x) => `${STAT_ICON[x]}${x}`).join(' ')}</small>
+                        <small className="muted">{lock ? `${RANKS[tr.rank].name}부터` : `${MASTERY_NAME[lv - 1]} · 오늘 ${today[tr.name] ?? 0}번`}</small>
+                      </span>
+                      {!lock && <small className="stars trow-stars">{stars(o.best?.[tr.name] ?? 0)}</small>}
+                    </button>
+                  );
+                })}
+                {b.soon && (
+                  <div className="trow locked t-soon">
+                    <span className="trow-ico">✨</span>
+                    <span className="trow-main">
+                      <b>새 훈련 준비 중</b>
+                      <small className="muted">{b.soon} · 화면 전체를 쓰는 새 게임</small>
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
       <button className="wide" style={{ marginTop: 8 }} onClick={() => setPractice(true)}>
         🎮 전투 연습장 (보상 없음)
       </button>
       {t && (
         <TrainModal
           name={t.name}
+          only={only}
           state={state}
           featured={featured === t.name}
           onClose={() => setPick(null)}
@@ -1031,9 +1065,10 @@ function WeeklyCard({ state, onStart }: { state: ScreenProps['state']; onStart: 
   );
 }
 
-function TrainModal({ name, state, featured, onClose, onStart }: { name: string; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
-  const minis = minisFor(name);
-  const three = threeFor(name);
+function TrainModal({ name, only, state, featured, onClose, onStart }: { name: string; only?: string[]; state: ScreenProps['state']; featured: boolean; onClose: () => void; onStart: (mini?: string) => void }) {
+  // 11-28 병과별: 여러 병과에 걸친 훈련은 그 병과 미니게임만
+  const minis = minisFor(name).filter((m) => !only || only.includes(m.id));
+  const three = only ? [] : threeFor(name);
   const [mini, setMini] = useState((minis.find((m) => m.easy) ?? minis.find((m) => m.fresh) ?? three[0] ?? minis[0])?.id);
   const o = state.officer;
   const rank = state.player.rankIndex;

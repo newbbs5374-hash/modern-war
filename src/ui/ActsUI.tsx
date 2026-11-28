@@ -118,7 +118,7 @@ function ActModal({ state, onClose }: { state: GameState; onClose: () => void })
       )}
       {act === 2 && <p style={{ fontSize: 13 }}>🧭 이웃 나라: {nb}</p>}
       <p className="muted" style={{ fontSize: 12 }}>
-        ⚔️ 대전투는 하루 {GRAND_PER_DAY}번(루비로 {GRAND_EXTRA_MAX}번 더). 빼앗긴 우리 도시 되찾기는 세지 않아요.
+        ⚔️ 대전투는 하루 {GRAND_PER_DAY}번(루비로 {GRAND_EXTRA_MAX}번 더, 2·4장은 못 삼). 대전투 가속권은 하루 24장까지. 빼앗긴 우리 도시 되찾기는 세지 않아요.
       </p>
     </Modal>
   );

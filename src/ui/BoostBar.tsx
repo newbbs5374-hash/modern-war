@@ -1,5 +1,5 @@
 // 가속 버튼: ⏩ 30분(가속권 1장) · ⚡ 바로 끝내기(필요한 만큼). 가속권이 모자라면 루비로(1장 = 💎5)
-import { boostLeft, boostPrice, boostsAffordable, boostsOf, boostsToFinish, useBoost, type BoostTarget } from '../game/boost';
+import { boostCapLeft, boostLeft, boostPrice, boostsAffordable, boostsOf, boostsToFinish, useBoost, type BoostTarget } from '../game/boost';
 import { rubyOf } from '../game/goals';
 import type { GameState } from '../game/state';
 
@@ -7,10 +7,12 @@ export const priceText = (p: { boosts: number; ruby: number }) => [p.boosts ? `�
 
 export function BoostBar({ state, apply, target, compact }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; target: BoostTarget; compact?: boolean }) {
   if (boostLeft(state, target) <= 0) return null;
-  const can = boostsAffordable(state);
+  const cap = boostCapLeft(state, target);
+  const can = Math.min(boostsAffordable(state), cap);
   const need = boostsToFinish(state, target);
   const one = boostPrice(state, 1);
   const all = boostPrice(state, need);
+  if (cap <= 0) return <div className="boost-bar"><small className="muted">🎫 오늘 대전투 가속권 하루 24장을 다 썼어요. 내일 다시 쓸 수 있어요</small></div>;
   return (
     <div className={`boost-bar ${compact ? 'compact' : ''}`}>
       <button disabled={can < 1} onClick={() => apply((s) => useBoost(s, target, 1))} title={one.ruby ? '가속권이 없어 루비로 30분 줄이기' : '가속권 1장으로 30분 줄이기'}>
@@ -21,7 +23,7 @@ export function BoostBar({ state, apply, target, compact }: { state: GameState; 
       </button>
       {!compact && (
         <small className="muted">
-          보유 🎫{boostsOf(state)} 💎{rubyOf(state)}
+          보유 🎫{boostsOf(state)} 💎{rubyOf(state)}{cap < Infinity ? ` · 오늘 대전투 가속 ${cap}장 남음` : ''}
         </small>
       )}
     </div>
@@ -31,7 +33,7 @@ export function BoostBar({ state, apply, target, compact }: { state: GameState; 
 /** 카드 안에 넣는 작은 가속 버튼(11-24): 시설·연구·체제 카드. 카드 누르기와 겹치지 않게 막음 */
 export function BoostMini({ state, apply, target, cls }: { state: GameState; apply: (f: (s: GameState) => GameState) => void; target: BoostTarget; cls?: string }) {
   if (boostLeft(state, target) <= 0) return null;
-  const can = boostsAffordable(state);
+  const can = Math.min(boostsAffordable(state), boostCapLeft(state, target));
   const need = boostsToFinish(state, target);
   const one = boostPrice(state, 1);
   const all = boostPrice(state, need);

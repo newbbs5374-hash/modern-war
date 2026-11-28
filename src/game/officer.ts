@@ -38,7 +38,7 @@ import { TRAININGS } from '../data/catalog';
 import { OPERATIONS } from '../battle/spec';
 import { RANKS } from '../data/ranks';
 import { COUNTRIES, countryById } from '../data/world';
-import { GRAND_ACT_DIFF, actAi, actOf, GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
+import { GRAND_ACT_DIFF, GRAND_DIFF_FLOOR, GRAND_DIFF_FLOOR_CAPITAL, actAi, actOf, GRAND_ARMY_MAX, GRAND_ARMY_PER, GRAND_CAPITAL_DIFF, GRAND_FORT_DIFF, GRAND_NATION_DIFF, OCC_LOSS_TRUST, aiStrength, CAPTURED_DEFENSE, MISSION_PAY_SALARY, MISSION_PAY_TREASURY, REAL_MS_PER_GAME_DAY, TEST_MODE, TRAIN_PAY_PER_STAR } from './balance';
 import { Rng } from './rng';
 import { growFort } from './aiGrowth';
 import { talkTick, type Promise_, type Talk } from './talk';
@@ -230,6 +230,8 @@ export interface OfficerState {
   grandReadyMs: number;
   /** 11-27 하루 대전투 상한: 실제 날짜 번호 · 오늘 한 횟수 · 루비로 산 추가 횟수. 옛 저장은 없음 */
   grandDay?: { key: number; n: number; extra: number };
+  /** 11-28 오늘 대전투 준비·간격에 쓴 가속권(하루 24장 상한) */
+  grandBoost?: { key: number; n: number };
   /** 훈련별 별 3개 받은 횟수(특기) */
   perfect: Record<string, number>;
   /** 훈련별 한 횟수(숙련) · 최고 별 */
@@ -1060,7 +1062,7 @@ export function startGrand(s: GameState, city: string, field = true): GameState 
       m.fuel = Math.round((needF ? fuel / needF : 1) * 100) / 100;
       m.ammo = Math.round((needA ? ammo / needA : 1) * 100) / 100;
     }
-    m.difficulty = Math.round(Math.max(0.7, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 + nation - army) * 100) / 100;
+    m.difficulty = Math.round(Math.max(cityById(city).capital ? GRAND_DIFF_FLOOR_CAPITAL : GRAND_DIFF_FLOOR, 0.9 + ns.world.defense[city] / 250 + ns.player.rankIndex * 0.01 + nation - army) * 100) / 100;
     o.active = { ...m, startMs: ns.worldMs, endMs: ns.worldMs + m.hours * HOUR };
     // 지도자는 6시간마다
     o.grandReadyMs = ns.worldMs + (ns.player.rankIndex >= RANKS.length - 1 ? GRAND_COOLDOWN_HOURS / 2 : GRAND_COOLDOWN_HOURS) * HOUR;

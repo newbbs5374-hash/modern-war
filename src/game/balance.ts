@@ -204,10 +204,21 @@ export const ACT2_SUBDUE = 2;
 export const ACT2_MAX_HOURS = 25 * 24;
 /** 막이 오를 때 보상(올라간 막 번호 − 1 로 찾음) */
 export const ACT_REWARD: Record<number, { ruby: number; boosts: number }> = { 1: { ruby: 50, boosts: 5 }, 2: { ruby: 80, boosts: 8 }, 3: { ruby: 120, boosts: 10 } };
-/** 하루(실제 24시간) 대전투 상한. 루비로 2번까지 더. 빼앗긴 우리 도시 되찾기는 세지 않음 */
-export const GRAND_PER_DAY = 3;
-export const GRAND_EXTRA_MAX = 2;
-export const GRAND_EXTRA_RUBY = 40;
+/** 하루(실제 24시간) 대전투 상한. 빼앗긴 우리 도시 되찾기는 세지 않음.
+ * 11-28 중과금 밸런스: 무료 4번 + 루비로 1번 더(💎60, 2·4장에는 살 수 없음). 예전 3번 + 💎40×2 */
+export const GRAND_PER_DAY = 4;
+export const GRAND_EXTRA_MAX = 1;
+export const GRAND_EXTRA_RUBY = 60;
+/** 루비로 대전투를 더 살 수 없는 장(2장 이웃 다툼·4장 마지막 전쟁) */
+export const GRAND_NOBUY_ACTS: number[] = [2, 4];
+/** 대전투 준비(진행 중 대전투)·다음 대전투까지 간격에 쓰는 가속권 하루 상한(시험판도 같음) */
+export const GRAND_BOOST_PER_DAY = 24;
+/** 대전투 난이도 바닥(예전 0.7): 부대를 아무리 많이 만들어도 이 밑으로는 안 내려감. 수도·요새는 더 높음 */
+export const GRAND_DIFF_FLOOR = 0.85;
+export const GRAND_DIFF_FLOOR_CAPITAL = 1.0;
+/** AI가 내 나라를 칠 때 약한 곳을 노림: 내가 점령한 남의 도시는 이 배, 방어도가 낮을수록 더(방어도 100 → 1배, 0 → 1+이 값) */
+export const AI_WEAK_OCC = 2.5;
+export const AI_WEAK_DEF = 1.5;
 
 // ── 11-27 종합 확장안 개편 3: AI 반격(도시를 빼앗긴 나라가 되찾으러 옴) ──
 /** 장마다 반격이 오는 확률(1장은 전쟁 없음) */

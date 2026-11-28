@@ -8,7 +8,7 @@ import { FRONT } from '../data/cities';
 import { CITY_LONLAT } from '../data/realmap';
 import { COUNTRIES, countryById } from '../data/world';
 import { TECHS } from '../data/civ';
-import { ACT1_MAX_HOURS, ACT1_MIN_HOURS, ACT1_POWER_PER_MIL, ACT1_TECHS, ACT2_MAX_HOURS, ACT2_NEIGHBORS, ACT2_SUBDUE, ACT_REWARD, EVENT_LOG_MAX, GRAND_EXTRA_MAX, GRAND_EXTRA_RUBY, GRAND_PER_DAY, actOf } from './balance';
+import { ACT1_MAX_HOURS, ACT1_MIN_HOURS, ACT1_POWER_PER_MIL, ACT1_TECHS, ACT2_MAX_HOURS, ACT2_NEIGHBORS, ACT2_SUBDUE, ACT_REWARD, EVENT_LOG_MAX, GRAND_EXTRA_MAX, GRAND_EXTRA_RUBY, GRAND_NOBUY_ACTS, GRAND_PER_DAY, actOf } from './balance';
 import type { GameState } from './state';
 import { homeOf, isAlive, relationOf } from './world';
 import { goalsOf } from './goals';
@@ -94,7 +94,7 @@ export function actBlocksWar(s: GameState, id: string): string | null {
 export const actAllowsTarget = (s: GameState, city: string) => actOf(s.world) !== 1 || homeOf(s.world, city) === s.player.countryId;
 
 // ── 하루 대전투 상한(루비로 2번까지 더) ──
-const dayKey = (s: GameState) => Math.floor(s.worldMs / (24 * H));
+export const dayKey = (s: GameState) => Math.floor(s.worldMs / (24 * H));
 export function grandToday(s: GameState): { n: number; extra: number; cap: number } {
   const d = s.officer.grandDay;
   const cur = d && d.key === dayKey(s) ? d : { n: 0, extra: 0 };
@@ -113,6 +113,7 @@ export function noteGrand(s: GameState, city: string): GameState['officer']['gra
 }
 export function canBuyGrand(s: GameState): string | null {
   if (grandCapLeft(s) > 0) return '아직 오늘 횟수가 남았어요';
+  if (s.world.act != null && GRAND_NOBUY_ACTS.includes(actOf(s.world))) return `${actOf(s.world)}장에는 대전투를 더 살 수 없어요. 내일 다시 할 수 있어요`;
   if (grandToday(s).extra >= GRAND_EXTRA_MAX) return `하루 ${GRAND_PER_DAY + GRAND_EXTRA_MAX}번이 끝이에요. 내일 다시 할 수 있어요`;
   if ((s.goals?.ruby ?? 0) < GRAND_EXTRA_RUBY) return `루비 ${GRAND_EXTRA_RUBY} 필요`;
   return null;
