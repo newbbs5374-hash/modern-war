@@ -13,6 +13,8 @@ import { Meter as KitMeter, Tile } from './kit';
 import { CultureWinPanel } from './CultureScreen';
 import { COUNTRIES } from '../data/world';
 import { isAlive, relationOf } from '../game/world';
+import { INF_BRANCHES, INF_DEADLINE_DAYS, INF_HOLD_DAYS, INF_LEAD, INF_WIN, influenceProgress } from '../game/influence';
+import { countryById } from '../data/world';
 
 function Meter({ have, need }: { have: number; need: number }) {
   return (
@@ -96,9 +98,9 @@ export function EndingCard({ state, actions }: ScreenProps) {
   if (!e) return null;
   return (
     <div className="ending">
-      <h2>{e.kind === '평화 승리' ? '🕊️' : e.kind === '문화 승리' ? '🎨' : e.kind === '과학 승리' ? '🔬' : '🏆'} {e.kind}!</h2>
+      <h2>{e.kind === '평화 승리' ? '🕊️' : e.kind === '문화 승리' ? '🎨' : e.kind === '과학 승리' ? '🔬' : e.kind === '세계 영향력 승리' ? '🌐' : e.kind === '점수 마감' ? '⏱️' : '🏆'} {e.kind}{e.kind === '점수 마감' ? ` · ${e.place ?? '?'}위` : '!'}</h2>
       <p>
-        {e.name} 지도자가 이끈 {e.country}이(가) {e.day}일째에 {e.kind === '평화 승리' ? '세계 평화 헌장으로 전쟁 없는 세계를 열었어요' : e.kind === '문화 승리' ? '문화로 세계 사람들의 마음을 얻었어요' : e.kind === '과학 승리' ? '세 가지 국가 대계획을 이뤄 인류의 내일을 열었어요' : '전쟁을 끝냈어요'}.
+        {e.name} 지도자가 이끈 {e.country}이(가) {e.day}일째에 {e.kind === '점수 마감' ? `12주 점수 마감에서 세계 영향력 ${e.place ?? '?'}위를 했어요. 계속 플레이해서 1등을 노릴 수도 있어요` : e.kind === '세계 영향력 승리' ? '군사·경제·외교·문화·과학을 아울러 세계를 이끄는 나라가 됐어요' : e.kind === '평화 승리' ? '세계 평화 헌장으로 전쟁 없는 세계를 열었어요' : e.kind === '문화 승리' ? '문화로 세계 사람들의 마음을 얻었어요' : e.kind === '과학 승리' ? '세 가지 국가 대계획을 이뤄 인류의 내일을 열었어요' : '전쟁을 끝냈어요'}.
       </p>
       <p className="small">
         도시 {e.cities}개{e.captured.length ? ` · 점령: ${e.captured.join(', ')}` : ''}
@@ -178,7 +180,7 @@ export function HallList({ list = loadHall() }: { list?: HallEntry[] }) {
 
 /* ───────── 👤 개인 → 🏆 승리(11-24 대장 요청: 모든 승리 조건을 한곳에서) ───────── */
 const ALONE_PCT = Math.round(ALONE_SHARE * 100);
-type WinId = 'conquer' | 'allied' | 'peace' | 'culture' | 'science';
+type WinId = 'influence' | 'conquer' | 'allied' | 'peace' | 'culture' | 'science';
 
 /** 승리 4가지의 진행률(0~1)과 지키는 중 남은 시간 */
 export function winLines(s: ScreenProps['state']) {
@@ -191,8 +193,11 @@ export function winLines(s: ScreenProps['state']) {
   const pl = peaceLeft(s);
   const cl = cultureWinLeft(s);
   const r = (a: number, b: number) => Math.max(0, Math.min(1, a / Math.max(1, b)));
-  const names: Record<WinId, Ending['kind']> = { conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리', science: '과학 승리' };
+  const ip = influenceProgress(s);
+  const il = s.infl?.winSinceMs != null ? Math.max(0, s.infl.winSinceMs + INF_HOLD_DAYS * 24 * 3600e3 - s.worldMs) : null;
+  const names: Record<WinId, Ending['kind']> = { influence: '세계 영향력 승리', conquer: '정복 승리', allied: '연합 승리', peace: '평화 승리', culture: '문화 승리', science: '과학 승리' };
   return ([
+    { id: 'influence' as WinId, icon: '🌐', name: '세계 영향력', goal: `${INF_WIN}점 + 2등의 ${INF_LEAD}배`, now: `${ip.mine?.total ?? 0}점 · ${ip.place}위`, pct: r(Math.min(ip.mine?.total ?? 0, INF_WIN) + (ip.ok ? 1 : 0), INF_WIN + 1), left: il },
     { id: 'conquer' as WinId, icon: '⚔️', name: '정복 승리', goal: `우리 도시 ${p.needAlone}개(세계 ${ALONE_PCT}%)${p.capsNeed ? ' + 강대국 수도 3곳(통일·속국으로)' : ''}`, now: `${p.mine} / ${p.needAlone}${p.capsNeed ? ` · 수도 ${p.capsHave}/${p.capsNeed}` : ''}`, pct: r(p.mine + p.capsHave * 4, p.needAlone + p.capsNeed * 4), left: conquerOn ? hold : null },
     { id: 'allied' as WinId, icon: '🤝', name: '연합 승리', goal: `우리+연합국 도시 ${p.needAllied}개`, now: `${p.allied} / ${p.needAllied}`, pct: r(p.allied, p.needAllied), left: alliedOn ? hold : null },
     { id: 'peace' as WinId, icon: '🕊️', name: '평화 승리', goal: `평화 헌장 서명 ${pr.need}나라`, now: `${pr.have} / ${pr.need}`, pct: pl !== null ? 1 : r(pr.have, pr.need), left: pl },
@@ -224,7 +229,7 @@ export function VictoryPanel(props: ScreenProps) {
   const allies = COUNTRIES.filter((c) => c.id !== me && isAlive(state.world, c.id) && relationOf(state.world, me, c.id) === '연합');
   return (
     <>
-      <Card title="🏆 승리 조건" right={<small className="muted">다섯 중 하나만 이루면 승리</small>}>
+      <Card title="🏆 승리 조건" right={<small className="muted">여섯 중 하나만 이루면 승리</small>}>
         <p className="small">
           {ready ? (
             <span className="ok">✅ 「{RANKS[VICTORY_RANK].name}」 호칭이라 이제 승리할 수 있어요.</span>
@@ -250,6 +255,7 @@ export function VictoryPanel(props: ScreenProps) {
         </div>
         <p className="small muted">조건을 채운 채 {HOLD_DAYS}일 동안 지키면 이겨요. 아래 칸을 누르면 자세히 볼 수 있어요.</p>
       </Card>
+      {pick === 'influence' && <InfluencePart state={state} />}
       {pick === 'conquer' && (
         <Card title="⚔️ 정복 승리" right={<small className="muted">혼자 세계 도시 {ALONE_PCT}%</small>}>
           <div className="small">
@@ -306,5 +312,54 @@ export function VictoryPanel(props: ScreenProps) {
       <WinsDone {...props} />
       <HallList />
     </>
+  );
+}
+
+/** 11-28 세계 영향력: 갈래별 점수 · 순위 · 12주 점수 마감 */
+function InfluencePart({ state }: { state: ScreenProps['state'] }) {
+  const ip = influenceProgress(state);
+  const me = state.player.countryId;
+  const top = ip.rank.slice(0, 6);
+  const mine = ip.mine;
+  return (
+    <Card title="🌐 세계 영향력 승리" right={<small className="muted">점수 마감까지 {timeLeft(ip.left)}</small>}>
+      <p className="small">
+        {INF_WIN}점 이상이면서 2등의 {INF_LEAD}배 이상을 {INF_HOLD_DAYS}일 지키면 이겨요. 실제 {INF_DEADLINE_DAYS / 7}주가 지나면 점수 마감: 그때 1등이면 승리예요.
+      </p>
+      {mine && (
+        <div className="inf-branches">
+          {INF_BRANCHES.map((b) => (
+            <div key={b.id} className="promo-line">
+              <small>
+                {b.icon} {b.name}
+              </small>
+              <KitMeter value={mine[b.id]} max={b.max} tone="gold" />
+              <small className="muted">
+                {mine[b.id]}/{b.max}
+              </small>
+            </div>
+          ))}
+          <p className="small muted">{INF_BRANCHES.map((b) => `${b.icon}${b.how}`).join(' · ')}</p>
+        </div>
+      )}
+      <div className="inf-rank">
+        {top.map((r, i) => (
+          <div key={r.id} className={`row ${r.id === me ? 'ok' : ''}`} style={{ gap: 6 }}>
+            <small style={{ width: 22 }}>{i + 1}위</small>
+            <span>{FLAG[r.id] ?? ''}</span>
+            <small style={{ flex: 1 }}>{countryById(r.id).name}</small>
+            <b className="small">{r.total}점</b>
+          </div>
+        ))}
+        {ip.place > top.length && (
+          <div className="row ok" style={{ gap: 6 }}>
+            <small style={{ width: 22 }}>{ip.place}위</small>
+            <span>{FLAG[me] ?? ''}</span>
+            <small style={{ flex: 1 }}>{countryById(me).name}</small>
+            <b className="small">{mine?.total ?? 0}점</b>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }

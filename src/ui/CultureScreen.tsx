@@ -30,7 +30,9 @@ import {
 import { RES_ICON, type Res } from '../data/economy';
 import type { StarKind } from '../data/culture';
 
-export type CultureTab = 'venue' | 'works' | 'stars' | 'tour' | 'event' | 'world';
+import { FaithPanel } from './FaithPanel';
+import { faithOf } from '../game/faith';
+export type CultureTab = 'venue' | 'works' | 'stars' | 'tour' | 'event' | 'faith' | 'world';
 
 /** 시설 그림(src/assets/icons/icon-cul-<시설>-<단계>.webp), 없으면 이모지 */
 export function VenueArt({ id, level, big }: { id: VenueId; level: number; big?: boolean }) {
@@ -71,6 +73,7 @@ export function cultureTabs(props: ScreenProps): TabDef<CultureTab>[] {
     { id: 'stars', label: '스타', icon: '🌟', badge: STAR_KINDS.some((k) => !canRecruit(state, k.id)) ? '!' : starsOf(c).filter((x) => x.job).length || null },
     { id: 'tour', label: '관광', icon: '✈️', badge: coursesOf(c).length || null },
     { id: 'event', label: '행사', icon: '🎉', badge: evOn ? '●' : null },
+    { id: 'faith', label: '신앙', icon: '🕯️', badge: faithOf(state).build ? '●' : null },
     { id: 'world', label: '세계', icon: '🌏' },
   ]);
 }
@@ -111,6 +114,7 @@ export function CultureScreen(props: ScreenProps) {
       {tab === 'stars' && <StarsPanel {...props} />}
       {tab === 'tour' && <TourPanel {...props} />}
       {tab === 'event' && <EventPanel {...props} />}
+      {tab === 'faith' && <FaithPanel {...props} />}
       {tab === 'world' && <WorldPanel {...props} />}
       {c.log.length > 0 && (
         <details className="fold">

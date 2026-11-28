@@ -14,6 +14,7 @@ import { relationOf } from './world';
 import { peaceTick } from './peace';
 import { cultureWinTick } from './culture';
 import { megaDoneAll } from './megaPlan';
+import { INF_HOLD_DAYS, influenceProgress } from './influence';
 
 export const VICTORY_RANK = RANKS.length - 1;
 export const ALLIED_SHARE = 0.76;
@@ -22,7 +23,9 @@ export const HOLD_DAYS = 7;
 const HOLD_MS = HOLD_DAYS * 24 * 3600e3;
 
 export interface Ending {
-  kind: '연합 승리' | '정복 승리' | '평화 승리' | '문화 승리' | '과학 승리';
+  kind: '연합 승리' | '정복 승리' | '평화 승리' | '문화 승리' | '과학 승리' | '세계 영향력 승리' | '점수 마감';
+  /** 11-28 점수 마감 순위 */
+  place?: number;
   /** 전쟁 며칠째에 이겼는지 */
   day: number;
   country: string;
@@ -89,6 +92,8 @@ export function checkVictory(s: GameState): GameState {
   s = pt.s;
   const ct = cultureWinTick(s);
   s = ct.s;
+  s = inflTick(s);
+  if (s.ending) return s;
   if (s.player.rankIndex < VICTORY_RANK) return s;
   const p = victoryProgress(s);
   if (pt.won && !hasWon(s, '평화 승리')) return finish(s, '평화 승리', p);
@@ -106,6 +111,29 @@ export function checkVictory(s: GameState): GameState {
   return finish(s, kind, p);
 }
 
+/** 11-28 세계 영향력: 600점 + 2등 1.5배를 7일 · 실제 12주 점수 마감 */
+function inflTick(s: GameState): GameState {
+  const f = s.infl ?? { startMs: s.worldMs, winSinceMs: null };
+  if (!s.infl) s = { ...s, infl: f };
+  if (f.closed && hasWon(s, '세계 영향력 승리')) return s;
+  const ip = influenceProgress(s);
+  const p = victoryProgress(s);
+  if (!f.closed && s.worldMs >= ip.deadline) {
+    const closed = { ...f, closed: true };
+    if (ip.place === 1 && !hasWon(s, '세계 영향력 승리')) return finish({ ...s, infl: closed }, '세계 영향력 승리', p);
+    const out = finish({ ...s, infl: closed }, '점수 마감', p);
+    return out.ending ? { ...out, ending: { ...out.ending, place: ip.place } } : out;
+  }
+  if (hasWon(s, '세계 영향력 승리') || s.player.rankIndex < VICTORY_RANK) return s;
+  if (!ip.ok) return f.winSinceMs == null ? s : { ...s, infl: { ...f, winSinceMs: null } };
+  if (f.winSinceMs == null) {
+    const ev = { t: s.worldMs, kind: '점령' as const, text: `🌐 세계 영향력 ${ip.mine.total}점(2등의 1.5배 이상)! ${INF_HOLD_DAYS}일 지키면 이겨요.`, mine: true };
+    return { ...s, infl: { ...f, winSinceMs: s.worldMs }, world: { ...s.world, events: [ev, ...s.world.events] } };
+  }
+  if (s.worldMs - f.winSinceMs >= INF_HOLD_DAYS * 24 * 3600e3) return finish(s, '세계 영향력 승리', p);
+  return s;
+}
+
 function finish(s: GameState, kind: Ending['kind'], p: ReturnType<typeof victoryProgress>): GameState {
   const ending: Ending = {
     kind,
@@ -116,7 +144,7 @@ function finish(s: GameState, kind: Ending['kind'], p: ReturnType<typeof victory
     captured: p.captured,
     generals: s.officer.generals.map((g) => g.name),
   };
-  const ev = { t: s.worldMs, kind: '점령' as const, text: kind === '평화 승리' ? `🕊️ 평화 승리! ${ending.country}이(가) 세계에 평화를 가져왔어요.` : kind === '문화 승리' ? `🎨 문화 승리! ${ending.country}의 문화가 세계를 사로잡았어요.` : kind === '과학 승리' ? `🔬 과학 승리! ${ending.country}이(가) 인류의 내일을 열었어요.` : `🏆 ${kind}! ${ending.country}이(가) 전쟁을 끝냈어요.`, mine: true };
+  const ev = { t: s.worldMs, kind: '점령' as const, text: kind === '세계 영향력 승리' ? `🌐 세계 영향력 승리! ${ending.country}이(가) 세계를 이끄는 나라가 됐어요.` : kind === '점수 마감' ? `⏱️ 12주 점수 마감! ${ending.country}의 세계 영향력 순위가 정해졌어요.` : kind === '평화 승리' ? `🕊️ 평화 승리! ${ending.country}이(가) 세계에 평화를 가져왔어요.` : kind === '문화 승리' ? `🎨 문화 승리! ${ending.country}의 문화가 세계를 사로잡았어요.` : kind === '과학 승리' ? `🔬 과학 승리! ${ending.country}이(가) 인류의 내일을 열었어요.` : `🏆 ${kind}! ${ending.country}이(가) 전쟁을 끝냈어요.`, mine: true };
   return { ...s, ending, world: { ...s.world, events: [ev, ...s.world.events] } };
 }
 
