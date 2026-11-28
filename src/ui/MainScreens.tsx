@@ -21,6 +21,8 @@ import { FacilityPanel, MbCard, ResourcePanel, TaxCard, TreasuryPanel, needPick 
 import { TradePanel } from './DiplomacyScreen';
 import { ForcesScreen } from './ForcesScreen';
 import { SpyPanel } from './SpyPanel';
+import { StratPanel } from './StratPanel';
+import { stratOf } from '../game/strat';
 import { AidesPanel, GeneralsPanel, LeaderCard, RivalsPanel, TrainingScreen } from './officerScreens';
 import { OpsScreen, type ScreenProps } from './screens';
 import { Tabs, useTab, type TabDef } from './kit';
@@ -145,6 +147,7 @@ export function defenseTabs(props: ScreenProps): TabDef<DefenseTab>[] {
     { id: 'forces', label: '부대', icon: '🪖' },
     { id: 'command', label: `지휘부 ${o.generals.length}/${generalSlots(r)}`, icon: '⭐' },
     { id: 'spy', label: '정보전', icon: '🕵️', badge: spyOf(state).active.length || null },
+    { id: 'strat', label: '전략군', icon: '☢️', badge: stratOf(state).flights.length || null },
     { id: 'tech', label: '군사 연구', icon: '⚙️', badge: !civ.cur.mil && needPick(state) ? '!' : null },
     { id: 'fac', label: '국방 시설', icon: '🛡️', badge: choreIn(props, DEFENSE_BUILDINGS) ? '!' : null },
   ]);
@@ -174,6 +177,7 @@ export function DefenseScreen(props: ScreenProps) {
         </>
       )}
       {tab === 'spy' && <SpyPanel {...props} />}
+      {tab === 'strat' && <StratPanel {...props} />}
       {tab === 'tech' && <ResearchPanel {...props} fixed="mil" />}
       {tab === 'fac' && <FacilityPanel {...props} only={DEFENSE_BUILDINGS} />}
       </Safe>
