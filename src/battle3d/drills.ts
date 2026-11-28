@@ -601,7 +601,118 @@ const MPA: Drill = {
   score: (S) => clamp01(1 - hpFrac(foes(S).filter((u) => u.d.dom === 'sub'))),
   bar: (S) => { const f = foes(S).filter((u) => u.d.dom === 'sub'); const k = f.filter((u) => !u.alive).length; return { label: '잠수함 격침', pct: 100 - (k / Math.max(1, f.length)) * 100, txt: `${k}/${f.length}` }; },
 };
-const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV, HGV, ENG, MPA];
+/* ───────── 11-28 전투 병과 8개 훈련(전자전기·군집 드론·대드론 레이저·무인 로봇·해병대·공중급유기·기뢰 부설함) ───────── */
+const EWA: Drill = {
+  id: 'n3-ewa', training: '해킹', name: '전자전 엄호', how: '적 다연장로켓·자주포가 멀리서 우리 전차를 노려요. 전자전기 곁에 있는 적 포는 30% 덜 맞히고, 적 방공 레이더도 짧아져요. 전자전기를 지키며 전차로 적 포대를 부숴요.',
+  stage: field('ewa', '목표: 적 포대 모두 파괴', {
+    enemy: [['mlrs', 3, -12], ['mlrs', 6, -12.4], ['spg', 2, -10.6], ['spg', 7, -10.6], ['sam', 4.5, -13], ['inf', 4.5, -8]],
+    timeLimit: 95, cmds: ['smoke'], cpRate: .5,
+    setup: (S) => { S.drillLimit = 95; foes(S).forEach((u) => { u.goal = { x: u.x, z: u.z }; u.hold = true; }); },
+    rule: (S) => (!foes(S).some((u) => u.alive) ? 'win' : !aliveUs(S).some((u) => u.kind === 'tank') ? 'lose' : S.simT >= 95 ? 'time' : null),
+    cam: { tz: 0, dist: 31 },
+  }),
+  preset: [at('ewa', 4.3, 12.4), at('tank', 2.6, 9.4), at('tank', 4.3, 9), at('tank', 6, 9.4), at('ifv', 4.3, 10.6)],
+  kinds: ['ewa'], lock: true, cp0: 2,
+  score: (S) => clamp01(killFrac(S) * 0.7 + hpFrac(mine(S)) * 0.3),
+  bar: killBar('부순 적'),
+};
+const SWARM: Drill = {
+  id: 'n3-swarm', training: '포격', name: '드론 떼 기습', how: '적 방공부대 3대가 지키는 지휘소예요. 방공은 한 발씩 쏘기 때문에 군집 드론 떼를 다 못 막아요(피해 절반 이하). 드론 떼를 한꺼번에 보내 지휘소를 부숴요.',
+  stage: field('swarm', '목표: 방공망 뒤 적 지휘소 파괴', {
+    enemy: [['hq', 4.5, -12.6], ['aa', 3, -10], ['aa', 6, -10], ['aa', 4.5, -8.6], ['tank', 2, -11.4], ['inf', 7, -11.6]],
+    timeLimit: 70, cmds: ['emp'], cpRate: .5,
+    setup: (S) => { hqHp(S, 600); S.drillLimit = 70; foes(S).forEach((u) => { u.goal = { x: u.x, z: u.z }; u.hold = true; }); aliveUs(S).forEach((u) => { if (u.kind === 'swarm') u.only = 'hq'; }); },
+    rule: hqRule, cam: { tz: -1, dist: 31 },
+  }),
+  preset: [at('swarm', 2.6, 12), at('swarm', 4.5, 12.6), at('swarm', 6.4, 12), at('swarm', 4.5, 13.4), hold('aa', 4.5, 11)],
+  kinds: ['swarm'], lock: true, cp0: 2, score: hqScore, bar: hqBar,
+};
+const CUAS_WAVES = [
+  { at: 2, aggr: true, list: [['drone', 2, -15], ['drone', 4, -15.6], ['drone', 6.4, -15]] as Place[] },
+  { at: 14, aggr: true, list: [['drone', 1, -15], ['uav', 4, -16], ['drone', 7, -15], ['drone', 5, -15.4]] as Place[] },
+  { at: 28, aggr: true, list: [['missile', 2.4, -16], ['missile', 6, -16], ['drone', 4, -15]] as Place[] },
+  { at: 42, aggr: true, list: [['drone', 1.4, -15], ['drone', 3, -15.6], ['drone', 5, -15.6], ['drone', 7, -15], ['missile', 4, -16.4]] as Place[] },
+];
+const CUAS: Drill = {
+  id: 'n3-cuas', training: '사격', name: '드론 요격 진지', how: '적 자폭 드론과 미사일이 4번 몰려와요. 대드론 레이저 차량은 드론·미사일에 3배 피해를 주고, 날아오는 탄도 막아요. 진지를 끝까지 지켜요.',
+  stage: field('cuas', '목표: 날아오는 드론·미사일 막고 진지 지키기', {
+    timeLimit: 70, foeGoal: { x: 4.3, z: 10 }, cmds: ['repair'], cpRate: .5,
+    setup: (S) => { S.drillLimit = 70; },
+    tick: (S) => waves(S, CUAS_WAVES),
+    rule: (S) => (!aliveUs(S).length ? 'lose' : S.simT >= 70 || (S.simT > 46 && !foes(S).some((u) => u.alive)) ? 'win' : null),
+    cam: { tz: 1, dist: 30 },
+  }),
+  preset: [hold('cuas', 3, 10.4), hold('cuas', 5.6, 10.4), hold('inf', 2.4, 8.8), hold('inf', 6.2, 8.8), hold('spg', 4.3, 12.2)],
+  kinds: ['cuas'], lock: true, cp0: 2,
+  score: (S) => clamp01(hpFrac(mine(S)) * 0.7 + killFrac(S) * 0.3),
+  bar: killBar('떨어뜨린 적'),
+};
+const UGV: Drill = {
+  id: 'n3-ugv', training: '체력', name: '로봇 앞세워 돌파', how: '적 진지를 뚫어야 해요. 적은 단단한 무인 전투 로봇을 먼저 노려요. 로봇이 맞아 주는 동안 보병이 진지를 부숴요. 보병을 많이 살릴수록 점수가 높아요.',
+  stage: field('ugv', '목표: 적 진지 모두 부수기(보병 지키기)', {
+    enemy: [['inf', 3, -6], ['inf', 5.6, -6.4], ['tank', 4.3, -8.6], ['inf', 2.4, -9.4], ['ifv', 6.4, -9.4], ['aa', 4.3, -11]],
+    timeLimit: 95, cmds: ['smoke', 'repair'], cpRate: .5,
+    setup: (S) => { S.drillLimit = 95; foes(S).forEach((u) => { u.goal = { x: u.x, z: u.z }; u.hold = true; }); },
+    rule: (S) => (!foes(S).some((u) => u.alive) ? 'win' : !aliveUs(S).some((u) => u.kind === 'inf') ? 'lose' : S.simT >= 95 ? 'time' : null),
+    cam: { tz: 1, dist: 30 },
+  }),
+  preset: [at('ugv', 3, 5.8), at('ugv', 5.6, 5.8), at('inf', 2.4, 8), at('inf', 4.3, 8.4), at('inf', 6.2, 8), at('inf', 4.3, 9.6)],
+  kinds: ['ugv'], lock: true, cp0: 2,
+  score: (S) => clamp01(killFrac(S) * 0.6 + hpFrac(mine(S).filter((u) => u.kind === 'inf')) * 0.4),
+  bar: killBar('부순 진지'),
+};
+const MARINE: Drill = {
+  id: 'n3-marine', training: '잠입', name: '해병 상륙 돌격', how: '해병대 5개 분대가 바다에서 바로 적 해안에 올라가요. 해안선 가까이에서는 공격이 30% 세요. "연막"으로 다가가 해안 진지를 모두 부숴요.',
+  stage: field('marine', '목표: 해안 진지 모두 부수기', {
+    enemy: [['inf', 1.4, -7.6], ['inf', -.4, -10.6], ['tank', 2.6, -10], ['inf', 2.2, -12], ['inf', 1, -5.6]],
+    timeLimit: 110, cmds: ['smoke', 'repair'],
+    setup: (S) => { S.drillLimit = 110; foes(S).forEach((u) => { u.goal = { x: u.x, z: u.z }; u.hold = true; }); },
+    rule: (S) => (!foes(S).some((u) => u.alive) ? 'win' : !aliveUs(S).length ? 'lose' : S.simT >= 110 ? 'time' : null),
+    cam: { tx: -3, tz: 0, dist: 31 },
+  }),
+  preset: [at('marine', -7, 12, BEACH), at('marine', -8.4, 12.6, BEACH), at('marine', -5.6, 12.8, BEACH), at('marine', -7, 13.6, BEACH), at('marine', -6, 11.4, BEACH)],
+  kinds: ['marine'], lock: true, cp0: 3,
+  score: (S) => clamp01(killFrac(S) * 0.7 + hpFrac(mine(S)) * 0.3),
+  bar: killBar('부순 진지'),
+};
+const TANKER: Drill = {
+  id: 'n3-tanker', training: '항공', name: '공중 급유 작전', how: '공중급유기 곁의 우리 전투기는 공격이 15% 빨라요. 적 전투기·폭격기가 3번 와요. 급유기를 지키며 적을 떨어뜨려요.',
+  stage: field('tanker', '목표: 급유기 지키며 적 편대 격추', {
+    timeLimit: 80, foeGoal: { x: 4, z: 11 }, cmds: ['repair'], cpRate: .5,
+    setup: (S) => { S.drillLimit = 80; },
+    tick: (S) => waves(S, [
+      { at: 2, aggr: true, list: [['jet', 2, -16], ['jet', 6.4, -16], ['heli', 4, -15]] },
+      { at: 24, aggr: true, list: [['jet', 1, -16], ['jet', 4, -17], ['bomber', 7.4, -16]] },
+      { at: 46, aggr: true, list: [['jet', 2.4, -16], ['jet', 6, -16], ['bomber', 4, -17]] },
+    ]),
+    rule: (S) => (!S.units.find((u) => u.kind === 'tanker' && u.side === 'us')?.alive ? 'lose' : S.simT >= 80 || (S.simT > 48 && !foes(S).some((u) => u.alive)) ? 'win' : null),
+    cam: { tz: 0, dist: 32 },
+  }),
+  preset: [at('tanker', 4.3, 13), at('jet', 2.4, 10), at('jet', 4.3, 9.4), at('jet', 6.2, 10), at('jet', 4.3, 11), hold('aa', 3, 11.6), hold('aa', 5.6, 11.6)],
+  kinds: ['tanker'], lock: true, cp0: 3,
+  score: (S) => clamp01(killFrac(S) * 0.7 + hpFrac(mine(S)) * 0.3),
+  bar: killBar('격추'),
+};
+const MLAY_WAVES = [
+  { at: 10, hp: .7, list: [['boat', -6, -15], ['boat', -7.4, -15.6], ['boat', -6.6, -16.4]] as Place[] },
+  { at: 32, hp: .7, list: [['boat', -5.6, -15], ['dd', -7, -16.4], ['boat', -8, -15]] as Place[] },
+  { at: 54, hp: .7, list: [['dd', -6, -16], ['boat', -7.6, -16.4], ['boat', -5.4, -15]] as Place[] },
+];
+const MLAY: Drill = {
+  id: 'n3-mlay', training: '해상', name: '기뢰 봉쇄선', how: '적 함대가 우리 항구로 내려와요. 기뢰 부설함이 앞바다에 기뢰를 깔면 적 배가 밟고 터져요(큰 피해). 적 배가 항구(아래쪽 바다)에 닿지 못하게 막아요.',
+  stage: field('mlay', '목표: 적 배가 항구에 못 오게 막기', {
+    timeLimit: 85, foeGoal: { x: -6.6, z: 11 }, cmds: ['repair'], cpRate: .5,
+    setup: (S) => { S.drillLimit = 85; },
+    tick: (S) => waves(S, MLAY_WAVES),
+    rule: (S) => (foes(S).some((u) => u.alive && u.z > 9) ? 'lose' : !aliveUs(S).length ? 'lose' : S.simT >= 85 || (S.simT > 50 && !foes(S).some((u) => u.alive)) ? 'win' : null),
+    cam: { tx: -4, tz: 0, dist: 31 },
+  }),
+  preset: [hold('mlay', -6, -1), hold('mlay', -7.6, 0), hold('dd', -6.8, 5), hold('csm', 1.5, 6)],
+  kinds: ['mlay'], lock: true, cp0: 2,
+  score: (S) => clamp01(killFrac(S) * 0.6 + (foes(S).some((u) => u.alive && u.z > 9) ? 0 : 0.4)),
+  bar: killBar('격침'),
+};
+const NEW_DRILLS: Drill[] = [BM, MLRS, SAM, CSM, UAV, F35, AWACS, GUNSHIP, AAV, USV, HGV, ENG, MPA, EWA, SWARM, CUAS, UGV, MARINE, TANKER, MLAY];
 /** 무리 하나(종류×수를 가로로 늘어놓음) */
 function squad3(list: Array<[Kind, number]>, x: number, z: number): Place[] {
   const out: Place[] = [];

@@ -50,7 +50,13 @@ export const UNIT_KEY: Record<string, { key: string; field?: string; who: string
   공병: { key: 'engineer', who: '공병' },
   '극초음속 미사일': { key: 'hypersonic', who: '극초음속 미사일' },
   '대잠 초계기': { key: 'mpa', who: '대잠 초계기' },
-  용병: { key: 'pmc', who: '용병' },
+  전자전기: { key: 'ewa', who: '전자전기' },
+  '군집 드론': { key: 'swarm', who: '군집 드론' },
+  공중급유기: { key: 'tanker', who: '공중급유기' },
+  '대드론 레이저 차량': { key: 'cuas', who: '대드론 레이저 차량' },
+  '무인 전투 로봇': { key: 'ugv', who: '무인 전투 로봇' },
+  해병대: { key: 'marine', who: '해병대' },
+  '기뢰 부설함': { key: 'minelayer', who: '기뢰 부설함' },
 };
 export const TRAIN_KEY: Record<string, string> = {
   잠입: 'stealth', 체력: 'fitness', 전술: 'tactics', 사격: 'shooting', 포격: 'artillery', 정보: 'intel',

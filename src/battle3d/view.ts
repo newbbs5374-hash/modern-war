@@ -369,7 +369,7 @@ function soldier(side,spec){
 }
 const NEW_GLB=new Set(["bm","mlrs","sam","csm","uav","f35","awacs","gunship","aav","cv","ifv","aa","hack","dd","lha","laser"]);
 function makeModel(kind,side){
-  if(DEF[kind].look){const m=makeModel(DEF[kind].look,side);if(DEF[kind].lookScale)m.root.scale.multiplyScalar(DEF[kind].lookScale);if(DEF[kind].ally){m.parts.ring.material.color.setHex(0x5dffb0);m.parts.hpf.material.color.setHex(0x5dffb0);}return m;}
+  if(DEF[kind].look){const m=makeModel(DEF[kind].look,side);if(DEF[kind].lookScale)m.root.scale.multiplyScalar(DEF[kind].lookScale);if(DEF[kind].ally){m.parts.ring.material.color.setHex(0x5dffb0);m.parts.hpf.material.color.setHex(0x5dffb0);}if(DEF[kind].swarm&&m.parts.plane){const pl=m.parts.plane;pl.scale.setScalar(.6);for(const[ox,oz]of[[.55,.3],[-.55,.3],[.32,-.5],[-.32,-.5],[0,.65],[0,-.15]]){const c=pl.clone();c.position.x+=ox;c.position.z+=oz;c.position.y+=(ox*oz)*.4;c.scale.setScalar(.5);pl.parent.add(c);}}return m;}
   const P=PAL[side], hull=tm(side,"hull"), dark=tm(side,"dark"), light=tm(side,"light"), ship=tm(side,"ship"), deck=tm(side,"deck");
   const root=new THREE.Group(), body=new THREE.Group(); root.add(body);
   const parts={body}; const d=DEF[kind];
@@ -1195,9 +1195,15 @@ function unitIcon(kind){
     aav:()=>{g.ellipse(34,24,17,10,0,0,7);g.moveTo(18,34);g.quadraticCurveTo(26,40,34,34);g.quadraticCurveTo(42,40,50,34);},
     usv:()=>{g.moveTo(18,24);g.lineTo(46,24);g.lineTo(52,30);g.lineTo(22,30);g.closePath();g.moveTo(34,24);g.lineTo(34,16);},
     mpa:()=>{g.moveTo(34,12);g.lineTo(34,40);g.moveTo(16,26);g.lineTo(52,26);g.moveTo(26,38);g.lineTo(42,38);g.moveTo(20,44);g.arc(20,44,2,0,7);g.moveTo(48,44);g.arc(48,44,2,0,7);},
+    ewa:()=>{g.moveTo(34,14);g.lineTo(34,40);g.moveTo(18,28);g.lineTo(50,28);g.moveTo(22,16);g.lineTo(26,20);g.lineTo(22,24);g.moveTo(46,16);g.lineTo(42,20);g.lineTo(46,24);},
+    swarm:()=>{for(const[a,b]of[[20,18],[34,14],[48,18],[26,30],[42,30],[34,40]]){g.moveTo(a-4,b);g.lineTo(a+4,b);g.moveTo(a,b-3);g.lineTo(a,b+3);}},
+    cuas:()=>{g.moveTo(16,38);g.lineTo(52,38);g.lineTo(52,30);g.lineTo(16,30);g.closePath();g.moveTo(34,30);g.lineTo(46,12);g.moveTo(46,12);g.lineTo(54,8);},
+    ugv:()=>{g.moveTo(18,36);g.lineTo(50,36);g.lineTo(50,24);g.lineTo(18,24);g.closePath();g.moveTo(26,24);g.lineTo(26,16);g.lineTo(42,16);g.lineTo(42,24);g.moveTo(30,20);g.arc(30,20,1.5,0,7);g.moveTo(38,20);g.arc(38,20,1.5,0,7);},
+    marine:()=>{g.moveTo(14,34);g.lineTo(54,34);g.moveTo(18,40);g.quadraticCurveTo(34,46,50,40);g.moveTo(34,34);g.lineTo(34,14);g.moveTo(26,20);g.lineTo(42,20);},
+    tanker:()=>{g.moveTo(34,12);g.lineTo(34,40);g.moveTo(16,26);g.lineTo(52,26);g.moveTo(34,40);g.lineTo(28,50);g.moveTo(26,50);g.arc(26,50,2,0,7);},
+    mlay:()=>{g.moveTo(16,26);g.lineTo(50,26);g.lineTo(46,32);g.lineTo(20,32);g.closePath();g.moveTo(26,42);g.arc(26,42,3,0,7);g.moveTo(42,42);g.arc(42,42,3,0,7);},
     eng:()=>{g.moveTo(16,34);g.lineTo(16,18);g.lineTo(52,18);g.lineTo(52,34);g.moveTo(26,18);g.lineTo(26,30);g.moveTo(42,18);g.lineTo(42,30);},
-    hgv:()=>{g.moveTo(16,36);g.lineTo(48,14);g.moveTo(40,14);g.lineTo(48,14);g.lineTo(48,22);g.moveTo(14,26);g.lineTo(24,20);g.moveTo(20,34);g.lineTo(30,28);},
-    pmc:()=>{g.moveTo(14,10);g.lineTo(54,38);g.moveTo(54,10);g.lineTo(14,38);g.moveTo(26,30);g.lineTo(42,30);g.lineTo(42,38);g.lineTo(26,38);g.closePath();}};
+    hgv:()=>{g.moveTo(16,36);g.lineTo(48,14);g.moveTo(40,14);g.lineTo(48,14);g.lineTo(48,22);g.moveTo(14,26);g.lineTo(24,20);g.moveTo(20,34);g.lineTo(30,28);}};
   (K[kind]||(()=>{}))();g.stroke();return c;
 }
 function buildTabs(){
@@ -1211,14 +1217,14 @@ function buildCards(){
   // 11-26 병과가 7개를 넘으면 한 줄로 두고 옆으로 밀어서 봄
   wrap.classList.toggle("b3-scroll",kinds.length>6);wrap.style.gridTemplateColumns=kinds.length>6?"":`repeat(${Math.max(6,kinds.length)},1fr)`;
   kinds.forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-card";b.id="card-"+k;b.setAttribute("aria-pressed",String(k===selKind));
-    b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("극초음속 미사일","극초음속").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함").replace("장거리 방공","장거리방공").replace("해안 미사일","해안미사일").replace("정찰 무인기","정찰기").replace("스텔스 전투기","스텔스기").replace("지상 공격기","공격기").replace("다연장로켓","다연장").replace("바다 드론","바다드론");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);if(CAP){const o=document.createElement("span");o.className="b3-own";b.append(o);}
+    b.append(unitIcon(k));const n=document.createElement("span");n.textContent=DEF[k].name.replace("원자력 잠수함","핵잠수함").replace("극초음속 미사일","극초음속").replace("대드론 레이저 차량","대드론 레이저").replace("무인 전투 로봇","전투 로봇").replace("기뢰 부설함","기뢰함").replace("레이저 방공함","레이저함").replace("강습상륙함","상륙함").replace("장거리 방공","장거리방공").replace("해안 미사일","해안미사일").replace("정찰 무인기","정찰기").replace("스텔스 전투기","스텔스기").replace("지상 공격기","공격기").replace("다연장로켓","다연장").replace("바다 드론","바다드론");const c=document.createElement("span");c.className="b3-c";c.textContent=DEF[k].cost;b.append(n,c);if(CAP){const o=document.createElement("span");o.className="b3-own";b.append(o);}
     b.onclick=()=>{selKind=k;root.querySelectorAll(".b3-card").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));highlightTiles();};
     wrap.append(b);});
   highlightTiles();
 }
 function buildCmds(){
   const w=$("#cmds");w.innerHTML="";
-  CMD_ORDER.filter(k=>!ST.cmds||ST.cmds.includes(k)).forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-cmd";b.dataset.k=k;b.innerHTML=`${CMD[k].name}<small>지휘력 ${CMD[k].cost}</small><span class="b3-fill"></span>`;
+  CMD_ORDER.filter(k=>(!ST.cmds||ST.cmds.includes(k))&&(k!=="sat"||opts.usBuff?.__sat)).forEach(k=>{const b=document.createElement("button");b.type="button";b.className="b3-cmd";b.dataset.k=k;b.innerHTML=`${CMD[k].name}<small>지휘력 ${CMD[k].cost}</small><span class="b3-fill"></span>`;
     b.onclick=()=>{if(aiming===k){cancelAim();return;}if(aiming)cancelAim();startAim(k);};w.append(b);});
   if(opts.gen&&CMD[opts.gen.k]){const g=opts.gen;genUsed=false;const b=document.createElement("button");b.type="button";b.className="b3-gcmd";b.id="gencmd";b.innerHTML=`🎖️ ${g.label}<small>${g.name} 장군 · 한 번${g.twice?" · 강화":""}</small>`;
     b.onclick=()=>{if(genUsed)return;if(genAim){cancelAim();return;}if(S.phase!=="battle")return;if(aiming)cancelAim();genAim=true;aiming=g.k;S.phase="aim";$("#aim").hidden=false;$("#aimtxt").textContent=`${g.name} 장군 · ${g.label} · 목표 지점을 누르세요 · 시간 정지`;hud();};w.append(b);}
@@ -1251,7 +1257,7 @@ function placeAt(i){
 function setupDeploy(useDefault){
   clearUnits(); fx.splice(0).forEach(f=>scene.remove(f.o)); vq.length=0; lastResult=null;
   const prev=useDefault?capPicks(opts.preset?(URBAN&&!opts.lockDeploy&&!ST.drill?fillReinf(opts.preset,BUDGET_NOW):opts.preset):autoDeploy(BUDGET_NOW)):deploy.map(d=>({kind:d.kind,tile:d.tile,hp:d.hp,carried:d.carried}));
-  const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp,usBuff:opts.usBuff,foeBuff:opts.foeBuff}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
+  const us=simSetup(S,prev,{cp0:opts.cp0,foeHp:opts.foeHp,usBuff:opts.usBuff,foeBuff:opts.foeBuff,sat:opts.usBuff?.__sat}); deploy=prev.map((d,i)=>({...d,u:us[i]}));
   depTiles.forEach(t=>{t.m.visible=t.e.visible=true;});
   $("#deployUI").hidden=false;$("#battleUI").hidden=true;$("#end").hidden=true;$("#aim").hidden=true;
   if(opts.lockDeploy){$("#tabs").hidden=true;$("#cards").hidden=true;$("#clear").hidden=true;$("#dhint").textContent="부대가 정해진 훈련이에요 · 시점을 보고 '작전 개시'";}

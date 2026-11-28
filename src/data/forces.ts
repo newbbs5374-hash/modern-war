@@ -6,8 +6,8 @@ export type MapDomain = 'sea' | 'air' | 'land';
 export const MAP_DOMAIN: Record<string, MapDomain> = {
   항공모함: 'sea', 구축함: 'sea', 잠수함: 'sea', 강습상륙함: 'sea', '원자력 잠수함': 'sea', '레이저 방공함': 'sea',
   전투기: 'air', 폭격기: 'air', 무인드론: 'air', 공격헬기: 'air',
-  '정찰 무인기': 'air', '스텔스 전투기': 'air', 조기경보기: 'air', '대잠 초계기': 'air', '지상 공격기': 'air', '바다 드론': 'sea',
-  탄도미사일: 'land', 다연장로켓: 'land', 공병: 'land', '극초음속 미사일': 'land', 용병: 'land', '장거리 방공': 'land', '해안 미사일': 'land', 상륙장갑차: 'land',
+  '정찰 무인기': 'air', '스텔스 전투기': 'air', 조기경보기: 'air', '대잠 초계기': 'air', 전자전기: 'air', '군집 드론': 'air', 공중급유기: 'air', '대드론 레이저 차량': 'land', '무인 전투 로봇': 'land', 해병대: 'land', '기뢰 부설함': 'sea', '지상 공격기': 'air', '바다 드론': 'sea',
+  탄도미사일: 'land', 다연장로켓: 'land', 공병: 'land', '극초음속 미사일': 'land', '장거리 방공': 'land', '해안 미사일': 'land', 상륙장갑차: 'land',
   전차: 'land', 기갑병: 'land', 포병: 'land', 미사일: 'land', 방공부대: 'land', 보병: 'land', 특수부대: 'land',
 };
 
