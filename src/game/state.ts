@@ -37,6 +37,7 @@ import { snsTick, type SnsState } from './leaderSns';
 import { ensureRivalRoster } from './rivals';
 import { ordersBudget, ordersDefense, ordersTick, type OrdersState } from './orders';
 import { spyTick, type SpyState } from './spy';
+import { agentsTick, type AgentsState } from './agents';
 import type { FleetState } from './fleet';
 import type { GuideState } from './guide';
 import { splitEco, splitTroop, taxBudget, TAX_INFO, taxOf, splitOf, type PolicyState } from './policy';
@@ -191,6 +192,8 @@ export interface GameState {
   crown?: RegionCrown;
   /** 첩보·특수 작전 */
   spy?: SpyState;
+  /** 11-28 특수 요원(공작원 팀) */
+  agents?: AgentsState;
   /** 함대 충돌 관전 기록 */
   fleet?: FleetState;
   /** 첫 판 안내 임무 */
@@ -473,7 +476,7 @@ export function advance(s: GameState, ms: number): GameState {
     officerTick(cur, ownerBefore, AI_TICK_MS);
     cur = hegemonyTick(bullyTick(surrenderTick(pressureTick(peaceHintTick(baseTick(unrestTick(occAdminTick(annexTick(deployTick(civTick(cur, pairsBefore)))))))))));
     cur = techGoalTick(secTick(wcTick(raidTick(warGoalTick(moleTick(megaTick(sagaTick(counterTick(finaleTick(actsTick(cur)))))))))));
-    cur = isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(spyTick(ordersTick(crisisTick(cur))), AI_TICK_MS), AI_TICK_MS)))))))))))));
+    cur = isleEventTick(antiwarTick(embassyTick(bondTick(recTick(meetTick(propTick(domTick(snsTick(remarksTick(mediaTick(assemblyTick(cabinetTick(presTick(agentsTick(spyTick(ordersTick(crisisTick(cur)))), AI_TICK_MS), AI_TICK_MS)))))))))))));
     world = cur.world;
   }
   return syncTitle(spyTick(ordersTick(crisisTick(checkVictory(cultureTick(accrue(cur, left)))))));

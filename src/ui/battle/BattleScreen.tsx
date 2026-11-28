@@ -4,7 +4,8 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { claimMission, finishTraining, perkBonus, readyAides } from '../../game/officer';
 import { applyOccTask, type OccTask } from '../../game/annex';
 import { settleClash } from '../../game/deploy';
-import { foeBuffs, foeCountryOf, loseUnits, mulBuffs, ownedByBase, specialBuffs } from '../../game/losses';
+import { foeBuffs, foeCountryOf, loseUnits, mulBuffs, ownedByBase, specialBuffs, weakBuffs } from '../../game/losses';
+import { weakMul } from '../../game/agents';
 import { deployOf } from '../../game/deploy';
 import { routeTo } from '../nav';
 import { autoResult } from '../../battle/auto';
@@ -152,7 +153,9 @@ export function BattleScreen({ state, actions, go }: ScreenProps) {
   const owned = ownSrc ? ownedByBase(ownSrc, deadSoFar) : undefined;
   // 11-27 특별 병과 ×1.3: 우리(가진 특별 병과 비율만큼) · 적 나라(그 병과 모두)
   const usBuff = mulBuffs(unitBuffs(o.unitXp), specialBuffs(ownSrc ?? state.economy.army));
-  const foeBuff = plan.source === 'training' || plan.source === 'practice' ? {} : foeBuffs(foeCountryOf(state, spec));
+  const foeC = foeCountryOf(state, spec);
+  // 11-28 특수 요원 요인 포섭·기지 폭파: 그 나라 적이 잠시 약해짐
+  const foeBuff = plan.source === 'training' || plan.source === 'practice' ? {} : mulBuffs(foeBuffs(foeC), weakBuffs(weakMul(state, foeC)));
   const props: FrameProps = { spec, stats, rank, owned, gen: spec.variant === 'siege' ? genSkillOf(o) : null, aides: readyAides(o, state.worldMs), playerName: state.player.name, onEnd: (r) => setCurrent({ ...r, auto: autoUsed }), usBuff, foeBuff, puzzleStars: o.puzzle3d, easyLv: o.easyLv, onCancel: () => leave() };
   const View = VIEWS[spec.frame];
   const multi = plan.stages.length > 1;
