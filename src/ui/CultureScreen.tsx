@@ -7,6 +7,7 @@ import { BoostBar, BoostMini, BoostStart } from './BoostBar';
 import { BOOST_MS, startAndFinish } from '../game/boost';
 import { useState } from 'react';
 import { Card, fmt } from './common';
+import { ANTIWAR_TROOPS, ANTIWAR_WEARY, antiwarOdds } from '../game/antiwar';
 import { FLAG } from './flag';
 import { Help, Meter, Modal, Tabs, Tile, useTab, type TabDef } from './kit';
 import { iconArt } from './iconArt';
@@ -704,9 +705,15 @@ function WorldPanel({ state, actions }: ScreenProps) {
       help={
         <p>
           막대는 그 나라가 스스로 쌓은 문화 대비 우리 영향력이에요. 100%가 되면 <b>문화 우세</b>. 🤝 문화 교류 협약(나라 예산 {fmt(PACT_COST)})을 맺으면 그 나라에 ×{PACT_MULT} 더 퍼지고 호감도 올라요. ★는 그 나라 문화 수준이에요.
+          <br />✊ 문화가 우세한 나라(50% 넘으면 조금)가 우리와 전쟁하면 6시간마다 반전 시위가 일어날 수 있어요: 그 나라 전쟁 피로 +{ANTIWAR_WEARY}(휴전을 잘 받아요) · 병력 −{Math.round(ANTIWAR_TROOPS * 100)}%.
         </p>
       }
     >
+      {antiwarOdds(state).map((o) => (
+        <p key={o.id} className="small" style={{ margin: '2px 0' }}>
+          ✊ {FLAG[o.id]} {countryById(o.id).name}: 우리와 전쟁 중 · 다음 판단에 반전 시위 {Math.round(o.p * 100)}%
+        </p>
+      ))}
       {lines.map((l) => {
         const pact = c.pacts.includes(l.id);
         const why = canPact(state, l.id);

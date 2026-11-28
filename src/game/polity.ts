@@ -110,6 +110,9 @@ export interface PolityState {
   /** 다음 선거(유세 창은 2일 전부터) */
   election: Election;
   elections: number;
+  /** 11-28 선거 예측: 3시간마다 잰 예상 득표율(최근 24번) */
+  voteHist?: number[];
+  voteHistMs?: number;
   econ: EconState;
   disaster: Disaster | null;
   disasterMs: number;

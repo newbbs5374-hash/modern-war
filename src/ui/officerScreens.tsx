@@ -85,6 +85,7 @@ import { TitleBox } from './TitleUI';
 import { TITLES } from '../data/ranks';
 import { tierNow, titleOf } from '../game/title';
 import { VOICE_ICON, remarksOf } from '../game/remarks';
+import { joinChance, reinforceOf } from '../game/reinforce';
 import { AIDE_ICON, FRAME_ICON, MISSION_ICON, RANK_ICON, STAT_ICON, TRAINING_ICON } from './icons';
 import { FLAG } from './flag';
 import { Chip, Help, Meter, Modal, Tile, stars } from './kit';
@@ -253,7 +254,9 @@ function WarPick({ state, actions }: Pick<ScreenProps, 'state' | 'actions'>) {
               onClick={() => {
                 if (no) return;
                 const warn = rel === '연합' ? '\n(연합을 깨요: 신뢰 −10 · 명성 −10)' : rel === '휴전' ? '\n(휴전을 깨요: 신뢰 −5)' : '';
-                if (!window.confirm(`${c.name}에 선전포고할까요?${warn}`)) return;
+                const hs = reinforceOf(state, c.id, 3);
+                const rf = hs.length ? `\n⚠️ 도우러 올 만한 나라: ${hs.map((h) => `${h.name} ${pct(h.help)}`).join(' · ')}` : '';
+                if (!window.confirm(`${c.name}에 선전포고할까요?${warn}${rf}`)) return;
                 setMsg(actions.applyWith((s) => {
                   const r = doDiplo(s, c.id, '선전포고');
                   return { state: r.state, out: r.text };
@@ -1141,6 +1144,26 @@ function GrandPreview({ state, city }: { state: GameState; city: string }) {
       <p className="small" style={{ margin: '4px 0' }}>
         ❌ <b>지면</b>: 데려간 부대 일부를 잃고 명성·지지도가 떨어져요. 다음 대전투까지 기다려야 해요.
       </p>
+      <ReinforceWarn state={state} enemy={owner} />
+    </div>
+  );
+}
+
+/** 11-28 적 지원군 경고: 이 나라를 치면 도우러 올 만한 나라 */
+export function ReinforceWarn({ state, enemy }: { state: GameState; enemy: string }) {
+  const hs = reinforceOf(state, enemy);
+  if (!hs.length) return <p className="small muted" style={{ margin: '4px 0' }}>🛡️ 지원군 경고: 도우러 올 만한 나라가 없어요.</p>;
+  return (
+    <div className="small" style={{ margin: '4px 0' }}>
+      ⚠️ <b>적 지원군 경고</b>
+      {hs.map((h) => (
+        <div key={h.id} className="row" style={{ gap: 6, alignItems: 'center' }}>
+          <span>{FLAG[h.id] ?? ''}</span>
+          <span style={{ flex: 1 }}>
+            {h.name}({h.why}) · 도울 확률 {pct(h.help)} · 병력 약 {h.troops.toLocaleString('ko-KR')}명{joinChance(h) > 0 ? ` · 참전 ${pct(joinChance(h))}` : ''}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

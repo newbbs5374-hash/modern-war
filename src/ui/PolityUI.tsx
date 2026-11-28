@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { ScreenProps } from './screens';
 import type { GameState } from '../game/state';
+import { upcomingOf } from '../game/upcoming';
 import { Card, fmt } from './common';
 import { Meter, Modal } from './kit';
 import { timeLeft } from './officerScreens';
@@ -12,7 +13,7 @@ import { faceIdxForAge, faceTag } from '../data/faces';
 import { LOOK } from '../data/names';
 import { cityById } from '../data/cities';
 import { polityOf } from '../game/polity';
-import { CAMPAIGN_MS, MAJORITY, RALLY_PER_DAY, SEATS, TWO_THIRDS, campaignOpen, canRally, electionName, electionOf, rally, rallyCost, voteRows, voteShare } from '../game/seats';
+import { CAMPAIGN_MS, MAJORITY, RALLY_PER_DAY, SEATS, TWO_THIRDS, campaignOpen, canRally, electionName, electionOf, rally, rallyCost, seatForecast, voteRows, voteShare } from '../game/seats';
 import { RATE_WAIT_MS, baseOf, canSetRate, econOf, econTargets, overheat, rateStep, setRate } from '../game/econ';
 import { DISASTERS, RESPONDERS, STAGE_NAMES, canRespond, disasterKind, respond, responderById, responderPower, responseChance, responseRows } from '../game/disaster';
 import { AUDIT_QS, answerAudit, answerScandal, auditChance, auditQ, canProbeRival, probePower, probeRival, rivalProbeChance, rivalProbeCost, scandalChance, scandalPerson, seatName, type AuditPick, type ScandalPick } from '../game/probe';
@@ -94,6 +95,7 @@ export function PolityScreen(props: ScreenProps) {
       {cur === 'pop' && <PopPanel {...props} />}
       {cur === 'amend' && <AmendPanel {...props} />}
       {cur === 'speech' && <SpeechPanel {...props} />}
+      <UpcomingCard state={state} />
       <PolityLog state={state} />
     </>
   );
@@ -140,6 +142,61 @@ export function SeatArc({ ruling, opp, ind }: { ruling: number; opp: number; ind
     </svg>
   );
 }
+/** 11-28 일 미리 보기: 다가오는 국정 일 */
+function UpcomingCard({ state }: { state: GameState }) {
+  const list = upcomingOf(state).slice(0, 6);
+  if (!list.length) return null;
+  return (
+    <Card title="다가오는 일" icon="📅" help={<p>앞으로 일어날 국정 일을 시각 순으로 보여 줘요. "쯤"은 그 시각부터 일어날 수 있다는 뜻이에요.</p>}>
+      {list.map((u) => (
+        <div key={u.id} className="list-row small" title={u.tip}>
+          <span>
+            {u.icon} {u.name}
+          </span>
+          <b>
+            {timeLeft(u.atMs - state.worldMs)} 뒤{u.rough ? '쯤' : ''}
+          </b>
+        </div>
+      ))}
+      <p className="small muted" style={{ margin: '4px 0 0' }}>💡 {list[0].tip}</p>
+    </Card>
+  );
+}
+
+/** 11-28 선거 예측 그래프: 3시간마다 잰 예상 득표율 + 총선 의석 범위·과반 확률 */
+function VoteForecast({ state }: { state: GameState }) {
+  const p = polityOf(state);
+  const e = electionOf(state);
+  const pts = [...(p.voteHist ?? []), voteShare(state)];
+  const W = 240;
+  const Hh = 56;
+  const lo = Math.min(40, ...pts) - 2;
+  const hi = Math.max(60, ...pts) + 2;
+  const y = (v: number) => Hh - ((v - lo) / (hi - lo)) * Hh;
+  const x = (i: number) => (pts.length < 2 ? W : (i / (pts.length - 1)) * W);
+  const line = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const f = seatForecast(state);
+  const first = pts[0];
+  const now = pts[pts.length - 1];
+  return (
+    <div className="vote-fc">
+      <svg viewBox={`0 0 ${W} ${Hh}`} width="100%" height={Hh} preserveAspectRatio="none" aria-label="예상 득표율 그래프">
+        <line x1="0" x2={W} y1={y(50)} y2={y(50)} stroke="currentColor" strokeOpacity="0.3" strokeDasharray="4 3" />
+        <polyline points={line} fill="none" stroke="var(--accent, #2bb3a3)" strokeWidth="2" />
+        <circle cx={x(pts.length - 1)} cy={y(now)} r="3" fill="var(--accent, #2bb3a3)" />
+      </svg>
+      <p className="small muted" style={{ margin: '2px 0' }}>
+        📈 예상 득표율 흐름(3시간마다, 점선 50%) · {pts.length > 1 ? `처음 ${Math.round(first)}% → 지금 ${Math.round(now)}%` : '아직 기록이 없어요'}
+      </p>
+      {e.kind === 'general' && (
+        <p className="small" style={{ margin: '2px 0' }}>
+          🔮 총선 예측: 여당 <b>{f.mid}석</b>({f.low}~{f.high}) · 과반 확률 <b className={f.majority < 0.5 ? 'dom-warn' : ''}>{Math.round(f.majority * 100)}%</b>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SeatsPanel({ state, actions }: ScreenProps) {
   const p = polityOf(state);
   const st = p.seats;
@@ -182,6 +239,7 @@ function SeatsPanel({ state, actions }: ScreenProps) {
         <p className="small">
           예상 득표율 <b>{Math.round(share)}%</b> · {e.kind === 'general' ? '국회 의석을 다시 뽑아요' : `내 도시 ${cities.length}곳의 시·도지사를 다시 뽑아요`}
         </p>
+        <VoteForecast state={state} />
         {open ? (
           <>
             <p className="small muted">
